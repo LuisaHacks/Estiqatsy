@@ -336,11 +336,11 @@
     } catch(e) {}
   }
 
-  function loadDataFromGAS() {
+function loadDataFromGAS() {
     const loader = document.getElementById("loading");
     loader.style.display = "flex";
 
-    // 1. Verifica ambiente Telegram reale
+    // 1. Controlla presenza initData
     const initDataRaw = (tg && tg.initData) ? tg.initData : "";
 
     if (!initDataRaw) {
@@ -348,11 +348,77 @@
         <div style="text-align: center; padding: 20px;">
           <div style="font-size: 40px; margin-bottom: 10px;">🔒</div>
           <h3 style="color: var(--danger); margin-bottom: 8px;">Accesso Riservato</h3>
-          <p style="font-size: 13px; color: var(--hint);">Questa Web App può essere aperta solo all'interno del bot Telegram ufficiale per garantire la sicurezza del tuo account.</p>
+          <p style="font-size: 13px; color: var(--hint);">Questa Web App può essere aperta solo all'interno del bot Telegram ufficiale.</p>
         </div>
       `;
       return;
     }
+
+    // 2. Chiamata sicura (usando text/plain per bypassare i controlli CORS complessi)
+    fetch(GAS_URL, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify({
+        isMiniAppCall: true,
+        initData: initDataRaw,
+        action: "GET_APP_DATA"
+      })
+    })
+    .then(async (res) => {
+      const text = await res.text();
+      try {
+        return JSON.parse(text);
+      } catch(e) {
+        throw new Error("Risposta non valida dal server: " + text.substring(0, 100));
+      }
+    })
+    .then(data => {
+      loader.style.display = "none";
+
+      if (!data || !data.ok) {
+        loader.style.display = "flex";
+        loader.innerHTML = `
+          <div style="text-align: center; padding: 20px;">
+            <p style="color: var(--danger); font-weight: bold;">Errore Server:</p>
+            <p style="font-size: 12px; color: var(--hint); margin-top: 6px;">${data.error || "Errore sconosciuto"}</p>
+          </div>
+        `;
+        return;
+      }
+
+      // Visualizzazione dati profilo
+      if (data.user) {
+        document.getElementById("userName").innerText = data.user.nome || "Giocatore";
+        document.getElementById("avatarLetter").innerText = (data.user.nome || "G").charAt(0).toUpperCase();
+        document.getElementById("userTag").innerText = data.user.username ? (data.user.username.startsWith("@") ? data.user.username : "@" + data.user.username) : "ID: " + data.user.id;
+        document.getElementById("megoinVal").innerText = data.user.megoin;
+        document.getElementById("puntiVal").innerText = data.user.punti;
+        document.getElementById("userPlan").innerText = "Piano: " + data.user.piano;
+      }
+
+      // Visualizzazione dati eroe
+      if (data.hero) {
+        const h = data.hero;
+        document.getElementById("heroClass").innerText = h.classe || "Avventuriero";
+        document.getElementById("hpText").innerText = h.pv + " / " + h.pvMax;
+        const pct = Math.max(0, Math.min(100, Math.round((h.pv / h.pvMax) * 100)));
+        document.getElementById("hpBar").style.width = pct + "%";
+
+        document.getElementById("heroFor").innerText = (h.stats && h.stats.FORZA) || 10;
+        document.getElementById("heroDes").innerText = (h.stats && h.stats.DESTREZZA) || 10;
+        document.getElementById("heroInt").innerText = (h.stats && h.stats.INTELLIGENZA) || 10;
+        document.getElementById("heroOro").innerText = (h.oro || 0) + " 🟡";
+      }
+    })
+    .catch(err => {
+      loader.innerHTML = `
+        <div style="text-align: center; padding: 20px;">
+          <p style="color: var(--danger); font-weight: bold;">Dettaglio Errore:</p>
+          <p style="font-size: 12px; color: var(--hint); word-break: break-all; margin-top: 6px;">${err.message}</p>
+        </div>
+      `;
+    });
+  }
 
     // 2. Chiamata sicura al backend passando SOLO la stringa firmata
     fetch(GAS_URL, {
