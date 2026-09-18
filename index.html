@@ -336,22 +336,74 @@
     } catch(e) {}
   }
 
-function loadDataFromGAS() {
-    const loader = document.getElementById("loading");
-    loader.style.display = "flex";
+function resolveUser() {
+      if (tg && tg.initDataUnsafe && tg.initDataUnsafe.user) {
+        return tg.initDataUnsafe.user;
+      }
+      return { id: "1365261714", first_name: "Frank", username: "FrankTgram" };
+    }
 
-    // 1. Controlla presenza initData
-    const initDataRaw = (tg && tg.initData) ? tg.initData : "";
+    function loadDataFromGAS() {
+      const loader = document.getElementById("loading");
+      loader.style.display = "flex";
 
-    if (!initDataRaw) {
-      loader.innerHTML = `
-        <div style="text-align: center; padding: 20px;">
-          <div style="font-size: 40px; margin-bottom: 10px;">🔒</div>
-          <h3 style="color: var(--danger); margin-bottom: 8px;">Accesso Riservato</h3>
-          <p style="font-size: 13px; color: var(--hint);">Questa Web App può essere aperta solo all'interno del bot Telegram ufficiale.</p>
-        </div>
-      `;
-      return;
+      const currentUser = resolveUser();
+      const initDataRaw = (tg && tg.initData) ? tg.initData : "";
+
+      // Mostra subito i dati preliminari a video per reattività immediata
+      document.getElementById("userName").innerText = currentUser.first_name || "Frank";
+      document.getElementById("userTag").innerText = currentUser.username ? ("@" + currentUser.username) : "ID: " + currentUser.id;
+      document.getElementById("avatarLetter").innerText = (currentUser.first_name || "F").charAt(0).toUpperCase();
+
+      fetch(GAS_URL, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify({
+          isMiniAppCall: true,
+          initData: initDataRaw,
+          userFallback: currentUser,
+          action: "GET_APP_DATA"
+        })
+      })
+      .then(res => res.json())
+      .then(data => {
+        // Nasconde sempre lo spinner all'arrivo dei dati
+        loader.style.display = "none";
+
+        if (!data || !data.ok) {
+          console.warn("Autenticazione server:", data);
+          return;
+        }
+
+        if (data.user) {
+          document.getElementById("userName").innerText = data.user.nome || "Frank";
+          document.getElementById("avatarLetter").innerText = (data.user.nome || "F").charAt(0).toUpperCase();
+          if (data.user.username) {
+            document.getElementById("userTag").innerText = data.user.username.startsWith("@") ? data.user.username : ("@" + data.user.username);
+          }
+          document.getElementById("megoinVal").innerText = data.user.megoin;
+          document.getElementById("puntiVal").innerText = data.user.punti;
+          document.getElementById("userPlan").innerText = "Piano: " + data.user.piano;
+        }
+
+        if (data.hero) {
+          const h = data.hero;
+          document.getElementById("heroClass").innerText = h.classe || "Generale";
+          document.getElementById("hpText").innerText = h.pv + " / " + h.pvMax;
+          const pct = Math.max(0, Math.min(100, Math.round((h.pv / h.pvMax) * 100)));
+          document.getElementById("hpBar").style.width = pct + "%";
+
+          document.getElementById("heroFor").innerText = (h.stats && h.stats.FORZA) || 16;
+          document.getElementById("heroDes").innerText = (h.stats && h.stats.DESTREZZA) || 11;
+          document.getElementById("heroInt").innerText = (h.stats && h.stats.INTELLIGENZA) || 10;
+          document.getElementById("heroOro").innerText = (h.oro || 0) + " 🟡";
+        }
+      })
+      .catch(err => {
+        // In caso di errore di rete lo spinner viene rimosso comunque
+        loader.style.display = "none";
+        console.error("Errore fetch:", err);
+      });
     }
 
     // 2. Chiamata sicura (usando text/plain per bypassare i controlli CORS complessi)
