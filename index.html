@@ -329,29 +329,50 @@
 
     const tg = window.Telegram ? window.Telegram.WebApp : null;
     if (tg) {
-      tg.expand();
-      tg.ready();
+      try {
+        tg.expand();
+        tg.ready();
+      } catch(e) {}
     }
 
-    const tgUser = (tg && tg.initDataUnsafe && tg.initDataUnsafe.user) ? tg.initDataUnsafe.user : null;
-    const initDataRaw = tg ? tg.initData : "";
-
-    // 1. Anteprima immediata dai dati nativi Telegram
-    if (tgUser) {
-      const name = (tgUser.first_name || "") + " " + (tgUser.last_name || "");
-      document.getElementById("userName").innerText = name.trim() || "Giocatore";
-      document.getElementById("userTag").innerText = tgUser.username ? ("@" + tgUser.username) : "ID: " + tgUser.id;
-      document.getElementById("avatarLetter").innerText = (tgUser.first_name || "E").charAt(0).toUpperCase();
+    function getTelegramUser() {
+      // 1. Dati da SDK nativo Telegram
+      if (tg && tg.initDataUnsafe && tg.initDataUnsafe.user) {
+        return tg.initDataUnsafe.user;
+      }
+      // 2. Dati dall'hash URL (#tgWebAppData=...)
+      if (window.location.hash && window.location.hash.indexOf("tgWebAppData=") !== -1) {
+        try {
+          const hashParams = new URLSearchParams(window.location.hash.substring(1));
+          const rawData = hashParams.get("tgWebAppData");
+          if (rawData) {
+            const dataParams = new URLSearchParams(rawData);
+            const uJson = dataParams.get("user");
+            if (uJson) return JSON.parse(uJson);
+          }
+        } catch(e) {}
+      }
+      return null;
     }
 
-    // 2. Chiamata sicura al Google Sheet per leggere i dati reali
     function loadDataFromGAS() {
       document.getElementById("loading").style.display = "flex";
+
+      const realUser = getTelegramUser();
+      const initDataRaw = (tg && tg.initData) ? tg.initData : "";
+
+      // Anteprima immediata nome utente reale
+      if (realUser) {
+        const fullName = ((realUser.first_name || "") + " " + (realUser.last_name || "")).trim();
+        document.getElementById("userName").innerText = fullName || "Utente";
+        document.getElementById("userTag").innerText = realUser.username ? ("@" + realUser.username) : "ID: " + realUser.id;
+        document.getElementById("avatarLetter").innerText = (realUser.first_name || "U").charAt(0).toUpperCase();
+      }
 
       const payload = JSON.stringify({
         isMiniAppCall: true,
         initData: initDataRaw,
-        userFallback: tgUser, // Trasmette l'ID Telegram reale
+        userFallback: realUser, // Invia il vero account Telegram dell'utente
         action: "GET_APP_DATA"
       });
 
@@ -364,37 +385,26 @@
         document.getElementById("loading").style.display = "none";
         if (!data || !data.ok) return;
 
-        // Aggiorna Nome, Username e Profilo con i dati reali del Google Sheet
+        // Visualizzazione dati reali dal foglio 👤Users
         if (data.user) {
-          if (data.user.nome) {
-            document.getElementById("userName").innerText = data.user.nome;
+          if (data.user.nome && data.user.nome !== "Ospite") {
+            const dispName = (data.user.nome + " " + (data.user.cognome || "")).trim();
+            document.getElementById("userName").innerText = dispName;
             document.getElementById("avatarLetter").innerText = data.user.nome.charAt(0).toUpperCase();
           }
-          if (data.user.username && data.user.username !== "N/D") {
+          if (data.user.username && data.user.username !== "N/D" && data.user.username !== "@ospite") {
             document.getElementById("userTag").innerText = data.user.username.indexOf("@") === 0 ? data.user.username : ("@" + data.user.username);
           }
+
+          // MEGOIN REALI DAL FOGLIO USERS
           document.getElementById("megoinVal").innerText = data.user.megoin;
           document.getElementById("puntiVal").innerText = data.user.punti;
           document.getElementById("userPlan").innerText = "Piano: " + data.user.piano;
         }
-
-        // Aggiorna Scheda Eroe con i dati reali della partita
-        if (data.hero) {
-          const h = data.hero;
-          document.getElementById("heroClass").innerText = (h.classe || "Avventuriero");
-          document.getElementById("hpText").innerText = h.pv + " / " + h.pvMax;
-          const pct = Math.max(0, Math.min(100, Math.round((h.pv / h.pvMax) * 100)));
-          document.getElementById("hpBar").style.width = pct + "%";
-
-          document.getElementById("heroFor").innerText = (h.stats && h.stats.FORZA) || 10;
-          document.getElementById("heroDes").innerText = (h.stats && h.stats.DESTREZZA) || 10;
-          document.getElementById("heroInt").innerText = (h.stats && h.stats.INTELLIGENZA) || 10;
-          document.getElementById("heroOro").innerText = (h.oro || 0) + " 🟡";
-        }
       })
       .catch(err => {
         document.getElementById("loading").style.display = "none";
-        console.error("Errore fetch GAS:", err);
+        console.error("Errore collegamento GAS:", err);
       });
     }
 
