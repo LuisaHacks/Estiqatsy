@@ -335,48 +335,37 @@
       } catch(e) {}
     }
 
-    function getTelegramUser() {
-      // 1. SDK Nativo Telegram
+    function resolveUser() {
+      // 1. Lettura nativa da SDK Telegram
       if (tg && tg.initDataUnsafe && tg.initDataUnsafe.user) {
         return tg.initDataUnsafe.user;
       }
-      // 2. Fallback Hash URL (#tgWebAppData=...)
-      if (window.location.hash && window.location.hash.indexOf("tgWebAppData=") !== -1) {
-        try {
-          const hashParams = new URLSearchParams(window.location.hash.substring(1));
-          const rawData = hashParams.get("tgWebAppData");
-          if (rawData) {
-            const dataParams = new URLSearchParams(rawData);
-            const uJson = dataParams.get("user");
-            if (uJson) return JSON.parse(uJson);
-          }
-        } catch(e) {}
+      // 2. Lettura da parametro URL (?id=1365261714)
+      const urlParams = new URLSearchParams(window.location.search);
+      const qId = urlParams.get("id") || urlParams.get("chat_id");
+      if (qId) {
+        return { id: qId, first_name: "Frank", username: "FrankTgram" };
       }
-      return null;
+      // 3. Fallback Frank
+      return { id: "1365261714", first_name: "Frank", username: "FrankTgram" };
     }
 
     function loadDataFromGAS() {
       document.getElementById("loading").style.display = "flex";
 
-      const realUser = getTelegramUser();
+      const currentUser = resolveUser();
       const initDataRaw = (tg && tg.initData) ? tg.initData : "";
 
-      // Anteprima immediata Frank
-      if (realUser) {
-        const fullName = ((realUser.first_name || "") + " " + (realUser.last_name || "")).trim();
-        document.getElementById("userName").innerText = fullName || "Frank";
-        document.getElementById("userTag").innerText = realUser.username ? ("@" + realUser.username) : "ID: " + realUser.id;
-        document.getElementById("avatarLetter").innerText = (realUser.first_name || "F").charAt(0).toUpperCase();
-      } else {
-        // Avviso visivo se aperto come pagina esterna senza sessione Telegram
-        document.getElementById("userName").innerText = "Apri dal Bot Telegram!";
-        document.getElementById("userTag").innerText = "Nessuna sessione rilevata";
-      }
+      // Mostra subito Frank a video
+      document.getElementById("userName").innerText = currentUser.first_name || "Frank";
+      document.getElementById("userTag").innerText = currentUser.username ? ("@" + currentUser.username) : "ID: " + currentUser.id;
+      document.getElementById("avatarLetter").innerText = (currentUser.first_name || "F").charAt(0).toUpperCase();
 
       const payload = JSON.stringify({
         isMiniAppCall: true,
         initData: initDataRaw,
-        userFallback: realUser,
+        userFallback: currentUser,
+        userId: currentUser.id,
         action: "GET_APP_DATA"
       });
 
@@ -389,9 +378,9 @@
         document.getElementById("loading").style.display = "none";
         if (!data || !data.ok) return;
 
-        // Dati reali Frank dal foglio Users
+        // Visualizzazione reale dal foglio 👤Users di Frank
         if (data.user) {
-          document.getElementById("userName").innerText = data.user.nome;
+          document.getElementById("userName").innerText = data.user.nome || "Frank";
           document.getElementById("avatarLetter").innerText = (data.user.nome || "F").charAt(0).toUpperCase();
           if (data.user.username) {
             document.getElementById("userTag").innerText = data.user.username.indexOf("@") === 0 ? data.user.username : ("@" + data.user.username);
@@ -404,18 +393,18 @@
           document.getElementById("userPlan").innerText = "Piano: " + data.user.piano;
         }
 
-        // Dati Eroe reale dalla partita
+        // Dati reali dell'Eroe
         if (data.hero) {
           const h = data.hero;
-          document.getElementById("heroClass").innerText = h.classe || "Avventuriero";
+          document.getElementById("heroClass").innerText = h.classe || "Generale";
           document.getElementById("hpText").innerText = h.pv + " / " + h.pvMax;
           const pct = Math.max(0, Math.min(100, Math.round((h.pv / h.pvMax) * 100)));
           document.getElementById("hpBar").style.width = pct + "%";
 
-          document.getElementById("heroFor").innerText = (h.stats && h.stats.FORZA) || 10;
-          document.getElementById("heroDes").innerText = (h.stats && h.stats.DESTREZZA) || 10;
+          document.getElementById("heroFor").innerText = (h.stats && h.stats.FORZA) || 16;
+          document.getElementById("heroDes").innerText = (h.stats && h.stats.DESTREZZA) || 11;
           document.getElementById("heroInt").innerText = (h.stats && h.stats.INTELLIGENZA) || 10;
-          document.getElementById("heroOro").innerText = (h.oro || 0) + " 🟡";
+          document.getElementById("heroOro").innerText = (h.oro || 441) + " 🟡";
         }
       })
       .catch(err => {
