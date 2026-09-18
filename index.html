@@ -324,8 +324,7 @@
     </div>
   </div>
 
-  <script>
-    // URL Web App di Google Apps Script (il tuo endpoint Logic.gs)
+<script>
     const GAS_URL = "https://script.google.com/macros/s/AKfycbyeCWHM9X4ycwWT7IOMwg24pySL78bJT5BRyiIR5eb0UJALWuaORzfJ2lkqLrjLv0xN/exec";
 
     const tg = window.Telegram ? window.Telegram.WebApp : null;
@@ -337,6 +336,7 @@
     const tgUser = (tg && tg.initDataUnsafe && tg.initDataUnsafe.user) ? tg.initDataUnsafe.user : null;
     const initDataRaw = tg ? tg.initData : "";
 
+    // 1. Anteprima immediata dai dati nativi Telegram
     if (tgUser) {
       const name = (tgUser.first_name || "") + " " + (tgUser.last_name || "");
       document.getElementById("userName").innerText = name.trim() || "Giocatore";
@@ -344,13 +344,14 @@
       document.getElementById("avatarLetter").innerText = (tgUser.first_name || "E").charAt(0).toUpperCase();
     }
 
-    // Chiamata Fetch protetta: usa text/plain per aggirare il blocco CORS preflight di Google
+    // 2. Chiamata sicura al Google Sheet per leggere i dati reali
     function loadDataFromGAS() {
       document.getElementById("loading").style.display = "flex";
 
       const payload = JSON.stringify({
         isMiniAppCall: true,
         initData: initDataRaw,
+        userFallback: tgUser, // Trasmette l'ID Telegram reale
         action: "GET_APP_DATA"
       });
 
@@ -363,14 +364,21 @@
         document.getElementById("loading").style.display = "none";
         if (!data || !data.ok) return;
 
-        // Aggiorna Profilo Utente
+        // Aggiorna Nome, Username e Profilo con i dati reali del Google Sheet
         if (data.user) {
+          if (data.user.nome) {
+            document.getElementById("userName").innerText = data.user.nome;
+            document.getElementById("avatarLetter").innerText = data.user.nome.charAt(0).toUpperCase();
+          }
+          if (data.user.username && data.user.username !== "N/D") {
+            document.getElementById("userTag").innerText = data.user.username.indexOf("@") === 0 ? data.user.username : ("@" + data.user.username);
+          }
           document.getElementById("megoinVal").innerText = data.user.megoin;
           document.getElementById("puntiVal").innerText = data.user.punti;
           document.getElementById("userPlan").innerText = "Piano: " + data.user.piano;
         }
 
-        // Aggiorna Scheda Eroe
+        // Aggiorna Scheda Eroe con i dati reali della partita
         if (data.hero) {
           const h = data.hero;
           document.getElementById("heroClass").innerText = (h.classe || "Avventuriero");
@@ -396,5 +404,6 @@
 
     window.onload = loadDataFromGAS;
   </script>
-</body>
-</html>
+
+
+  
