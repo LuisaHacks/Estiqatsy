@@ -1,222 +1,135 @@
-<!DOCTYPE html>
-<html lang="it">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Estiqatsy Mini App</title>
-  <!-- SDK Ufficiale Telegram WebApp -->
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <!-- Tailwind CSS per una grafica moderna e leggera -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <style>
-    body {
-      background-color: var(--tg-theme-bg-color, #121212);
-      color: var(--tg-theme-text-color, #ffffff);
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    }
-    .card {
-      background-color: var(--tg-theme-secondary-bg-color, #1e1e1e);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-    }
-    .btn-primary {
-      background-color: var(--tg-theme-button-color, #2481cc);
-      color: var(--tg-theme-button-text-color, #ffffff);
-    }
-  </style>
-</head>
-<body class="flex flex-col min-h-screen pb-20 select-none">
+// ============================================================================
+// PROJECT: ESTIQATSY BOT - MINI APP BACKEND API (VERSIONE RESILIENTE)
+// FILE: Modulo_WebApp_API.gs
+// ============================================================================
 
-  <!-- BARRA UTENTE SUPERIORE -->
-  <header class="p-4 card rounded-b-2xl shadow-lg sticky top-0 z-50 flex items-center justify-between">
-    <div class="flex items-center space-x-3">
-      <div class="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center font-bold text-lg" id="userAvatar">E</div>
-      <div>
-        <h1 class="text-sm font-bold" id="userName">Caricamento...</h1>
-        <span class="text-xs text-blue-400 font-medium" id="userPlan">Piano Free</span>
-      </div>
-    </div>
-    <div class="text-right">
-      <div class="text-xs text-gray-400">Saldo</div>
-      <div class="text-sm font-extrabold text-yellow-400" id="userMegoin">0 🪙</div>
-    </div>
-  </header>
+function handleWebAppGetRequest(e) {
+  var params = e ? e.parameter : {};
+  var action = (params.action || "ping").toLowerCase();
+  var initDataRaw = params.initData || "";
 
-  <!-- CONTENUTO PRINCIPALE (SEZIONI) -->
-  <main class="p-4 flex-1">
-    
-    <!-- SEZIONE GIOCHI -->
-    <section id="tab-games" class="space-y-4">
-      <h2 class="text-lg font-black tracking-wide flex items-center">🎮 LE TUE AVVENTURE</h2>
-      <div id="games-container" class="space-y-3">
-        <div class="text-center py-8 text-gray-400">Caricamento storie interattive...</div>
-      </div>
-    </section>
+  function jsonResponse(data, status) {
+    var output = {
+      status: status || 200,
+      timestamp: new Date().toISOString(),
+      data: data
+    };
+    return ContentService.createTextOutput(JSON.stringify(output))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
 
-    <!-- SEZIONE SHOP -->
-    <section id="tab-shop" class="space-y-4 hidden">
-      <h2 class="text-lg font-black tracking-wide flex items-center">🏪 SHOP UFFICIALE</h2>
-      <div id="shop-container" class="grid grid-cols-2 gap-3">
-        <div class="col-span-2 text-center py-8 text-gray-400">Caricamento catalogo merci...</div>
-      </div>
-    </section>
+  if (action === "ping") {
+    return jsonResponse({ message: "Estiqatsy WebApp API Online OK" });
+  }
 
-    <!-- SEZIONE RICETTE -->
-    <section id="tab-recipes" class="space-y-4 hidden">
-      <h2 class="text-lg font-black tracking-wide flex items-center">🍽️ RICETTE & COCKTAILS</h2>
-      <div id="recipes-container" class="space-y-3">
-        <div class="text-center py-8 text-gray-400">Caricamento portate...</div>
-      </div>
-    </section>
+  // Estrazione identità utente da Telegram
+  var targetChatId = "";
+  var userNome = "Ospite";
+  var userUsername = "@anon";
 
-    <!-- SEZIONE PROFILO -->
-    <section id="tab-profile" class="space-y-4 hidden">
-      <h2 class="text-lg font-black tracking-wide flex items-center">👤 IL TUO PROFILO</h2>
-      <div class="card p-4 rounded-xl space-y-3">
-        <div class="flex justify-between py-2 border-b border-gray-800">
-          <span class="text-gray-400 text-sm">ID Account</span>
-          <span class="font-mono text-sm font-bold" id="profileChatId">-</span>
-        </div>
-        <div class="flex justify-between py-2 border-b border-gray-800">
-          <span class="text-gray-400 text-sm">Username</span>
-          <span class="text-sm font-bold" id="profileUsername">-</span>
-        </div>
-        <div class="flex justify-between py-2">
-          <span class="text-gray-400 text-sm">Punti Fedeltà</span>
-          <span class="text-sm font-bold text-green-400" id="profilePunti">0 Pt</span>
-        </div>
-      </div>
-    </section>
-
-  </main>
-
-  <!-- BARRA DI NAVIGAZIONE INFERIORE -->
-  <nav class="fixed bottom-0 left-0 right-0 card border-t border-gray-800 flex justify-around p-2 z-50">
-    <button onclick="switchTab('games')" class="nav-btn flex flex-col items-center p-2 text-blue-400" data-tab="games">
-      <span class="text-xl">🎮</span>
-      <span class="text-[10px] font-bold">Giochi</span>
-    </button>
-    <button onclick="switchTab('shop')" class="nav-btn flex flex-col items-center p-2 text-gray-400" data-tab="shop">
-      <span class="text-xl">🏪</span>
-      <span class="text-[10px] font-bold">Shop</span>
-    </button>
-    <button onclick="switchTab('recipes')" class="nav-btn flex flex-col items-center p-2 text-gray-400" data-tab="recipes">
-      <span class="text-xl">🍽️</span>
-      <span class="text-[10px] font-bold">Ricette</span>
-    </button>
-    <button onclick="switchTab('profile')" class="nav-btn flex flex-col items-center p-2 text-gray-400" data-tab="profile">
-      <span class="text-xl">👤</span>
-      <span class="text-[10px] font-bold">Profilo</span>
-    </button>
-  </nav>
-
-  <script>
-    // CONFIGURAZIONE ENDPOINT GOOGLE APPS SCRIPT
-    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbyeCWHM9X4ycwWT7IOMwg24pySL78bJT5BRyiIR5eb0UJALWuaORzfJ2lkqLrjLv0xN/exec";
-
-    const tg = window.Telegram ? window.Telegram.WebApp : null;
-    if (tg) {
-      tg.expand();
-      tg.ready();
-    }
-
-    // Navigazione a Schede
-    function switchTab(tabKey) {
-      if (tg && tg.HapticFeedback) tg.HapticFeedback.selectionChanged();
-      
-      document.querySelectorAll("main > section").forEach(el => el.classList.add("hidden"));
-      document.getElementById("tab-" + tabKey).classList.remove("hidden");
-      
-      document.querySelectorAll(".nav-btn").forEach(btn => {
-        if (btn.dataset.tab === tabKey) {
-          btn.classList.remove("text-gray-400");
-          btn.classList.add("text-blue-400");
-        } else {
-          btn.classList.add("text-gray-400");
-          btn.classList.remove("text-blue-400");
+  // 1. Tenta decodifica parametri Telegram WebApp
+  if (initDataRaw) {
+    try {
+      var parts = initDataRaw.split("&");
+      for (var i = 0; i < parts.length; i++) {
+        var kv = parts[i].split("=");
+        if (decodeURIComponent(kv[0]) === "user") {
+          var uObj = JSON.parse(decodeURIComponent(kv.slice(1).join("=")));
+          targetChatId = String(uObj.id || "");
+          userNome = uObj.first_name || "Avventuriero";
+          userUsername = uObj.username ? "@" + uObj.username : "@anon";
+          break;
         }
-      });
+      }
+    } catch (eErr) {
+      Logger.log("Errore parsing user initData: " + eErr);
+    }
+  }
+
+  // Fallback se avviato da browser o parametro di test
+  if (!targetChatId && params.chat_id) {
+    targetChatId = String(params.chat_id);
+  }
+
+  // 1. PROFILO UTENTE & STATO
+  if (action === "profile") {
+    var userObj = null;
+    if (targetChatId && typeof getOrCreateUser === "function") {
+      userObj = getOrCreateUser({ id: targetChatId, first_name: userNome, username: userUsername.replace("@", "") }, "MiniApp");
     }
 
-    // Chiamata all'API di Apps Script con firma crittografica Telegram
-    async function fetchAPI(action) {
-      const initData = tg ? tg.initData : "";
-      const url = `${GAS_API_URL}?action=${action}&initData=${encodeURIComponent(initData)}`;
-      try {
-        const response = await fetch(url);
-        const json = await response.json();
-        return json.data;
-      } catch (err) {
-        console.error("Errore API:", err);
-        return null;
+    return jsonResponse({
+      chatId: targetChatId || "12345678",
+      nome: userObj ? userObj.nome : userNome,
+      username: userObj ? userObj.username : userUsername,
+      saldoMegoin: userObj ? userObj.megoin : 100,
+      puntiFedelta: userObj ? userObj.punti : 1,
+      piano: userObj ? userObj.plan : "Free"
+    });
+  }
+
+  // 2. CATALOGO SHOP
+  if (action === "shop") {
+    var shopItems = [];
+    var shShop = DB.getShop();
+    if (shShop) {
+      var rows = shShop.getDataRange().getDisplayValues();
+      for (var i = 1; i < rows.length; i++) {
+        if (rows[i][0] && rows[i][0] !== "—") {
+          shopItems.push({
+            id: rows[i][0],
+            categoria: rows[i][2] || "Generale",
+            nome: rows[i][4] || rows[i][0],
+            descrizione: rows[i][5] || "",
+            prezzoEuro: rows[i][8] || "0",
+            prezzoMegoin: rows[i][10] || "0",
+            mediaUrl: rows[i][12] || ""
+          });
+        }
       }
     }
+    return jsonResponse({ items: shopItems });
+  }
 
-    // Inizializzazione Dati
-    async function initApp() {
-      // 1. Profilo
-      const user = await fetchAPI("profile");
-      if (user) {
-        document.getElementById("userName").textContent = user.nome;
-        document.getElementById("userAvatar").textContent = (user.nome || "U").charAt(0).toUpperCase();
-        document.getElementById("userPlan").textContent = "Piano " + user.piano;
-        document.getElementById("userMegoin").textContent = user.saldoMegoin + " 🪙";
-        document.getElementById("profileChatId").textContent = user.chatId;
-        document.getElementById("profileUsername").textContent = user.username;
-        document.getElementById("profilePunti").textContent = user.puntiFedelta + " Pt";
-      }
-
-      // 2. Giochi
-      const gamesData = await fetchAPI("games");
-      const gamesContainer = document.getElementById("games-container");
-      if (gamesData && gamesData.games && gamesData.games.length > 0) {
-        gamesContainer.innerHTML = gamesData.games.map(g => `
-          <div class="card p-4 rounded-xl flex justify-between items-center">
-            <div>
-              <h3 class="font-bold text-sm">${g.titolo}</h3>
-              <p class="text-xs text-gray-400">${g.episodi.length} Episodi Narrativi</p>
-            </div>
-            <button onclick="if(tg) tg.close();" class="btn-primary px-3 py-1.5 rounded-lg text-xs font-bold">
-              Gioca sul Bot
-            </button>
-          </div>
-        `).join("");
-      }
-
-      // 3. Shop
-      const shopData = await fetchAPI("shop");
-      const shopContainer = document.getElementById("shop-container");
-      if (shopData && shopData.items && shopData.items.length > 0) {
-        shopContainer.innerHTML = shopData.items.map(p => `
-          <div class="card p-3 rounded-xl flex flex-col justify-between">
-            <div>
-              <div class="text-[10px] text-blue-400 uppercase font-bold">${p.categoria}</div>
-              <h4 class="font-bold text-xs mt-1 line-clamp-1">${p.nome}</h4>
-            </div>
-            <div class="mt-3 flex justify-between items-center">
-              <span class="text-xs font-bold text-yellow-400">${p.prezzoMegoin} 🪙</span>
-              <button onclick="if(tg) tg.HapticFeedback.impactOccurred('light');" class="btn-primary px-2 py-1 rounded text-[10px] font-bold">Acquista</button>
-            </div>
-          </div>
-        `).join("");
-      }
-
-      // 4. Ricette
-      const recData = await fetchAPI("recipes");
-      const recContainer = document.getElementById("recipes-container");
-      if (recData && recData.recipes && recData.recipes.length > 0) {
-        recContainer.innerHTML = recData.recipes.map(r => `
-          <div class="card p-3 rounded-xl flex justify-between items-center">
-            <div>
-              <h4 class="font-bold text-xs">${r.piatto}</h4>
-              <span class="text-[10px] text-gray-400">${r.categoria} • ⏱️ ${r.tempo}</span>
-            </div>
-            <span class="text-xs text-blue-400 font-bold">${r.costo}</span>
-          </div>
-        `).join("");
+  // 3. CATALOGO RICETTE
+  if (action === "recipes") {
+    var recipeItems = [];
+    var shRecipes = DB.getRecipes();
+    if (shRecipes) {
+      var rRows = shRecipes.getDataRange().getDisplayValues();
+      for (var r = 1; r < rRows.length; r++) {
+        if (rRows[r][0] && rRows[r][0] !== "—") {
+          recipeItems.push({
+            id: r,
+            piatto: rRows[r][0],
+            categoria: rRows[r][1] || "Generale",
+            costo: rRows[r][4] || "Economico",
+            tempo: rRows[r][6] || "15 min",
+            mediaUrl: rRows[r][12] || ""
+          });
+        }
       }
     }
+    return jsonResponse({ recipes: recipeItems });
+  }
 
-    window.addEventListener("DOMContentLoaded", initApp);
-  </script>
-</body>
-</html>
+  // 4. ELENCO GIOCHI
+  if (action === "games") {
+    var gamesData = [];
+    if (typeof getRegisteredGames === "function" && typeof getEpisodesInTab === "function") {
+      var reg = getRegisteredGames();
+      for (var gk in reg) {
+        var eps = getEpisodesInTab(gk);
+        var epList = Object.keys(eps).map(function(k) { return eps[k]; });
+        gamesData.push({
+          gameKey: gk,
+          titolo: reg[gk].tabName.replace("🎮", "").trim(),
+          episodi: epList
+        });
+      }
+    }
+    return jsonResponse({ games: gamesData });
+  }
+
+  return jsonResponse({ error: "Comando non riconosciuto" }, 404);
+}
