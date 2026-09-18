@@ -3,533 +3,220 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Estiqatsy App</title>
+  <title>Estiqatsy Mini App</title>
   <!-- SDK Ufficiale Telegram WebApp -->
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <!-- Tailwind CSS per una grafica moderna e leggera -->
+  <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    :root {
-      --bg: var(--tg-theme-bg-color, #0f172a);
-      --text: var(--tg-theme-text-color, #f8fafc);
-      --hint: var(--tg-theme-hint-color, #94a3b8);
-      --card-bg: var(--tg-theme-secondary-bg-color, #1e293b);
-      --btn-bg: var(--tg-theme-button-color, #3b82f6);
-      --btn-text: var(--tg-theme-button-text-color, #ffffff);
-      --accent: #f59e0b;
-      --danger: #ef4444;
-      --success: #10b981;
-    }
-
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      -webkit-tap-highlight-color: transparent;
-    }
-
     body {
-      background-color: var(--bg);
-      color: var(--text);
-      display: flex;
-      justify-content: center;
-      min-height: 100vh;
-      margin: 0;
+      background-color: var(--tg-theme-bg-color, #121212);
+      color: var(--tg-theme-text-color, #ffffff);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     }
-
-    .app-container {
-      width: 100%;
-      max-width: 480px;
-      min-height: 100vh;
-      padding: 16px;
-      display: flex;
-      flex-direction: column;
-      gap: 14px;
+    .card {
+      background-color: var(--tg-theme-secondary-bg-color, #1e1e1e);
+      border: 1px solid rgba(255, 255, 255, 0.08);
     }
-
-    /* Profilo Card */
-    .profile-card {
-      background: var(--card-bg);
-      border-radius: 16px;
-      padding: 16px;
-      display: flex;
-      align-items: center;
-      gap: 14px;
-      border: 1px solid rgba(255, 255, 255, 0.05);
+    .btn-primary {
+      background-color: var(--tg-theme-button-color, #2481cc);
+      color: var(--tg-theme-button-text-color, #ffffff);
     }
-
-    .avatar {
-      width: 52px;
-      height: 52px;
-      border-radius: 50%;
-      background: linear-gradient(135deg, #3b82f6, #8b5cf6);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 22px;
-      font-weight: bold;
-      color: #fff;
-    }
-
-    .profile-info h2 {
-      font-size: 17px;
-      font-weight: 700;
-    }
-
-    .profile-info p {
-      font-size: 12px;
-      color: var(--hint);
-    }
-
-    .badge-plan {
-      display: inline-block;
-      padding: 2px 8px;
-      border-radius: 10px;
-      font-size: 11px;
-      font-weight: 600;
-      background: rgba(245, 158, 11, 0.2);
-      color: var(--accent);
-      margin-top: 4px;
-    }
-
-    /* Statistiche Grid */
-    .stats-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-    }
-
-    .stat-box {
-      background: var(--card-bg);
-      border-radius: 14px;
-      padding: 14px;
-      text-align: center;
-      border: 1px solid rgba(255, 255, 255, 0.05);
-    }
-
-    .stat-box .icon {
-      font-size: 20px;
-      margin-bottom: 2px;
-    }
-
-    .stat-box .val {
-      font-size: 20px;
-      font-weight: 800;
-    }
-
-    .stat-box .lbl {
-      font-size: 11px;
-      color: var(--hint);
-      text-transform: uppercase;
-    }
-
-    /* Eroe Card */
-    .hero-card {
-      background: var(--card-bg);
-      border-radius: 16px;
-      padding: 16px;
-      border: 1px solid rgba(255, 255, 255, 0.05);
-    }
-
-    .section-title {
-      font-size: 13px;
-      font-weight: 700;
-      color: var(--hint);
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      margin-bottom: 12px;
-      display: flex;
-      justify-content: space-between;
-    }
-
-    .bar-container {
-      margin-bottom: 12px;
-    }
-
-    .bar-label {
-      display: flex;
-      justify-content: space-between;
-      font-size: 12px;
-      font-weight: 600;
-      margin-bottom: 4px;
-    }
-
-    .bar-bg {
-      width: 100%;
-      height: 8px;
-      background: rgba(255, 255, 255, 0.1);
-      border-radius: 4px;
-      overflow: hidden;
-    }
-
-    .bar-fill-hp {
-      height: 100%;
-      background: var(--danger);
-      width: 100%;
-      transition: width 0.3s ease;
-    }
-
-    .hero-stats-row {
-      display: flex;
-      justify-content: space-around;
-      padding-top: 10px;
-      border-top: 1px solid rgba(255, 255, 255, 0.05);
-    }
-
-    .hero-stat {
-      text-align: center;
-    }
-
-    .hero-stat .val {
-      font-size: 15px;
-      font-weight: 700;
-    }
-
-    .hero-stat .lbl {
-      font-size: 11px;
-      color: var(--hint);
-    }
-
-    /* Azioni */
-    .action-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-      margin-top: auto;
-      padding-top: 10px;
-    }
-
-    .btn {
-      background: var(--btn-bg);
-      color: var(--btn-text);
-      border: none;
-      border-radius: 12px;
-      padding: 12px;
-      font-size: 14px;
-      font-weight: 600;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-    }
-
-    .btn-secondary {
-      background: var(--card-bg);
-      color: var(--text);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-    }
-
-    /* Spinner */
-    #loading {
-      position: fixed;
-      inset: 0;
-      background: var(--bg);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 12px;
-      z-index: 999;
-    }
-
-    .spinner {
-      width: 36px;
-      height: 36px;
-      border: 3px solid rgba(255, 255, 255, 0.1);
-      border-top-color: var(--btn-bg);
-      border-radius: 50%;
-      animation: spin 0.8s linear infinite;
-    }
-
-    @keyframes spin { to { transform: rotate(360deg); } }
   </style>
 </head>
-<body>
+<body class="flex flex-col min-h-screen pb-20 select-none">
 
-  <div id="loading">
-    <div class="spinner"></div>
-    <p style="font-size: 13px; color: var(--hint);">Connessione al database Estiqatsy...</p>
-  </div>
-
-  <div class="app-container">
-    <!-- Profilo -->
-    <div class="profile-card">
-      <div class="avatar" id="avatarLetter">E</div>
-      <div class="profile-info">
-        <h2 id="userName">Giocatore</h2>
-        <p id="userTag">@username</p>
-        <span class="badge-plan" id="userPlan">Piano: Caricamento...</span>
+  <!-- BARRA UTENTE SUPERIORE -->
+  <header class="p-4 card rounded-b-2xl shadow-lg sticky top-0 z-50 flex items-center justify-between">
+    <div class="flex items-center space-x-3">
+      <div class="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center font-bold text-lg" id="userAvatar">E</div>
+      <div>
+        <h1 class="text-sm font-bold" id="userName">Caricamento...</h1>
+        <span class="text-xs text-blue-400 font-medium" id="userPlan">Piano Free</span>
       </div>
     </div>
-
-    <!-- Saldo & Punti -->
-    <div class="stats-grid">
-      <div class="stat-box">
-        <div class="icon">🪙</div>
-        <div class="val" id="megoinVal">0</div>
-        <div class="lbl">Megoin Saldo</div>
-      </div>
-      <div class="stat-box">
-        <div class="icon">🎖️</div>
-        <div class="val" id="puntiVal">0</div>
-        <div class="lbl">Punti Fedeltà</div>
-      </div>
+    <div class="text-right">
+      <div class="text-xs text-gray-400">Saldo</div>
+      <div class="text-sm font-extrabold text-yellow-400" id="userMegoin">0 🪙</div>
     </div>
+  </header>
 
-    <!-- Eroe -->
-    <div class="hero-card">
-      <div class="section-title">
-        <span>⚔️ Scheda Eroe</span>
-        <span id="heroClass" style="font-size: 12px; color: var(--accent);">In caricamento...</span>
+  <!-- CONTENUTO PRINCIPALE (SEZIONI) -->
+  <main class="p-4 flex-1">
+    
+    <!-- SEZIONE GIOCHI -->
+    <section id="tab-games" class="space-y-4">
+      <h2 class="text-lg font-black tracking-wide flex items-center">🎮 LE TUE AVVENTURE</h2>
+      <div id="games-container" class="space-y-3">
+        <div class="text-center py-8 text-gray-400">Caricamento storie interattive...</div>
       </div>
+    </section>
 
-      <div class="bar-container">
-        <div class="bar-label">
-          <span>Punti Vita</span>
-          <span id="hpText">-- / --</span>
+    <!-- SEZIONE SHOP -->
+    <section id="tab-shop" class="space-y-4 hidden">
+      <h2 class="text-lg font-black tracking-wide flex items-center">🏪 SHOP UFFICIALE</h2>
+      <div id="shop-container" class="grid grid-cols-2 gap-3">
+        <div class="col-span-2 text-center py-8 text-gray-400">Caricamento catalogo merci...</div>
+      </div>
+    </section>
+
+    <!-- SEZIONE RICETTE -->
+    <section id="tab-recipes" class="space-y-4 hidden">
+      <h2 class="text-lg font-black tracking-wide flex items-center">🍽️ RICETTE & COCKTAILS</h2>
+      <div id="recipes-container" class="space-y-3">
+        <div class="text-center py-8 text-gray-400">Caricamento portate...</div>
+      </div>
+    </section>
+
+    <!-- SEZIONE PROFILO -->
+    <section id="tab-profile" class="space-y-4 hidden">
+      <h2 class="text-lg font-black tracking-wide flex items-center">👤 IL TUO PROFILO</h2>
+      <div class="card p-4 rounded-xl space-y-3">
+        <div class="flex justify-between py-2 border-b border-gray-800">
+          <span class="text-gray-400 text-sm">ID Account</span>
+          <span class="font-mono text-sm font-bold" id="profileChatId">-</span>
         </div>
-        <div class="bar-bg">
-          <div class="bar-fill-hp" id="hpBar"></div>
+        <div class="flex justify-between py-2 border-b border-gray-800">
+          <span class="text-gray-400 text-sm">Username</span>
+          <span class="text-sm font-bold" id="profileUsername">-</span>
+        </div>
+        <div class="flex justify-between py-2">
+          <span class="text-gray-400 text-sm">Punti Fedeltà</span>
+          <span class="text-sm font-bold text-green-400" id="profilePunti">0 Pt</span>
         </div>
       </div>
+    </section>
 
-      <div class="hero-stats-row">
-        <div class="hero-stat">
-          <div class="val" id="heroFor">--</div>
-          <div class="lbl">🥊 FOR</div>
-        </div>
-        <div class="hero-stat">
-          <div class="val" id="heroDes">--</div>
-          <div class="lbl">🤸 DES</div>
-        </div>
-        <div class="hero-stat">
-          <div class="val" id="heroInt">--</div>
-          <div class="lbl">🧠 INT</div>
-        </div>
-        <div class="hero-stat">
-          <div class="val" id="heroOro">--</div>
-          <div class="lbl">💰 Oro</div>
-        </div>
-      </div>
-    </div>
+  </main>
 
-    <!-- Pulsanti -->
-    <div class="action-grid">
-      <button class="btn btn-secondary" onclick="loadDataFromGAS()">
-        🔄 Ricarica
-      </button>
-      <button class="btn" onclick="closeApp()">
-        💬 Torna alla Chat
-      </button>
-    </div>
-  </div>
+  <!-- BARRA DI NAVIGAZIONE INFERIORE -->
+  <nav class="fixed bottom-0 left-0 right-0 card border-t border-gray-800 flex justify-around p-2 z-50">
+    <button onclick="switchTab('games')" class="nav-btn flex flex-col items-center p-2 text-blue-400" data-tab="games">
+      <span class="text-xl">🎮</span>
+      <span class="text-[10px] font-bold">Giochi</span>
+    </button>
+    <button onclick="switchTab('shop')" class="nav-btn flex flex-col items-center p-2 text-gray-400" data-tab="shop">
+      <span class="text-xl">🏪</span>
+      <span class="text-[10px] font-bold">Shop</span>
+    </button>
+    <button onclick="switchTab('recipes')" class="nav-btn flex flex-col items-center p-2 text-gray-400" data-tab="recipes">
+      <span class="text-xl">🍽️</span>
+      <span class="text-[10px] font-bold">Ricette</span>
+    </button>
+    <button onclick="switchTab('profile')" class="nav-btn flex flex-col items-center p-2 text-gray-400" data-tab="profile">
+      <span class="text-xl">👤</span>
+      <span class="text-[10px] font-bold">Profilo</span>
+    </button>
+  </nav>
 
-<script>
-  // URL della tua Web App Google Apps Script
-  const GAS_URL = "https://script.google.com/macros/s/AKfycbyeCWHM9X4ycwWT7IOMwg24pySL78bJT5BRyiIR5eb0UJALWuaORzfJ2lkqLrjLv0xN/exec";
+  <script>
+    // CONFIGURAZIONE ENDPOINT GOOGLE APPS SCRIPT
+    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbyeCWHM9X4ycwWT7IOMwg24pySL78bJT5BRyiIR5eb0UJALWuaORzfJ2lkqLrjLv0xN/exec";
 
-  const tg = window.Telegram ? window.Telegram.WebApp : null;
-  if (tg) {
-    try {
+    const tg = window.Telegram ? window.Telegram.WebApp : null;
+    if (tg) {
       tg.expand();
       tg.ready();
-    } catch(e) {}
-  }
-
-function resolveUser() {
-      if (tg && tg.initDataUnsafe && tg.initDataUnsafe.user) {
-        return tg.initDataUnsafe.user;
-      }
-      return { id: "1365261714", first_name: "Frank", username: "FrankTgram" };
     }
 
-    function loadDataFromGAS() {
-      const loader = document.getElementById("loading");
-      loader.style.display = "flex";
-
-      const currentUser = resolveUser();
-      const initDataRaw = (tg && tg.initData) ? tg.initData : "";
-
-      // Mostra subito i dati preliminari a video per reattività immediata
-      document.getElementById("userName").innerText = currentUser.first_name || "Frank";
-      document.getElementById("userTag").innerText = currentUser.username ? ("@" + currentUser.username) : "ID: " + currentUser.id;
-      document.getElementById("avatarLetter").innerText = (currentUser.first_name || "F").charAt(0).toUpperCase();
-
-      fetch(GAS_URL, {
-        method: "POST",
-        headers: { "Content-Type": "text/plain;charset=utf-8" },
-        body: JSON.stringify({
-          isMiniAppCall: true,
-          initData: initDataRaw,
-          userFallback: currentUser,
-          action: "GET_APP_DATA"
-        })
-      })
-      .then(res => res.json())
-      .then(data => {
-        // Nasconde sempre lo spinner all'arrivo dei dati
-        loader.style.display = "none";
-
-        if (!data || !data.ok) {
-          console.warn("Autenticazione server:", data);
-          return;
+    // Navigazione a Schede
+    function switchTab(tabKey) {
+      if (tg && tg.HapticFeedback) tg.HapticFeedback.selectionChanged();
+      
+      document.querySelectorAll("main > section").forEach(el => el.classList.add("hidden"));
+      document.getElementById("tab-" + tabKey).classList.remove("hidden");
+      
+      document.querySelectorAll(".nav-btn").forEach(btn => {
+        if (btn.dataset.tab === tabKey) {
+          btn.classList.remove("text-gray-400");
+          btn.classList.add("text-blue-400");
+        } else {
+          btn.classList.add("text-gray-400");
+          btn.classList.remove("text-blue-400");
         }
-
-        if (data.user) {
-          document.getElementById("userName").innerText = data.user.nome || "Frank";
-          document.getElementById("avatarLetter").innerText = (data.user.nome || "F").charAt(0).toUpperCase();
-          if (data.user.username) {
-            document.getElementById("userTag").innerText = data.user.username.startsWith("@") ? data.user.username : ("@" + data.user.username);
-          }
-          document.getElementById("megoinVal").innerText = data.user.megoin;
-          document.getElementById("puntiVal").innerText = data.user.punti;
-          document.getElementById("userPlan").innerText = "Piano: " + data.user.piano;
-        }
-
-        if (data.hero) {
-          const h = data.hero;
-          document.getElementById("heroClass").innerText = h.classe || "Generale";
-          document.getElementById("hpText").innerText = h.pv + " / " + h.pvMax;
-          const pct = Math.max(0, Math.min(100, Math.round((h.pv / h.pvMax) * 100)));
-          document.getElementById("hpBar").style.width = pct + "%";
-
-          document.getElementById("heroFor").innerText = (h.stats && h.stats.FORZA) || 16;
-          document.getElementById("heroDes").innerText = (h.stats && h.stats.DESTREZZA) || 11;
-          document.getElementById("heroInt").innerText = (h.stats && h.stats.INTELLIGENZA) || 10;
-          document.getElementById("heroOro").innerText = (h.oro || 0) + " 🟡";
-        }
-      })
-      .catch(err => {
-        // In caso di errore di rete lo spinner viene rimosso comunque
-        loader.style.display = "none";
-        console.error("Errore fetch:", err);
       });
     }
 
-    // 2. Chiamata sicura (usando text/plain per bypassare i controlli CORS complessi)
-    fetch(GAS_URL, {
-      method: "POST",
-      headers: { "Content-Type": "text/plain;charset=utf-8" },
-      body: JSON.stringify({
-        isMiniAppCall: true,
-        initData: initDataRaw,
-        action: "GET_APP_DATA"
-      })
-    })
-    .then(async (res) => {
-      const text = await res.text();
+    // Chiamata all'API di Apps Script con firma crittografica Telegram
+    async function fetchAPI(action) {
+      const initData = tg ? tg.initData : "";
+      const url = `${GAS_API_URL}?action=${action}&initData=${encodeURIComponent(initData)}`;
       try {
-        return JSON.parse(text);
-      } catch(e) {
-        throw new Error("Risposta non valida dal server: " + text.substring(0, 100));
+        const response = await fetch(url);
+        const json = await response.json();
+        return json.data;
+      } catch (err) {
+        console.error("Errore API:", err);
+        return null;
       }
-    })
-    .then(data => {
-      loader.style.display = "none";
+    }
 
-      if (!data || !data.ok) {
-        loader.style.display = "flex";
-        loader.innerHTML = `
-          <div style="text-align: center; padding: 20px;">
-            <p style="color: var(--danger); font-weight: bold;">Errore Server:</p>
-            <p style="font-size: 12px; color: var(--hint); margin-top: 6px;">${data.error || "Errore sconosciuto"}</p>
+    // Inizializzazione Dati
+    async function initApp() {
+      // 1. Profilo
+      const user = await fetchAPI("profile");
+      if (user) {
+        document.getElementById("userName").textContent = user.nome;
+        document.getElementById("userAvatar").textContent = (user.nome || "U").charAt(0).toUpperCase();
+        document.getElementById("userPlan").textContent = "Piano " + user.piano;
+        document.getElementById("userMegoin").textContent = user.saldoMegoin + " 🪙";
+        document.getElementById("profileChatId").textContent = user.chatId;
+        document.getElementById("profileUsername").textContent = user.username;
+        document.getElementById("profilePunti").textContent = user.puntiFedelta + " Pt";
+      }
+
+      // 2. Giochi
+      const gamesData = await fetchAPI("games");
+      const gamesContainer = document.getElementById("games-container");
+      if (gamesData && gamesData.games && gamesData.games.length > 0) {
+        gamesContainer.innerHTML = gamesData.games.map(g => `
+          <div class="card p-4 rounded-xl flex justify-between items-center">
+            <div>
+              <h3 class="font-bold text-sm">${g.titolo}</h3>
+              <p class="text-xs text-gray-400">${g.episodi.length} Episodi Narrativi</p>
+            </div>
+            <button onclick="if(tg) tg.close();" class="btn-primary px-3 py-1.5 rounded-lg text-xs font-bold">
+              Gioca sul Bot
+            </button>
           </div>
-        `;
-        return;
+        `).join("");
       }
 
-      // Visualizzazione dati profilo
-      if (data.user) {
-        document.getElementById("userName").innerText = data.user.nome || "Giocatore";
-        document.getElementById("avatarLetter").innerText = (data.user.nome || "G").charAt(0).toUpperCase();
-        document.getElementById("userTag").innerText = data.user.username ? (data.user.username.startsWith("@") ? data.user.username : "@" + data.user.username) : "ID: " + data.user.id;
-        document.getElementById("megoinVal").innerText = data.user.megoin;
-        document.getElementById("puntiVal").innerText = data.user.punti;
-        document.getElementById("userPlan").innerText = "Piano: " + data.user.piano;
+      // 3. Shop
+      const shopData = await fetchAPI("shop");
+      const shopContainer = document.getElementById("shop-container");
+      if (shopData && shopData.items && shopData.items.length > 0) {
+        shopContainer.innerHTML = shopData.items.map(p => `
+          <div class="card p-3 rounded-xl flex flex-col justify-between">
+            <div>
+              <div class="text-[10px] text-blue-400 uppercase font-bold">${p.categoria}</div>
+              <h4 class="font-bold text-xs mt-1 line-clamp-1">${p.nome}</h4>
+            </div>
+            <div class="mt-3 flex justify-between items-center">
+              <span class="text-xs font-bold text-yellow-400">${p.prezzoMegoin} 🪙</span>
+              <button onclick="if(tg) tg.HapticFeedback.impactOccurred('light');" class="btn-primary px-2 py-1 rounded text-[10px] font-bold">Acquista</button>
+            </div>
+          </div>
+        `).join("");
       }
 
-      // Visualizzazione dati eroe
-      if (data.hero) {
-        const h = data.hero;
-        document.getElementById("heroClass").innerText = h.classe || "Avventuriero";
-        document.getElementById("hpText").innerText = h.pv + " / " + h.pvMax;
-        const pct = Math.max(0, Math.min(100, Math.round((h.pv / h.pvMax) * 100)));
-        document.getElementById("hpBar").style.width = pct + "%";
-
-        document.getElementById("heroFor").innerText = (h.stats && h.stats.FORZA) || 10;
-        document.getElementById("heroDes").innerText = (h.stats && h.stats.DESTREZZA) || 10;
-        document.getElementById("heroInt").innerText = (h.stats && h.stats.INTELLIGENZA) || 10;
-        document.getElementById("heroOro").innerText = (h.oro || 0) + " 🟡";
+      // 4. Ricette
+      const recData = await fetchAPI("recipes");
+      const recContainer = document.getElementById("recipes-container");
+      if (recData && recData.recipes && recData.recipes.length > 0) {
+        recContainer.innerHTML = recData.recipes.map(r => `
+          <div class="card p-3 rounded-xl flex justify-between items-center">
+            <div>
+              <h4 class="font-bold text-xs">${r.piatto}</h4>
+              <span class="text-[10px] text-gray-400">${r.categoria} • ⏱️ ${r.tempo}</span>
+            </div>
+            <span class="text-xs text-blue-400 font-bold">${r.costo}</span>
+          </div>
+        `).join("");
       }
-    })
-    .catch(err => {
-      loader.innerHTML = `
-        <div style="text-align: center; padding: 20px;">
-          <p style="color: var(--danger); font-weight: bold;">Dettaglio Errore:</p>
-          <p style="font-size: 12px; color: var(--hint); word-break: break-all; margin-top: 6px;">${err.message}</p>
-        </div>
-      `;
-    });
-  }
+    }
 
-    // 2. Chiamata sicura al backend passando SOLO la stringa firmata
-    fetch(GAS_URL, {
-      method: "POST",
-      headers: { "Content-Type": "text/plain;charset=utf-8" }, // text/plain evita preflight CORS OPTIONS non supportati da GAS
-      body: JSON.stringify({
-        isMiniAppCall: true,
-        initData: initDataRaw,
-        action: "GET_APP_DATA"
-      })
-    })
-    .then(res => res.json())
-    .then(data => {
-      loader.style.display = "none";
-
-      if (!data || !data.ok) {
-        alert(data.error || "Errore di autenticazione");
-        return;
-      }
-
-      // Visualizzazione dati profilo
-      if (data.user) {
-        document.getElementById("userName").innerText = data.user.nome || "Giocatore";
-        document.getElementById("avatarLetter").innerText = (data.user.nome || "G").charAt(0).toUpperCase();
-        document.getElementById("userTag").innerText = data.user.username ? (data.user.username.startsWith("@") ? data.user.username : "@" + data.user.username) : "ID: " + data.user.id;
-        document.getElementById("megoinVal").innerText = data.user.megoin;
-        document.getElementById("puntiVal").innerText = data.user.punti;
-        document.getElementById("userPlan").innerText = "Piano: " + data.user.piano;
-      }
-
-      // Visualizzazione scheda eroe
-      if (data.hero) {
-        const h = data.hero;
-        document.getElementById("heroClass").innerText = h.classe || "Avventuriero";
-        document.getElementById("hpText").innerText = h.pv + " / " + h.pvMax;
-        const pct = Math.max(0, Math.min(100, Math.round((h.pv / h.pvMax) * 100)));
-        document.getElementById("hpBar").style.width = pct + "%";
-
-        document.getElementById("heroFor").innerText = (h.stats && h.stats.FORZA) || 10;
-        document.getElementById("heroDes").innerText = (h.stats && h.stats.DESTREZZA) || 10;
-        document.getElementById("heroInt").innerText = (h.stats && h.stats.INTELLIGENZA) || 10;
-        document.getElementById("heroOro").innerText = (h.oro || 0) + " 🟡";
-      }
-    })
-    .catch(err => {
-      loader.innerHTML = `
-        <div style="text-align: center; padding: 20px;">
-          <p style="color: var(--danger);">Impossibile contattare il server. Riprova più tardi.</p>
-        </div>
-      `;
-    });
-  }
-
-  function closeApp() {
-    if (tg) tg.close();
-  }
-
-  window.onload = loadDataFromGAS;
-</script>
-
-
-  
+    window.addEventListener("DOMContentLoaded", initApp);
+  </script>
+</body>
+</html>
