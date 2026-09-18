@@ -325,99 +325,93 @@
   </div>
 
 <script>
-    const GAS_URL = "https://script.google.com/macros/s/AKfycbyeCWHM9X4ycwWT7IOMwg24pySL78bJT5BRyiIR5eb0UJALWuaORzfJ2lkqLrjLv0xN/exec";
+  // URL della tua Web App Google Apps Script
+  const GAS_URL = "https://script.google.com/macros/s/AKfycbyeCWHM9X4ycwWT7IOMwg24pySL78bJT5BRyiIR5eb0UJALWuaORzfJ2lkqLrjLv0xN/exec";
 
-    const tg = window.Telegram ? window.Telegram.WebApp : null;
-    if (tg) {
-      try {
-        tg.expand();
-        tg.ready();
-      } catch(e) {}
+  const tg = window.Telegram ? window.Telegram.WebApp : null;
+  if (tg) {
+    try {
+      tg.expand();
+      tg.ready();
+    } catch(e) {}
+  }
+
+  function loadDataFromGAS() {
+    const loader = document.getElementById("loading");
+    loader.style.display = "flex";
+
+    // 1. Verifica ambiente Telegram reale
+    const initDataRaw = (tg && tg.initData) ? tg.initData : "";
+
+    if (!initDataRaw) {
+      loader.innerHTML = `
+        <div style="text-align: center; padding: 20px;">
+          <div style="font-size: 40px; margin-bottom: 10px;">🔒</div>
+          <h3 style="color: var(--danger); margin-bottom: 8px;">Accesso Riservato</h3>
+          <p style="font-size: 13px; color: var(--hint);">Questa Web App può essere aperta solo all'interno del bot Telegram ufficiale per garantire la sicurezza del tuo account.</p>
+        </div>
+      `;
+      return;
     }
 
-    function resolveUser() {
-      // 1. Lettura nativa da SDK Telegram
-      if (tg && tg.initDataUnsafe && tg.initDataUnsafe.user) {
-        return tg.initDataUnsafe.user;
-      }
-      // 2. Lettura da parametro URL (?id=1365261714)
-      const urlParams = new URLSearchParams(window.location.search);
-      const qId = urlParams.get("id") || urlParams.get("chat_id");
-      if (qId) {
-        return { id: qId, first_name: "Frank", username: "FrankTgram" };
-      }
-      // 3. Fallback Frank
-      return { id: "1365261714", first_name: "Frank", username: "FrankTgram" };
-    }
-
-    function loadDataFromGAS() {
-      document.getElementById("loading").style.display = "flex";
-
-      const currentUser = resolveUser();
-      const initDataRaw = (tg && tg.initData) ? tg.initData : "";
-
-      // Mostra subito Frank a video
-      document.getElementById("userName").innerText = currentUser.first_name || "Frank";
-      document.getElementById("userTag").innerText = currentUser.username ? ("@" + currentUser.username) : "ID: " + currentUser.id;
-      document.getElementById("avatarLetter").innerText = (currentUser.first_name || "F").charAt(0).toUpperCase();
-
-      const payload = JSON.stringify({
+    // 2. Chiamata sicura al backend passando SOLO la stringa firmata
+    fetch(GAS_URL, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=utf-8" }, // text/plain evita preflight CORS OPTIONS non supportati da GAS
+      body: JSON.stringify({
         isMiniAppCall: true,
         initData: initDataRaw,
-        userFallback: currentUser,
-        userId: currentUser.id,
         action: "GET_APP_DATA"
-      });
-
-      fetch(GAS_URL, {
-        method: "POST",
-        body: payload
       })
-      .then(res => res.json())
-      .then(data => {
-        document.getElementById("loading").style.display = "none";
-        if (!data || !data.ok) return;
+    })
+    .then(res => res.json())
+    .then(data => {
+      loader.style.display = "none";
 
-        // Visualizzazione reale dal foglio 👤Users di Frank
-        if (data.user) {
-          document.getElementById("userName").innerText = data.user.nome || "Frank";
-          document.getElementById("avatarLetter").innerText = (data.user.nome || "F").charAt(0).toUpperCase();
-          if (data.user.username) {
-            document.getElementById("userTag").innerText = data.user.username.indexOf("@") === 0 ? data.user.username : ("@" + data.user.username);
-          }
-          // Saldo Megoin reale: 143
-          document.getElementById("megoinVal").innerText = data.user.megoin;
-          // Punti Fedeltà reali: 1063
-          document.getElementById("puntiVal").innerText = data.user.punti;
-          // Piano reale: Admin
-          document.getElementById("userPlan").innerText = "Piano: " + data.user.piano;
-        }
+      if (!data || !data.ok) {
+        alert(data.error || "Errore di autenticazione");
+        return;
+      }
 
-        // Dati reali dell'Eroe
-        if (data.hero) {
-          const h = data.hero;
-          document.getElementById("heroClass").innerText = h.classe || "Generale";
-          document.getElementById("hpText").innerText = h.pv + " / " + h.pvMax;
-          const pct = Math.max(0, Math.min(100, Math.round((h.pv / h.pvMax) * 100)));
-          document.getElementById("hpBar").style.width = pct + "%";
+      // Visualizzazione dati profilo
+      if (data.user) {
+        document.getElementById("userName").innerText = data.user.nome || "Giocatore";
+        document.getElementById("avatarLetter").innerText = (data.user.nome || "G").charAt(0).toUpperCase();
+        document.getElementById("userTag").innerText = data.user.username ? (data.user.username.startsWith("@") ? data.user.username : "@" + data.user.username) : "ID: " + data.user.id;
+        document.getElementById("megoinVal").innerText = data.user.megoin;
+        document.getElementById("puntiVal").innerText = data.user.punti;
+        document.getElementById("userPlan").innerText = "Piano: " + data.user.piano;
+      }
 
-          document.getElementById("heroFor").innerText = (h.stats && h.stats.FORZA) || 16;
-          document.getElementById("heroDes").innerText = (h.stats && h.stats.DESTREZZA) || 11;
-          document.getElementById("heroInt").innerText = (h.stats && h.stats.INTELLIGENZA) || 10;
-          document.getElementById("heroOro").innerText = (h.oro || 441) + " 🟡";
-        }
-      })
-      .catch(err => {
-        document.getElementById("loading").style.display = "none";
-      });
-    }
+      // Visualizzazione scheda eroe
+      if (data.hero) {
+        const h = data.hero;
+        document.getElementById("heroClass").innerText = h.classe || "Avventuriero";
+        document.getElementById("hpText").innerText = h.pv + " / " + h.pvMax;
+        const pct = Math.max(0, Math.min(100, Math.round((h.pv / h.pvMax) * 100)));
+        document.getElementById("hpBar").style.width = pct + "%";
 
-    function closeApp() {
-      if (tg) tg.close();
-    }
+        document.getElementById("heroFor").innerText = (h.stats && h.stats.FORZA) || 10;
+        document.getElementById("heroDes").innerText = (h.stats && h.stats.DESTREZZA) || 10;
+        document.getElementById("heroInt").innerText = (h.stats && h.stats.INTELLIGENZA) || 10;
+        document.getElementById("heroOro").innerText = (h.oro || 0) + " 🟡";
+      }
+    })
+    .catch(err => {
+      loader.innerHTML = `
+        <div style="text-align: center; padding: 20px;">
+          <p style="color: var(--danger);">Impossibile contattare il server. Riprova più tardi.</p>
+        </div>
+      `;
+    });
+  }
 
-    window.onload = loadDataFromGAS;
-  </script>
+  function closeApp() {
+    if (tg) tg.close();
+  }
+
+  window.onload = loadDataFromGAS;
+</script>
 
 
   
