@@ -724,6 +724,18 @@ const AppRenderer = {
   }
 };
 
+// FORZA IL RENDERING IMMEDIATO DELLE ICONE LUCIDE ALL'AVVIO
 window.addEventListener("DOMContentLoaded", () => {
+  // 1. Prima passata istantanea per mostrare le icone del footer subito
+  if (window.lucide) {
+    lucide.createIcons();
+  }
+  
+  // 2. Avvio del motore applicativo
   AppEngine.init();
+
+  // 3. Seconda passata di sicurezza dopo 200ms per intercettare eventuali elementi caricati in ritardo
+  setTimeout(() => {
+    if (window.lucide) lucide.createIcons();
+  }, 200);
 });
