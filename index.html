@@ -127,7 +127,8 @@
   <div class="flex-1 flex flex-col h-full min-w-0 overflow-hidden relative">
 
     <!-- 1. HEADER STICKY FISSO (Non scompare mai, non va sotto i tasti Telegram) -->
-    <header class="flex-none z-30 px-4 py-2.5 glass-header flex items-center justify-between">
+    <!-- 1. HEADER STICKY FISSO (Distanziato di 56px su mobile per liberarsi dai tasti Telegram) -->
+    <header class="flex-none z-30 px-4 pt-14 pb-3 md:py-3 glass-header flex items-center justify-between">
       <div class="flex items-center space-x-2.5">
         <div class="w-8 h-8 rounded-xl bg-gradient-to-tr from-sky-600 to-indigo-600 flex items-center justify-center text-white font-black text-sm">⚓</div>
         <div>
@@ -154,20 +155,22 @@
     <main class="flex-1 overflow-y-auto overflow-x-hidden relative" id="app-main-scroll">
       <div class="p-4 max-w-5xl mx-auto space-y-4">
 
-        <!-- SCHERMATA: HOME -->
+        <!-- SCHERMATA: HOME (BILANCIATA SENZA VORAGINI NERE) -->
         <section id="view-home" class="space-y-4 app-screen">
+          <!-- Hero Banner -->
           <div class="rounded-3xl p-5 md:p-8 bg-gradient-to-br from-slate-900 via-slate-900 to-indigo-950 border border-white/10 shadow-2xl relative overflow-hidden">
             <div class="relative z-10 space-y-2">
               <span class="badge badge-xs badge-outline border-sky-400 text-sky-400 font-bold uppercase text-[8px]">Piattaforma Ufficiale</span>
               <h2 class="text-xl md:text-2xl font-black text-white">Darsena Noir, <span id="home-username" class="text-sky-400">Ospite</span>.</h2>
               <p class="text-xs text-slate-300 leading-relaxed max-w-lg">Vivi le saghe investigative, sblocca le ricette dei moli e spendi i tuoi gettoni Megoin nella bottega.</p>
               <div class="pt-2 flex gap-2">
-                <button onclick="AppRouter.navigate('games')" class="btn btn-sm btn-primary text-xs font-bold">🎮 Avventure</button>
+                <button onclick="AppRouter.navigate('games')" class="btn btn-sm btn-primary text-xs font-bold shadow-lg shadow-sky-600/30">🎮 Avventure</button>
                 <button onclick="AppRouter.navigate('shop')" class="btn btn-sm btn-outline text-xs font-bold border-white/20">🏪 Bottega</button>
               </div>
             </div>
           </div>
 
+          <!-- Metriche 2x2 -->
           <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
             <div class="bg-surface/80 p-3 rounded-2xl border border-white/5">
               <div class="text-[9px] uppercase font-bold text-slate-400">Megoin</div>
@@ -184,6 +187,27 @@
             <div class="bg-surface/80 p-3 rounded-2xl border border-white/5">
               <div class="text-[9px] uppercase font-bold text-slate-400">Merci Bottega</div>
               <div class="text-lg font-black text-purple-400" id="home-shop-count">--</div>
+            </div>
+          </div>
+
+          <!-- Card Avventura Consigliata (Elimina il vuoto nero) -->
+          <div class="bg-surface/80 rounded-2xl border border-white/5 overflow-hidden shadow-xl">
+            <div class="h-32 w-full bg-slate-900 relative overflow-hidden">
+              <img src="https://image.pollinations.ai/prompt/noir-italian-docks-night-cinematic?width=600&height=250&nologo=true" class="w-full h-full object-cover">
+              <div class="absolute inset-0 bg-gradient-to-t from-[#111827] via-transparent to-transparent"></div>
+              <span class="badge badge-xs badge-primary absolute top-2.5 left-2.5 font-bold uppercase text-[8px]">In Evidenza</span>
+            </div>
+            <div class="p-3.5 space-y-2">
+              <div class="flex justify-between items-center">
+                <h3 class="text-xs font-black text-white uppercase tracking-wider">Saghe Investigative Noir</h3>
+                <span class="text-[10px] text-amber-400 font-bold">1 🪙 a Partita</span>
+              </div>
+              <p class="text-[11px] text-slate-300 leading-relaxed">
+                Esplora Viareggio tra pinete, canali e cantieri omertosi con il motore D20.
+              </p>
+              <button onclick="AppRouter.navigate('games')" class="btn btn-xs btn-primary w-full font-bold shadow-md shadow-sky-600/20">
+                ▶️ Esplora Tutte le Saghe
+              </button>
             </div>
           </div>
         </section>
@@ -417,8 +441,8 @@
       </div>
     </main>
 
-    <!-- 3. FOOTER STICKY FISSO MOBILE (A Tutta Larghezza Senza Bordi Galleggianti) -->
-    <footer class="md:hidden flex-none z-30 glass-footer flex justify-around items-center py-2 px-1">
+    <!-- 3. FOOTER STICKY FISSO MOBILE (Con respiro pb-6 per la gesture bar di iOS) -->
+    <footer class="md:hidden flex-none z-30 glass-footer flex justify-around items-center pt-2 pb-6 px-1">
       <button onclick="AppRouter.navigate('home')" class="nav-tab flex flex-col items-center py-1 px-3 text-sky-400" data-tab="home">
         <i data-lucide="home" class="w-4 h-4"></i>
         <span class="text-[9px] font-bold uppercase mt-0.5">Home</span>
