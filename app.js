@@ -649,23 +649,25 @@ const AppRenderer = {
     `).join("");
   },
 
-  renderGameNode: function(node, hero) {
-    document.getElementById("gameplay-node-title").textContent = node.nome;
-    document.getElementById("gameplay-node-text").textContent = node.testo;
+renderGameNode: function(node, hero) {
+    document.getElementById("gameplay-node-title").textContent = node.nome || "Avventura";
+    document.getElementById("gameplay-node-text").textContent = node.testo || "";
     document.getElementById("gameplay-node-img").src = node.mediaUrl || "https://image.pollinations.ai/prompt/noir-italian-docks-night-cinematic?width=600&height=600&nologo=true";
     document.getElementById("gameplay-node-badge").textContent = node.tipo || "SNODO";
 
-    // Citazione diegetica sovrimpressa nel fondino al 10% in basso all'immagine
+    // Pulizia rigorosa delle doppie virgolette
     const qBox = document.getElementById("gameplay-node-quote");
     if (node.citazione && node.citazione !== "—") {
-      qBox.textContent = `"${node.citazione}" ${node.autoreCitazione ? '(' + node.autoreCitazione + ')' : ''}`;
+      const cleanQuote = String(node.citazione).replace(/^["'“”«»]+|["'“”«»]+$/g, "").trim();
+      const authorText = node.autoreCitazione ? ` (${node.autoreCitazione})` : "";
+      qBox.textContent = `"${cleanQuote}"${authorText}`;
       qBox.classList.remove("hidden");
     } else {
       qBox.classList.add("hidden");
     }
 
     if (hero) {
-      document.getElementById("gameplay-hero-name").textContent = hero.nomeEroe;
+      document.getElementById("gameplay-hero-name").textContent = hero.nomeEroe || "Avventuriero";
       document.getElementById("gameplay-hero-class").textContent = hero.classe || "Avventuriero";
       document.getElementById("gameplay-pv-label").textContent = `${hero.pv}/${hero.pvMax} PV`;
       const bar = document.getElementById("gameplay-pv-bar");
@@ -676,7 +678,7 @@ const AppRenderer = {
     const choicesBox = document.getElementById("gameplay-choices-container");
     const isCombat = (node.tipo === "NEMICO" || (node.id && node.id.includes("NEM_")));
 
-    // CASO A: SCHERMATA DI COMBATTIMENTO (Attacca e Fuggi AFFIANCATI)
+    // COMBATTIMENTO: Attacca e Fuggi AFFIANCATI SU 2 COLONNE
     if (isCombat) {
       choicesBox.innerHTML = `
         <div class="grid grid-cols-2 gap-2.5">
@@ -690,6 +692,39 @@ const AppRenderer = {
       `;
       return;
     }
+
+    // BIVI E SCELTE NARRATIVE: A vs B AFFIANCATI SU 2 COLONNE
+    if (node.choices && node.choices.length > 0) {
+      if (node.choices.length === 2) {
+        choicesBox.innerHTML = `
+          <div class="grid grid-cols-2 gap-2.5">
+            <button onclick="AppEngine.advanceNode('${node.choices[0].target}')" class="btn btn-primary btn-md text-xs font-bold shadow-lg shadow-sky-600/20 leading-tight">
+              ${node.choices[0].testo}
+            </button>
+            <button onclick="AppEngine.advanceNode('${node.choices[1].target}')" class="btn btn-primary btn-md text-xs font-bold shadow-lg shadow-sky-600/20 leading-tight">
+              ${node.choices[1].target ? node.choices[1].testo : 'Continua'}
+            </button>
+          </div>
+        `;
+      } else {
+        choicesBox.innerHTML = `
+          <div class="space-y-2">
+            ${node.choices.map(b => `
+              <button onclick="AppEngine.advanceNode('${b.target}')" class="btn btn-block btn-md btn-primary text-xs font-bold shadow-lg shadow-sky-600/20">
+                ${b.testo}
+              </button>
+            `).join("")}
+          </div>
+        `;
+      }
+    } else {
+      choicesBox.innerHTML = `
+        <button onclick="AppRouter.navigate('games')" class="btn btn-block btn-md btn-outline border-white/20 text-xs font-bold">
+          🏠 Torna alla Galleria Saghe
+        </button>
+      `;
+    }
+  },
 
     // CASO B: BIVI E SCELTE NARRATIVE (A vs B AFFIANCATI)
     if (node.choices && node.choices.length > 0) {
