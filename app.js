@@ -189,13 +189,14 @@ const AppEngine = {
   fetchGames: async function() {
     try {
       const data = await apiCall("games");
-      if (data && data.series) {
-        AppState.games.series = data.series;
+      if (data) {
+        // Supporta sia data.series che data.games per retro-compatibilità immediata
+        AppState.games.series = data.series || data.games || [];
         AppState.games.genres = data.genres || [];
         AppRenderer.renderGames();
       }
     } catch (e) {
-      console.warn("Games fetch error:", e);
+      console.warn("Games fetch fallback error:", e);
     }
   },
 
@@ -639,15 +640,16 @@ const AppRenderer = {
   renderGameNode: function(node, hero) {
     document.getElementById("gameplay-node-title").textContent = node.nome;
     document.getElementById("gameplay-node-text").textContent = node.testo;
-    document.getElementById("gameplay-node-img").src = node.mediaUrl || "https://image.pollinations.ai/prompt/noir-italian-docks-night-cinematic?width=800&height=400&nologo=true";
+    document.getElementById("gameplay-node-img").src = node.mediaUrl || "https://image.pollinations.ai/prompt/noir-italian-docks-night-cinematic?width=600&height=600&nologo=true";
     document.getElementById("gameplay-node-badge").textContent = node.tipo || "SNODO";
 
-    const q = document.getElementById("gameplay-node-quote");
-    if (node.citazione) {
-      q.textContent = `"${node.citazione}" ${node.autoreCitazione ? '(' + node.autoreCitazione + ')' : ''}`;
-      q.classList.remove("hidden");
+    // Citazione diegetica sovrimpressa nel fondino al 10% in basso all'immagine
+    const qBox = document.getElementById("gameplay-node-quote");
+    if (node.citazione && node.citazione !== "—") {
+      qBox.textContent = `"${node.citazione}" ${node.autoreCitazione ? '(' + node.autoreCitazione + ')' : ''}`;
+      qBox.classList.remove("hidden");
     } else {
-      q.classList.add("hidden");
+      qBox.classList.add("hidden");
     }
 
     if (hero) {
@@ -660,12 +662,49 @@ const AppRenderer = {
     }
 
     const choicesBox = document.getElementById("gameplay-choices-container");
+    const isCombat = (node.tipo === "NEMICO" || (node.id && node.id.includes("NEM_")));
+
+    // CASO A: SCHERMATA DI COMBATTIMENTO (Attacca e Fuggi AFFIANCATI)
+    if (isCombat) {
+      choicesBox.innerHTML = `
+        <div class="grid grid-cols-2 gap-2.5">
+          <button onclick="AppEngine.advanceNode('${node.destSuccesso || 'SND_001'}')" class="btn btn-error btn-md text-xs font-black shadow-lg shadow-rose-600/30">
+            ⚔️ Attacca Round
+          </button>
+          <button onclick="AppEngine.advanceNode('${node.destFallback || 'SND_001'}')" class="btn btn-outline border-white/20 btn-md text-xs font-bold">
+            🏃 Fuggi
+          </button>
+        </div>
+      `;
+      return;
+    }
+
+    // CASO B: BIVI E SCELTE NARRATIVE (A vs B AFFIANCATI)
     if (node.choices && node.choices.length > 0) {
-      choicesBox.innerHTML = node.choices.map(b => `
-        <button onclick="AppEngine.advanceNode('${b.target}')" class="btn btn-block btn-md btn-primary text-xs font-bold shadow-lg shadow-sky-600/20 active:scale-[0.98] transition-all">
-          ${b.testo}
-        </button>
-      `).join("");
+      if (node.choices.length === 2) {
+        // Scelta A vs B affiancata su 2 colonne
+        choicesBox.innerHTML = `
+          <div class="grid grid-cols-2 gap-2.5">
+            <button onclick="AppEngine.advanceNode('${node.choices[0].target}')" class="btn btn-primary btn-md text-xs font-bold shadow-lg shadow-sky-600/20 leading-tight">
+              ${node.choices[0].testo}
+            </button>
+            <button onclick="AppEngine.advanceNode('${node.choices[1].target}')" class="btn btn-primary btn-md text-xs font-bold shadow-lg shadow-sky-600/20 leading-tight">
+              ${node.choices[1].testo}
+            </button>
+          </div>
+        `;
+      } else {
+        // Singola scelta o bivi multipli
+        choicesBox.innerHTML = `
+          <div class="space-y-2">
+            ${node.choices.map(b => `
+              <button onclick="AppEngine.advanceNode('${b.target}')" class="btn btn-block btn-md btn-primary text-xs font-bold shadow-lg shadow-sky-600/20">
+                ${b.testo}
+              </button>
+            `).join("")}
+          </div>
+        `;
+      }
     } else {
       choicesBox.innerHTML = `
         <button onclick="AppRouter.navigate('games')" class="btn btn-block btn-md btn-outline border-white/20 text-xs font-bold">
@@ -674,7 +713,7 @@ const AppRenderer = {
       `;
     }
   },
-
+  
   renderShop: function() {
     const chipContainer = document.getElementById("shop-category-chips");
     if (chipContainer && AppState.shop.categories.length > 0) {
