@@ -1,15 +1,11 @@
 // ============================================================================
-// PROJECT: ESTIQATSY PWA - CLIENT APPLICATION ENGINE (VERSIONE 2.8 ZERO-LATENCY)
+// PROJECT: ESTIQATSY PWA - CLIENT APPLICATION ENGINE (VERSIONE 3.0)
 // FILE: app.js
 // ============================================================================
 
 const AppConfig = {
   GAS_URL: "https://script.google.com/macros/s/AKfycbyeCWHM9X4ycwWT7IOMwg24pySL78bJT5BRyiIR5eb0UJALWuaORzfJ2lkqLrjLv0xN/exec",
   CACHE_KEYS: {
-    RECIPES: "est_cache_recipes",
-    SHOP: "est_cache_shop",
-    GAMES: "est_cache_games",
-    TRANSACTIONS: "est_cache_tx",
     VAULT: "est_cache_vault"
   }
 };
@@ -17,14 +13,17 @@ const AppConfig = {
 const AppState = {
   user: null,
   allowedModules: { home: true, shop: true, games: true, recipes: true, profile: true },
+  plans: [],
   activeTab: "home",
   shop: { items: [], categories: [], activeCategory: "tutti", searchQuery: "" },
   recipes: { items: [], categories: [], activeCategory: "tutti", searchQuery: "" },
   games: { series: [], genres: [], activeGenre: "tutti", searchQuery: "", session: null },
+  carousel: { timer: null, index: 0, count: 0, isPaused: false },
+  hudMode: "app", // 'app' | 'game'
   vault: []
 };
 
-// TELEGRAM FULLSCREEN
+// INTEGRAZIONE TELEGRAM WEBAPP
 const tg = window.Telegram ? window.Telegram.WebApp : null;
 if (tg) {
   try {
@@ -37,12 +36,42 @@ if (tg) {
   } catch (e) {}
 }
 
+// GESTORE SICURO DEL TASTO INDIETRO TELEGRAM (PREVIENE MEMORY LEAK)
+let backButtonHandler = null;
+function setupTelegramBackButton(screenName) {
+  if (!tg || !tg.BackButton) return;
+
+  if (backButtonHandler) {
+    tg.BackButton.offClick(backButtonHandler);
+    backButtonHandler = null;
+  }
+
+  const isSub = screenName.startsWith("subview-") || screenName === "view-gameplay";
+  if (isSub) {
+    tg.BackButton.show();
+    backButtonHandler = () => {
+      if (screenName === "subview-series-hub" || screenName === "view-gameplay") {
+        AppRouter.navigate("games");
+      } else if (screenName === "subview-shop-detail") {
+        AppRouter.navigate("shop");
+      } else if (screenName === "subview-recipe-detail") {
+        AppRouter.navigate("recipes");
+      } else {
+        AppRouter.navigate("home");
+      }
+    };
+    tg.BackButton.onClick(backButtonHandler);
+  } else {
+    tg.BackButton.hide();
+  }
+}
+
 const AppRouter = {
   navigate: function(screenName) {
     if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("click");
     if (tg && tg.HapticFeedback) tg.HapticFeedback.selectionChanged();
 
-    // Reset filtri e ricerca quando si torna alle sezioni principali
+    // Reset filtri e ricerca al cambio di scheda principale
     if (screenName === "shop") {
       AppState.shop.activeCategory = "tutti";
       AppState.shop.searchQuery = "";
@@ -62,6 +91,10 @@ const AppRouter = {
       if (gInput) gInput.value = "";
       AppRenderer.renderGames();
     }
+
+    // Commutazione automatica dell'HUD Mobile: Gioco vs Navigazione
+    const isGameplay = (screenName === "view-gameplay");
+    AppRenderer.toggleHUDMode(isGameplay ? "game" : "app");
 
     const allScreens = [
       "view-home", "view-games", "view-gameplay", "view-shop", "view-recipes", "view-profile",
@@ -95,22 +128,9 @@ const AppRouter = {
       btn.classList.toggle("text-slate-300", !isActive);
     });
 
-    if (tg && tg.BackButton) {
-      if (screenName.startsWith("subview-") || screenName === "view-gameplay") {
-        tg.BackButton.show();
-        tg.BackButton.onClick(() => {
-          if (screenName === "subview-series-hub" || screenName === "view-gameplay") AppRouter.navigate("games");
-          else if (screenName === "subview-shop-detail") AppRouter.navigate("shop");
-          else if (screenName === "subview-recipe-detail") AppRouter.navigate("recipes");
-          else AppRouter.navigate("home");
-        });
-      } else {
-        tg.BackButton.hide();
-      }
-    }
+    setupTelegramBackButton(screenName);
 
-    // Refresh icone immediato
-    setTimeout(() => { if (window.lucide) lucide.createIcons(); }, 10);
+    setTimeout(() => { if (window.lucide) lucide.createIcons(); }, 15);
   }
 };
 
@@ -133,14 +153,17 @@ const AppEngine = {
     this.loadVault();
 
     try {
+      // 1. Chiamata Profilo (che include già Piani e Prodotti Acquistati in 0ms)
       const p = await apiCall("profile");
       if (p && p.user) {
         AppState.user = p.user;
         AppState.allowedModules = p.allowedModules || AppState.allowedModules;
+        AppState.plans = p.plans || [];
         AppRenderer.renderProfile(p.user);
+        AppRenderer.renderPlans(AppState.plans);
       }
 
-      // CARICAMENTO SIMULTANEO DI TUTTI I CATALOGHI IN RAM
+      // 2. Caricamento parallelo dei cataloghi nella RAM del telefono
       await Promise.allSettled([
         this.fetchShop(),
         this.fetchRecipes(),
@@ -159,14 +182,96 @@ const AppEngine = {
       console.error(err);
       const eb = document.getElementById("loading-error-box");
       if (eb) {
-        eb.textContent = err.message || "Errore di connessione.";
+        eb.textContent = err.message || "Errore di connessione al Syndicate.";
         eb.classList.remove("hidden");
         document.getElementById("loading-retry-btn").classList.remove("hidden");
       }
     }
   },
 
-  // GIOCHI (NAVIGAZIONE A 0 MILLISECONDI DA MEMORIA)
+  // NAVIGAZIONE DIRETTA AL CAVEAU DAL 4° KPI DELLA HOME
+  openVaultSection: function() {
+    AppRouter.navigate("profile");
+    setTimeout(() => {
+      const el = document.getElementById("profile-vault-container-card");
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 150);
+  },
+
+  // CAROSELLO SAGHE AUTOMATICO (Ogni 5s con pausa touch)
+  initCarousel: function() {
+    const track = document.getElementById("carousel-track");
+    const dotsBox = document.getElementById("carousel-dots-container");
+    const outer = document.getElementById("carousel-outer-wrapper");
+    if (!track || AppState.games.series.length === 0) return;
+
+    const list = AppState.games.series;
+    AppState.carousel.count = list.length;
+    AppState.carousel.index = 0;
+
+    track.innerHTML = list.map((s) => `
+      <div class="min-w-full relative h-40 md:h-52 bg-slate-900 cursor-pointer overflow-hidden flex-none" onclick="AppEngine.openSeriesHub('${s.gameKey}')">
+        <img src="${s.mediaUrl}" class="w-full h-full object-cover">
+        <div class="absolute inset-0 bg-gradient-to-t from-[#090D16] via-black/40 to-transparent"></div>
+        
+        <!-- TAG: PARTITA IN CORSO -->
+        ${s.hasActiveGame ? `
+          <span class="badge badge-sm badge-warning font-black uppercase text-[8px] absolute top-3 left-3 shadow-lg flex items-center space-x-1 animate-pulse">
+            <span>🔴</span> <span>PARTITA IN CORSO (EP. ${s.activeEpisodio})</span>
+          </span>
+        ` : `
+          <span class="badge badge-sm badge-primary font-bold uppercase text-[8px] absolute top-3 left-3 shadow-md">
+            ${s.tipologia}
+          </span>
+        `}
+
+        <div class="absolute bottom-3 inset-x-3 flex items-end justify-between">
+          <div>
+            <h3 class="font-black text-sm text-white">${s.emoji} ${s.serie}</h3>
+            <p class="text-[10px] text-slate-300 mt-0.5">${s.episodes.length} Capitoli Disponibili • Motore ${s.regole}</p>
+          </div>
+          <button class="btn btn-xs btn-primary font-bold px-3 shadow-lg shadow-sky-600/30">Esplora</button>
+        </div>
+      </div>
+    `).join("");
+
+    dotsBox.innerHTML = list.map((_, i) => `
+      <span class="w-2 h-1.5 rounded-full transition-all ${i === 0 ? 'bg-sky-400 w-4' : 'bg-white/20'}" id="car-dot-${i}"></span>
+    `).join("");
+
+    // Pausa automatica al tocco o passaggio del mouse
+    if (outer) {
+      outer.onmouseenter = () => { AppState.carousel.isPaused = true; };
+      outer.onmouseleave = () => { AppState.carousel.isPaused = false; };
+      outer.ontouchstart = () => { AppState.carousel.isPaused = true; };
+      outer.ontouchend = () => { 
+        setTimeout(() => { AppState.carousel.isPaused = false; }, 3000); 
+      };
+    }
+
+    if (AppState.carousel.timer) clearInterval(AppState.carousel.timer);
+    AppState.carousel.timer = setInterval(() => {
+      if (AppState.carousel.isPaused || AppState.carousel.count <= 1) return;
+      AppState.carousel.index = (AppState.carousel.index + 1) % AppState.carousel.count;
+      AppEngine.updateCarouselPosition();
+    }, 5000);
+  },
+
+  updateCarouselPosition: function() {
+    const track = document.getElementById("carousel-track");
+    if (!track) return;
+    const idx = AppState.carousel.index;
+    track.style.transform = `translateX(-${idx * 100}%)`;
+
+    for (let i = 0; i < AppState.carousel.count; i++) {
+      const dot = document.getElementById(`car-dot-${i}`);
+      if (dot) {
+        dot.className = `h-1.5 rounded-full transition-all ${i === idx ? 'bg-sky-400 w-4' : 'bg-white/20 w-2'}`;
+      }
+    }
+  },
+
+  // GIOCHI E AVVENTURE
   fetchGames: async function() {
     try {
       const data = await apiCall("games");
@@ -174,6 +279,7 @@ const AppEngine = {
         AppState.games.series = data.series;
         AppState.games.genres = data.genres || [];
         AppRenderer.renderGames();
+        this.initCarousel();
       }
     } catch (e) {}
   },
@@ -189,7 +295,6 @@ const AppEngine = {
     AppRenderer.renderGamesCards();
   },
 
-  // APERTURA ISTANTANEA DELLA SAGA A 0ms (SENZA CHIAMATE A GAS!)
   openSeriesHub: function(gameKey) {
     const saga = AppState.games.series.find(s => s.gameKey === gameKey);
     if (!saga) return;
@@ -251,6 +356,8 @@ const AppEngine = {
         AppState.user.saldoMegoin = data.nuovoSaldoMegoin;
         AppRenderer.renderProfile(AppState.user);
         AppState.games.session = { gameKey, episodio: epNum, partitaId: data.partitaId };
+        
+        AppRenderer.updateGameHUD(data.statoEroe);
         AppRenderer.renderGameNode(data.nodoIniziale, data.statoEroe);
         AppRouter.navigate("view-gameplay");
       }
@@ -270,6 +377,7 @@ const AppEngine = {
           if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("victory");
           if (window.confetti) confetti({ particleCount: 100, spread: 60, origin: { y: 0.6 } });
         }
+        AppRenderer.updateGameHUD(d.statoEroe);
         AppRenderer.renderGameNode(d.nodo, d.statoEroe);
       }
     } catch (e) {
@@ -277,7 +385,7 @@ const AppEngine = {
     }
   },
 
-  // SHOP
+  // SHOP E BOTTEGA
   fetchShop: async function() {
     try {
       const data = await apiCall("shop");
@@ -300,7 +408,6 @@ const AppEngine = {
     AppRenderer.renderShopProducts();
   },
 
-  // APERTURA ISTANTANEA SCHEDA PRODOTTO A 0ms (DALLA RAM)
   openShopDetail: function(prodId) {
     const item = AppState.shop.items.find(p => p.id === prodId);
     if (!item) return;
@@ -318,7 +425,7 @@ const AppEngine = {
     if (item.isLocked) {
       btn.textContent = `🔒 Richiede Piano ${item.requiredPlan}`;
       btn.className = "btn btn-warning btn-sm font-bold";
-      btn.onclick = () => AppEngine.showUpgradeModal(`Piano ${item.requiredPlan}`, `Riservato agli abbonati ${item.requiredPlan}.`);
+      btn.onclick = () => AppEngine.showUpgradeModal(`Piano ${item.requiredPlan}`, `Riservato agli affiliati con Piano ${item.requiredPlan}.`);
     } else {
       btn.textContent = item.prezzoMegoin === 0 ? "🎁 Riscatta Gratis" : `Acquista (${item.prezzoMegoin} 🪙)`;
       btn.className = "btn btn-primary btn-sm font-bold";
@@ -335,6 +442,7 @@ const AppEngine = {
         if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("coin");
         if (window.confetti) confetti({ particleCount: 80, spread: 60 });
         AppState.user.saldoMegoin = res.nuovoSaldoMegoin;
+        AppState.user.prodottiAcquistati = (AppState.user.prodottiAcquistati || 0) + 1;
         AppRenderer.renderProfile(AppState.user);
         if (res.digitalDownloads) res.digitalDownloads.forEach(d => AppEngine.addVault(d.nome, d.url));
         AppEngine.showFulfillment(res.riepilogo, res.digitalDownloads);
@@ -345,7 +453,7 @@ const AppEngine = {
     }
   },
 
-  // RICETTE
+  // RICETTE E BARLADY
   fetchRecipes: async function() {
     try {
       const data = await apiCall("recipes");
@@ -368,7 +476,6 @@ const AppEngine = {
     AppRenderer.renderRecipesCards();
   },
 
-  // APERTURA ISTANTANEA RICETTA A 0ms (DALLA RAM)
   openRecipeDetail: function(rowIdx) {
     const r = AppState.recipes.items.find(x => x.rowIndex === rowIdx);
     if (!r) return;
@@ -426,30 +533,118 @@ const AppEngine = {
   showUpgradeModal: function(title, desc) {
     document.getElementById("upgrade-modal-title").textContent = title;
     document.getElementById("upgrade-modal-desc").textContent = desc;
+    const btn = document.getElementById("upgrade-modal-action-btn");
+    btn.onclick = () => {
+      document.getElementById("modal-plan-upgrade").close();
+      AppRouter.navigate("home");
+      setTimeout(() => {
+        const el = document.getElementById("home-plans-container");
+        if (el) el.scrollIntoView({ behavior: "smooth" });
+      }, 150);
+    };
     document.getElementById("modal-plan-upgrade").showModal();
   }
 };
 
 const AppRenderer = {
+  // COMMUTATORE MODALITÀ HUD DINAMICO (App vs Gioco)
+  toggleHUDMode: function(mode) {
+    const isGame = (mode === "game");
+    const la = document.getElementById("hud-left-app");
+    const ra = document.getElementById("hud-right-app");
+    const lg = document.getElementById("hud-left-game");
+    const rg = document.getElementById("hud-right-game");
+
+    if (la) la.classList.toggle("hidden", isGame);
+    if (ra) ra.classList.toggle("hidden", isGame);
+    if (lg) lg.classList.toggle("hidden", !isGame);
+    if (rg) rg.classList.toggle("hidden", !isGame);
+  },
+
+  updateGameHUD: function(hero) {
+    if (!hero) return;
+    const s = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+    s("hud-hero-name", hero.nomeEroe || "Eroe");
+    s("hud-hero-class", hero.classe || "Avventuriero");
+    s("hud-game-gold", `${hero.oro || 0} 🟡`);
+    s("hud-game-px", `${hero.px || 0} 🔷`);
+  },
+
   renderProfile: function(u) {
     const s = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
-    s("user-megoin-mob", u.saldoMegoin);
-    s("user-plan-mob", u.piano);
+    
+    // HUD Mobile (Navigazione)
+    s("hud-user-avatar", (u.nome || "U").charAt(0).toUpperCase());
+    s("hud-user-name", u.nome);
+    s("hud-user-plan", u.piano);
+    s("hud-user-megoin", `${u.saldoMegoin} 🪙`);
+    s("hud-user-points", `${u.puntiFedelta} ⭐`);
+
+    // Home Banner & 4 KPI
     s("home-username", u.nome);
+    s("home-rank-points", u.puntiFedelta);
     s("home-megoin-card", `${u.saldoMegoin} 🪙`);
     s("home-punti-card", `${u.puntiFedelta} Pt`);
+    s("home-purchases-count", u.prodottiAcquistati || 0);
 
+    // Sidebar Desktop
     s("user-avatar-desk", (u.nome || "U").charAt(0).toUpperCase());
     s("user-name-desk", u.nome);
     s("user-plan-desk", `PIANO ${u.piano.toUpperCase()}`);
     s("user-megoin-desk", `${u.saldoMegoin} 🪙`);
+    s("user-points-desk", `${u.puntiFedelta} Pt`);
 
+    // Scheda Profilo
     s("profile-card-avatar", (u.nome || "U").charAt(0).toUpperCase());
     s("profile-card-name", u.nome);
     s("profile-card-username", u.username);
     s("profile-card-plan", `PIANO ${u.piano.toUpperCase()}`);
     s("profile-card-id", `ID: ${u.chatId}`);
     s("profile-card-megoin", `${u.saldoMegoin} 🪙`);
+  },
+
+  // VETRINA PIANI DI ABBONAMENTO (Con tag PIANO ATTIVO)
+  renderPlans: function(plans) {
+    const c = document.getElementById("home-plans-container");
+    if (!c || !plans || plans.length === 0) return;
+
+    c.innerHTML = plans.map(p => `
+      <div class="bg-surface/90 rounded-2xl border ${p.isAttivo ? 'border-sky-400 ring-1 ring-sky-400/50 shadow-lg shadow-sky-500/10' : 'border-white/5'} p-4 flex flex-col justify-between space-y-3 relative overflow-hidden">
+        ${p.isAttivo ? `
+          <div class="absolute top-2.5 right-2.5">
+            <span class="badge badge-xs badge-info font-black uppercase text-[8px] py-2 px-2.5">✨ PIANO ATTIVO</span>
+          </div>
+        ` : ''}
+        
+        <div class="space-y-1">
+          <h4 class="font-black text-sm text-white">${p.nome}</h4>
+          <div class="text-xs font-black text-amber-300">
+            ${p.prezzoMensile || 'Gratuito'} <span class="text-[10px] text-slate-400 font-normal">/mese</span>
+          </div>
+          <p class="text-[10px] text-slate-300 leading-relaxed pt-1">${p.descrizione || ''}</p>
+        </div>
+
+        <div class="space-y-1.5 pt-2 border-t border-white/5 text-[10px] text-slate-300">
+          <div class="text-amber-400 font-bold">🪙 +${p.bonusMegoin} Megoin al mese</div>
+          <div class="text-slate-400">${p.perks.giochi ? '✅ Saghe RPG Incluse' : '❌ Saghe escluse'}</div>
+          <div class="text-slate-400">${p.perks.shop ? '✅ Sconti Bottega Attivi' : '❌ Prezzi standard'}</div>
+        </div>
+
+        <div class="pt-1">
+          ${p.isAttivo ? `
+            <button disabled class="btn btn-xs btn-outline border-white/20 w-full text-slate-400 font-bold cursor-not-allowed">
+              In Uso
+            </button>
+          ` : `
+            <button onclick="AppEngine.showUpgradeModal('${p.nome}', 'Passa a ${p.nome} per ${p.prezzoMensile || 'tariffa indicata'}.')" class="btn btn-xs btn-primary w-full font-bold shadow-md shadow-sky-600/20">
+              Passa a questo Piano
+            </button>
+          `}
+        </div>
+      </div>
+    `).join("");
+
+    if (window.lucide) lucide.createIcons();
   },
 
   renderGames: function() {
@@ -485,12 +680,19 @@ const AppRenderer = {
       return;
     }
 
-    // CARD CON IMMAGINE BORDO A BORDO (p-0 overflow-hidden) E PULSANTE SPAZIATO
     grid.innerHTML = list.map(s => `
-      <div onclick="AppEngine.openSeriesHub('${s.gameKey}')" class="bg-surface rounded-2xl border border-white/5 flex flex-col justify-between overflow-hidden cursor-pointer group shadow-lg active:scale-[0.98] transition-transform p-0">
+      <div onclick="AppEngine.openSeriesHub('${s.gameKey}')" class="bg-surface rounded-2xl border border-white/5 flex flex-col justify-between overflow-hidden cursor-pointer group shadow-lg active:scale-[0.98] transition-transform p-0 relative">
         <div class="h-40 md:h-48 w-full bg-slate-900 relative overflow-hidden">
           <img src="${s.mediaUrl}" class="w-full h-full object-cover rounded-t-2xl rounded-b-none">
-          <span class="badge badge-xs badge-primary absolute top-2.5 left-2.5 font-bold uppercase text-[8px]">${s.tipologia}</span>
+          
+          ${s.hasActiveGame ? `
+            <span class="badge badge-xs badge-warning font-black uppercase text-[8px] absolute top-2.5 left-2.5 shadow-lg animate-pulse">
+              🔴 PARTITA ATTIVA
+            </span>
+          ` : `
+            <span class="badge badge-xs badge-primary absolute top-2.5 left-2.5 font-bold uppercase text-[8px]">${s.tipologia}</span>
+          `}
+          
           <span class="badge badge-xs badge-neutral absolute top-2.5 right-2.5 font-bold uppercase text-[8px]">${s.regole}</span>
         </div>
         <div class="p-4 space-y-3">
@@ -505,6 +707,8 @@ const AppRenderer = {
         </div>
       </div>
     `).join("");
+
+    if (window.lucide) lucide.createIcons();
   },
 
   renderGameNode: function(node, hero) {
@@ -522,8 +726,6 @@ const AppRenderer = {
     }
 
     if (hero) {
-      document.getElementById("gameplay-hero-name").textContent = hero.nomeEroe;
-      document.getElementById("gameplay-hero-class").textContent = hero.classe || "Avventuriero";
       document.getElementById("gameplay-pv-label").textContent = `${hero.pv}/${hero.pvMax}`;
       const bar = document.getElementById("gameplay-pv-bar");
       bar.value = hero.pv;
@@ -604,15 +806,11 @@ const AppRenderer = {
       list = list.filter(p => p.nome.toLowerCase().includes(AppState.shop.searchQuery));
     }
 
-    const hc = document.getElementById("home-shop-count");
-    if (hc) hc.textContent = AppState.shop.items.length;
-
     if (list.length === 0) {
       grid.innerHTML = `<div class="col-span-full text-center py-8 text-slate-500 text-xs">Nessun articolo trovato.</div>`;
       return;
     }
 
-    // CARD SHOP BORDO A BORDO CON PREZZO PULITO E BOTTONE SPAZIATO
     grid.innerHTML = list.map(p => `
       <div onclick="AppEngine.openShopDetail('${p.id}')" class="bg-surface rounded-2xl border border-white/5 flex flex-col justify-between overflow-hidden cursor-pointer active:scale-[0.98] transition-transform relative p-0 shadow-lg">
         ${p.isLocked ? `
@@ -637,6 +835,8 @@ const AppRenderer = {
         </div>
       </div>
     `).join("");
+
+    if (window.lucide) lucide.createIcons();
   },
 
   renderRecipes: function() {
@@ -683,13 +883,15 @@ const AppRenderer = {
         <span class="badge badge-sm badge-outline border-sky-400/40 text-sky-400 font-bold text-[10px] px-2.5">${r.costo}</span>
       </div>
     `).join("");
+
+    if (window.lucide) lucide.createIcons();
   },
 
   renderTransactions: function(txs) {
     const c = document.getElementById("profile-transactions-container");
     if (!c) return;
     if (!txs || txs.length === 0) {
-      c.innerHTML = `<div class="text-center py-4 text-slate-500">Nessuna transazione.</div>`;
+      c.innerHTML = `<div class="text-center py-4 text-slate-500">Nessuna transazione registrata.</div>`;
       return;
     }
     c.innerHTML = txs.map(t => `
@@ -703,6 +905,8 @@ const AppRenderer = {
         </div>
       </div>
     `).join("");
+
+    if (window.lucide) lucide.createIcons();
   },
 
   renderVault: function() {
@@ -721,21 +925,14 @@ const AppRenderer = {
         <a href="${v.url}" target="_blank" class="btn btn-xs btn-success font-bold px-3">Scarica</a>
       </div>
     `).join("");
+
+    if (window.lucide) lucide.createIcons();
   }
 };
 
-// FORZA IL RENDERING IMMEDIATO DELLE ICONE LUCIDE ALL'AVVIO
+// AVVIO APPLICAZIONE
 window.addEventListener("DOMContentLoaded", () => {
-  // 1. Prima passata istantanea per mostrare le icone del footer subito
-  if (window.lucide) {
-    lucide.createIcons();
-  }
-  
-  // 2. Avvio del motore applicativo
+  if (window.lucide) lucide.createIcons();
   AppEngine.init();
-
-  // 3. Seconda passata di sicurezza dopo 200ms per intercettare eventuali elementi caricati in ritardo
-  setTimeout(() => {
-    if (window.lucide) lucide.createIcons();
-  }, 200);
+  setTimeout(() => { if (window.lucide) lucide.createIcons(); }, 200);
 });
