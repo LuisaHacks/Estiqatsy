@@ -42,10 +42,10 @@
     }
     ::-webkit-scrollbar { width: 3px; height: 3px; }
     ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 999px; }
-    .glass-hud {
-      background: rgba(15, 23, 42, 0.88);
-      backdrop-filter: blur(16px);
-      border: 1px solid rgba(255, 255, 255, 0.08);
+    .glass-header {
+      background: rgba(9, 13, 22, 0.94);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
     }
     .glass-footer {
       background: rgba(9, 13, 22, 0.96);
@@ -62,7 +62,7 @@
 
 <body class="h-screen w-screen flex flex-col md:flex-row antialiased select-none overflow-hidden bg-[#090D16]">
 
-  <!-- 1. LOADER INIZIALE -->
+  <!-- 1. SCHERMATA DI CARICAMENTO (LOADER) -->
   <div id="app-loading" class="fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#090D16] p-6 text-center transition-opacity duration-300">
     <div class="relative mb-4">
       <div class="w-14 h-14 border-4 border-sky-500/20 border-t-sky-400 rounded-full animate-spin"></div>
@@ -74,9 +74,8 @@
     <button id="loading-retry-btn" onclick="location.reload()" class="hidden mt-4 btn btn-sm btn-primary">Riprova</button>
   </div>
 
-  <!-- 2. SIDEBAR DESKTOP FISSA (>= 768px): COMMAND CENTER -->
+  <!-- 2. SIDEBAR FISSA PER DESKTOP (>= 768px): COMMAND CENTER -->
   <aside class="hidden md:flex flex-col w-64 lg:w-72 bg-[#0d131f] border-r border-white/5 h-full pt-14 p-5 space-y-5 flex-none z-30">
-    <!-- Scheda Agente -->
     <div class="bg-surface/80 p-4 rounded-2xl border border-white/5 space-y-3">
       <div class="flex items-center space-x-3">
         <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-sky-600 to-indigo-600 flex items-center justify-center font-black text-lg text-white shadow-md shadow-sky-600/20" id="user-avatar-desk">F</div>
@@ -87,7 +86,7 @@
         </div>
       </div>
 
-      <!-- Box Metriche Sdoppiato: Megoin + Punti Fedeltà -->
+      <!-- Metriche Desktop Sdoppiate -->
       <div class="grid grid-cols-2 gap-2 pt-2 border-t border-white/5">
         <div class="bg-black/30 p-2 rounded-xl text-center">
           <div class="text-[8px] text-slate-400 font-bold uppercase">Megoin</div>
@@ -119,7 +118,6 @@
       </button>
     </nav>
 
-    <!-- Footer Sidebar -->
     <div class="pt-3 border-t border-white/5 flex items-center justify-between">
       <button onclick="SoundEngine.toggleMute()" class="btn btn-ghost btn-xs text-slate-400">
         <i data-lucide="volume-2" class="w-4 h-4"></i>
@@ -132,63 +130,16 @@
   <!-- 3. CORPO CENTRALE APP SHELL (Mobile & Desktop) -->
   <div class="flex-1 flex flex-col h-full min-w-0 overflow-hidden relative">
 
-    <!-- FASCIA TELEGRAM TOP: Marchio Centrato nel corridoio sicuro (Mobile Only: 0-48px) -->
-    <div class="md:hidden absolute top-0 inset-x-0 h-12 flex items-center justify-center pointer-events-none z-40 px-20">
-      <span class="text-[10px] font-bold text-slate-400 tracking-widest uppercase truncate">⚓ ESTIQATSY</span>
-    </div>
-
-    <!-- CAPSULA HUD FLUTTUANTE MOBILE (Dinamica: Quota 48px+) -->
-    <div class="md:hidden flex-none z-30 pt-12 pb-2 px-3">
-      <div class="glass-hud rounded-2xl p-2.5 shadow-lg flex items-center justify-between">
-        
-        <!-- Blocco Sinistro: Navigazione App -->
-        <div id="hud-left-app" class="flex items-center space-x-2.5">
-          <div class="w-8 h-8 rounded-xl bg-gradient-to-tr from-sky-600 to-indigo-600 flex items-center justify-center font-black text-xs text-white shadow-sm" id="hud-user-avatar">F</div>
-          <div>
-            <div class="text-xs font-black text-white leading-none truncate max-w-[90px]" id="hud-user-name">Frank</div>
-            <span class="badge badge-xs badge-info font-bold text-[8px] uppercase mt-0.5" id="hud-user-plan">ADMIN</span>
-          </div>
-        </div>
-
-        <!-- Blocco Sinistro: Gioco In Corso (Nascosto di default) -->
-        <div id="hud-left-game" class="hidden flex items-center space-x-2">
-          <button onclick="AppRouter.navigate('games')" class="btn btn-ghost btn-circle btn-xs text-slate-400">
-            <i data-lucide="arrow-left" class="w-4 h-4"></i>
-          </button>
-          <div>
-            <div class="text-xs font-black text-white leading-none truncate max-w-[90px]" id="hud-hero-name">Eroe</div>
-            <span class="badge badge-xs badge-warning font-bold text-[8px] uppercase mt-0.5" id="hud-hero-class">Avventuriero</span>
-          </div>
-        </div>
-
-        <!-- Blocco Destro: Borsellino Navigazione (Megoin + Fedeltà) -->
-        <div id="hud-right-app" class="flex items-center space-x-2 divide-x divide-white/10">
-          <div class="text-right">
-            <div class="text-[8px] font-bold text-slate-400 uppercase leading-none">Megoin</div>
-            <div class="text-xs font-black text-amber-300 text-glow-amber tabular-nums mt-0.5" id="hud-user-megoin">0 🪙</div>
-          </div>
-          <div class="pl-2 text-right">
-            <div class="text-[8px] font-bold text-slate-400 uppercase leading-none">Fedeltà</div>
-            <div class="text-xs font-black text-emerald-400 tabular-nums mt-0.5" id="hud-user-points">0 ⭐</div>
-          </div>
-        </div>
-
-        <!-- Blocco Destro: Risorse Eroe (Oro + PX) (Nascosto di default) -->
-        <div id="hud-right-game" class="hidden flex items-center space-x-2 divide-x divide-white/10">
-          <div class="text-right">
-            <div class="text-[8px] font-bold text-slate-400 uppercase leading-none">Oro</div>
-            <div class="text-xs font-black text-amber-400 tabular-nums mt-0.5" id="hud-game-gold">0 🟡</div>
-          </div>
-          <div class="pl-2 text-right">
-            <div class="text-[8px] font-bold text-slate-400 uppercase leading-none">PX</div>
-            <div class="text-xs font-black text-sky-400 tabular-nums mt-0.5" id="hud-game-px">0 🔷</div>
-          </div>
-        </div>
-
+    <!-- HEADER MOBILE A TUTTA LARGHEZZA (Edge-to-edge, non boxato, come il footer) -->
+    <!-- Contiene SOLO il logo e il nome dell'app perfettamente centrati tra i pulsanti nativi -->
+    <header class="md:hidden flex-none z-30 h-14 glass-header px-4 flex items-center justify-center relative">
+      <div class="flex items-center space-x-2">
+        <span class="text-base">⚓</span>
+        <span class="text-xs font-black tracking-widest text-white uppercase">ESTIQATSY</span>
       </div>
-    </div>
+    </header>
 
-    <!-- AREA PRINCIPALE CONTENUTI SCROLLABILE (Zero Header Ridondante su Desktop) -->
+    <!-- AREA PRINCIPALE CONTENUTI SCROLLABILE -->
     <main class="flex-1 overflow-y-auto overflow-x-hidden relative" id="app-main-scroll">
       <div class="p-3 md:p-6 max-w-5xl mx-auto space-y-4">
 
@@ -196,23 +147,27 @@
         <!-- SCHERMATA: HOME -->
         <!-- ================================================================= -->
         <section id="view-home" class="space-y-4 app-screen">
-          <!-- Hero Banner -->
-          <div class="rounded-3xl p-5 md:p-7 bg-gradient-to-br from-slate-900 via-slate-900 to-indigo-950 border border-white/10 shadow-2xl space-y-2.5">
+          <!-- Hero Banner di Benvenuto con Saldo e Punti in Evidenza -->
+          <div class="rounded-3xl p-5 md:p-7 bg-gradient-to-br from-slate-900 via-slate-900 to-indigo-950 border border-white/10 shadow-2xl space-y-3">
             <div class="flex items-center space-x-2">
               <span class="badge badge-xs badge-outline border-sky-400 text-sky-400 font-bold uppercase text-[8px]">Piattaforma Ufficiale</span>
-              <span class="text-[10px] font-bold text-emerald-400" id="home-rank-badge">⭐ <span id="home-rank-points">0</span> Punti • Rango Attivo</span>
+              <span class="text-[10px] font-bold text-emerald-400" id="home-rank-badge">⭐ <span id="home-rank-points">0</span> Punti Fedeltà</span>
             </div>
-            <h2 class="text-lg md:text-2xl font-black text-white leading-tight">Darsena Noir, <span id="home-username" class="text-sky-400">Ospite</span>.</h2>
-            <p class="text-[11px] md:text-xs text-slate-300 leading-relaxed max-w-lg">Vivi le saghe investigative, sblocca le ricette dei moli e spendi i tuoi gettoni Megoin nella bottega.</p>
-            <div class="pt-1.5 flex gap-2">
+            <div>
+              <h2 class="text-xl md:text-2xl font-black text-white leading-tight">Darsena Noir, <span id="home-username" class="text-sky-400">Ospite</span>.</h2>
+              <p class="text-[11px] md:text-xs text-slate-300 leading-relaxed max-w-lg mt-1">
+                Vivi le saghe investigative, sblocca le ricette dei moli e spendi i tuoi gettoni Megoin nella bottega del porto.
+              </p>
+            </div>
+            <div class="pt-1 flex gap-2">
               <button onclick="AppRouter.navigate('games')" class="btn btn-xs md:btn-sm btn-primary font-bold shadow-lg shadow-sky-600/30">🎮 Avventure</button>
               <button onclick="AppRouter.navigate('shop')" class="btn btn-xs md:btn-sm btn-outline border-white/20 font-bold">🏪 Bottega</button>
             </div>
           </div>
 
-          <!-- Griglia 4 KPI Interattivi Cliccabili -->
+          <!-- Griglia 4 KPI Interattivi (Scorciatoie con Tap) -->
           <div class="grid grid-cols-2 md:grid-cols-4 gap-2.5">
-            <!-- 1. Saldo Megoin -> Profilo -->
+            <!-- 1. Megoin -> Profilo -->
             <div onclick="AppRouter.navigate('profile')" class="bg-surface/80 hover:bg-surface active:scale-[0.97] transition-all p-3 rounded-2xl border border-white/5 cursor-pointer flex justify-between items-start group">
               <div>
                 <div class="text-[8px] uppercase font-bold text-slate-400">Megoin</div>
@@ -239,7 +194,7 @@
               <i data-lucide="chevron-right" class="w-3.5 h-3.5 text-slate-500 group-hover:text-sky-400 transition-colors"></i>
             </div>
 
-            <!-- 4. Prodotti Acquistati -> Caveau Digitale -->
+            <!-- 4. Prodotti Acquistati -> Caveau Profilo -->
             <div onclick="AppEngine.openVaultSection()" class="bg-surface/80 hover:bg-surface active:scale-[0.97] transition-all p-3 rounded-2xl border border-white/5 cursor-pointer flex justify-between items-start group">
               <div>
                 <div class="text-[8px] uppercase font-bold text-slate-400">Prodotti Acquistati</div>
@@ -249,7 +204,7 @@
             </div>
           </div>
 
-          <!-- CAROSELLO SAGHE ED EPISODI (Rotazione Automatica ogni 5s) -->
+          <!-- CAROSELLO SAGHE AUTOMATICO (Ogni 5s, con pausa al tocco e tag PARTITA IN CORSO) -->
           <div class="space-y-2">
             <div class="flex items-center justify-between">
               <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Saghe & Episodi Usciti</span>
@@ -258,7 +213,7 @@
             
             <div class="relative overflow-hidden rounded-2xl bg-surface border border-white/5 shadow-xl" id="carousel-outer-wrapper">
               <div class="flex transition-transform duration-500 ease-out" id="carousel-track">
-                <!-- Slide iniettate da app.js -->
+                <!-- Slide iniettate dinamicamente da app.js -->
               </div>
             </div>
           </div>
@@ -267,7 +222,7 @@
           <div class="space-y-2 pt-2">
             <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Piani di Abbonamento Syndicate</span>
             <div id="home-plans-container" class="grid grid-cols-1 md:grid-cols-3 gap-3">
-              <!-- Card dei Piani iniettate da app.js -->
+              <!-- Schede dei piani iniettate dinamicamente da app.js -->
             </div>
           </div>
         </section>
@@ -284,18 +239,13 @@
           <div id="games-gallery-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
         </section>
 
-        <!-- SOTTO-SCHERMATA: HUB DELLA SAGA -->
+        <!-- SOTTO-SCHERMATA: HUB DELLA SAGA (Senza tasto indietro interno) -->
         <section id="subview-series-hub" class="space-y-4 hidden app-screen">
-          <div class="flex items-center space-x-3 pb-2 border-b border-white/5">
-            <button onclick="AppRouter.navigate('games')" class="btn btn-ghost btn-circle btn-sm text-slate-400">
-              <i data-lucide="arrow-left" class="w-5 h-5"></i>
-            </button>
-            <div>
-              <h2 class="text-sm font-black text-white uppercase tracking-wider" id="hub-serie-title">Titolo Saga</h2>
-              <div class="flex space-x-1.5 mt-0.5">
-                <span class="text-[9px] text-sky-400 font-bold uppercase" id="hub-serie-genre">Avventura</span>
-                <span class="badge badge-xs badge-neutral text-[8px] font-bold uppercase" id="hub-serie-rules">Rules 2</span>
-              </div>
+          <div class="pb-2 border-b border-white/5">
+            <h2 class="text-sm font-black text-white uppercase tracking-wider" id="hub-serie-title">Titolo Saga</h2>
+            <div class="flex space-x-1.5 mt-0.5">
+              <span class="text-[9px] text-sky-400 font-bold uppercase" id="hub-serie-genre">Avventura</span>
+              <span class="badge badge-xs badge-neutral text-[8px] font-bold uppercase" id="hub-serie-rules">Rules 2</span>
             </div>
           </div>
 
@@ -323,11 +273,14 @@
           </div>
         </section>
 
-        <!-- SOTTO-SCHERMATA: GAMEPLAY VISUAL NOVEL -->
+        <!-- SOTTO-SCHERMATA: GAMEPLAY VISUAL NOVEL (Senza tasto indietro interno) -->
         <section id="view-gameplay" class="space-y-3 hidden app-screen -mx-3 md:mx-auto">
-          <!-- PV Bar Eroe -->
+          <!-- Scheda Eroe & Barra PV -->
           <div class="px-3 md:px-0 flex items-center justify-between">
-            <span class="text-[10px] font-bold text-slate-400 uppercase">Punti Vita</span>
+            <div>
+              <div class="text-xs font-black text-white leading-none" id="gameplay-hero-name">Eroe</div>
+              <div class="text-[9px] text-slate-400 mt-0.5" id="gameplay-hero-class">Avventuriero</div>
+            </div>
             <div class="w-36 space-y-1">
               <div class="flex justify-between text-[9px] font-mono text-slate-300">
                 <span>PV</span> <span id="gameplay-pv-label">25/25</span>
@@ -336,14 +289,14 @@
             </div>
           </div>
 
-          <!-- Immagine Snodo con Citazione Sovrimpressa -->
+          <!-- Immagine Snodo 100% con Citazione Sovrimpressa -->
           <div class="w-full aspect-square relative bg-surface overflow-hidden">
             <img id="gameplay-node-img" src="" class="w-full h-full object-cover" alt="">
             <span id="gameplay-node-badge" class="badge badge-sm badge-info absolute top-3 left-3 text-[9px] font-black uppercase">SNODO</span>
             <div id="gameplay-node-quote" class="absolute bottom-0 inset-x-0 h-[12%] min-h-[44px] bg-black/85 backdrop-blur-md border-t border-white/10 px-4 flex items-center justify-center text-center text-[11px] italic text-amber-200/90 leading-tight"></div>
           </div>
 
-          <!-- Testo e Bivio Narrativo -->
+          <!-- Testo e Bivio delle Scelte -->
           <div class="px-3 md:px-0 space-y-3">
             <div class="bg-surface/80 p-4 rounded-2xl border border-white/5 space-y-1.5">
               <h3 id="gameplay-node-title" class="text-xs font-black text-white uppercase tracking-wider"></h3>
@@ -365,16 +318,11 @@
           <div id="shop-products-grid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3"></div>
         </section>
 
-        <!-- SOTTO-SCHERMATA: DETTAGLIO ARTICOLO SHOP -->
+        <!-- SOTTO-SCHERMATA: DETTAGLIO ARTICOLO SHOP (Senza tasto indietro interno) -->
         <section id="subview-shop-detail" class="space-y-4 hidden app-screen">
-          <div class="flex items-center space-x-3 pb-2 border-b border-white/5">
-            <button onclick="AppRouter.navigate('shop')" class="btn btn-ghost btn-circle btn-sm text-slate-400">
-              <i data-lucide="arrow-left" class="w-5 h-5"></i>
-            </button>
-            <div>
-              <span id="detail-shop-cat" class="text-[9px] font-bold text-sky-400 uppercase">Reparto</span>
-              <h2 class="text-sm font-black text-white line-clamp-1" id="detail-shop-title">Nome Articolo</h2>
-            </div>
+          <div class="pb-2 border-b border-white/5">
+            <span id="detail-shop-cat" class="text-[9px] font-bold text-sky-400 uppercase">Reparto</span>
+            <h2 class="text-sm font-black text-white line-clamp-1" id="detail-shop-title">Nome Articolo</h2>
           </div>
 
           <div class="-mx-3 md:mx-0 h-56 relative bg-surface overflow-hidden">
@@ -387,7 +335,7 @@
             <div class="p-3.5 rounded-2xl bg-surface border border-white/5 flex items-center justify-between">
               <div>
                 <div class="text-[9px] text-slate-400 uppercase font-bold">Prezzo</div>
-                <div class="text-base font-black text-amber-400 text-glow-amber" id="detail-shop-price">0 🪙</div>
+                <div class="text-base font-black text-amber-400 text-glow-amber tabular-nums" id="detail-shop-price">0 🪙</div>
               </div>
               <button id="detail-shop-action-btn" class="btn btn-primary btn-sm px-6 font-bold shadow-lg shadow-sky-600/30">Acquista</button>
             </div>
@@ -406,16 +354,11 @@
           <div id="recipes-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3"></div>
         </section>
 
-        <!-- SOTTO-SCHERMATA: DETTAGLIO RICETTA -->
+        <!-- SOTTO-SCHERMATA: DETTAGLIO RICETTA (Senza tasto indietro interno) -->
         <section id="subview-recipe-detail" class="space-y-4 hidden app-screen">
-          <div class="flex items-center space-x-3 pb-2 border-b border-white/5">
-            <button onclick="AppRouter.navigate('recipes')" class="btn btn-ghost btn-circle btn-sm text-slate-400">
-              <i data-lucide="arrow-left" class="w-5 h-5"></i>
-            </button>
-            <div>
-              <span id="detail-recipe-cat" class="text-[9px] font-bold text-sky-400 uppercase">Categoria</span>
-              <h2 class="text-sm font-black text-white" id="detail-recipe-title">Piatto</h2>
-            </div>
+          <div class="pb-2 border-b border-white/5">
+            <span id="detail-recipe-cat" class="text-[9px] font-bold text-sky-400 uppercase">Categoria</span>
+            <h2 class="text-sm font-black text-white" id="detail-recipe-title">Piatto</h2>
           </div>
 
           <div class="-mx-3 md:mx-0 h-52 relative bg-surface overflow-hidden">
@@ -443,6 +386,7 @@
         <!-- SCHERMATA: PROFILO & CAVEAU -->
         <!-- ================================================================= -->
         <section id="view-profile" class="space-y-4 hidden app-screen">
+          <!-- Scheda Profilo con Saldo Megoin E Punti Fedeltà integrati nel sommario -->
           <div class="rounded-3xl p-5 bg-gradient-to-tr from-slate-900 via-indigo-950 to-slate-900 border border-white/10 shadow-xl flex items-center justify-between">
             <div class="flex items-center space-x-3">
               <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-sky-500 to-indigo-600 flex items-center justify-center font-black text-lg text-white" id="profile-card-avatar">F</div>
@@ -455,9 +399,16 @@
                 </div>
               </div>
             </div>
-            <div class="text-right">
-              <div class="text-[8px] text-slate-400 uppercase font-bold">Saldo</div>
-              <div class="text-base font-black text-amber-300 text-glow-amber tabular-nums" id="profile-card-megoin">0 🪙</div>
+            <!-- Sommario Metriche Personali -->
+            <div class="text-right space-y-1">
+              <div>
+                <div class="text-[8px] text-slate-400 uppercase font-bold">Saldo Megoin</div>
+                <div class="text-sm font-black text-amber-300 text-glow-amber tabular-nums" id="profile-card-megoin">0 🪙</div>
+              </div>
+              <div>
+                <div class="text-[8px] text-slate-400 uppercase font-bold">Punti Fedeltà</div>
+                <div class="text-sm font-black text-emerald-400 tabular-nums" id="profile-card-points">0 Pt</div>
+              </div>
             </div>
           </div>
 
@@ -486,7 +437,7 @@
       </div>
     </main>
 
-    <!-- 4. FOOTER STICKY FISSO MOBILE (Con pb-6 per la gesture bar di iOS) -->
+    <!-- 4. FOOTER MOBILE STICKY FISSO A TUTTA LARGHEZZA (pb-6 per la barra di iOS) -->
     <footer class="md:hidden flex-none z-30 glass-footer flex justify-around items-center pt-2 pb-6 px-1">
       <button onclick="AppRouter.navigate('home')" class="nav-tab flex flex-col items-center py-1 px-3 text-sky-400" data-tab="home">
         <i data-lucide="home" class="w-4 h-4"></i>
