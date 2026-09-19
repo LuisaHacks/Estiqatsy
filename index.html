@@ -1,9 +1,6 @@
 <!DOCTYPE html>
 <html lang="it" data-theme="dark">
 <head>
-  <!-- ===================================================================== -->
-  <!-- SEZIONE 1: METADATI, CONFIGURAZIONE PWA E CDN ESTERNE                 -->
-  <!-- ===================================================================== -->
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Estiqatsy Syndicate | Versilia Noir SuperApp</title>
@@ -58,7 +55,6 @@
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       touch-action: manipulation;
     }
-    /* Scrollbar ultra-sottile dark */
     ::-webkit-scrollbar { width: 4px; height: 4px; }
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.12); border-radius: 999px; }
@@ -80,9 +76,7 @@
 
 <body class="min-h-screen flex flex-col md:flex-row antialiased select-none overflow-x-hidden">
 
-  <!-- ===================================================================== -->
-  <!-- OVERLAY DI AVVIO / LOADER ANCORA CON DISSOLVENZA                      -->
-  <!-- ===================================================================== -->
+  <!-- OVERLAY DI AVVIO / LOADER ANCORA -->
   <div id="app-loading" class="fixed inset-0 z-50 flex flex-col items-center justify-center bg-obsidian p-6 text-center transition-opacity duration-300">
     <div class="relative mb-6">
       <div class="w-16 h-16 border-4 border-sky-500/20 border-t-sky-400 rounded-full animate-spin"></div>
@@ -94,13 +88,8 @@
     <button id="loading-retry-btn" onclick="location.reload()" class="hidden mt-4 btn btn-sm btn-primary">Riprova Connessione</button>
   </div>
 
-  <!-- ===================================================================== -->
-  <!-- SEZIONE 2: LAYOUT SHELL (SIDEBAR DESKTOP + HEADER & BOTTOM BAR MOBILE) -->
-  <!-- ===================================================================== -->
-
   <!-- SIDEBAR LATERALE FISSA (DESKTOP & TABLET >= 768px) -->
   <aside class="hidden md:flex flex-col w-64 lg:w-72 glass-panel border-r border-white/5 h-screen sticky top-0 p-5 space-y-6 z-30">
-    <!-- Branding Desktop -->
     <div class="flex items-center space-x-3 pb-4 border-b border-white/5">
       <div class="w-11 h-11 rounded-2xl bg-gradient-to-tr from-sky-600 via-indigo-600 to-amber-500 flex items-center justify-center shadow-lg shadow-sky-500/20 text-white font-black text-xl border border-white/10">
         ⚓
@@ -151,14 +140,14 @@
         <span class="flex items-center space-x-2"><i data-lucide="volume-2" class="w-3.5 h-3.5"></i> <span>Audio FX</span></span>
         <span id="audio-status-desk" class="badge badge-xs badge-success font-bold text-[9px]">ON</span>
       </button>
-      <div class="text-[9px] text-center text-slate-500 font-mono">Headless Engine v2.5 • Zero-Trust</div>
+      <div class="text-[9px] text-center text-slate-500 font-mono">Headless Engine v2.6 • Zero-Trust</div>
     </div>
   </aside>
 
-  <!-- WRAPPER CENTRALE (RESPONSIVE PER TUTTI I DISPOSITIVI) -->
+  <!-- WRAPPER CENTRALE -->
   <div class="flex-1 flex flex-col min-w-0 pb-28 md:pb-8">
 
-    <!-- HEADER MOBILE (Visibile solo < 768px) -->
+    <!-- HEADER MOBILE (< 768px) -->
     <header class="md:hidden sticky top-0 z-30 px-4 py-3 glass-panel border-b border-white/5 flex items-center justify-between shadow-lg">
       <div class="flex items-center space-x-2.5">
         <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-sky-600 via-indigo-600 to-amber-500 flex items-center justify-center shadow-lg shadow-sky-500/20 text-white font-black text-base border border-white/10">
@@ -184,7 +173,7 @@
       </div>
     </header>
 
-    <!-- HEADER DESKTOP DI TESTATA (Visibile solo >= 768px) -->
+    <!-- HEADER DESKTOP (>= 768px) -->
     <div class="hidden md:flex justify-between items-center px-8 pt-8 pb-4 border-b border-white/5">
       <div>
         <h2 class="text-2xl font-black text-white tracking-tight uppercase" id="desk-section-title">Dashboard Home</h2>
@@ -201,14 +190,11 @@
       </div>
     </div>
 
-    <!-- ===================================================================== -->
-    <!-- SEZIONE 3: CONTENITORI DELLE VISTE (UNIFICATI & REATTIVI PER OGNI SCHERMO) -->
-    <!-- ===================================================================== -->
+    <!-- CONTENITORE VISTE -->
     <main class="flex-1 p-4 md:p-8 max-w-7xl w-full mx-auto space-y-6">
 
-      <!-- VISTA 1: HOME (ACCOGLIENZA, CAROSELLO & OVERVIEW) -->
+      <!-- VISTA 1: HOME -->
       <section id="view-home" class="space-y-6">
-        <!-- Hero Card Ambientale -->
         <div class="relative rounded-3xl overflow-hidden p-6 md:p-10 border border-white/10 bg-gradient-to-br from-slate-900 via-slate-900/90 to-indigo-950 shadow-2xl">
           <div class="relative z-10 max-w-2xl space-y-3">
             <span class="badge badge-sm badge-outline border-sky-400 text-sky-400 font-bold uppercase text-[9px] tracking-widest">Sindacato di Viareggio</span>
@@ -223,10 +209,8 @@
               </button>
             </div>
           </div>
-          <div class="absolute right-0 bottom-0 top-0 w-1/2 opacity-15 pointer-events-none bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-sky-400 to-transparent"></div>
         </div>
 
-        <!-- Metric Cards -->
         <div class="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
           <div class="glass-panel p-4 rounded-2xl border border-white/5 space-y-1">
             <div class="text-[10px] uppercase font-bold text-slate-400 flex items-center justify-between">
@@ -255,36 +239,25 @@
         </div>
       </section>
 
-      <!-- VISTA 2: GIOCHI (GALLERIA SAGHE & EPISODI) -->
+      <!-- VISTA 2: GIOCHI (CORRETTA) -->
       <section id="view-games" class="space-y-4 hidden">
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-3">
-          <!-- Barra Ricerca Giochi -->
           <div class="relative flex-1 max-w-md">
             <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
-            <input type="text" id="games-search-input" oninput="AppEngine.filterGames()" placeholder="Cerca saga narrativa o genere..." class="w-full pl-10 pr-4 py-2.5 rounded-xl bg-surface border border-white/5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-sky-500">
+            <input type="text" id="games-search-input" oninput="AppEngine.filterGames()" placeholder="Cerca saga o genere..." class="w-full pl-10 pr-4 py-2.5 rounded-xl bg-surface border border-white/5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-sky-500">
           </div>
           <span class="text-xs text-slate-400 font-mono hidden md:block">Multi-Engine D20 (Rules 1 & 2)</span>
         </div>
 
-        <!-- Chip Generi Dinamici (Avventura, Giallo, Cyberpunk...) identici a Shop e Ricette -->
-        <div class="flex space-x-2 overflow-x-auto pb-1" id="games-genre-chips">
-          <!-- Popolato dinamicamente da app.js -->
-        </div>
+        <!-- Chip Generi Dinamici -->
+        <div class="flex space-x-2 overflow-x-auto pb-1" id="games-genre-chips"></div>
 
-        <!-- Griglia delle Saghe (Omni-Module) -->
-        <div id="games-gallery-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          <!-- Popolato dinamicamente da app.js -->
-        </div>
+        <!-- Griglia delle Saghe -->
+        <div id="games-gallery-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
       </section>
 
-        <div id="games-gallery-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          <!-- Popolato dinamicamente da app.js -->
-        </div>
-      </section>
-
-      <!-- VISTA 2B: GAME SHELL (VISUAL NOVEL FULLSCREEN & VIEWPORT DI GIOCO) -->
+      <!-- VISTA 2B: GAME SHELL VISUAL NOVEL -->
       <section id="view-gameplay" class="space-y-4 hidden max-w-4xl mx-auto">
-        <!-- Top Bar Eroe Gameplay -->
         <div class="glass-panel p-3.5 rounded-2xl border border-white/10 flex items-center justify-between shadow-xl">
           <div class="flex items-center space-x-3">
             <button onclick="AppRouter.navigate('games')" class="btn btn-ghost btn-circle btn-sm text-slate-400">
@@ -303,55 +276,40 @@
           </div>
         </div>
 
-        <!-- Visual Novel Viewport: Copertina Panoramica Bordo-a-Bordo -->
         <div class="w-full rounded-3xl overflow-hidden border border-white/10 bg-surface relative shadow-2xl">
           <img id="gameplay-node-img" src="" class="w-full h-56 md:h-80 object-cover" alt="Scena">
           <div class="absolute inset-0 bg-gradient-to-t from-obsidian via-obsidian/30 to-transparent"></div>
           <span id="gameplay-node-badge" class="badge badge-sm badge-info absolute top-4 left-4 text-[10px] font-black uppercase">SNODO</span>
         </div>
 
-        <!-- Box Narrativo & Dialoghi Diegetici -->
         <div class="glass-panel p-5 rounded-2xl border border-white/10 space-y-3">
           <h3 id="gameplay-node-title" class="text-base md:text-lg font-black text-white uppercase tracking-wider">Luogo</h3>
           <p id="gameplay-node-text" class="text-xs md:text-sm text-slate-200 leading-relaxed"></p>
           <div id="gameplay-node-quote" class="text-xs italic text-slate-400 border-l-2 border-amber-500/70 pl-3 py-1 bg-white/[0.02] rounded-r-lg"></div>
         </div>
 
-        <!-- Bivi e Pulsanti Scelta a Tutta Larghezza -->
-        <div id="gameplay-choices-container" class="space-y-2.5 pt-2">
-          <!-- Popolato dinamicamente da app.js -->
-        </div>
+        <div id="gameplay-choices-container" class="space-y-2.5 pt-2"></div>
       </section>
 
-      <!-- VISTA 3: SHOP (COMMERCE REATTIVO MULTI-COLONNA) -->
+      <!-- VISTA 3: SHOP -->
       <section id="view-shop" class="space-y-4 hidden">
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-3">
-          <!-- Barra Ricerca Shop -->
           <div class="relative flex-1 max-w-md">
             <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
-            <input type="text" id="shop-search-input" oninput="AppEngine.filterShop()" placeholder="Cerca prodotto per nome o reparto..." class="w-full pl-10 pr-4 py-2.5 rounded-xl bg-surface border border-white/5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-sky-500">
+            <input type="text" id="shop-search-input" oninput="AppEngine.filterShop()" placeholder="Cerca prodotto o reparto..." class="w-full pl-10 pr-4 py-2.5 rounded-xl bg-surface border border-white/5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-sky-500">
           </div>
-          <!-- Badge Saldo Disponibile -->
           <div class="flex items-center space-x-2 text-xs font-bold text-amber-400">
             <span>Tuo Saldo:</span> <span class="text-glow-amber font-mono" id="shop-user-balance">-- 🪙</span>
           </div>
         </div>
 
-        <!-- Chip Categorie Dinamiche Derivate dai Prodotti Ammessi -->
-        <div class="flex space-x-2 overflow-x-auto pb-1" id="shop-category-chips">
-          <!-- Chip dinamici popolati da app.js -->
-        </div>
-
-        <!-- Griglia E-Commerce Unificata (2 col su mobile, 3-4 su desktop) -->
-        <div id="shop-products-grid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4">
-          <!-- Cards prodotto iniettate dinamicamente da app.js -->
-        </div>
+        <div class="flex space-x-2 overflow-x-auto pb-1" id="shop-category-chips"></div>
+        <div id="shop-products-grid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4"></div>
       </section>
 
-      <!-- VISTA 4: RICETTE & COCKTAIL (RICETTARIO REATTIVO) -->
+      <!-- VISTA 4: RICETTE -->
       <section id="view-recipes" class="space-y-4 hidden">
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-3">
-          <!-- Barra Ricerca Ricette -->
           <div class="relative flex-1 max-w-md">
             <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
             <input type="text" id="recipes-search-input" oninput="AppEngine.filterRecipes()" placeholder="Cerca cocktail, primi, antipasti..." class="w-full pl-10 pr-4 py-2.5 rounded-xl bg-surface border border-white/5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-sky-500">
@@ -359,20 +317,12 @@
           <span class="text-xs text-slate-400 font-mono hidden md:block">Cache Locale 0ms</span>
         </div>
 
-        <!-- Chip Categorie Ricette -->
-        <div class="flex space-x-2 overflow-x-auto pb-1" id="recipes-category-chips">
-          <!-- Chip dinamici ricette -->
-        </div>
-
-        <!-- Griglia Ricette (1 col mobile, 2 col tablet, 3 col desktop) -->
-        <div id="recipes-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
-          <!-- Cards ricette iniettate dinamicamente da app.js -->
-        </div>
+        <div class="flex space-x-2 overflow-x-auto pb-1" id="recipes-category-chips"></div>
+        <div id="recipes-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4"></div>
       </section>
 
-      <!-- VISTA 5: PROFILO & CAVEAU DIGITALE -->
+      <!-- VISTA 5: PROFILO -->
       <section id="view-profile" class="space-y-6 hidden">
-        <!-- Carta Membro Stile Apple Wallet -->
         <div class="rounded-3xl p-6 md:p-8 bg-gradient-to-tr from-slate-900 via-indigo-950 to-slate-900 border border-white/10 shadow-2xl relative overflow-hidden">
           <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div class="flex items-center space-x-4">
@@ -393,7 +343,6 @@
           </div>
         </div>
 
-        <!-- Sezione "I Miei Download & Prodotti Sbloccati" (Vault) -->
         <div class="glass-panel p-5 rounded-2xl border border-white/5 space-y-3">
           <h3 class="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center space-x-2">
             <i data-lucide="download" class="w-4 h-4 text-emerald-400"></i>
@@ -404,7 +353,6 @@
           </div>
         </div>
 
-        <!-- Registro Transazioni Contabili -->
         <div class="glass-panel p-5 rounded-2xl border border-white/5 space-y-3">
           <div class="flex justify-between items-center">
             <h3 class="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center space-x-2">
@@ -421,7 +369,7 @@
 
     </main>
 
-    <!-- FLOATING DOCK BAR INFERIORE (MOBILE ONLY < 768px) -->
+    <!-- FLOATING DOCK BAR MOBILE -->
     <nav class="md:hidden fixed bottom-3 left-4 right-4 z-40 glass-panel rounded-2xl border border-white/10 shadow-2xl p-1.5 flex justify-around items-center" id="mobile-bottom-dock">
       <button onclick="AppRouter.navigate('home')" class="nav-tab flex flex-col items-center py-1 px-3 rounded-xl text-sky-400 transition-all" data-tab="home">
         <i data-lucide="home" class="w-4 h-4"></i>
@@ -444,45 +392,69 @@
         <span class="text-[9px] font-bold uppercase tracking-wider mt-0.5">Profilo</span>
       </button>
     </nav>
-
   </div>
 
   <!-- ===================================================================== -->
-  <!-- MODALI DI SISTEMA: FULFILLMENT, SOFT-LOCK UPGRADE & DETTAGLI          -->
+  <!-- MODALI CORRETTI FUORI DAI TAG SCRIPT                                  -->
   <!-- ===================================================================== -->
 
-  <!-- MODALE FULFILLMENT: SUCCESSO ACQUISTO DIGITALE -->
+  <!-- MODALE SERIE HUB & LISTA EPISODI -->
+  <dialog id="modal-series-hub" class="modal modal-bottom sm:modal-middle">
+    <div class="modal-box glass-panel border border-white/10 p-0 max-h-[90vh] overflow-y-auto max-w-lg">
+      <div class="relative h-48 w-full bg-surface overflow-hidden">
+        <img id="hub-serie-img" src="" alt="" class="w-full h-full object-cover">
+        <div class="absolute inset-0 bg-gradient-to-t from-obsidian via-obsidian/40 to-transparent"></div>
+        <button onclick="document.getElementById('modal-series-hub').close()" class="btn btn-circle btn-sm btn-ghost absolute top-3 right-3 text-white bg-black/40">✕</button>
+        <div class="absolute bottom-3 left-4 flex items-center space-x-2">
+          <span id="hub-serie-genre" class="badge badge-primary text-[10px] font-bold uppercase tracking-wider">Avventura</span>
+          <span id="hub-serie-rules" class="badge badge-secondary badge-outline text-[10px] font-bold uppercase">Rules 2</span>
+        </div>
+      </div>
+      <div class="p-6 space-y-4">
+        <div>
+          <h3 id="hub-serie-title" class="text-xl font-black text-white">Titolo Saga</h3>
+          <p id="hub-serie-desc" class="text-xs text-slate-300 leading-relaxed mt-2"></p>
+          <div id="hub-serie-quote" class="text-xs italic text-slate-400 border-l-2 border-amber-500/70 pl-3 py-1 mt-2 bg-white/[0.02] rounded-r-lg"></div>
+        </div>
+
+        <div id="hub-hero-box" class="hidden p-3 rounded-xl bg-surface/80 border border-sky-500/20 flex items-center justify-between text-xs">
+          <div>
+            <div class="text-[10px] text-slate-400 uppercase font-bold">Eroe Attivo</div>
+            <div class="font-black text-white" id="hub-hero-name">Veterano</div>
+          </div>
+          <span class="badge badge-sm badge-info font-bold text-[9px]" id="hub-hero-progress">Ep. 0 Completati</span>
+        </div>
+
+        <div class="space-y-2 pt-1">
+          <div class="text-xs font-bold text-slate-400 uppercase tracking-wider">Capitoli Disponibili</div>
+          <div id="hub-episodes-list" class="space-y-2"></div>
+        </div>
+      </div>
+    </div>
+    <form method="dialog" class="modal-backdrop"><button>Chiudi</button></form>
+  </dialog>
+
+  <!-- MODALE FULFILLMENT -->
   <dialog id="modal-fulfillment" class="modal modal-bottom sm:modal-middle">
     <div class="modal-box glass-panel border border-emerald-500/30 p-6 text-center space-y-4 max-w-sm">
-      <div class="w-14 h-14 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center mx-auto text-2xl text-emerald-400">
-        🎉
-      </div>
+      <div class="w-14 h-14 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center mx-auto text-2xl text-emerald-400">🎉</div>
       <div>
         <h3 class="text-lg font-black text-white">Acquisto Confermato!</h3>
         <p class="text-xs text-slate-300 mt-1" id="fulfillment-summary">Transazione registrata con successo.</p>
       </div>
-      <div id="fulfillment-download-box" class="space-y-2 pt-2">
-        <!-- Tasto di download iniettato dinamicamente -->
-      </div>
+      <div id="fulfillment-download-box" class="space-y-2 pt-2"></div>
       <button onclick="document.getElementById('modal-fulfillment').close()" class="btn btn-sm btn-ghost w-full text-xs">Chiudi</button>
     </div>
     <form method="dialog" class="modal-backdrop"><button>Chiudi</button></form>
   </dialog>
 
-  <!-- MODALE SOFT-LOCK: INVITO A SALIRE DI PIANO -->
+  <!-- MODALE UPGRADE -->
   <dialog id="modal-plan-upgrade" class="modal modal-bottom sm:modal-middle">
     <div class="modal-box glass-panel border border-amber-500/30 p-6 text-center space-y-4 max-w-sm">
-      <div class="w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center mx-auto text-2xl">
-        👑
-      </div>
+      <div class="w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center mx-auto text-2xl">👑</div>
       <div>
         <h3 class="text-lg font-black text-white" id="upgrade-modal-title">Accesso Riservato</h3>
         <p class="text-xs text-slate-300 mt-1" id="upgrade-modal-desc">Questo contenuto è riservato ai membri di livello superiore.</p>
-      </div>
-      <div class="p-3 bg-white/5 rounded-xl border border-white/5 text-xs text-left font-mono space-y-1">
-        <div>• Sblocca articoli dedicati</div>
-        <div>• Bonus Megoin mensile accreditato</div>
-        <div>• Accesso prioritario alle novità</div>
       </div>
       <button onclick="AppRouter.navigate('profile'); document.getElementById('modal-plan-upgrade').close();" class="btn btn-sm btn-primary w-full text-xs font-bold">
         Scopri Come Attivarlo
@@ -522,7 +494,7 @@
     <form method="dialog" class="modal-backdrop"><button>Chiudi</button></form>
   </dialog>
 
-  <!-- MODALE SHOP DETTAGLIO & ACQUISTO -->
+  <!-- MODALE SHOP DETTAGLIO -->
   <dialog id="modal-shop-detail" class="modal modal-bottom sm:modal-middle">
     <div class="modal-box glass-panel border border-white/10 p-6 space-y-4 max-w-md">
       <div class="flex justify-between items-start">
@@ -538,7 +510,6 @@
       </div>
       <p id="modal-shop-desc" class="text-xs text-slate-300 leading-relaxed"></p>
       
-      <!-- Varianti (Se presenti nel foglio) -->
       <div id="modal-shop-variants-box" class="space-y-1.5 hidden">
         <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Opzioni / Taglia:</span>
         <div id="modal-shop-variants" class="flex flex-wrap gap-1.5"></div>
@@ -557,53 +528,14 @@
     <form method="dialog" class="modal-backdrop"><button>Chiudi</button></form>
   </dialog>
 
-  <!-- Inizializzazione Icone Lucide -->
+  <!-- Script Icone Lucide -->
   <script>
     document.addEventListener("DOMContentLoaded", () => {
       if (window.lucide) lucide.createIcons();
     });
-
-<!-- MODALE SERIE HUB & LISTA EPISODI -->
-  <dialog id="modal-series-hub" class="modal modal-bottom sm:modal-middle">
-    <div class="modal-box glass-panel border border-white/10 p-0 max-h-[90vh] overflow-y-auto max-w-lg">
-      <div class="relative h-48 w-full bg-surface overflow-hidden">
-        <img id="hub-serie-img" src="" alt="" class="w-full h-full object-cover">
-        <div class="absolute inset-0 bg-gradient-to-t from-obsidian via-obsidian/40 to-transparent"></div>
-        <button onclick="document.getElementById('modal-series-hub').close()" class="btn btn-circle btn-sm btn-ghost absolute top-3 right-3 text-white bg-black/40">✕</button>
-        <div class="absolute bottom-3 left-4 flex items-center space-x-2">
-          <span id="hub-serie-genre" class="badge badge-primary text-[10px] font-bold uppercase tracking-wider">Avventura</span>
-          <span id="hub-serie-rules" class="badge badge-secondary badge-outline text-[10px] font-bold uppercase">Rules 2</span>
-        </div>
-      </div>
-      <div class="p-6 space-y-4">
-        <div>
-          <h3 id="hub-serie-title" class="text-xl font-black text-white">Titolo Saga</h3>
-          <p id="hub-serie-desc" class="text-xs text-slate-300 leading-relaxed mt-2"></p>
-          <div id="hub-serie-quote" class="text-xs italic text-slate-400 border-l-2 border-amber-500/70 pl-3 py-1 mt-2 bg-white/[0.02] rounded-r-lg"></div>
-        </div>
-
-        <!-- Box Eroe Veterano Salvato (se presente) -->
-        <div id="hub-hero-box" class="hidden p-3 rounded-xl bg-surface/80 border border-sky-500/20 flex items-center justify-between text-xs">
-          <div>
-            <div class="text-[10px] text-slate-400 uppercase font-bold">Eroe Attivo</div>
-            <div class="font-black text-white" id="hub-hero-name">Veterano</div>
-          </div>
-          <span class="badge badge-sm badge-info font-bold text-[9px]" id="hub-hero-progress">Ep. 0 Completati</span>
-        </div>
-
-        <!-- Lista Episodi da Giocare -->
-        <div class="space-y-2 pt-1">
-          <div class="text-xs font-bold text-slate-400 uppercase tracking-wider">Capitoli Disponibili</div>
-          <div id="hub-episodes-list" class="space-y-2"></div>
-        </div>
-      </div>
-    </div>
-    <form method="dialog" class="modal-backdrop"><button>Chiudi</button></form>
-  </dialog>
-    
   </script>
 
-  <!-- CARICAMENTO MOTORI SUCCESSIVI -->
+  <!-- CARICAMENTO MOTORI -->
   <script src="audio.js"></script>
   <script src="app.js"></script>
 
