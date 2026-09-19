@@ -1,8 +1,6 @@
 // ============================================================================
-// PROJECT: ESTIQATSY PWA - CLIENT APPLICATION ENGINE (VERSIONE 2.7 DEFINITIVA)
+// PROJECT: ESTIQATSY PWA - CLIENT APPLICATION ENGINE (VERSIONE 2.8 ZERO-LATENCY)
 // FILE: app.js
-// Navigazione a Schermo Intero tra Sotto-Schermate (Zero Modali Popup),
-// Clean Quotes, Card con Foto Arrotondata Solo in Alto e Bivi 2 a 2
 // ============================================================================
 
 const AppConfig = {
@@ -10,6 +8,7 @@ const AppConfig = {
   CACHE_KEYS: {
     RECIPES: "est_cache_recipes",
     SHOP: "est_cache_shop",
+    GAMES: "est_cache_games",
     TRANSACTIONS: "est_cache_tx",
     VAULT: "est_cache_vault"
   }
@@ -38,15 +37,12 @@ if (tg) {
   } catch (e) {}
 }
 
-// ----------------------------------------------------------------------------
-// 1. ROUTER VISTE: CAMBIO SCHERMATA COMPLETO (NESSUN POPUP CHE SALE DA SOTTO)
-// ----------------------------------------------------------------------------
 const AppRouter = {
   navigate: function(screenName) {
     if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("click");
     if (tg && tg.HapticFeedback) tg.HapticFeedback.selectionChanged();
 
-    // Reset automatico delle ricerche al cambio sezione principale
+    // Reset filtri e ricerca quando si torna alle sezioni principali
     if (screenName === "shop") {
       AppState.shop.activeCategory = "tutti";
       AppState.shop.searchQuery = "";
@@ -67,7 +63,6 @@ const AppRouter = {
       AppRenderer.renderGames();
     }
 
-    // Elenco di tutte le schermate registrate
     const allScreens = [
       "view-home", "view-games", "view-gameplay", "view-shop", "view-recipes", "view-profile",
       "subview-series-hub", "subview-shop-detail", "subview-recipe-detail"
@@ -78,17 +73,14 @@ const AppRouter = {
       targetId = "view-" + screenName;
     }
 
-    // Nasconde tutte le altre schermate e mostra solo quella richiesta
     allScreens.forEach(id => {
       const el = document.getElementById(id);
       if (el) el.classList.toggle("hidden", id !== targetId);
     });
 
-    // Riporta lo scroll dell'area centrale sempre in cima
     const scrollArea = document.getElementById("app-main-scroll");
     if (scrollArea) scrollArea.scrollTop = 0;
 
-    // Aggiornamento stato icone navigazione mobile
     const baseTab = screenName.replace("view-", "").replace("subview-", "").split("-")[0];
     document.querySelectorAll(".nav-tab").forEach(btn => {
       const isActive = btn.dataset.tab === baseTab;
@@ -96,7 +88,6 @@ const AppRouter = {
       btn.classList.toggle("text-slate-400", !isActive);
     });
 
-    // Aggiornamento stato sidebar desktop
     document.querySelectorAll(".desk-nav-btn").forEach(btn => {
       const isActive = btn.dataset.tab === baseTab;
       btn.classList.toggle("text-sky-400", isActive);
@@ -104,7 +95,6 @@ const AppRouter = {
       btn.classList.toggle("text-slate-300", !isActive);
     });
 
-    // Gestione BackButton nativo Telegram
     if (tg && tg.BackButton) {
       if (screenName.startsWith("subview-") || screenName === "view-gameplay") {
         tg.BackButton.show();
@@ -119,13 +109,11 @@ const AppRouter = {
       }
     }
 
-    if (window.lucide) lucide.createIcons();
+    // Refresh icone immediato
+    setTimeout(() => { if (window.lucide) lucide.createIcons(); }, 10);
   }
 };
 
-// ----------------------------------------------------------------------------
-// 2. CHIAMATE API VERSO GOOGLE APPS SCRIPT
-// ----------------------------------------------------------------------------
 async function apiCall(action, extraParams = {}) {
   const initData = (tg && tg.initData) ? tg.initData : "";
   let url = `${AppConfig.GAS_URL}?action=${action}&initData=${encodeURIComponent(initData)}`;
@@ -140,12 +128,10 @@ async function apiCall(action, extraParams = {}) {
   return json.data;
 }
 
-// ----------------------------------------------------------------------------
-// 3. ENGINE PRINCIPALE (LOGICA & CHIAMATE)
-// ----------------------------------------------------------------------------
 const AppEngine = {
   init: async function() {
     this.loadVault();
+
     try {
       const p = await apiCall("profile");
       if (p && p.user) {
@@ -154,6 +140,7 @@ const AppEngine = {
         AppRenderer.renderProfile(p.user);
       }
 
+      // CARICAMENTO SIMULTANEO DI TUTTI I CATALOGHI IN RAM
       await Promise.allSettled([
         this.fetchShop(),
         this.fetchRecipes(),
@@ -164,25 +151,27 @@ const AppEngine = {
       const loader = document.getElementById("app-loading");
       if (loader) {
         loader.classList.add("opacity-0");
-        setTimeout(() => loader.remove(), 300);
+        setTimeout(() => loader.remove(), 250);
       }
+
+      if (window.lucide) lucide.createIcons();
     } catch (err) {
       console.error(err);
       const eb = document.getElementById("loading-error-box");
       if (eb) {
-        eb.textContent = err.message || "Errore di connessione a Google Apps Script.";
+        eb.textContent = err.message || "Errore di connessione.";
         eb.classList.remove("hidden");
         document.getElementById("loading-retry-btn").classList.remove("hidden");
       }
     }
   },
 
-  // GIOCHI
+  // GIOCHI (NAVIGAZIONE A 0 MILLISECONDI DA MEMORIA)
   fetchGames: async function() {
     try {
       const data = await apiCall("games");
-      if (data) {
-        AppState.games.series = data.series || data.games || [];
+      if (data && data.series) {
+        AppState.games.series = data.series;
         AppState.games.genres = data.genres || [];
         AppRenderer.renderGames();
       }
@@ -200,58 +189,58 @@ const AppEngine = {
     AppRenderer.renderGamesCards();
   },
 
-  openSeriesHub: async function(gameKey) {
-    try {
-      const data = await apiCall("game_hub", { gameKey: gameKey });
-      if (data && (data.serie || data.titolo)) {
-        document.getElementById("hub-serie-title").textContent = data.titolo || data.serie;
-        document.getElementById("hub-serie-desc").textContent = data.descrizione || "";
-        document.getElementById("hub-serie-genre").textContent = data.tipologia || "Avventura";
-        document.getElementById("hub-serie-img").src = data.mediaUrl || "https://image.pollinations.ai/prompt/noir-docks-night-cinematic?width=800&height=400&nologo=true";
+  // APERTURA ISTANTANEA DELLA SAGA A 0ms (SENZA CHIAMATE A GAS!)
+  openSeriesHub: function(gameKey) {
+    const saga = AppState.games.series.find(s => s.gameKey === gameKey);
+    if (!saga) return;
 
-        const qBox = document.getElementById("hub-serie-quote");
-        if (data.citazione) {
-          const cleanQ = String(data.citazione).replace(/^["'“”«»]+|["'“”«»]+$/g, "").trim();
-          qBox.textContent = `"${cleanQ}" ${data.autoreCitazione ? '(' + data.autoreCitazione + ')' : ''}`;
-          qBox.classList.remove("hidden");
-        } else {
-          qBox.classList.add("hidden");
-        }
+    document.getElementById("hub-serie-title").textContent = saga.serie;
+    document.getElementById("hub-serie-desc").textContent = saga.descrizione || "";
+    document.getElementById("hub-serie-genre").textContent = saga.tipologia || "Avventura";
+    
+    const rBadge = document.getElementById("hub-serie-rules");
+    if (rBadge) rBadge.textContent = saga.regole || "Rules 2";
 
-        const hb = document.getElementById("hub-hero-box");
-        if (data.eroeSalvato && data.eroeSalvato.nomeEroe) {
-          document.getElementById("hub-hero-name").textContent = `${data.eroeSalvato.nomeEroe} (${data.eroeSalvato.classe})`;
-          document.getElementById("hub-hero-progress").textContent = `Capitoli superati: ${data.eroeSalvato.maxEpisodio}`;
-          hb.classList.remove("hidden");
-        } else {
-          hb.classList.add("hidden");
-        }
+    document.getElementById("hub-serie-img").src = saga.mediaUrl;
 
-        const el = document.getElementById("hub-episodes-list");
-        el.innerHTML = (data.episodes || []).map(ep => {
-          let btnTxt = ep.canContinueFree ? "Continua (Gratis)" : `Gioca (${ep.costoMegoin} 🪙)`;
-          return `
-            <div class="p-3 rounded-2xl bg-surface border border-white/5 flex items-center justify-between">
-              <div>
-                <div class="text-xs font-bold text-white flex items-center space-x-1.5">
-                  <span>${ep.emoji || '▶️'} Ep. ${ep.episodio}: ${ep.titolo}</span>
-                  ${ep.isCompleted ? '<span class="badge badge-xs badge-success">Vinto</span>' : ''}
-                </div>
-                <div class="text-[10px] text-slate-400 mt-0.5">${ep.canContinueFree ? 'Avanzamento Eroe' : (ep.costoMegoin === 0 ? 'Gratis' : `${ep.costoMegoin} Megoin`)}</div>
-              </div>
-              <button onclick="AppEngine.startGame('${data.gameKey}', ${ep.episodio})" class="btn btn-xs btn-primary font-bold">
-                ${btnTxt}
-              </button>
-            </div>
-          `;
-        }).join("");
-
-        // Sostituisce la vista: nessun popup dal basso!
-        AppRouter.navigate("subview-series-hub");
-      }
-    } catch (e) {
-      alert("Errore caricamento saga: " + e.message);
+    const qBox = document.getElementById("hub-serie-quote");
+    if (saga.citazione) {
+      const cleanQ = String(saga.citazione).replace(/^["'“”«»]+|["'“”«»]+$/g, "").trim();
+      qBox.textContent = `"${cleanQ}" ${saga.autoreCitazione ? '(' + saga.autoreCitazione + ')' : ''}`;
+      qBox.classList.remove("hidden");
+    } else {
+      qBox.classList.add("hidden");
     }
+
+    const hb = document.getElementById("hub-hero-box");
+    if (saga.eroeSalvato && saga.eroeSalvato.nomeEroe) {
+      document.getElementById("hub-hero-name").textContent = `${saga.eroeSalvato.nomeEroe} (${saga.eroeSalvato.classe})`;
+      document.getElementById("hub-hero-progress").textContent = `Capitoli superati: ${saga.eroeSalvato.maxEpisodio}`;
+      hb.classList.remove("hidden");
+    } else {
+      hb.classList.add("hidden");
+    }
+
+    const el = document.getElementById("hub-episodes-list");
+    el.innerHTML = (saga.episodes || []).map(ep => {
+      let btnTxt = ep.canContinueFree ? "Continua (Gratis)" : `Gioca (${ep.costoMegoin} 🪙)`;
+      return `
+        <div class="p-3 rounded-2xl bg-surface border border-white/5 flex items-center justify-between">
+          <div>
+            <div class="text-xs font-bold text-white flex items-center space-x-1.5">
+              <span>${ep.emoji || '▶️'} Ep. ${ep.episodio}: ${ep.titolo}</span>
+              ${ep.isCompleted ? '<span class="badge badge-xs badge-success font-bold">Vinto</span>' : ''}
+            </div>
+            <div class="text-[10px] text-slate-400 mt-0.5">${ep.canContinueFree ? 'Avanzamento Eroe' : (ep.costoMegoin === 0 ? 'Gratis' : `${ep.costoMegoin} Megoin`)}</div>
+          </div>
+          <button onclick="AppEngine.startGame('${saga.gameKey}', ${ep.episodio})" class="btn btn-xs btn-primary font-bold px-3">
+            ${btnTxt}
+          </button>
+        </div>
+      `;
+    }).join("");
+
+    AppRouter.navigate("subview-series-hub");
   },
 
   startGame: async function(gameKey, epNum) {
@@ -311,6 +300,7 @@ const AppEngine = {
     AppRenderer.renderShopProducts();
   },
 
+  // APERTURA ISTANTANEA SCHEDA PRODOTTO A 0ms (DALLA RAM)
   openShopDetail: function(prodId) {
     const item = AppState.shop.items.find(p => p.id === prodId);
     if (!item) return;
@@ -318,8 +308,8 @@ const AppEngine = {
     document.getElementById("detail-shop-title").textContent = item.nome;
     document.getElementById("detail-shop-cat").textContent = item.categoria;
     document.getElementById("detail-shop-desc").textContent = item.descrizione || "";
-    document.getElementById("detail-shop-price").textContent = `${item.prezzoMegoin} 🪙`;
-    document.getElementById("detail-shop-img").src = item.mediaUrl || "https://image.pollinations.ai/prompt/vintage-contraband-crate?width=600&height=400&nologo=true";
+    document.getElementById("detail-shop-price").textContent = `${item.prezzoMegoin} 🪙 (ca. € ${item.prezzoEuro})`;
+    document.getElementById("detail-shop-img").src = item.mediaUrl;
 
     const sb = document.getElementById("detail-shop-stock");
     sb.textContent = item.isDigitale ? "Digitale" : (item.isEsaurito ? "Esaurito" : `${item.stock} Disp.`);
@@ -378,29 +368,27 @@ const AppEngine = {
     AppRenderer.renderRecipesCards();
   },
 
-  openRecipeDetail: async function(rowIdx) {
-    try {
-      const d = await apiCall("recipe_detail", { id: rowIdx });
-      if (d && d.recipe) {
-        const r = d.recipe;
-        document.getElementById("detail-recipe-title").textContent = r.piatto;
-        document.getElementById("detail-recipe-cat").textContent = r.categoria;
-        document.getElementById("detail-recipe-meta").textContent = `Costo: ${r.costo} • Difficoltà: ${r.difficolta} • ⏱️ ${r.tempo}`;
-        document.getElementById("detail-recipe-ingredients").textContent = r.ingredienti || "";
-        document.getElementById("detail-recipe-prep").textContent = r.preparazione || "";
-        document.getElementById("detail-recipe-img").src = r.mediaUrl || "https://image.pollinations.ai/prompt/artisan-cocktail-glass-noir?width=600&height=400&nologo=true";
+  // APERTURA ISTANTANEA RICETTA A 0ms (DALLA RAM)
+  openRecipeDetail: function(rowIdx) {
+    const r = AppState.recipes.items.find(x => x.rowIndex === rowIdx);
+    if (!r) return;
 
-        const rpg = document.getElementById("detail-recipe-rpg");
-        if (rpg) {
-          rpg.innerHTML = `
-            <div class="p-2 rounded bg-surface"><span class="text-sky-400 font-bold block">${r.rpg.destrezza || '0%'}</span>Destrezza</div>
-            <div class="p-2 rounded bg-surface"><span class="text-rose-400 font-bold block">${r.rpg.forza || '0%'}</span>Forza</div>
-            <div class="p-2 rounded bg-surface"><span class="text-amber-400 font-bold block">${r.rpg.gusto || '8'}/10</span>Gusto</div>
-          `;
-        }
-        AppRouter.navigate("subview-recipe-detail");
-      }
-    } catch (e) {}
+    document.getElementById("detail-recipe-title").textContent = r.piatto;
+    document.getElementById("detail-recipe-cat").textContent = r.categoria;
+    document.getElementById("detail-recipe-meta").textContent = `Costo: ${r.costo} • Difficoltà: ${r.difficolta} • ⏱️ ${r.tempo}`;
+    document.getElementById("detail-recipe-ingredients").textContent = r.ingredienti || "Nessun ingrediente elencato.";
+    document.getElementById("detail-recipe-prep").textContent = r.preparazione || "Nessuna preparazione.";
+    document.getElementById("detail-recipe-img").src = r.mediaUrl;
+
+    const rpg = document.getElementById("detail-recipe-rpg");
+    if (rpg && r.rpg) {
+      rpg.innerHTML = `
+        <div class="p-2 rounded bg-surface"><span class="text-sky-400 font-bold block">${r.rpg.destrezza}</span>Destrezza</div>
+        <div class="p-2 rounded bg-surface"><span class="text-rose-400 font-bold block">${r.rpg.forza}</span>Forza</div>
+        <div class="p-2 rounded bg-surface"><span class="text-amber-400 font-bold block">${r.rpg.gusto}/10</span>Gusto</div>
+      `;
+    }
+    AppRouter.navigate("subview-recipe-detail");
   },
 
   // TRANSAZIONI & CAVEAU
@@ -442,9 +430,6 @@ const AppEngine = {
   }
 };
 
-// ----------------------------------------------------------------------------
-// 4. RENDERERS GRAFICI
-// ----------------------------------------------------------------------------
 const AppRenderer = {
   renderProfile: function(u) {
     const s = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
@@ -500,20 +485,22 @@ const AppRenderer = {
       return;
     }
 
+    // CARD CON IMMAGINE BORDO A BORDO (p-0 overflow-hidden) E PULSANTE SPAZIATO
     grid.innerHTML = list.map(s => `
-      <div onclick="AppEngine.openSeriesHub('${s.gameKey}')" class="bg-surface rounded-2xl border border-white/5 flex flex-col justify-between overflow-hidden cursor-pointer group shadow-lg active:scale-[0.98] transition-transform">
-        <div class="h-36 md:h-44 w-full bg-slate-900 relative overflow-hidden">
-          <img src="${s.mediaUrl || 'https://image.pollinations.ai/prompt/noir-docks-night-cinematic?width=400&height=250&nologo=true'}" class="w-full h-full object-cover rounded-t-2xl rounded-b-none">
-          <span class="badge badge-xs badge-primary absolute top-2 left-2 font-bold uppercase text-[8px]">${s.tipologia}</span>
+      <div onclick="AppEngine.openSeriesHub('${s.gameKey}')" class="bg-surface rounded-2xl border border-white/5 flex flex-col justify-between overflow-hidden cursor-pointer group shadow-lg active:scale-[0.98] transition-transform p-0">
+        <div class="h-40 md:h-48 w-full bg-slate-900 relative overflow-hidden">
+          <img src="${s.mediaUrl}" class="w-full h-full object-cover rounded-t-2xl rounded-b-none">
+          <span class="badge badge-xs badge-primary absolute top-2.5 left-2.5 font-bold uppercase text-[8px]">${s.tipologia}</span>
+          <span class="badge badge-xs badge-neutral absolute top-2.5 right-2.5 font-bold uppercase text-[8px]">${s.regole}</span>
         </div>
-        <div class="p-3.5 space-y-2">
+        <div class="p-4 space-y-3">
           <div>
             <h3 class="font-black text-sm text-white">${s.emoji} ${s.serie}</h3>
-            <p class="text-[10px] text-slate-400 mt-0.5">${s.episodesCount} Capitoli Disponibili</p>
+            <p class="text-[10px] text-slate-400 mt-0.5">${s.episodes.length} Capitoli Disponibili</p>
           </div>
-          <div class="pt-2 border-t border-white/5 flex items-center justify-between">
-            <span class="text-[9px] font-bold text-sky-400 uppercase">Apri Saga</span>
-            <span class="badge badge-xs badge-info font-bold">▶️ Esplora</span>
+          <div class="pt-2.5 border-t border-white/5 flex items-center justify-between">
+            <span class="text-[10px] font-bold text-sky-400 uppercase tracking-wider">Esplora Saga</span>
+            <span class="btn btn-xs btn-primary px-3 font-bold shadow-md shadow-sky-600/30">Apri</span>
           </div>
         </div>
       </div>
@@ -525,7 +512,6 @@ const AppRenderer = {
     document.getElementById("gameplay-node-text").textContent = node.testo || "";
     document.getElementById("gameplay-node-img").src = node.mediaUrl || "https://image.pollinations.ai/prompt/noir-italian-docks-night-cinematic?width=600&height=600&nologo=true";
 
-    // PULIZIA VIRGOLETTE DOPPIE
     const qBox = document.getElementById("gameplay-node-quote");
     if (node.citazione && node.citazione !== "—") {
       const cleanQ = String(node.citazione).replace(/^["'“”«»]+|["'“”«»]+$/g, "").trim();
@@ -547,7 +533,6 @@ const AppRenderer = {
     const box = document.getElementById("gameplay-choices-container");
     const isCombat = (node.tipo === "NEMICO" || (node.id && node.id.includes("NEM_")));
 
-    // DUELLO: ATTACCA E FUGGI AFFIANCATI A 2 COLONNE
     if (isCombat) {
       box.innerHTML = `
         <div class="grid grid-cols-2 gap-2 mt-2">
@@ -562,7 +547,6 @@ const AppRenderer = {
       return;
     }
 
-    // BIVI: A vs B AFFIANCATI A 2 COLONNE
     if (node.choices && node.choices.length > 0) {
       if (node.choices.length === 2) {
         box.innerHTML = `
@@ -628,26 +612,27 @@ const AppRenderer = {
       return;
     }
 
+    // CARD SHOP BORDO A BORDO CON PREZZO PULITO E BOTTONE SPAZIATO
     grid.innerHTML = list.map(p => `
-      <div onclick="AppEngine.openShopDetail('${p.id}')" class="bg-surface rounded-2xl border border-white/5 flex flex-col justify-between overflow-hidden cursor-pointer active:scale-[0.98] transition-transform relative">
+      <div onclick="AppEngine.openShopDetail('${p.id}')" class="bg-surface rounded-2xl border border-white/5 flex flex-col justify-between overflow-hidden cursor-pointer active:scale-[0.98] transition-transform relative p-0 shadow-lg">
         ${p.isLocked ? `
-          <div class="absolute inset-0 z-10 bg-slate-950/80 backdrop-blur-sm flex flex-col items-center justify-center p-2 text-center">
+          <div class="absolute inset-0 z-10 bg-slate-950/85 backdrop-blur-sm flex flex-col items-center justify-center p-2 text-center">
             <span class="text-xl mb-1">🔒</span>
-            <span class="text-[8px] font-black text-amber-300 uppercase">Piano ${p.requiredPlan}</span>
+            <span class="text-[9px] font-black text-amber-300 uppercase">Piano ${p.requiredPlan}</span>
           </div>
         ` : ''}
-        <div class="h-28 md:h-36 w-full bg-slate-900 overflow-hidden relative">
-          <img src="${p.mediaUrl || 'https://image.pollinations.ai/prompt/vintage-contraband-crate?width=300&height=200&nologo=true'}" class="w-full h-full object-cover rounded-t-2xl rounded-b-none">
-          <span class="badge badge-xs ${p.isDigitale ? 'badge-info' : 'badge-neutral'} absolute top-2 left-2 text-[8px] uppercase font-bold">${p.tipo || 'Fisico'}</span>
+        <div class="h-32 md:h-40 w-full bg-slate-900 overflow-hidden relative">
+          <img src="${p.mediaUrl}" class="w-full h-full object-cover rounded-t-2xl rounded-b-none">
+          <span class="badge badge-xs ${p.isDigitale ? 'badge-info' : 'badge-neutral'} absolute top-2.5 left-2.5 text-[8px] uppercase font-bold">${p.tipo || 'Fisico'}</span>
         </div>
-        <div class="p-3 space-y-2">
+        <div class="p-3.5 space-y-2.5">
           <div>
-            <div class="text-[8px] font-bold text-sky-400 uppercase">${p.categoria}</div>
+            <div class="text-[9px] font-bold text-sky-400 uppercase">${p.categoria}</div>
             <h4 class="font-bold text-xs text-white line-clamp-1 mt-0.5">${p.nome}</h4>
           </div>
           <div class="pt-2 border-t border-white/5 flex items-center justify-between">
             <span class="text-xs font-black text-amber-300 text-glow-amber">${p.prezzoMegoin} 🪙</span>
-            <span class="text-[9px] text-slate-400 font-bold">${p.isEsaurito ? 'Finito' : 'Dettagli'}</span>
+            <span class="text-[10px] text-slate-400 font-bold">${p.isEsaurito ? 'Finito' : '€ ' + p.prezzoEuro}</span>
           </div>
         </div>
       </div>
@@ -685,17 +670,17 @@ const AppRenderer = {
     }
 
     grid.innerHTML = list.map(r => `
-      <div onclick="AppEngine.openRecipeDetail(${r.rowIndex})" class="bg-surface rounded-2xl border border-white/5 flex items-center justify-between p-3 cursor-pointer active:scale-[0.98] transition-transform">
-        <div class="flex items-center space-x-3 overflow-hidden">
-          <div class="w-11 h-11 rounded-xl bg-slate-900 overflow-hidden flex-shrink-0">
-            <img src="${r.mediaUrl || 'https://image.pollinations.ai/prompt/artisan-cocktail-glass-noir?width=150&height=150&nologo=true'}" class="w-full h-full object-cover rounded-xl">
+      <div onclick="AppEngine.openRecipeDetail(${r.rowIndex})" class="bg-surface rounded-2xl border border-white/5 flex items-center justify-between p-3.5 cursor-pointer active:scale-[0.98] transition-transform shadow-lg">
+        <div class="flex items-center space-x-3.5 overflow-hidden">
+          <div class="w-12 h-12 rounded-xl bg-slate-900 overflow-hidden flex-shrink-0">
+            <img src="${r.mediaUrl}" class="w-full h-full object-cover">
           </div>
           <div class="overflow-hidden">
             <h4 class="font-bold text-xs text-white truncate">${r.piatto}</h4>
-            <div class="text-[9px] text-slate-400 mt-0.5 truncate">${r.categoria} • ⏱️ ${r.tempo}</div>
+            <div class="text-[10px] text-slate-400 mt-0.5 truncate">${r.categoria} • ⏱️ ${r.tempo}</div>
           </div>
         </div>
-        <span class="badge badge-sm badge-outline border-sky-400/40 text-sky-400 font-bold text-[9px]">${r.costo}</span>
+        <span class="badge badge-sm badge-outline border-sky-400/40 text-sky-400 font-bold text-[10px] px-2.5">${r.costo}</span>
       </div>
     `).join("");
   },
@@ -708,10 +693,10 @@ const AppRenderer = {
       return;
     }
     c.innerHTML = txs.map(t => `
-      <div class="py-2 flex justify-between items-center">
+      <div class="py-2.5 flex justify-between items-center">
         <div>
           <div class="font-bold text-white text-xs">${t.tipo}</div>
-          <div class="text-[9px] text-slate-400">${t.data} • ${t.dettaglio}</div>
+          <div class="text-[10px] text-slate-400">${t.data} • ${t.dettaglio}</div>
         </div>
         <div class="font-mono text-xs font-bold ${t.megoin.includes('+') ? 'text-emerald-400' : 'text-amber-400'}">
           ${t.megoin}
@@ -728,12 +713,12 @@ const AppRenderer = {
       return;
     }
     c.innerHTML = AppState.vault.map(v => `
-      <div class="p-2.5 rounded-xl bg-surface/60 border border-white/5 flex items-center justify-between">
+      <div class="p-3 rounded-2xl bg-surface/80 border border-white/5 flex items-center justify-between">
         <div>
           <div class="font-bold text-white text-xs">${v.nome}</div>
-          <div class="text-[9px] text-slate-400">${v.data}</div>
+          <div class="text-[10px] text-slate-400">${v.data}</div>
         </div>
-        <a href="${v.url}" target="_blank" class="btn btn-xs btn-success font-bold">Scarica</a>
+        <a href="${v.url}" target="_blank" class="btn btn-xs btn-success font-bold px-3">Scarica</a>
       </div>
     `).join("");
   }
