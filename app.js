@@ -1,65 +1,39 @@
 // ============================================================================
-// PROJECT: ESTIQATSY PWA - CLIENT APPLICATION ENGINE (VERSIONE 2.6)
-// FILE: app.js
-// Supporto: Omni-Module (Shop, Ricette, Giochi R1 & R2), Filtri Generi, Hub Serie
+// INIZIALIZZAZIONE NATIVA FULLSCREEN TELEGRAM (BLINDA LA VISTA SENZA STRISCE)
 // ============================================================================
-
-const AppConfig = {
-  GAS_URL: "https://script.google.com/macros/s/AKfycbyeCWHM9X4ycwWT7IOMwg24pySL78bJT5BRyiIR5eb0UJALWuaORzfJ2lkqLrjLv0xN/exec",
-  CACHE_KEYS: {
-    RECIPES: "est_cache_recipes",
-    SHOP: "est_cache_shop",
-    TRANSACTIONS: "est_cache_tx",
-    VAULT: "est_cache_vault"
-  }
-};
-
-const AppState = {
-  user: null,
-  allowedModules: { home: true, shop: true, games: true, recipes: true, profile: true },
-  activeTab: "home",
-  shop: {
-    items: [],
-    categories: [],
-    activeCategory: "tutti",
-    searchQuery: ""
-  },
-  recipes: {
-    items: [],
-    categories: [],
-    activeCategory: "tutti",
-    searchQuery: ""
-  },
-  games: {
-    series: [],
-    genres: [],
-    activeGenre: "tutti",
-    searchQuery: "",
-    activeSeries: null,
-    session: null
-  },
-  vault: []
-};
-
-// TELEGRAM WEBAPP SDK
 const tg = window.Telegram ? window.Telegram.WebApp : null;
+
 if (tg) {
   try {
-    tg.expand();
     tg.ready();
+    tg.expand(); // Espansione standard iniziale
+    
+    // Attiva la modalità Fullscreen nativa di Telegram 8.0+ (elimina la barra grigia in alto)
+    if (typeof tg.requestFullscreen === "function") {
+      tg.requestFullscreen();
+    }
+    
+    // Disabilita lo swipe verticale verso il basso (impedisce che l'app si chiuda come un foglio trascinabile)
+    if (typeof tg.disableVerticalSwipes === "function") {
+      tg.disableVerticalSwipes();
+    }
+
     tg.setHeaderColor("#090D16");
     tg.setBackgroundColor("#090D16");
-  } catch (e) {}
+  } catch (e) {
+    console.warn("Inizializzazione Telegram Fullscreen:", e);
+  }
 }
 
 // ----------------------------------------------------------------------------
-// 1. ROUTER VISTE
+// 1. ROUTER VISTE & RESET AUTOMATICO FILTRI SU CAMBIO TAB
 // ----------------------------------------------------------------------------
 const AppRouter = {
   navigate: function(tabName) {
     if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("click");
     if (tg && tg.HapticFeedback) tg.HapticFeedback.selectionChanged();
 
+    // Controllo Hard-Gating (nasconde i moduli non inclusi nel piano)
     if (tabName !== "home" && tabName !== "profile" && tabName !== "gameplay") {
       if (AppState.allowedModules && !AppState.allowedModules[tabName]) {
         AppEngine.showUpgradeModal("Modulo Non Incluso", "Questa sezione non è compresa nel tuo piano di abbonamento.");
@@ -67,20 +41,57 @@ const AppRouter = {
       }
     }
 
+    // ========================================================================
+    // AUTO-RESET DEI FILTRI & RICERCA SU OGNI CAMBIO TAB (Refresh Istantaneo)
+    // ========================================================================
+    if (tabName === "shop") {
+      AppState.shop.activeCategory = "tutti";
+      AppState.shop.searchQuery = "";
+      const sInput = document.getElementById("shop-search-input");
+      if (sInput) sInput.value = "";
+      AppRenderer.renderShop();
+    } else if (tabName === "recipes") {
+      AppState.recipes.activeCategory = "tutti";
+      AppState.recipes.searchQuery = "";
+      const rInput = document.getElementById("recipes-search-input");
+      if (rInput) rInput.value = "";
+      AppRenderer.renderRecipes();
+    } else if (tabName === "games") {
+      AppState.games.activeGenre = "tutti";
+      AppState.games.searchQuery = "";
+      const gInput = document.getElementById("games-search-input");
+      if (gInput) gInput.value = "";
+      AppRenderer.renderGames();
+    }
+
     AppState.activeTab = tabName;
 
+    // Riporta subito la vista in cima (elimina scorrimenti strani da sotto)
+    window.scrollTo({ top: 0, behavior: "instant" });
+
+    // Switch pulito delle viste con classe di transizione
     const views = ["home", "games", "gameplay", "shop", "recipes", "profile"];
     views.forEach(v => {
       const el = document.getElementById("view-" + v);
-      if (el) el.classList.toggle("hidden", v !== tabName);
+      if (el) {
+        const isTarget = (v === tabName);
+        el.classList.toggle("hidden", !isTarget);
+        if (isTarget) {
+          el.classList.remove("app-view");
+          void el.offsetWidth; // Trigger reflow per animazione fluida
+          el.classList.add("app-view");
+        }
+      }
     });
 
+    // Aggiornamento stato icone navigazione mobile
     document.querySelectorAll(".nav-tab").forEach(btn => {
       const isActive = btn.dataset.tab === tabName;
       btn.classList.toggle("text-sky-400", isActive);
       btn.classList.toggle("text-slate-400", !isActive);
     });
 
+    // Aggiornamento stato sidebar desktop
     document.querySelectorAll(".desk-nav-btn").forEach(btn => {
       const isActive = btn.dataset.tab === tabName;
       btn.classList.toggle("text-sky-400", isActive);
@@ -99,6 +110,7 @@ const AppRouter = {
     };
     if (deskTitle) deskTitle.textContent = titles[tabName] || "Dashboard";
 
+    // BackButton Nativo Telegram: attivo solo se sei in partita
     if (tg && tg.BackButton) {
       if (tabName === "gameplay") {
         tg.BackButton.show();
