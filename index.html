@@ -62,7 +62,7 @@
 
 <body class="h-screen w-screen flex flex-col md:flex-row antialiased select-none overflow-hidden bg-[#090D16]">
 
-  <!-- 1. SCHERMATA DI CARICAMENTO (LOADER) -->
+  <!-- 1. LOADER INIZIALE -->
   <div id="app-loading" class="fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#090D16] p-6 text-center transition-opacity duration-300">
     <div class="relative mb-4">
       <div class="w-14 h-14 border-4 border-sky-500/20 border-t-sky-400 rounded-full animate-spin"></div>
@@ -127,11 +127,10 @@
     </div>
   </aside>
 
-  <!-- 3. CORPO CENTRALE APP SHELL (Mobile & Desktop) -->
+  <!-- 3. CORPO CENTRALE (Mobile & Desktop) -->
   <div class="flex-1 flex flex-col h-full min-w-0 overflow-hidden relative">
 
-    <!-- HEADER MOBILE A TUTTA LARGHEZZA (Edge-to-edge, non boxato, come il footer) -->
-    <!-- Contiene SOLO il logo e il nome dell'app perfettamente centrati tra i pulsanti nativi -->
+    <!-- HEADER MOBILE A TUTTA LARGHEZZA: Solo Logo e Nome centrati tra i pulsanti Telegram -->
     <header class="md:hidden flex-none z-30 h-14 glass-header px-4 flex items-center justify-center relative">
       <div class="flex items-center space-x-2">
         <span class="text-base">⚓</span>
@@ -139,7 +138,7 @@
       </div>
     </header>
 
-    <!-- AREA PRINCIPALE CONTENUTI SCROLLABILE -->
+    <!-- AREA SCROLLABILE CONTENUTI -->
     <main class="flex-1 overflow-y-auto overflow-x-hidden relative" id="app-main-scroll">
       <div class="p-3 md:p-6 max-w-5xl mx-auto space-y-4">
 
@@ -147,7 +146,7 @@
         <!-- SCHERMATA: HOME -->
         <!-- ================================================================= -->
         <section id="view-home" class="space-y-4 app-screen">
-          <!-- Hero Banner di Benvenuto con Saldo e Punti in Evidenza -->
+          <!-- Hero Banner di Benvenuto -->
           <div class="rounded-3xl p-5 md:p-7 bg-gradient-to-br from-slate-900 via-slate-900 to-indigo-950 border border-white/10 shadow-2xl space-y-3">
             <div class="flex items-center space-x-2">
               <span class="badge badge-xs badge-outline border-sky-400 text-sky-400 font-bold uppercase text-[8px]">Piattaforma Ufficiale</span>
@@ -194,7 +193,7 @@
               <i data-lucide="chevron-right" class="w-3.5 h-3.5 text-slate-500 group-hover:text-sky-400 transition-colors"></i>
             </div>
 
-            <!-- 4. Prodotti Acquistati -> Caveau Profilo -->
+            <!-- 4. Prodotti Acquistati -> Caveau Digitale -->
             <div onclick="AppEngine.openVaultSection()" class="bg-surface/80 hover:bg-surface active:scale-[0.97] transition-all p-3 rounded-2xl border border-white/5 cursor-pointer flex justify-between items-start group">
               <div>
                 <div class="text-[8px] uppercase font-bold text-slate-400">Prodotti Acquistati</div>
@@ -204,7 +203,7 @@
             </div>
           </div>
 
-          <!-- CAROSELLO SAGHE AUTOMATICO (Ogni 5s, con pausa al tocco e tag PARTITA IN CORSO) -->
+          <!-- CAROSELLO SAGHE (Scorrimento 5s, pausa al tocco, tag Partita in Corso) -->
           <div class="space-y-2">
             <div class="flex items-center justify-between">
               <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Saghe & Episodi Usciti</span>
@@ -218,11 +217,11 @@
             </div>
           </div>
 
-          <!-- VETRINA PIANI DI ABBONAMENTO (Con tag PIANO ATTIVO) -->
+          <!-- VETRINA PIANI DI ABBONAMENTO (Con tag Piano Attivo) -->
           <div class="space-y-2 pt-2">
             <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Piani di Abbonamento Syndicate</span>
             <div id="home-plans-container" class="grid grid-cols-1 md:grid-cols-3 gap-3">
-              <!-- Schede dei piani iniettate dinamicamente da app.js -->
+              <!-- Card dei Piani iniettate dinamicamente da app.js -->
             </div>
           </div>
         </section>
@@ -289,7 +288,7 @@
             </div>
           </div>
 
-          <!-- Immagine Snodo 100% con Citazione Sovrimpressa -->
+          <!-- Immagine Snodo con Citazione Sovrimpressa -->
           <div class="w-full aspect-square relative bg-surface overflow-hidden">
             <img id="gameplay-node-img" src="" class="w-full h-full object-cover" alt="">
             <span id="gameplay-node-badge" class="badge badge-sm badge-info absolute top-3 left-3 text-[9px] font-black uppercase">SNODO</span>
@@ -386,7 +385,7 @@
         <!-- SCHERMATA: PROFILO & CAVEAU -->
         <!-- ================================================================= -->
         <section id="view-profile" class="space-y-4 hidden app-screen">
-          <!-- Scheda Profilo con Saldo Megoin E Punti Fedeltà integrati nel sommario -->
+          <!-- Scheda Profilo: include sia il Saldo Megoin sia i Punti Fedeltà -->
           <div class="rounded-3xl p-5 bg-gradient-to-tr from-slate-900 via-indigo-950 to-slate-900 border border-white/10 shadow-xl flex items-center justify-between">
             <div class="flex items-center space-x-3">
               <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-sky-500 to-indigo-600 flex items-center justify-center font-black text-lg text-white" id="profile-card-avatar">F</div>
@@ -399,7 +398,6 @@
                 </div>
               </div>
             </div>
-            <!-- Sommario Metriche Personali -->
             <div class="text-right space-y-1">
               <div>
                 <div class="text-[8px] text-slate-400 uppercase font-bold">Saldo Megoin</div>
@@ -412,7 +410,7 @@
             </div>
           </div>
 
-          <!-- Sezione Caveau con ID Ancorato per Salto Diretto da Home -->
+          <!-- Sezione Caveau con ID Ancorato per Salto Diretto dal 4° KPI Home -->
           <div id="profile-vault-container-card" class="bg-surface/70 p-4 rounded-2xl border border-white/5 space-y-2">
             <h3 class="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center space-x-1.5">
               <i data-lucide="download" class="w-3.5 h-3.5 text-emerald-400"></i>
