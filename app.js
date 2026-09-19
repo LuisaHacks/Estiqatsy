@@ -1,8 +1,7 @@
 // ============================================================================
-// PROJECT: ESTIQATSY PWA - CLIENT APPLICATION ENGINE (TRANCHE 3)
+// PROJECT: ESTIQATSY PWA - CLIENT APPLICATION ENGINE (VERSIONE 2.6)
 // FILE: app.js
-// Architettura: Omni-Module, Soft-Gating, Visual Novel Game Shell,
-//               Cache Client-Side, Instant Search e Vault Digitale
+// Supporto: Omni-Module (Shop, Ricette, Giochi R1 & R2), Filtri Generi, Hub Serie
 // ============================================================================
 
 const AppConfig = {
@@ -15,7 +14,6 @@ const AppConfig = {
   }
 };
 
-// STATO GLOBALE REATTIVO DELLA PWA
 const AppState = {
   user: null,
   allowedModules: { home: true, shop: true, games: true, recipes: true, profile: true },
@@ -33,16 +31,17 @@ const AppState = {
     searchQuery: ""
   },
   games: {
-    gallery: [],
-    activeGameKey: "game1",
-    activeEp: 1,
-    session: null,
-    searchQuery: ""
+    series: [],
+    genres: [],
+    activeGenre: "tutti",
+    searchQuery: "",
+    activeSeries: null,
+    session: null
   },
-  vault: [] // Prodotti digitali acquistati / sbloccati
+  vault: []
 };
 
-// SDK TELEGRAM WEBAPP
+// TELEGRAM WEBAPP SDK
 const tg = window.Telegram ? window.Telegram.WebApp : null;
 if (tg) {
   try {
@@ -54,14 +53,13 @@ if (tg) {
 }
 
 // ----------------------------------------------------------------------------
-// 1. ROUTER VISTE & GESTIONE ADATTIVA (MOBILE & DESKTOP)
+// 1. ROUTER VISTE
 // ----------------------------------------------------------------------------
 const AppRouter = {
   navigate: function(tabName) {
     if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("click");
     if (tg && tg.HapticFeedback) tg.HapticFeedback.selectionChanged();
 
-    // Controllo Hard-Gating: se il modulo non è permesso, blocca
     if (tabName !== "home" && tabName !== "profile" && tabName !== "gameplay") {
       if (AppState.allowedModules && !AppState.allowedModules[tabName]) {
         AppEngine.showUpgradeModal("Modulo Non Incluso", "Questa sezione non è compresa nel tuo piano di abbonamento.");
@@ -71,21 +69,18 @@ const AppRouter = {
 
     AppState.activeTab = tabName;
 
-    // 1. Switch Viste (Mobile e Desktop condividono lo stesso DOM responsive)
     const views = ["home", "games", "gameplay", "shop", "recipes", "profile"];
     views.forEach(v => {
       const el = document.getElementById("view-" + v);
       if (el) el.classList.toggle("hidden", v !== tabName);
     });
 
-    // 2. Aggiornamento stato Bottoni Navigazione Mobile
     document.querySelectorAll(".nav-tab").forEach(btn => {
       const isActive = btn.dataset.tab === tabName;
       btn.classList.toggle("text-sky-400", isActive);
       btn.classList.toggle("text-slate-400", !isActive);
     });
 
-    // 3. Aggiornamento stato Sidebar Desktop
     document.querySelectorAll(".desk-nav-btn").forEach(btn => {
       const isActive = btn.dataset.tab === tabName;
       btn.classList.toggle("text-sky-400", isActive);
@@ -93,7 +88,6 @@ const AppRouter = {
       btn.classList.toggle("text-slate-300", !isActive);
     });
 
-    // 4. Titolo Testata Desktop
     const deskTitle = document.getElementById("desk-section-title");
     const titles = {
       home: "Dashboard Home",
@@ -105,7 +99,6 @@ const AppRouter = {
     };
     if (deskTitle) deskTitle.textContent = titles[tabName] || "Dashboard";
 
-    // 5. Gestione BackButton Nativo Telegram
     if (tg && tg.BackButton) {
       if (tabName === "gameplay") {
         tg.BackButton.show();
@@ -115,13 +108,12 @@ const AppRouter = {
       }
     }
 
-    // Refresh icone Lucide
     if (window.lucide) lucide.createIcons();
   }
 };
 
 // ----------------------------------------------------------------------------
-// 2. CLIENT API DI RETE (CHIAMATE AD APPS SCRIPT)
+// 2. CLIENT API APPS SCRIPT
 // ----------------------------------------------------------------------------
 async function apiCall(action, extraParams = {}) {
   const initData = (tg && tg.initData) ? tg.initData : "";
@@ -140,14 +132,14 @@ async function apiCall(action, extraParams = {}) {
 }
 
 // ----------------------------------------------------------------------------
-// 3. ENGINE CENTRALE (LOGICA, CACHE & DISPATCHING)
+// 3. ENGINE CENTRALE (LOGICA & CHIAMATE)
 // ----------------------------------------------------------------------------
 const AppEngine = {
   init: async function() {
     this.loadVaultFromStorage();
 
     try {
-      // 1. Profilo Utente & Permessi Macro Moduli (Hard Gating)
+      // 1. Profilo Utente
       const profilePayload = await apiCall("profile");
       if (profilePayload && profilePayload.user) {
         AppState.user = profilePayload.user;
@@ -156,7 +148,7 @@ const AppEngine = {
         this.applyHardGating(AppState.allowedModules);
       }
 
-      // 2. Caricamento Parallelo Cataloghi (Shop, Ricette, Giochi, Transazioni)
+      // 2. Caricamento Parallelo Cataloghi
       await Promise.allSettled([
         this.fetchShop(),
         this.fetchRecipes(),
@@ -164,7 +156,6 @@ const AppEngine = {
         this.syncTransactions(false)
       ]);
 
-      // Rimuovi loader con dissolvenza
       const loader = document.getElementById("app-loading");
       if (loader) {
         loader.classList.add("opacity-0");
@@ -182,7 +173,6 @@ const AppEngine = {
     }
   },
 
-  // Applica Hard-Gating nascondendo i moduli non previsti dal piano
   applyHardGating: function(modules) {
     ["shop", "games", "recipes"].forEach(mod => {
       if (!modules[mod]) {
@@ -194,7 +184,147 @@ const AppEngine = {
   },
 
   // ==========================================================================
-  // SHOP & COMMERCE
+  // GIOCHI, GENERI & SERIE HUB
+  // ==========================================================================
+  fetchGames: async function() {
+    try {
+      const data = await apiCall("games");
+      if (data && data.series) {
+        AppState.games.series = data.series;
+        AppState.games.genres = data.genres || [];
+        AppRenderer.renderGames();
+      }
+    } catch (e) {
+      console.warn("Games fetch error:", e);
+    }
+  },
+
+  setGameGenre: function(genre) {
+    if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("click");
+    AppState.games.activeGenre = genre;
+    AppRenderer.renderGames();
+  },
+
+  filterGames: function() {
+    const input = document.getElementById("games-search-input");
+    AppState.games.searchQuery = input ? input.value.trim().toLowerCase() : "";
+    AppRenderer.renderGamesCards();
+  },
+
+  openSeriesHub: async function(gameKey) {
+    if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("click");
+    try {
+      const data = await apiCall("game_hub", { gameKey: gameKey });
+      if (data && data.serie) {
+        AppState.games.activeSeries = data;
+        
+        document.getElementById("hub-serie-title").textContent = data.titolo || data.serie;
+        document.getElementById("hub-serie-desc").textContent = data.descrizione || "Esplora i capitoli di questa saga.";
+        document.getElementById("hub-serie-genre").textContent = data.tipologia || "Avventura";
+        document.getElementById("hub-serie-rules").textContent = data.regole || "Rules 2";
+        document.getElementById("hub-serie-img").src = data.mediaUrl || "https://image.pollinations.ai/prompt/noir-italian-docks-night-cinematic?width=600&height=300&nologo=true";
+
+        const quoteBox = document.getElementById("hub-serie-quote");
+        if (data.citazione) {
+          quoteBox.textContent = `"${data.citazione}" ${data.autoreCitazione ? '(' + data.autoreCitazione + ')' : ''}`;
+          quoteBox.classList.remove("hidden");
+        } else {
+          quoteBox.classList.add("hidden");
+        }
+
+        const heroBox = document.getElementById("hub-hero-box");
+        if (data.eroeSalvato && data.eroeSalvato.nomeEroe) {
+          document.getElementById("hub-hero-name").textContent = `${data.eroeSalvato.nomeEroe} (${data.eroeSalvato.classe})`;
+          document.getElementById("hub-hero-progress").textContent = `Episodi vinti: ${data.eroeSalvato.maxEpisodio}`;
+          heroBox.classList.remove("hidden");
+        } else {
+          heroBox.classList.add("hidden");
+        }
+
+        // Render Episodi
+        const epContainer = document.getElementById("hub-episodes-list");
+        epContainer.innerHTML = data.episodes.map(ep => {
+          let btnLabel = ep.canContinueFree ? "⚔️ Continua (Gratis)" : `▶️ Gioca (${ep.costoMegoin} 🪙)`;
+          let statusBadge = ep.isCompleted ? '<span class="badge badge-xs badge-success">Completato</span>' : '';
+
+          return `
+            <div class="p-3 rounded-xl bg-surface/70 border border-white/5 flex items-center justify-between">
+              <div>
+                <div class="text-xs font-bold text-white flex items-center space-x-1.5">
+                  <span>${ep.emoji || '▶️'} Ep. ${ep.episodio}: ${ep.titolo}</span>
+                  ${statusBadge}
+                </div>
+                <div class="text-[10px] text-slate-400 mt-0.5">${ep.canContinueFree ? 'Avanzamento con Eroe' : (ep.costoMegoin === 0 ? 'Gratuito' : `Costo: ${ep.costoMegoin} Megoin`)}</div>
+              </div>
+              <button onclick="document.getElementById('modal-series-hub').close(); AppEngine.startGame('${data.gameKey}', ${ep.episodio})" class="btn btn-xs btn-primary font-bold shadow-md shadow-sky-600/20">
+                ${btnLabel}
+              </button>
+            </div>
+          `;
+        }).join("");
+
+        document.getElementById("modal-series-hub").showModal();
+      }
+    } catch (e) {
+      alert("Impossibile aprire la saga: " + e.message);
+    }
+  },
+
+  startGame: async function(gameKey, epNum) {
+    if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("dice");
+    try {
+      const data = await apiCall("game_start", { gameKey: gameKey, episodio: epNum });
+      if (data && data.success) {
+        AppState.user.saldoMegoin = data.nuovoSaldoMegoin;
+        AppRenderer.renderProfile(AppState.user);
+
+        AppState.games.session = {
+          gameKey: gameKey,
+          episodio: epNum,
+          partitaId: data.partitaId,
+          engine: data.engine
+        };
+
+        AppRenderer.renderGameNode(data.nodoIniziale, data.statoEroe);
+        AppRouter.navigate("gameplay");
+      }
+    } catch (err) {
+      alert("❌ Impossibile avviare la partita: " + err.message);
+    }
+  },
+
+  advanceNode: async function(targetNodeId) {
+    if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("hit");
+    if (tg && tg.HapticFeedback) tg.HapticFeedback.impactOccurred("medium");
+
+    const sess = AppState.games.session;
+    if (!sess) {
+      AppRouter.navigate("games");
+      return;
+    }
+
+    try {
+      const data = await apiCall("game_node", {
+        gameKey: sess.gameKey,
+        episodio: sess.episodio,
+        nodeId: targetNodeId,
+        partitaId: sess.partitaId
+      });
+
+      if (data && data.nodo) {
+        if (data.nodo.tipo === "Fine" || data.nodo.id.includes("END")) {
+          if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("victory");
+          if (window.confetti) confetti({ particleCount: 120, spread: 70, origin: { y: 0.6 } });
+        }
+        AppRenderer.renderGameNode(data.nodo, data.statoEroe);
+      }
+    } catch (err) {
+      alert("Errore avanzamento avventura: " + err.message);
+    }
+  },
+
+  // ==========================================================================
+  // SHOP
   // ==========================================================================
   fetchShop: async function() {
     const cached = localStorage.getItem(AppConfig.CACHE_KEYS.SHOP);
@@ -206,7 +336,6 @@ const AppEngine = {
         AppRenderer.renderShop();
       } catch (e) {}
     }
-
     try {
       const data = await apiCall("shop");
       if (data && data.items) {
@@ -215,9 +344,7 @@ const AppEngine = {
         localStorage.setItem(AppConfig.CACHE_KEYS.SHOP, JSON.stringify(data));
         AppRenderer.renderShop();
       }
-    } catch (e) {
-      console.warn("Shop fetch fallback:", e);
-    }
+    } catch (e) {}
   },
 
   setShopCategory: function(cat) {
@@ -232,43 +359,17 @@ const AppEngine = {
     AppRenderer.renderShopProducts();
   },
 
-  openShopDetail: async function(prodId) {
+  openShopDetail: function(prodId) {
     if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("click");
     const item = AppState.shop.items.find(p => p.id === prodId);
     if (!item) return;
 
     document.getElementById("modal-shop-title").textContent = item.nome;
     document.getElementById("modal-shop-cat").textContent = item.categoria;
-    document.getElementById("modal-shop-desc").textContent = item.descrizione || "Nessuna descrizione disponibile.";
+    document.getElementById("modal-shop-desc").textContent = item.descrizione || "Nessuna descrizione.";
     document.getElementById("modal-shop-price").textContent = `${item.prezzoMegoin} 🪙 Megoin`;
     document.getElementById("modal-shop-img").src = item.mediaUrl || "https://image.pollinations.ai/prompt/vintage-contraband-crate-docks-noir?width=600&height=400&nologo=true";
 
-    // Stock badge
-    const stockBadge = document.getElementById("modal-shop-stock");
-    if (item.isDigitale) {
-      stockBadge.textContent = "Digitale (Immediato)";
-      stockBadge.className = "badge badge-sm badge-info absolute top-3 right-3 font-bold";
-    } else if (item.isEsaurito) {
-      stockBadge.textContent = "Esaurito";
-      stockBadge.className = "badge badge-sm badge-error absolute top-3 right-3 font-bold";
-    } else {
-      stockBadge.textContent = `${item.stock} Disp.`;
-      stockBadge.className = "badge badge-sm badge-success absolute top-3 right-3 font-bold";
-    }
-
-    // Varianti
-    const varBox = document.getElementById("modal-shop-variants-box");
-    const varContainer = document.getElementById("modal-shop-variants");
-    if (item.varianti && item.varianti.length > 0) {
-      varContainer.innerHTML = item.varianti.map((v, i) => `
-        <span class="badge badge-sm ${i === 0 ? 'badge-primary' : 'badge-outline'} cursor-pointer">${v}</span>
-      `).join("");
-      varBox.classList.remove("hidden");
-    } else {
-      varBox.classList.add("hidden");
-    }
-
-    // Tasto di Azione (Soft-Gating o Acquisto)
     const btn = document.getElementById("modal-shop-action-btn");
     if (item.isLocked) {
       btn.textContent = `🔒 Sblocca con ${item.requiredPlan}`;
@@ -302,11 +403,9 @@ const AppEngine = {
         if (window.confetti) confetti({ particleCount: 90, spread: 60, origin: { y: 0.7 } });
         if (tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred("success");
 
-        // Aggiorna saldo utente
         AppState.user.saldoMegoin = res.nuovoSaldoMegoin;
         AppRenderer.renderProfile(AppState.user);
 
-        // Se prodotto digitale con download, salva nel Vault del profilo
         if (res.digitalDownloads && res.digitalDownloads.length > 0) {
           res.digitalDownloads.forEach(d => AppEngine.addVaultItem(d.nome, d.url));
         }
@@ -324,7 +423,7 @@ const AppEngine = {
   },
 
   // ==========================================================================
-  // RICETTE & COCKTAILS
+  // RICETTE
   // ==========================================================================
   fetchRecipes: async function() {
     const cached = localStorage.getItem(AppConfig.CACHE_KEYS.RECIPES);
@@ -336,7 +435,6 @@ const AppEngine = {
         AppRenderer.renderRecipes();
       } catch (e) {}
     }
-
     try {
       const data = await apiCall("recipes");
       if (data && data.recipes) {
@@ -345,9 +443,7 @@ const AppEngine = {
         localStorage.setItem(AppConfig.CACHE_KEYS.RECIPES, JSON.stringify(data));
         AppRenderer.renderRecipes();
       }
-    } catch (e) {
-      console.warn("Recipes fetch fallback:", e);
-    }
+    } catch (e) {}
   },
 
   setRecipeCategory: function(cat) {
@@ -371,11 +467,10 @@ const AppEngine = {
         document.getElementById("modal-recipe-title").textContent = r.piatto;
         document.getElementById("modal-recipe-cat").textContent = r.categoria;
         document.getElementById("modal-recipe-meta").textContent = `Costo: ${r.costo} • Difficoltà: ${r.difficolta} • ⏱️ ${r.tempo}`;
-        document.getElementById("modal-recipe-ingredients").textContent = r.ingredienti || "Nessun ingrediente specificato.";
-        document.getElementById("modal-recipe-prep").textContent = r.preparazione || "Nessuna preparazione specificata.";
+        document.getElementById("modal-recipe-ingredients").textContent = r.ingredienti || "Nessun ingrediente.";
+        document.getElementById("modal-recipe-prep").textContent = r.preparazione || "Nessuna preparazione.";
         document.getElementById("modal-recipe-img").src = r.mediaUrl || "https://image.pollinations.ai/prompt/artisan-cocktail-glass-vintage-darsena-bar-noir?width=600&height=400&nologo=true";
 
-        // Parametri RPG
         const rpgBox = document.getElementById("modal-recipe-rpg");
         if (rpgBox && r.rpg) {
           rpgBox.innerHTML = `
@@ -384,7 +479,6 @@ const AppEngine = {
             <div class="p-2 rounded-lg bg-surface"><span class="text-amber-400 font-bold block">${r.rpg.gusto || '8'}/10</span>Gusto</div>
           `;
         }
-
         document.getElementById("modal-recipe-detail").showModal();
       }
     } catch (e) {
@@ -393,94 +487,16 @@ const AppEngine = {
   },
 
   // ==========================================================================
-  // GIOCHI, NARRATIVA & GAME SHELL
-  // ==========================================================================
-  fetchGames: async function() {
-    try {
-      const data = await apiCall("games");
-      if (data && data.games) {
-        AppState.games.gallery = data.games;
-        AppRenderer.renderGames();
-      }
-    } catch (e) {
-      console.warn("Games fetch error:", e);
-    }
-  },
-
-  filterGames: function() {
-    const input = document.getElementById("games-search-input");
-    AppState.games.searchQuery = input ? input.value.trim().toLowerCase() : "";
-    AppRenderer.renderGames();
-  },
-
-  startGame: async function(gameKey, epNum) {
-    if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("dice");
-    try {
-      const data = await apiCall("game_start", { gameKey: gameKey, episodio: epNum });
-      if (data && data.success) {
-        AppState.user.saldoMegoin = data.nuovoSaldoMegoin;
-        AppRenderer.renderProfile(AppState.user);
-
-        AppState.games.session = {
-          gameKey: gameKey,
-          episodio: epNum,
-          partitaId: data.partitaId,
-          engine: data.engine
-        };
-
-        AppRenderer.renderGameNode(data.nodoIniziale, data.statoEroe);
-        AppRouter.navigate("gameplay");
-      }
-    } catch (err) {
-      alert("❌ Impossibile avviare la partita: " + err.message);
-    }
-  },
-
-  // RISOLUZIONE BIVIO: Navigazione fluida tra nodi di gioco
-  advanceNode: async function(targetNodeId) {
-    if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("hit");
-    if (tg && tg.HapticFeedback) tg.HapticFeedback.impactOccurred("medium");
-
-    const sess = AppState.games.session;
-    if (!sess) {
-      AppRouter.navigate("games");
-      return;
-    }
-
-    try {
-      const data = await apiCall("game_node", {
-        gameKey: sess.gameKey,
-        episodio: sess.episodio,
-        nodeId: targetNodeId,
-        partitaId: sess.partitaId
-      });
-
-      if (data && data.nodo) {
-        // Se vittoria finale o checkpoint ricompense
-        if (data.nodo.tipo === "Fine" || data.nodo.id.includes("END")) {
-          if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("victory");
-          if (window.confetti) confetti({ particleCount: 120, spread: 70, origin: { y: 0.6 } });
-        }
-        AppRenderer.renderGameNode(data.nodo, data.statoEroe);
-      }
-    } catch (err) {
-      alert("Errore avanzamento avventura: " + err.message);
-    }
-  },
-
-  // ==========================================================================
-  // TRANSAZIONI & CAVEAU DIGITALE (VAULT)
+  // TRANSAZIONI & CAVEAU
   // ==========================================================================
   syncTransactions: async function(force = false) {
     const cached = localStorage.getItem(AppConfig.CACHE_KEYS.TRANSACTIONS);
     if (!force && cached) {
       try {
-        const txs = JSON.parse(cached);
-        AppRenderer.renderTransactions(txs);
+        AppRenderer.renderTransactions(JSON.parse(cached));
         return;
       } catch (e) {}
     }
-
     try {
       const data = await apiCall("my_transactions");
       if (data && data.transactions) {
@@ -508,7 +524,6 @@ const AppEngine = {
     }
   },
 
-  // Modali di Sistema
   showFulfillmentModal: function(summary, downloads) {
     document.getElementById("fulfillment-summary").textContent = summary || "Acquisto registrato.";
     const box = document.getElementById("fulfillment-download-box");
@@ -534,11 +549,10 @@ const AppEngine = {
 };
 
 // ----------------------------------------------------------------------------
-// 4. RENDERERS GRAFICI (OMNI-MODULE DESIGN REATTIVO)
+// 4. RENDERERS GRAFICI
 // ----------------------------------------------------------------------------
 const AppRenderer = {
   renderProfile: function(u) {
-    // Header & Mobile Bar
     const setT = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
     setT("user-megoin-mob", u.saldoMegoin);
     setT("user-plan-mob", u.piano);
@@ -546,7 +560,6 @@ const AppRenderer = {
     setT("home-megoin-card", `${u.saldoMegoin} 🪙`);
     setT("home-punti-card", `${u.puntiFedelta} Pt`);
 
-    // Desktop Header
     setT("user-avatar-desk", (u.nome || "U").charAt(0).toUpperCase());
     setT("user-name-desk", u.nome);
     setT("user-plan-desk", `PIANO ${u.piano.toUpperCase()}`);
@@ -554,7 +567,6 @@ const AppRenderer = {
     setT("desk-header-megoin", `${u.saldoMegoin} Megoin 🪙`);
     setT("shop-user-balance", `${u.saldoMegoin} 🪙`);
 
-    // Scheda Apple Wallet Profilo
     setT("profile-card-avatar", (u.nome || "U").charAt(0).toUpperCase());
     setT("profile-card-name", u.nome);
     setT("profile-card-username", u.username);
@@ -563,8 +575,107 @@ const AppRenderer = {
     setT("profile-card-megoin", `${u.saldoMegoin} 🪙 Megoin`);
   },
 
+  renderGames: function() {
+    const chipContainer = document.getElementById("games-genre-chips");
+    if (chipContainer && AppState.games.genres.length > 0) {
+      const allGenres = ["tutti", ...AppState.games.genres];
+      chipContainer.innerHTML = allGenres.map(g => {
+        const isAct = AppState.games.activeGenre.toLowerCase() === g.toLowerCase();
+        return `
+          <button onclick="AppEngine.setGameGenre('${g}')" class="px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all ${isAct ? 'bg-sky-500 text-white shadow-md shadow-sky-500/30' : 'bg-surface border border-white/5 text-slate-400 hover:text-white'}">
+            ${g.toUpperCase()}
+          </button>
+        `;
+      }).join("");
+    }
+
+    this.renderGamesCards();
+  },
+
+  renderGamesCards: function() {
+    const grid = document.getElementById("games-gallery-container");
+    if (!grid) return;
+
+    let series = AppState.games.series;
+
+    if (AppState.games.activeGenre !== "tutti") {
+      series = series.filter(s => s.tipologia.toLowerCase() === AppState.games.activeGenre.toLowerCase());
+    }
+
+    if (AppState.games.searchQuery) {
+      series = series.filter(s => 
+        s.serie.toLowerCase().includes(AppState.games.searchQuery) ||
+        s.tipologia.toLowerCase().includes(AppState.games.searchQuery)
+      );
+    }
+
+    const homeCount = document.getElementById("home-games-count");
+    if (homeCount) homeCount.textContent = AppState.games.series.length;
+
+    if (series.length === 0) {
+      grid.innerHTML = `<div class="col-span-full text-center py-10 text-slate-500 text-xs">Nessuna saga trovata.</div>`;
+      return;
+    }
+
+    grid.innerHTML = series.map(s => `
+      <div onclick="AppEngine.openSeriesHub('${s.gameKey}')" class="glass-panel p-4 rounded-3xl border border-white/5 flex flex-col justify-between active:scale-[0.98] transition-all cursor-pointer group shadow-xl">
+        <div class="h-32 md:h-44 w-full rounded-2xl bg-surface overflow-hidden relative mb-3">
+          <img src="${s.mediaUrl || 'https://image.pollinations.ai/prompt/noir-italian-docks-night-cinematic?width=400&height=250&nologo=true'}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+          <span class="badge badge-xs badge-primary absolute top-3 left-3 font-bold uppercase text-[9px]">${s.tipologia}</span>
+          <span class="badge badge-xs badge-neutral absolute top-3 right-3 font-bold uppercase text-[9px]">${s.regole}</span>
+        </div>
+        <div>
+          <h3 class="font-black text-sm md:text-base text-white line-clamp-1">${s.emoji} ${s.serie}</h3>
+          <p class="text-[11px] text-slate-400 mt-1">${s.episodesCount} Capitoli Narrativi</p>
+        </div>
+        <div class="mt-4 pt-2.5 border-t border-white/5 flex items-center justify-between">
+          <span class="text-[10px] text-sky-400 font-bold uppercase tracking-wider">Esplora Saga</span>
+          <span class="badge badge-xs badge-info font-bold">Apri</span>
+        </div>
+      </div>
+    `).join("");
+  },
+
+  renderGameNode: function(node, hero) {
+    document.getElementById("gameplay-node-title").textContent = node.nome;
+    document.getElementById("gameplay-node-text").textContent = node.testo;
+    document.getElementById("gameplay-node-img").src = node.mediaUrl || "https://image.pollinations.ai/prompt/noir-italian-docks-night-cinematic?width=800&height=400&nologo=true";
+    document.getElementById("gameplay-node-badge").textContent = node.tipo || "SNODO";
+
+    const q = document.getElementById("gameplay-node-quote");
+    if (node.citazione) {
+      q.textContent = `"${node.citazione}" ${node.autoreCitazione ? '(' + node.autoreCitazione + ')' : ''}`;
+      q.classList.remove("hidden");
+    } else {
+      q.classList.add("hidden");
+    }
+
+    if (hero) {
+      document.getElementById("gameplay-hero-name").textContent = hero.nomeEroe;
+      document.getElementById("gameplay-hero-class").textContent = hero.classe || "Avventuriero";
+      document.getElementById("gameplay-pv-label").textContent = `${hero.pv}/${hero.pvMax} PV`;
+      const bar = document.getElementById("gameplay-pv-bar");
+      bar.value = hero.pv;
+      bar.max = hero.pvMax;
+    }
+
+    const choicesBox = document.getElementById("gameplay-choices-container");
+    if (node.choices && node.choices.length > 0) {
+      choicesBox.innerHTML = node.choices.map(b => `
+        <button onclick="AppEngine.advanceNode('${b.target}')" class="btn btn-block btn-md btn-primary text-xs font-bold shadow-lg shadow-sky-600/20 active:scale-[0.98] transition-all">
+          ${b.testo}
+        </button>
+      `).join("");
+    } else {
+      choicesBox.innerHTML = `
+        <button onclick="AppRouter.navigate('games')" class="btn btn-block btn-md btn-outline border-white/20 text-xs font-bold">
+          🏠 Torna alla Galleria Saghe
+        </button>
+      `;
+    }
+  },
+
   renderShop: function() {
-    // Categorie Chips Dinamiche
     const chipContainer = document.getElementById("shop-category-chips");
     if (chipContainer && AppState.shop.categories.length > 0) {
       const allCats = ["tutti", ...AppState.shop.categories];
@@ -577,7 +688,6 @@ const AppRenderer = {
         `;
       }).join("");
     }
-
     this.renderShopProducts();
   },
 
@@ -586,13 +696,9 @@ const AppRenderer = {
     if (!grid) return;
 
     let items = AppState.shop.items;
-    
-    // Filtro categoria
     if (AppState.shop.activeCategory !== "tutti") {
       items = items.filter(p => p.categoria.toLowerCase() === AppState.shop.activeCategory.toLowerCase());
     }
-
-    // Filtro ricerca
     if (AppState.shop.searchQuery) {
       items = items.filter(p => 
         p.nome.toLowerCase().includes(AppState.shop.searchQuery) ||
@@ -604,17 +710,16 @@ const AppRenderer = {
     if (homeShopCount) homeShopCount.textContent = AppState.shop.items.length;
 
     if (items.length === 0) {
-      grid.innerHTML = `<div class="col-span-full text-center py-10 text-slate-500 text-xs">Nessun articolo trovato per questa ricerca.</div>`;
+      grid.innerHTML = `<div class="col-span-full text-center py-10 text-slate-500 text-xs">Nessun articolo trovato.</div>`;
       return;
     }
 
     grid.innerHTML = items.map(p => `
       <div onclick="AppEngine.openShopDetail('${p.id}')" class="glass-panel p-3 rounded-2xl border border-white/5 flex flex-col justify-between active:scale-[0.98] transition-all cursor-pointer relative overflow-hidden group">
-        <!-- Badge Soft-Gating se bloccato -->
         ${p.isLocked ? `
           <div class="absolute inset-0 z-10 badge-soft-lock flex flex-col items-center justify-center p-3 text-center">
             <span class="text-xl mb-1">🔒</span>
-            <span class="text-[9px] font-black text-amber-300 uppercase tracking-wider">Riservato a ${p.requiredPlan}</span>
+            <span class="text-[9px] font-black text-amber-300 uppercase tracking-wider">Piano ${p.requiredPlan}</span>
           </div>
         ` : ''}
 
@@ -647,7 +752,6 @@ const AppRenderer = {
         `;
       }).join("");
     }
-
     this.renderRecipesCards();
   },
 
@@ -656,11 +760,9 @@ const AppRenderer = {
     if (!grid) return;
 
     let items = AppState.recipes.items;
-
     if (AppState.recipes.activeCategory !== "tutti") {
       items = items.filter(r => r.categoria.toLowerCase() === AppState.recipes.activeCategory.toLowerCase());
     }
-
     if (AppState.recipes.searchQuery) {
       items = items.filter(r => 
         r.piatto.toLowerCase().includes(AppState.recipes.searchQuery) ||
@@ -687,87 +789,6 @@ const AppRenderer = {
         <span class="badge badge-sm badge-outline border-sky-400/40 text-sky-400 font-bold text-[10px]">${r.costo}</span>
       </div>
     `).join("");
-  },
-
-  renderGames: function() {
-    const c = document.getElementById("games-gallery-container");
-    if (!c) return;
-
-    let games = AppState.games.gallery;
-    if (AppState.games.searchQuery) {
-      games = games.filter(g => 
-        g.titolo.toLowerCase().includes(AppState.games.searchQuery) ||
-        g.serie.toLowerCase().includes(AppState.games.searchQuery)
-      );
-    }
-
-    const homeGamesCount = document.getElementById("home-games-count");
-    if (homeGamesCount) homeGamesCount.textContent = AppState.games.gallery.length;
-
-    if (games.length === 0) {
-      c.innerHTML = `<div class="col-span-full text-center py-10 text-slate-500 text-xs">Nessuna saga trovata.</div>`;
-      return;
-    }
-
-    c.innerHTML = games.map(g => `
-      <div class="glass-panel p-5 rounded-3xl border border-white/10 space-y-4 shadow-xl">
-        <div class="flex justify-between items-start">
-          <div>
-            <span class="badge badge-xs badge-secondary font-bold uppercase text-[8px]">${g.tipologia || 'Avventura'}</span>
-            <h3 class="text-base font-black text-white mt-1">${g.titolo}</h3>
-          </div>
-          <span class="text-[10px] font-mono text-slate-400">${g.episodi.length} Capitoli</span>
-        </div>
-        <div class="space-y-2">
-          ${g.episodi.map(ep => `
-            <button onclick="AppEngine.startGame('${g.gameKey}', ${ep.numero})" class="w-full py-2.5 px-3.5 rounded-xl bg-surface/70 hover:bg-sky-600/20 border border-white/5 flex items-center justify-between text-xs text-slate-200 active:scale-[0.98] transition-all">
-              <span class="truncate pr-2">${ep.emoji || '▶️'} Ep. ${ep.numero}: <b>${ep.titolo}</b></span>
-              <span class="text-[10px] font-bold text-amber-400 font-mono flex-shrink-0">${ep.costoMegoin} 🪙</span>
-            </button>
-          `).join("")}
-        </div>
-      </div>
-    `).join("");
-  },
-
-  renderGameNode: function(node, hero) {
-    document.getElementById("gameplay-node-title").textContent = node.nome;
-    document.getElementById("gameplay-node-text").textContent = node.testo;
-    document.getElementById("gameplay-node-img").src = node.mediaUrl || "https://image.pollinations.ai/prompt/noir-italian-docks-night-cinematic?width=800&height=400&nologo=true";
-    document.getElementById("gameplay-node-badge").textContent = node.tipo || "SNODO";
-
-    const q = document.getElementById("gameplay-node-quote");
-    if (node.citazione) {
-      q.textContent = `"${node.citazione}" ${node.autoreCitazione ? '(' + node.autoreCitazione + ')' : ''}`;
-      q.classList.remove("hidden");
-    } else {
-      q.classList.add("hidden");
-    }
-
-    if (hero) {
-      document.getElementById("gameplay-hero-name").textContent = hero.nomeEroe;
-      document.getElementById("gameplay-hero-class").textContent = hero.classe || "Avventuriero";
-      document.getElementById("gameplay-pv-label").textContent = `${hero.pv}/${hero.pvMax} PV`;
-      const bar = document.getElementById("gameplay-pv-bar");
-      bar.value = hero.pv;
-      bar.max = hero.pvMax;
-    }
-
-    // Rendering scelte a bivi
-    const choicesBox = document.getElementById("gameplay-choices-container");
-    if (node.parsedBivio && node.parsedBivio.length > 0) {
-      choicesBox.innerHTML = node.parsedBivio.map(b => `
-        <button onclick="AppEngine.advanceNode('${b.target}')" class="btn btn-block btn-md btn-primary text-xs font-bold shadow-lg shadow-sky-600/20 active:scale-[0.98] transition-all">
-          ${b.testo}
-        </button>
-      `).join("");
-    } else {
-      choicesBox.innerHTML = `
-        <button onclick="AppRouter.navigate('games')" class="btn btn-block btn-md btn-outline border-white/20 text-xs font-bold">
-          🏠 Torna alla Galleria Saghe
-        </button>
-      `;
-    }
   },
 
   renderTransactions: function(txs) {
@@ -807,7 +828,7 @@ const AppRenderer = {
           <div class="font-bold text-white text-xs">${v.nome}</div>
           <div class="text-[10px] text-slate-400">Sbloccato il ${v.data}</div>
         </div>
-        <a href="${v.url}" target="_blank" class="btn btn-xs btn-success font-bold">
+        <a href="${v.url}" target="_blank" class="btn btn-xs btn-success font-bold shadow-md">
           📥 Scarica
         </a>
       </div>
@@ -815,9 +836,6 @@ const AppRenderer = {
   }
 };
 
-// ============================================================================
-// INIZIALIZZAZIONE AUTOMATICA
-// ============================================================================
 window.addEventListener("DOMContentLoaded", () => {
   AppEngine.init();
 });
