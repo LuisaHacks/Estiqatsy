@@ -1,39 +1,69 @@
 // ============================================================================
-// INIZIALIZZAZIONE NATIVA FULLSCREEN TELEGRAM (BLINDA LA VISTA SENZA STRISCE)
+// PROJECT: ESTIQATSY PWA - CLIENT APPLICATION ENGINE (VERSIONE 2.6 PULITA)
+// FILE: app.js
+// Supporto: Omni-Module (Shop, Ricette, Giochi R1 & R2), Filtri Generi, Hub Serie
 // ============================================================================
-const tg = window.Telegram ? window.Telegram.WebApp : null;
 
+const AppConfig = {
+  GAS_URL: "https://script.google.com/macros/s/AKfycbyeCWHM9X4ycwWT7IOMwg24pySL78bJT5BRyiIR5eb0UJALWuaORzfJ2lkqLrjLv0xN/exec",
+  CACHE_KEYS: {
+    RECIPES: "est_cache_recipes",
+    SHOP: "est_cache_shop",
+    TRANSACTIONS: "est_cache_tx",
+    VAULT: "est_cache_vault"
+  }
+};
+
+const AppState = {
+  user: null,
+  allowedModules: { home: true, shop: true, games: true, recipes: true, profile: true },
+  activeTab: "home",
+  shop: {
+    items: [],
+    categories: [],
+    activeCategory: "tutti",
+    searchQuery: ""
+  },
+  recipes: {
+    items: [],
+    categories: [],
+    activeCategory: "tutti",
+    searchQuery: ""
+  },
+  games: {
+    series: [],
+    genres: [],
+    activeGenre: "tutti",
+    searchQuery: "",
+    activeSeries: null,
+    session: null
+  },
+  vault: []
+};
+
+// TELEGRAM WEBAPP SDK
+const tg = window.Telegram ? window.Telegram.WebApp : null;
 if (tg) {
   try {
     tg.ready();
-    tg.expand(); // Espansione standard iniziale
-    
-    // Attiva la modalità Fullscreen nativa di Telegram 8.0+ (elimina la barra grigia in alto)
-    if (typeof tg.requestFullscreen === "function") {
-      tg.requestFullscreen();
-    }
-    
-    // Disabilita lo swipe verticale verso il basso (impedisce che l'app si chiuda come un foglio trascinabile)
-    if (typeof tg.disableVerticalSwipes === "function") {
-      tg.disableVerticalSwipes();
-    }
-
+    tg.expand();
+    if (typeof tg.requestFullscreen === "function") tg.requestFullscreen();
+    if (typeof tg.disableVerticalSwipes === "function") tg.disableVerticalSwipes();
     tg.setHeaderColor("#090D16");
     tg.setBackgroundColor("#090D16");
   } catch (e) {
-    console.warn("Inizializzazione Telegram Fullscreen:", e);
+    console.warn("Inizializzazione Telegram WebApp:", e);
   }
 }
 
 // ----------------------------------------------------------------------------
-// 1. ROUTER VISTE & RESET AUTOMATICO FILTRI SU CAMBIO TAB
+// 1. ROUTER VISTE & AUTO-RESET FILTRI
 // ----------------------------------------------------------------------------
 const AppRouter = {
   navigate: function(tabName) {
     if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("click");
     if (tg && tg.HapticFeedback) tg.HapticFeedback.selectionChanged();
 
-    // Controllo Hard-Gating (nasconde i moduli non inclusi nel piano)
     if (tabName !== "home" && tabName !== "profile" && tabName !== "gameplay") {
       if (AppState.allowedModules && !AppState.allowedModules[tabName]) {
         AppEngine.showUpgradeModal("Modulo Non Incluso", "Questa sezione non è compresa nel tuo piano di abbonamento.");
@@ -41,9 +71,7 @@ const AppRouter = {
       }
     }
 
-    // ========================================================================
-    // AUTO-RESET DEI FILTRI & RICERCA SU OGNI CAMBIO TAB (Refresh Istantaneo)
-    // ========================================================================
+    // Auto-Reset dei filtri su cambio tab
     if (tabName === "shop") {
       AppState.shop.activeCategory = "tutti";
       AppState.shop.searchQuery = "";
@@ -65,11 +93,8 @@ const AppRouter = {
     }
 
     AppState.activeTab = tabName;
-
-    // Riporta subito la vista in cima (elimina scorrimenti strani da sotto)
     window.scrollTo({ top: 0, behavior: "instant" });
 
-    // Switch pulito delle viste con classe di transizione
     const views = ["home", "games", "gameplay", "shop", "recipes", "profile"];
     views.forEach(v => {
       const el = document.getElementById("view-" + v);
@@ -78,20 +103,18 @@ const AppRouter = {
         el.classList.toggle("hidden", !isTarget);
         if (isTarget) {
           el.classList.remove("app-view");
-          void el.offsetWidth; // Trigger reflow per animazione fluida
+          void el.offsetWidth;
           el.classList.add("app-view");
         }
       }
     });
 
-    // Aggiornamento stato icone navigazione mobile
     document.querySelectorAll(".nav-tab").forEach(btn => {
       const isActive = btn.dataset.tab === tabName;
       btn.classList.toggle("text-sky-400", isActive);
       btn.classList.toggle("text-slate-400", !isActive);
     });
 
-    // Aggiornamento stato sidebar desktop
     document.querySelectorAll(".desk-nav-btn").forEach(btn => {
       const isActive = btn.dataset.tab === tabName;
       btn.classList.toggle("text-sky-400", isActive);
@@ -110,7 +133,6 @@ const AppRouter = {
     };
     if (deskTitle) deskTitle.textContent = titles[tabName] || "Dashboard";
 
-    // BackButton Nativo Telegram: attivo solo se sei in partita
     if (tg && tg.BackButton) {
       if (tabName === "gameplay") {
         tg.BackButton.show();
@@ -151,7 +173,6 @@ const AppEngine = {
     this.loadVaultFromStorage();
 
     try {
-      // 1. Profilo Utente
       const profilePayload = await apiCall("profile");
       if (profilePayload && profilePayload.user) {
         AppState.user = profilePayload.user;
@@ -160,7 +181,6 @@ const AppEngine = {
         this.applyHardGating(AppState.allowedModules);
       }
 
-      // 2. Caricamento Parallelo Cataloghi
       await Promise.allSettled([
         this.fetchShop(),
         this.fetchRecipes(),
@@ -196,19 +216,18 @@ const AppEngine = {
   },
 
   // ==========================================================================
-  // GIOCHI, GENERI & SERIE HUB
+  // GIOCHI & SERIE HUB
   // ==========================================================================
   fetchGames: async function() {
     try {
       const data = await apiCall("games");
       if (data) {
-        // Supporta sia data.series che data.games per retro-compatibilità immediata
         AppState.games.series = data.series || data.games || [];
         AppState.games.genres = data.genres || [];
         AppRenderer.renderGames();
       }
     } catch (e) {
-      console.warn("Games fetch fallback error:", e);
+      console.warn("Games fetch error:", e);
     }
   },
 
@@ -228,7 +247,7 @@ const AppEngine = {
     if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("click");
     try {
       const data = await apiCall("game_hub", { gameKey: gameKey });
-      if (data && data.serie) {
+      if (data && (data.serie || data.titolo)) {
         AppState.games.activeSeries = data;
         
         document.getElementById("hub-serie-title").textContent = data.titolo || data.serie;
@@ -254,11 +273,10 @@ const AppEngine = {
           heroBox.classList.add("hidden");
         }
 
-        // Render Episodi
         const epContainer = document.getElementById("hub-episodes-list");
-        epContainer.innerHTML = data.episodes.map(ep => {
+        epContainer.innerHTML = (data.episodes || []).map(ep => {
           let btnLabel = ep.canContinueFree ? "⚔️ Continua (Gratis)" : `▶️ Gioca (${ep.costoMegoin} 🪙)`;
-          let statusBadge = ep.isCompleted ? '<span class="badge badge-xs badge-success">Completato</span>' : '';
+          let statusBadge = ep.isCompleted ? '<span class="badge badge-xs badge-success font-bold">Completato</span>' : '';
 
           return `
             <div class="p-3 rounded-xl bg-surface/70 border border-white/5 flex items-center justify-between">
@@ -649,7 +667,7 @@ const AppRenderer = {
     `).join("");
   },
 
-renderGameNode: function(node, hero) {
+  renderGameNode: function(node, hero) {
     document.getElementById("gameplay-node-title").textContent = node.nome || "Avventura";
     document.getElementById("gameplay-node-text").textContent = node.testo || "";
     document.getElementById("gameplay-node-img").src = node.mediaUrl || "https://image.pollinations.ai/prompt/noir-italian-docks-night-cinematic?width=600&height=600&nologo=true";
@@ -726,41 +744,6 @@ renderGameNode: function(node, hero) {
     }
   },
 
-    // CASO B: BIVI E SCELTE NARRATIVE (A vs B AFFIANCATI)
-    if (node.choices && node.choices.length > 0) {
-      if (node.choices.length === 2) {
-        // Scelta A vs B affiancata su 2 colonne
-        choicesBox.innerHTML = `
-          <div class="grid grid-cols-2 gap-2.5">
-            <button onclick="AppEngine.advanceNode('${node.choices[0].target}')" class="btn btn-primary btn-md text-xs font-bold shadow-lg shadow-sky-600/20 leading-tight">
-              ${node.choices[0].testo}
-            </button>
-            <button onclick="AppEngine.advanceNode('${node.choices[1].target}')" class="btn btn-primary btn-md text-xs font-bold shadow-lg shadow-sky-600/20 leading-tight">
-              ${node.choices[1].testo}
-            </button>
-          </div>
-        `;
-      } else {
-        // Singola scelta o bivi multipli
-        choicesBox.innerHTML = `
-          <div class="space-y-2">
-            ${node.choices.map(b => `
-              <button onclick="AppEngine.advanceNode('${b.target}')" class="btn btn-block btn-md btn-primary text-xs font-bold shadow-lg shadow-sky-600/20">
-                ${b.testo}
-              </button>
-            `).join("")}
-          </div>
-        `;
-      }
-    } else {
-      choicesBox.innerHTML = `
-        <button onclick="AppRouter.navigate('games')" class="btn btn-block btn-md btn-outline border-white/20 text-xs font-bold">
-          🏠 Torna alla Galleria Saghe
-        </button>
-      `;
-    }
-  },
-  
   renderShop: function() {
     const chipContainer = document.getElementById("shop-category-chips");
     if (chipContainer && AppState.shop.categories.length > 0) {
