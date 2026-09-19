@@ -42,11 +42,16 @@
     }
     ::-webkit-scrollbar { width: 3px; height: 3px; }
     ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 999px; }
-    .glass-header {
+    
+    /* GESTIONE CALCOLATA AREA SICURA PER IPHONE & DYNAMIC ISLAND */
+    .safe-header {
+      padding-top: var(--tg-safe-area-inset-top, env(safe-area-inset-top, 48px));
+      height: calc(var(--tg-safe-area-inset-top, env(safe-area-inset-top, 48px)) + 48px);
       background: rgba(9, 13, 22, 0.94);
       backdrop-filter: blur(20px);
       border-bottom: 1px solid rgba(255, 255, 255, 0.06);
     }
+
     .glass-footer {
       background: rgba(9, 13, 22, 0.96);
       backdrop-filter: blur(20px);
@@ -130,9 +135,9 @@
   <!-- 3. CORPO CENTRALE (Mobile & Desktop) -->
   <div class="flex-1 flex flex-col h-full min-w-0 overflow-hidden relative">
 
-    <!-- HEADER MOBILE A TUTTA LARGHEZZA: Solo Logo e Nome centrati tra i pulsanti Telegram -->
-    <header class="md:hidden flex-none z-30 h-14 glass-header px-4 flex items-center justify-center relative">
-      <div class="flex items-center space-x-2">
+    <!-- HEADER MOBILE A TUTTA LARGHEZZA: Disceso sotto la Dynamic Island e allineato ai tasti Telegram -->
+    <header class="md:hidden flex-none z-30 safe-header px-4 flex items-center justify-center relative">
+      <div class="flex items-center space-x-2 pointer-events-none">
         <span class="text-base">⚓</span>
         <span class="text-xs font-black tracking-widest text-white uppercase">ESTIQATSY</span>
       </div>
