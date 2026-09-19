@@ -261,10 +261,21 @@
           <!-- Barra Ricerca Giochi -->
           <div class="relative flex-1 max-w-md">
             <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
-            <input type="text" id="games-search-input" oninput="AppEngine.filterGames()" placeholder="Cerca saga narrativa o episodio..." class="w-full pl-10 pr-4 py-2.5 rounded-xl bg-surface border border-white/5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-sky-500">
+            <input type="text" id="games-search-input" oninput="AppEngine.filterGames()" placeholder="Cerca saga narrativa o genere..." class="w-full pl-10 pr-4 py-2.5 rounded-xl bg-surface border border-white/5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-sky-500">
           </div>
-          <div class="text-xs text-slate-400 font-mono hidden md:block">D20 Server-Authoritative Engine</div>
+          <span class="text-xs text-slate-400 font-mono hidden md:block">Multi-Engine D20 (Rules 1 & 2)</span>
         </div>
+
+        <!-- Chip Generi Dinamici (Avventura, Giallo, Cyberpunk...) identici a Shop e Ricette -->
+        <div class="flex space-x-2 overflow-x-auto pb-1" id="games-genre-chips">
+          <!-- Popolato dinamicamente da app.js -->
+        </div>
+
+        <!-- Griglia delle Saghe (Omni-Module) -->
+        <div id="games-gallery-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <!-- Popolato dinamicamente da app.js -->
+        </div>
+      </section>
 
         <div id="games-gallery-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           <!-- Popolato dinamicamente da app.js -->
@@ -551,6 +562,45 @@
     document.addEventListener("DOMContentLoaded", () => {
       if (window.lucide) lucide.createIcons();
     });
+
+<!-- MODALE SERIE HUB & LISTA EPISODI -->
+  <dialog id="modal-series-hub" class="modal modal-bottom sm:modal-middle">
+    <div class="modal-box glass-panel border border-white/10 p-0 max-h-[90vh] overflow-y-auto max-w-lg">
+      <div class="relative h-48 w-full bg-surface overflow-hidden">
+        <img id="hub-serie-img" src="" alt="" class="w-full h-full object-cover">
+        <div class="absolute inset-0 bg-gradient-to-t from-obsidian via-obsidian/40 to-transparent"></div>
+        <button onclick="document.getElementById('modal-series-hub').close()" class="btn btn-circle btn-sm btn-ghost absolute top-3 right-3 text-white bg-black/40">✕</button>
+        <div class="absolute bottom-3 left-4 flex items-center space-x-2">
+          <span id="hub-serie-genre" class="badge badge-primary text-[10px] font-bold uppercase tracking-wider">Avventura</span>
+          <span id="hub-serie-rules" class="badge badge-secondary badge-outline text-[10px] font-bold uppercase">Rules 2</span>
+        </div>
+      </div>
+      <div class="p-6 space-y-4">
+        <div>
+          <h3 id="hub-serie-title" class="text-xl font-black text-white">Titolo Saga</h3>
+          <p id="hub-serie-desc" class="text-xs text-slate-300 leading-relaxed mt-2"></p>
+          <div id="hub-serie-quote" class="text-xs italic text-slate-400 border-l-2 border-amber-500/70 pl-3 py-1 mt-2 bg-white/[0.02] rounded-r-lg"></div>
+        </div>
+
+        <!-- Box Eroe Veterano Salvato (se presente) -->
+        <div id="hub-hero-box" class="hidden p-3 rounded-xl bg-surface/80 border border-sky-500/20 flex items-center justify-between text-xs">
+          <div>
+            <div class="text-[10px] text-slate-400 uppercase font-bold">Eroe Attivo</div>
+            <div class="font-black text-white" id="hub-hero-name">Veterano</div>
+          </div>
+          <span class="badge badge-sm badge-info font-bold text-[9px]" id="hub-hero-progress">Ep. 0 Completati</span>
+        </div>
+
+        <!-- Lista Episodi da Giocare -->
+        <div class="space-y-2 pt-1">
+          <div class="text-xs font-bold text-slate-400 uppercase tracking-wider">Capitoli Disponibili</div>
+          <div id="hub-episodes-list" class="space-y-2"></div>
+        </div>
+      </div>
+    </div>
+    <form method="dialog" class="modal-backdrop"><button>Chiudi</button></form>
+  </dialog>
+    
   </script>
 
   <!-- CARICAMENTO MOTORI SUCCESSIVI -->
