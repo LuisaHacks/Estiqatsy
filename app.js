@@ -1,6 +1,6 @@
 // ============================================================================
-// PROJECT: ESTIQATSY PWA - CLIENT APPLICATION ENGINE (VERSIONE 4.0)
-// FILE: app.js (MODULO GENERALE: DASHBOARD, BOTTEGA, RICETTARIO & PIANI)
+// PROJECT: ESTIQATSY SYNDICATE & RPG ENGINE (VERSIONE 4.4 - SPA UNIFICATA)
+// FILE: app.js (CLIENT CONTROLLER: APP, SHOP, RICETTE, WIZARD & REGOLE 2)
 // ============================================================================
 
 const AppConfig = {
@@ -19,7 +19,28 @@ const AppState = {
   shop: { items: [], categories: [], activeCategory: "tutti", searchQuery: "" },
   recipes: { items: [], categories: [], activeCategory: "tutti", searchQuery: "" },
   carousel: { timer: null, index: 0, count: 0, isPaused: false },
-  vault: []
+  vault: [],
+
+  // MOTORE DI GIOCO INTEGRATO (RULES 2)
+  game: {
+    seriesList: [],
+    currentSeries: null,
+    currentEpisodio: 1,
+    session: null, // { gameKey, episodio, partitaId }
+    hero: null,
+    node: null,
+    wizard: {
+      step: 1,
+      classes: [],
+      abilities: [],
+      chosenClass: null,
+      chosenAbilities: [],
+      heroName: "",
+      remainingPx: 100
+    },
+    emporioMode: "buy", // "buy" | "sell"
+    backpackFilter: "ALL"
+  }
 };
 
 // INTEGRAZIONE TELEGRAM WEBAPP
@@ -35,7 +56,7 @@ if (tg) {
   } catch (e) {}
 }
 
-// GESTORE TASTO INDIETRO NATIVO TELEGRAM (SOLO PER SUBVIEW ATTIVE)
+// GESTORE TASTO INDIETRO TELEGRAM NATIVO
 let backButtonHandler = null;
 function setupTelegramBackButton(screenName) {
   if (!tg || !tg.BackButton) return;
@@ -45,17 +66,17 @@ function setupTelegramBackButton(screenName) {
     backButtonHandler = null;
   }
 
-  const isSub = screenName === "subview-shop-detail" || screenName === "subview-recipe-detail";
-  if (isSub) {
+  const isSub = (screenName === "subview-shop-detail" || screenName === "subview-recipe-detail");
+  const isGameActive = (screenName === "view-gameplay" || screenName === "view-wizard");
+
+  if (isSub || isGameActive) {
     tg.BackButton.show();
     backButtonHandler = () => {
-      if (screenName === "subview-shop-detail") {
-        AppRouter.navigate("shop");
-      } else if (screenName === "subview-recipe-detail") {
-        AppRouter.navigate("recipes");
-      } else {
-        AppRouter.navigate("home");
-      }
+      if (screenName === "subview-shop-detail") AppRouter.navigate("shop");
+      else if (screenName === "subview-recipe-detail") AppRouter.navigate("recipes");
+      else if (screenName === "view-wizard") AppRouter.navigate("games");
+      else if (screenName === "view-gameplay") GameEngine.openAbandonModal();
+      else AppRouter.navigate("home");
     };
     tg.BackButton.onClick(backButtonHandler);
   } else {
@@ -63,15 +84,16 @@ function setupTelegramBackButton(screenName) {
   }
 }
 
+// ROUTER CENTRALIZZATO A DUE MODALITÀ (APP MODE vs GAME COCKPIT MODE)
 const AppRouter = {
   navigate: function(screenName) {
     if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("click");
     if (tg && tg.HapticFeedback) tg.HapticFeedback.selectionChanged();
 
-    // Se l'utente tocca giochi dal menu o dalla sidebar, reindirizza alla webapp RPG dedicata
+    // Reindirizzamento logico per le saghe
     if (screenName === "games" || screenName === "view-games") {
-      window.location.href = "game.html";
-      return;
+      screenName = "view-hub";
+      GameEngine.renderSeriesHub();
     }
 
     // Verifica Hard Locking del modulo
@@ -82,7 +104,7 @@ const AppRouter = {
       return;
     }
 
-    // Reset filtri di ricerca al cambio di scheda principale
+    // Reset filtri ricerca
     if (screenName === "shop") {
       AppState.shop.activeCategory = "tutti";
       AppState.shop.searchQuery = "";
@@ -99,7 +121,8 @@ const AppRouter = {
 
     const allScreens = [
       "view-home", "view-shop", "view-recipes", "view-profile",
-      "subview-shop-detail", "subview-recipe-detail"
+      "subview-shop-detail", "subview-recipe-detail",
+      "view-hub", "view-wizard", "view-gameplay"
     ];
 
     let targetId = screenName;
@@ -107,6 +130,7 @@ const AppRouter = {
       targetId = "view-" + screenName;
     }
 
+    // Attivazione schermata target
     allScreens.forEach(id => {
       const el = document.getElementById(id);
       if (el) el.classList.toggle("hidden", id !== targetId);
@@ -115,26 +139,46 @@ const AppRouter = {
     const scrollArea = document.getElementById("app-main-scroll");
     if (scrollArea) scrollArea.scrollTop = 0;
 
+    // MACCHINA A STATI DELLA NAVIGAZIONE: APP MODE vs GAME COCKPIT MODE
+    const isGameplay = (targetId === "view-gameplay");
+    const appHeader = document.getElementById("main-app-header");
+    const gameHeader = document.getElementById("main-game-header");
+    const appFooter = document.getElementById("main-app-footer");
+    const gameFooter = document.getElementById("main-game-cockpit-footer");
+
+    if (isGameplay) {
+      if (appHeader) appHeader.classList.add("hidden");
+      if (gameHeader) gameHeader.classList.remove("hidden");
+      if (appFooter) appFooter.classList.add("hidden");
+      if (gameFooter) gameFooter.classList.remove("hidden");
+    } else {
+      if (appHeader) appHeader.classList.remove("hidden");
+      if (gameHeader) gameHeader.classList.add("hidden");
+      if (appFooter) appFooter.classList.remove("hidden");
+      if (gameFooter) gameFooter.classList.add("hidden");
+    }
+
+    // Evidenziazione tab attivi (Mobile Footer & Desktop Sidebar)
     const baseTab = screenName.replace("view-", "").replace("subview-", "").split("-")[0];
     document.querySelectorAll(".nav-tab").forEach(btn => {
-      const isActive = btn.dataset.tab === baseTab;
+      const isActive = (btn.dataset.tab === baseTab || (baseTab === "hub" && btn.dataset.tab === "games"));
       btn.classList.toggle("text-sky-400", isActive);
       btn.classList.toggle("text-slate-400", !isActive);
     });
 
     document.querySelectorAll(".desk-nav-btn").forEach(btn => {
-      const isActive = btn.dataset.tab === baseTab;
+      const isActive = (btn.dataset.tab === baseTab || (baseTab === "hub" && btn.dataset.tab === "games"));
       btn.classList.toggle("text-sky-400", isActive);
       btn.classList.toggle("bg-white/5", isActive);
       btn.classList.toggle("text-slate-300", !isActive);
     });
 
-    setupTelegramBackButton(screenName);
-
+    setupTelegramBackButton(targetId);
     setTimeout(() => { if (window.lucide) lucide.createIcons(); }, 15);
   }
 };
 
+// GATEWAY CHIAMATE API REST (ZERO TRUST CON INITDATA CIFRATO)
 async function apiCall(action, extraParams = {}) {
   const initData = (tg && tg.initData) ? tg.initData : "";
   let url = `${AppConfig.GAS_URL}?action=${action}&initData=${encodeURIComponent(initData)}`;
@@ -149,12 +193,13 @@ async function apiCall(action, extraParams = {}) {
   return json.data;
 }
 
+// MOTORE GENERALE APPLICATIVO
 const AppEngine = {
   init: async function() {
     this.loadVault();
 
     try {
-      // 1. Chiamata Profilo (include Piani da 👑Plans e Moduli Autorizzati)
+      // 1. Profilo e Piani Utente
       const p = await apiCall("profile");
       if (p && p.user) {
         AppState.user = p.user;
@@ -164,14 +209,14 @@ const AppEngine = {
         AppRenderer.applyHardLocking(AppState.allowedModules);
       }
 
-      // 2. Caricamento rapido parallelo solo dei moduli dell'App Generale
+      // 2. Caricamento Parallelo Moduli
       await Promise.allSettled([
         this.fetchShop(),
         this.fetchRecipes(),
+        GameEngine.loadSeriesCatalog(),
         this.syncTransactions(false)
       ]);
 
-      // Avvia il carosello promozionale
       this.initCarousel();
 
       const loader = document.getElementById("app-loading");
@@ -192,31 +237,22 @@ const AppEngine = {
     }
   },
 
-  // APERTURA MODALE COMPARAZIONE PIANI (LIVELLO 1)
   openPlansCatalogModal: function() {
     AppRenderer.renderPlansCatalog();
     const modal = document.getElementById("modal-plans-catalog");
     if (modal) modal.showModal();
   },
 
-  // SWITCH CICLO FATTURAZIONE (Mensile / Annuale)
   setBillingCycle: function(cycle) {
     AppState.billingCycle = cycle;
     const btnM = document.getElementById("billing-toggle-monthly");
     const btnY = document.getElementById("billing-toggle-yearly");
-
     const isYearly = (cycle === "yearly");
-    if (btnM) {
-      btnM.className = `flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition-all ${!isYearly ? 'bg-sky-500 text-white shadow-md' : 'text-slate-400'}`;
-    }
-    if (btnY) {
-      btnY.className = `flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition-all ${isYearly ? 'bg-sky-500 text-white shadow-md' : 'text-slate-400'} flex items-center justify-center space-x-1`;
-    }
-
+    if (btnM) btnM.className = `flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition-all ${!isYearly ? 'bg-sky-500 text-white shadow-md' : 'text-slate-400'}`;
+    if (btnY) btnY.className = `flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition-all ${isYearly ? 'bg-sky-500 text-white shadow-md' : 'text-slate-400'} flex items-center justify-center space-x-1`;
     AppRenderer.renderPlansCatalog();
   },
 
-  // APERTURA MODALE DETTAGLIO PIANO & CHECKOUT (LIVELLO 2)
   openPlanModal: function(planId) {
     const plan = AppState.plans.find(p => p.id === planId) || 
                  AppState.plans.find(p => p.nome.toLowerCase() === String(planId).toLowerCase());
@@ -232,24 +268,16 @@ const AppEngine = {
     s("plan-modal-period", periodText);
     s("upgrade-modal-desc", plan.descrizione || "Nessuna descrizione disponibile.");
     
-    // Iniezione dinamica dei vantaggi
     const perksBox = document.getElementById("plan-modal-perks-list");
     if (perksBox) {
-      let htmlPerks = `
-        <div class="flex items-center space-x-2 text-amber-300 font-bold pb-1.5 border-b border-white/5">
-          <span>🪙</span> <span>+${plan.bonusMegoin} Megoin al mese inclusi</span>
-        </div>
-      `;
-
+      let htmlPerks = `<div class="flex items-center space-x-2 text-amber-300 font-bold pb-1.5 border-b border-white/5"><span>🪙</span> <span>+${plan.bonusMegoin} Megoin al mese inclusi</span></div>`;
       if (plan.perks && plan.perks.length > 0) {
         htmlPerks += plan.perks.map(pk => `
           <div class="flex items-center space-x-2 ${pk.enabled ? 'text-slate-200' : 'text-slate-500'}">
-            <span>${pk.enabled ? '✅' : '❌'}</span>
-            <span>${pk.label}</span>
+            <span>${pk.enabled ? '✅' : '❌'}</span> <span>${pk.label}</span>
           </div>
         `).join("");
       }
-
       perksBox.innerHTML = htmlPerks;
     }
 
@@ -263,9 +291,7 @@ const AppEngine = {
         actBtn.textContent = `Attiva ${plan.nome} (${priceText}${periodText})`;
         actBtn.disabled = false;
         actBtn.className = "btn btn-primary btn-sm w-full font-bold shadow-lg shadow-sky-600/30";
-        actBtn.onclick = () => {
-          alert(`Reindirizzamento al checkout per il piano ${plan.nome} in corso...`);
-        };
+        actBtn.onclick = () => alert(`Reindirizzamento checkout per ${plan.nome}...`);
       }
     }
 
@@ -281,21 +307,20 @@ const AppEngine = {
     }, 150);
   },
 
-  // CAROSELLO IN EVIDENZA (PROMUOVE GIOCHI, BOTTEGA E RICETTE)
+  // CAROSELLO IN EVIDENZA
   initCarousel: function() {
     const track = document.getElementById("carousel-track");
     const dotsBox = document.getElementById("carousel-dots-container");
     const outer = document.getElementById("carousel-outer-wrapper");
     if (!track) return;
 
-    // Slide promozionali stabili con reindirizzamenti coerenti
     const promoSlides = [
       {
         badge: "AVVENTURE RPG",
         titolo: "ViareGTA & Paul Sindaco",
         sottotitolo: "Vivi le saghe noir tra i canali e la pineta a colpi di D20",
         btnText: "Gioca Ora ➔",
-        action: () => { window.location.href = "game.html"; },
+        action: () => { AppRouter.navigate("games"); },
         img: "https://image.pollinations.ai/prompt/noir-italian-docks-night-cinematic-libeccio-wind?width=800&height=400&nologo=true"
       },
       {
@@ -523,11 +548,723 @@ const AppEngine = {
   }
 };
 
+// ============================================================================
+// GAME ENGINE - MOTORE RPG RULES 2 & INTERFACCIA COCKPIT
+// ============================================================================
+const GameEngine = {
+  loadSeriesCatalog: async function() {
+    try {
+      const gamesData = await apiCall("games");
+      if (gamesData && gamesData.series) {
+        AppState.game.seriesList = gamesData.series;
+        const gc = document.getElementById("home-games-count");
+        if (gc) gc.textContent = gamesData.series.length;
+      }
+    } catch (e) {
+      console.warn("Errore caricamento saghe:", e);
+    }
+  },
+
+  renderSeriesHub: function() {
+    if (!AppState.game.seriesList || AppState.game.seriesList.length === 0) return;
+    const saga = AppState.game.seriesList[0]; // Serie principale: Paul Sindaco
+    AppState.game.currentSeries = saga;
+
+    const s = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+    s("hub-title", `${saga.emoji} ${saga.serie}`);
+    s("hub-desc", saga.descrizione || "");
+    s("hub-rules", saga.regole || "Rules 2");
+
+    const img = document.getElementById("hub-image");
+    if (img) img.src = saga.mediaUrl;
+
+    if (saga.citazione) {
+      s("hub-quote", `“${saga.citazione}”`);
+      s("hub-author", saga.autoreCitazione || "");
+    }
+
+    const container = document.getElementById("hub-episodes-container");
+    if (container) {
+      container.innerHTML = (saga.episodes || []).map(ep => `
+        <div class="p-3 bg-surface rounded-xl border border-white/5 flex items-center justify-between shadow-md">
+          <div>
+            <div class="text-xs font-bold text-white">${ep.emoji || '▶️'} Ep. ${ep.episodio}: ${ep.titolo}</div>
+            <div class="text-[9px] text-slate-400 mt-0.5">
+              ${ep.canContinueFree ? '⚔️ Continua con Eroe Veterano (Gratis)' : (ep.costoMegoin === 0 ? 'Gratis' : `${ep.costoMegoin} Megoin 🪙`)}
+            </div>
+          </div>
+          <button onclick="GameEngine.startEpisode('${saga.gameKey}', ${ep.episodio}, ${!!ep.canContinueFree})" class="btn btn-xs btn-primary font-bold px-3 shadow-md">
+            ${ep.canContinueFree ? 'Continua' : 'Gioca'}
+          </button>
+        </div>
+      `).join("");
+    }
+
+    if (typeof SoundEngine !== "undefined") SoundEngine.playBgm("intro");
+  },
+
+  startEpisode: async function(gameKey, epNum, canContinueFree) {
+    AppState.game.currentEpisodio = epNum;
+
+    // Se l'eroe è veterano e può continuare gratis, avvia subito senza Wizard
+    if (canContinueFree) {
+      if (typeof SoundEngine !== "undefined") SoundEngine.playBgm("exploration");
+      this.executeStartGame({ gameKey, episodio: epNum });
+      return;
+    }
+
+    // Se è un nuovo eroe, carica il Wizard da Episodio 0
+    this.openWizard(gameKey, epNum);
+  },
+
+  // WIZARD CREAZIONE PERSONAGGIO (RULES 2)
+  openWizard: async function(gameKey, epNum) {
+    try {
+      if (typeof SoundEngine !== "undefined") SoundEngine.playBgm("wizard");
+      const wizData = await apiCall("game_wizard_data", { gameKey: gameKey });
+      
+      AppState.game.wizard.classes = wizData.classes || [];
+      AppState.game.wizard.abilities = wizData.abilities || [];
+      AppState.game.wizard.step = 1;
+      AppState.game.wizard.chosenClass = wizData.classes[0] || null;
+      AppState.game.wizard.chosenAbilities = [];
+      AppState.game.wizard.remainingPx = 100;
+
+      this.renderWizardStep1();
+      AppRouter.navigate("view-wizard");
+    } catch (e) {
+      alert("Errore caricamento classi: " + e.message);
+    }
+  },
+
+  renderWizardStep1: function() {
+    const c = document.getElementById("wizard-classes-carousel");
+    if (!c) return;
+
+    c.innerHTML = AppState.game.wizard.classes.map(cls => {
+      const isSelected = (AppState.game.wizard.chosenClass && AppState.game.wizard.chosenClass.id === cls.id);
+      const isDestra = (cls.schieramento.toLowerCase() === "destra");
+      return `
+        <div onclick="GameEngine.wizardSelectClass('${cls.id}')" class="min-w-[240px] max-w-[260px] bg-surface p-4 rounded-2xl border ${isSelected ? 'border-sky-400 ring-2 ring-sky-400/50 shadow-xl' : 'border-white/10'} snap-center cursor-pointer flex flex-col justify-between space-y-3">
+          <div>
+            <div class="flex items-center justify-between">
+              <span class="text-2xl">${cls.emoji}</span>
+              <span class="badge badge-xs ${isDestra ? 'badge-info' : 'badge-error'} font-black uppercase text-[8px]">${cls.schieramento}</span>
+            </div>
+            <h4 class="font-black text-sm text-white mt-1">${cls.nome}</h4>
+            <div class="text-[10px] text-amber-300 font-bold mt-0.5">❤️ ${cls.pv} PV • 🟡 ${cls.oro} Oro</div>
+            <div class="text-[9px] text-slate-400 font-mono mt-1">FOR: ${cls.forza} • DES: ${cls.destrezza} • INT: ${cls.intelligenza}</div>
+            <p class="text-[10px] text-slate-300 line-clamp-3 mt-2">${cls.descrizione}</p>
+          </div>
+          <div class="pt-2 border-t border-white/5 flex items-center justify-between text-[10px]">
+            <span class="text-slate-400">Arma: <b>${cls.armaIniziale ? cls.armaIniziale.nome : 'Pugni'}</b></span>
+            <button class="btn btn-xs ${isSelected ? 'btn-success' : 'btn-outline border-white/20'} font-bold">
+              ${isSelected ? 'Selezionata' : 'Scegli'}
+            </button>
+          </div>
+        </div>
+      `;
+    }).join("");
+
+    this.wizardShowStep(1);
+  },
+
+  wizardSelectClass: function(clsId) {
+    const found = AppState.game.wizard.classes.find(c => c.id === clsId);
+    if (!found) return;
+    AppState.game.wizard.chosenClass = found;
+    if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("click");
+    this.renderWizardStep1();
+    this.renderWizardStep2();
+    setTimeout(() => this.wizardNextStep(2), 200);
+  },
+
+  renderWizardStep2: function() {
+    const grid = document.getElementById("wizard-abilities-grid");
+    const budgetBadge = document.getElementById("wizard-px-budget");
+    if (!grid) return;
+
+    if (budgetBadge) budgetBadge.textContent = `✨ ${AppState.game.wizard.remainingPx} PX`;
+
+    const userFaction = AppState.game.wizard.chosenClass ? AppState.game.wizard.chosenClass.schieramento.toLowerCase() : "destra";
+
+    grid.innerHTML = AppState.game.wizard.abilities.map(abl => {
+      const isSelected = AppState.game.wizard.chosenAbilities.includes(abl.id);
+      const req = abl.requisitoClasse.toLowerCase();
+      const isCompatible = (req.includes("tutti") || req.includes(userFaction));
+
+      return `
+        <div onclick="${isCompatible ? `GameEngine.wizardToggleAbility('${abl.id}')` : ''}" class="p-3 rounded-xl border ${isSelected ? 'border-sky-400 bg-sky-500/10' : (isCompatible ? 'border-white/10 bg-surface/70 cursor-pointer' : 'border-white/5 bg-black/40 opacity-40 cursor-not-allowed')} flex items-center justify-between">
+          <div class="overflow-hidden pr-2">
+            <div class="flex items-center space-x-1.5">
+              <span>${abl.emoji}</span>
+              <span class="text-xs font-bold text-white truncate">${abl.nome}</span>
+            </div>
+            <div class="text-[9px] text-slate-400 line-clamp-1 mt-0.5">${abl.descrizione}</div>
+          </div>
+          <span class="badge badge-xs ${isSelected ? 'badge-primary' : 'badge-ghost'} font-bold text-[8px] shrink-0">
+            ${isSelected ? 'ATTIVA' : (isCompatible ? `${abl.costoPX} PX` : '🔒')}
+          </span>
+        </div>
+      `;
+    }).join("");
+  },
+
+  wizardToggleAbility: function(ablId) {
+    const idx = AppState.game.wizard.chosenAbilities.indexOf(ablId);
+    if (idx !== -1) {
+      AppState.game.wizard.chosenAbilities.splice(idx, 1);
+      AppState.game.wizard.remainingPx += 100;
+    } else {
+      if (AppState.game.wizard.remainingPx >= 100) {
+        AppState.game.wizard.chosenAbilities.push(ablId);
+        AppState.game.wizard.remainingPx -= 100;
+      } else {
+        alert("Budget PX esaurito!");
+        return;
+      }
+    }
+    if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("click");
+    this.renderWizardStep2();
+  },
+
+  wizardNextStep: function(stepNum) {
+    AppState.game.wizard.step = stepNum;
+    if (stepNum === 3) {
+      const recap = document.getElementById("wizard-class-recap");
+      if (recap && AppState.game.wizard.chosenClass) {
+        recap.textContent = `${AppState.game.wizard.chosenClass.nome} (${AppState.game.wizard.chosenClass.schieramento})`;
+      }
+    }
+    this.wizardShowStep(stepNum);
+  },
+
+  wizardPrevStep: function(stepNum) {
+    AppState.game.wizard.step = stepNum;
+    this.wizardShowStep(stepNum);
+  },
+
+  wizardShowStep: function(stepNum) {
+    document.getElementById("wizard-step-class").classList.toggle("hidden", stepNum !== 1);
+    document.getElementById("wizard-step-abilities").classList.toggle("hidden", stepNum !== 2);
+    document.getElementById("wizard-step-name").classList.toggle("hidden", stepNum !== 3);
+  },
+
+  wizardUseTelegramName: function() {
+    const input = document.getElementById("wizard-name-input");
+    if (input && AppState.user) input.value = AppState.user.nome;
+  },
+
+  wizardFinalizeHero: function() {
+    const input = document.getElementById("wizard-name-input");
+    const heroName = (input && input.value.trim()) ? input.value.trim() : (AppState.user ? AppState.user.nome : "Avventuriero");
+
+    this.executeStartGame({
+      gameKey: AppState.game.currentSeries.gameKey,
+      episodio: AppState.game.currentEpisodio,
+      classId: AppState.game.wizard.chosenClass ? AppState.game.wizard.chosenClass.id : "CLS_0001_S1_E0",
+      abilityIds: AppState.game.wizard.chosenAbilities.join(","),
+      heroName: heroName
+    });
+  },
+
+  executeStartGame: async function(payloadParams) {
+    try {
+      if (typeof SoundEngine !== "undefined") {
+        SoundEngine.playSfx("insert_coin");
+        SoundEngine.playBgm("exploration");
+      }
+
+      const res = await apiCall("game_start", payloadParams);
+      if (res && res.success) {
+        AppState.game.session = {
+          gameKey: payloadParams.gameKey,
+          episodio: payloadParams.episodio,
+          partitaId: res.partitaId
+        };
+        AppState.game.hero = res.statoEroe;
+        AppState.user.saldoMegoin = res.nuovoSaldoMegoin;
+        AppRenderer.renderProfile(AppState.user);
+
+        this.renderNode(res.nodoIniziale, res.statoEroe);
+        AppRouter.navigate("view-gameplay");
+      }
+    } catch (err) {
+      alert("Impossibile avviare la partita: " + err.message);
+    }
+  },
+
+  // RENDERING SNODO NARRATIVO (ABOVE-THE-FOLD RIGIDO)
+  renderNode: function(node, hero) {
+    AppState.game.node = node;
+    if (hero) AppState.game.hero = hero;
+
+    const s = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+
+    // 1. Header Gioco
+    s("game-header-series", (AppState.game.currentSeries ? AppState.game.currentSeries.serie : "SERIE").toUpperCase());
+    s("game-header-episode", `Episodio ${AppState.game.currentEpisodio}`);
+
+    // 2. HUD Plancia Eroe Compatta
+    if (AppState.game.hero) {
+      const h = AppState.game.hero;
+      s("kpi-hero-name", h.nomeEroe);
+      s("kpi-hero-gold", h.oro);
+      s("kpi-hero-pv-text", `${h.pv}/${h.pvMax}`);
+      
+      const pvBar = document.getElementById("kpi-hero-pv-bar");
+      if (pvBar) {
+        pvBar.value = h.pv;
+        pvBar.max = h.pvMax;
+      }
+
+      if (h.modificatori) {
+        s("kpi-mod-for", (h.modificatori.FORZA >= 0 ? "+" : "") + h.modificatori.FORZA);
+        s("kpi-mod-des", (h.modificatori.DESTREZZA >= 0 ? "+" : "") + h.modificatori.DESTREZZA);
+        s("kpi-mod-int", (h.modificatori.INTELLIGENZA >= 0 ? "+" : "") + h.modificatori.INTELLIGENZA);
+      }
+    }
+
+    // 3. Inquadratura 16:9 Cinema & Copertura Anti-Watermark
+    const img = document.getElementById("scene-image");
+    if (img) img.src = node.mediaUrl || "https://image.pollinations.ai/prompt/noir-docks-night-cinematic?width=800&height=450&nologo=true";
+
+    s("scene-type-badge", node.tipo || "SNODO");
+    s("scene-title", node.nome || "Avventura");
+    s("scene-text", node.testo || "");
+
+    const wBanner = document.getElementById("scene-watermark-banner");
+    if (node.citazione && node.citazione !== "—") {
+      s("scene-quote", `“${node.citazione.replace(/^["'“”]+|["'“”]+$/g, "")}”`);
+      s("scene-author", node.autoreCitazione || "");
+      if (wBanner) wBanner.classList.remove("hidden");
+    } else {
+      if (wBanner) wBanner.classList.add("hidden");
+    }
+
+    // 4. Area Azioni Tattiche (Bivi Narrativi / Combattimento)
+    const actBox = document.getElementById("scene-actions-container");
+    if (!actBox) return;
+
+    const isCombat = (node.tipo === "NEMICO" || (node.id && node.id.includes("NEM_")));
+
+    if (isCombat) {
+      if (typeof SoundEngine !== "undefined") SoundEngine.playBgm("combat");
+
+      const canBribe = node.corruption && node.corruption.canCorrupt;
+      const bribeLabel = (node.corruption && node.corruption.validDrugs.some(d => d.costoDosi === 0))
+        ? "🟡 Corrompi (Gratis)"
+        : "🟡 Corrompi";
+
+      actBox.innerHTML = `
+        <div class="grid grid-cols-2 gap-2">
+          <button onclick="GameEngine.combatAction('attack_round')" class="btn btn-sm btn-error font-black shadow-lg shadow-rose-600/30">
+            ⚔️ Attacca Round
+          </button>
+          <button onclick="GameEngine.combatAction('flee')" class="btn btn-sm btn-outline border-white/20 text-xs font-bold">
+            🏃 Fuggi
+          </button>
+        </div>
+        ${canBribe ? `
+          <button onclick="GameEngine.combatBribe('${node.corruption.validDrugs[0].nome}')" class="btn btn-xs btn-block btn-warning font-bold text-[10px] mt-1 shadow-md">
+            ${bribeLabel}
+          </button>
+        ` : ''}
+      `;
+      return;
+    }
+
+    // Gestione Quiz Enigma
+    if (node.quiz) {
+      actBox.innerHTML = `
+        <div class="p-2 rounded-xl bg-black/40 border border-white/5 space-y-1.5 text-xs">
+          <div class="font-bold text-amber-300">❓ ${node.quiz.domanda}</div>
+          <div class="grid grid-cols-2 gap-1.5 pt-1">
+            ${node.quiz.opzioni.map(opz => `
+              <button onclick="GameEngine.submitQuizAnswer('${opz.replace(/'/g, "\\'")}')" class="btn btn-xs btn-outline border-white/20 text-[10px] truncate">
+                ${opz}
+              </button>
+            `).join("")}
+          </div>
+        </div>
+      `;
+      return;
+    }
+
+    // Bivi Narrativi Standard
+    if (node.choices && node.choices.length > 0) {
+      if (node.choices.length === 2) {
+        actBox.innerHTML = `
+          <div class="grid grid-cols-2 gap-2">
+            <button onclick="GameEngine.advanceToNode('${node.choices[0].target}')" class="btn btn-sm btn-primary text-xs font-bold truncate shadow-md">
+              ${node.choices[0].testo}
+            </button>
+            <button onclick="GameEngine.advanceToNode('${node.choices[1].target}')" class="btn btn-sm btn-primary text-xs font-bold truncate shadow-md">
+              ${node.choices[1].testo}
+            </button>
+          </div>
+        `;
+      } else {
+        actBox.innerHTML = node.choices.map(c => `
+          <button onclick="GameEngine.advanceToNode('${c.target}')" class="btn btn-sm btn-block btn-primary text-xs font-bold mb-1.5 truncate shadow-md">
+            ${c.testo}
+          </button>
+        `).join("");
+      }
+    } else {
+      actBox.innerHTML = `
+        <button onclick="GameEngine.renderSeriesHub()" class="btn btn-sm btn-block btn-outline border-white/20 text-xs font-bold">
+          🏁 Capitolo Concluso ➔ Torna all'Hub
+        </button>
+      `;
+    }
+  },
+
+  advanceToNode: async function(targetId) {
+    if (!AppState.game.session) return;
+    if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("click");
+
+    try {
+      const res = await apiCall("game_node", {
+        gameKey: AppState.game.session.gameKey,
+        episodio: AppState.game.session.episodio,
+        nodeId: targetId,
+        partitaId: AppState.game.session.partitaId
+      });
+      if (res && res.nodo) {
+        this.renderNode(res.nodo, res.statoEroe);
+      }
+    } catch (e) {
+      alert("Errore avanzamento: " + e.message);
+    }
+  },
+
+  // PATTERN "CASINO SUSPENSE ROLL" PER IL COMBATTIMENTO SENZA ALERT
+  combatAction: async function(subAction) {
+    if (!AppState.game.session) return;
+
+    // 1. Avvio Immediato Suspense Dado
+    const diceModal = document.getElementById("modal-dice-suspense");
+    const diceCube = document.getElementById("dice-visual-cube");
+    const s = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+
+    if (subAction === "attack_round") {
+      s("dice-roll-title", "Lancio D20 in corso...");
+      s("dice-roll-result", "--");
+      s("dice-roll-desc", "Tiro di dado sommato ai modificatori...");
+      if (diceCube) diceCube.classList.add("dice-rolling");
+      if (diceModal) diceModal.showModal();
+      if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("dice");
+    }
+
+    try {
+      // 2. Chiamata Server Parallela
+      const res = await apiCall("game_action", {
+        subAction: subAction,
+        gameKey: AppState.game.session.gameKey,
+        episodio: AppState.game.session.episodio
+      });
+
+      // 3. Risoluzione Dado
+      if (subAction === "attack_round" && res.combatLog) {
+        const log = res.combatLog;
+        if (diceCube) diceCube.classList.remove("dice-rolling");
+        s("dice-roll-result", `D20: ${log.d20Hero} (${log.totHero >= log.cdTarget ? 'COLPITO' : 'A VUOTO'})`);
+        s("dice-roll-desc", `Totale: ${log.totHero} vs CD ${log.cdTarget}`);
+
+        setTimeout(() => {
+          if (diceModal) diceModal.close();
+
+          // Feedback Visivo Danneggiamento Fluttuante
+          if (log.isHit) {
+            this.showFloatingDamage(`💥 -${log.dmgDealt} PV`, log.isCrit, false);
+            if (typeof SoundEngine !== "undefined") SoundEngine.playSfx(log.isCrit ? "crit_hit" : "hit");
+          } else {
+            this.showFloatingDamage("💨 A vuoto", false, false);
+          }
+
+          if (log.dmgTaken > 0) {
+            setTimeout(() => {
+              this.showFloatingDamage(`💔 -${log.dmgTaken} PV Eroe`, false, true);
+            }, 300);
+          }
+
+          // Aggiornamento Scena o Fine Duello
+          if (res.status === "VICTORY") {
+            if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("victory");
+            if (window.confetti) confetti({ particleCount: 70, spread: 60 });
+            this.renderNode(res.nextView.nodo, res.nextView.statoEroe);
+          } else if (res.status === "DEFEAT") {
+            if (typeof SoundEngine !== "undefined") SoundEngine.playBgm("defeat");
+            this.renderNode(res.nextView.nodo, res.nextView.statoEroe);
+          } else {
+            this.renderNode(res.nodo, res.statoEroe);
+          }
+        }, 800);
+      } else if (res.nextView) {
+        this.renderNode(res.nextView.nodo, res.nextView.statoEroe);
+      } else if (res.nodo) {
+        this.renderNode(res.nodo, res.statoEroe);
+      }
+    } catch (e) {
+      if (diceModal) diceModal.close();
+      alert("Errore combattimento: " + e.message);
+    }
+  },
+
+  combatBribe: async function(drugName) {
+    if (!AppState.game.session) return;
+    try {
+      const res = await apiCall("game_action", {
+        subAction: "bribe",
+        drug: drugName,
+        gameKey: AppState.game.session.gameKey,
+        episodio: AppState.game.session.episodio
+      });
+      if (res && res.success) {
+        if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("bribe");
+        this.showFloatingDamage("🟡 Corrotto!", false, false);
+        this.renderNode(res.nextView.nodo, res.nextView.statoEroe);
+      }
+    } catch (e) {
+      alert("Corruzione fallita: " + e.message);
+    }
+  },
+
+  showFloatingDamage: function(text, isCrit, isHeroDmg) {
+    const box = document.getElementById("floating-damage-box");
+    if (!box) return;
+    const el = document.createElement("div");
+    el.className = `floating-damage font-black text-xl md:text-2xl ${isHeroDmg ? 'text-rose-400 text-glow-rose' : (isCrit ? 'text-amber-300 text-glow-amber text-3xl' : 'text-sky-300')}`;
+    el.textContent = text;
+    box.appendChild(el);
+    setTimeout(() => el.remove(), 1200);
+  },
+
+  submitQuizAnswer: function(selectedOpz) {
+    const node = AppState.game.node;
+    if (!node || !node.quiz) return;
+    const isCorrect = (selectedOpz.trim().toLowerCase() === node.quiz.rispostaCorretta.trim().toLowerCase());
+    if (isCorrect) {
+      alert("✅ Risposta Esatta!");
+      this.advanceToNode(node.destSuccesso);
+    } else {
+      alert("❌ Risposta Errata!");
+      this.advanceToNode(node.destFallimento);
+    }
+  },
+
+  // =========================================================================
+  // I 5 CASSETTI TATTICI DEL COCKPIT (POPOLAMENTO REALE)
+  // =========================================================================
+  openBackpackDrawer: function() {
+    this.filterBackpack(AppState.game.backpackFilter || "ALL");
+    document.getElementById("drawer-backpack").showModal();
+  },
+
+  filterBackpack: function(cat) {
+    AppState.game.backpackFilter = cat;
+    const c = document.getElementById("backpack-slots-container");
+    const h = AppState.game.hero;
+    if (!c || !h) return;
+
+    const inv = h.inventario || [];
+    if (inv.length === 0) {
+      c.innerHTML = `<div class="col-span-full py-8 text-center text-slate-500 text-xs">Il tuo zaino è vuoto.</div>`;
+      return;
+    }
+
+    c.innerHTML = inv.map(it => `
+      <div class="p-2.5 bg-surface rounded-xl border border-white/5 flex items-center justify-between text-xs">
+        <div class="overflow-hidden pr-2">
+          <div class="font-bold text-white truncate">${it}</div>
+          <div class="text-[9px] text-slate-400">${it === h.armaAttiva ? '🗡️ [ARMA ATTIVA]' : (it === h.veicoloAttivo ? '🛴 [VEICOLO ATTIVO]' : 'Oggetto')}</div>
+        </div>
+        <button onclick="GameEngine.useBackpackItem('${it.replace(/'/g, "\\'")}')" class="btn btn-xs btn-outline border-white/20 text-[9px] shrink-0">
+          Usa
+        </button>
+      </div>
+    `).join("");
+  },
+
+  useBackpackItem: async function(itemName) {
+    if (!AppState.game.session) return;
+    try {
+      const res = await apiCall("game_action", {
+        subAction: "use_item",
+        item: itemName,
+        gameKey: AppState.game.session.gameKey,
+        episodio: AppState.game.session.episodio
+      });
+      if (res && res.success) {
+        if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("drug");
+        AppState.game.hero = res.statoEroe;
+        this.renderNode(AppState.game.node, res.statoEroe);
+        this.filterBackpack(AppState.game.backpackFilter);
+      }
+    } catch (e) {
+      alert("Impossibile usare l'oggetto: " + e.message);
+    }
+  },
+
+  openEmporioDrawer: function() {
+    const h = AppState.game.hero;
+    document.getElementById("emporio-gold-display").textContent = `${h ? h.oro : 0} 🟡`;
+    this.setEmporioMode(AppState.game.emporioMode || "buy");
+    document.getElementById("drawer-emporio").showModal();
+  },
+
+  setEmporioMode: function(mode) {
+    AppState.game.emporioMode = mode;
+    const btnBuy = document.getElementById("emporio-tab-buy");
+    const btnSell = document.getElementById("emporio-tab-sell");
+    const container = document.getElementById("emporio-items-container");
+    const h = AppState.game.hero;
+
+    if (btnBuy) btnBuy.className = `flex-1 btn btn-xs ${mode === 'buy' ? 'btn-primary' : 'btn-ghost text-slate-400'} font-bold text-[10px]`;
+    if (btnSell) btnSell.className = `flex-1 btn btn-xs ${mode === 'sell' ? 'btn-primary' : 'btn-ghost text-slate-400'} font-bold text-[10px]`;
+
+    if (mode === "sell") {
+      const inv = (h && h.inventario) ? h.inventario : [];
+      if (inv.length === 0) {
+        container.innerHTML = `<div class="col-span-full py-8 text-center text-slate-500 text-xs">Nessuna merce da vendere a Ciccio.</div>`;
+        return;
+      }
+      container.innerHTML = inv.map(it => `
+        <div class="p-2.5 bg-surface rounded-xl border border-white/5 flex items-center justify-between text-xs">
+          <span class="font-bold text-white truncate pr-2">${it}</span>
+          <button onclick="GameEngine.sellToEmporio('${it.replace(/'/g, "\\'")}')" class="btn btn-xs btn-warning font-bold text-[9px] shrink-0">
+            Vendi (+10 🟡)
+          </button>
+        </div>
+      `).join("");
+    } else {
+      // Modalità Acquisto
+      container.innerHTML = `
+        <div class="p-2.5 bg-surface rounded-xl border border-white/5 flex items-center justify-between text-xs">
+          <div><div class="font-bold text-white">Focaccia Unta</div><div class="text-[9px] text-amber-300">12 🟡 • Cura 16 PV</div></div>
+          <button class="btn btn-xs btn-primary font-bold text-[9px]">Compra</button>
+        </div>
+        <div class="p-2.5 bg-surface rounded-xl border border-white/5 flex items-center justify-between text-xs">
+          <div><div class="font-bold text-white">Danpei Gold</div><div class="text-[9px] text-amber-300">22 🟡 • THC Puro</div></div>
+          <button class="btn btn-xs btn-primary font-bold text-[9px]">Compra</button>
+        </div>
+      `;
+    }
+  },
+
+  sellToEmporio: function(itemName) {
+    if (AppState.game.hero) {
+      const idx = AppState.game.hero.inventario.indexOf(itemName);
+      if (idx !== -1) {
+        AppState.game.hero.inventario.splice(idx, 1);
+        AppState.game.hero.oro += 10; // Valore medio ricettazione al 25%
+        if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("cash_register");
+        this.openEmporioDrawer();
+        this.renderNode(AppState.game.node, AppState.game.hero);
+      }
+    }
+  },
+
+  openCambioModal: function() {
+    document.getElementById("cambio-megoin-balance").textContent = AppState.user ? AppState.user.saldoMegoin : 0;
+    document.getElementById("modal-banco-cambio").showModal();
+  },
+
+  convertMegoinToGold: async function(megoinCost, goldEarned) {
+    if (!AppState.user || AppState.user.saldoMegoin < megoinCost) {
+      alert("Saldo Megoin insufficiente!");
+      return;
+    }
+
+    try {
+      const res = await apiCall("currency_exchange", {
+        megoin: megoinCost,
+        gold: goldEarned,
+        gameKey: AppState.game.session ? AppState.game.session.gameKey : "game1"
+      });
+
+      if (res && res.success) {
+        if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("cash_register");
+        if (window.confetti) confetti({ particleCount: 60, spread: 50 });
+
+        AppState.user.saldoMegoin = res.nuovoSaldoMegoin;
+        if (AppState.game.hero) AppState.game.hero.oro = res.nuovoOro;
+
+        AppRenderer.renderProfile(AppState.user);
+        this.renderNode(AppState.game.node, AppState.game.hero);
+
+        document.getElementById("cambio-megoin-balance").textContent = res.nuovoSaldoMegoin;
+        document.getElementById("emporio-gold-display").textContent = `${res.nuovoOro} 🟡`;
+        alert(`✅ Convertiti con successo ${megoinCost} 🪙 in +${goldEarned} 🟡 Oro!`);
+        document.getElementById("modal-banco-cambio").close();
+      }
+    } catch (e) {
+      alert("Errore nel banco di cambio: " + e.message);
+    }
+  },
+
+  openSquadDrawer: function() {
+    const c = document.getElementById("squad-list-container");
+    const h = AppState.game.hero;
+    if (!c || !h) return;
+
+    let html = "";
+    const comp = h.compagni || [];
+    const zombies = h.zombieSquad || [];
+
+    if (comp.length === 0 && zombies.length === 0) {
+      html = `<div class="py-6 text-center text-slate-500 text-xs">Sei in solitaria. Nessun alleato o zombi presente.</div>`;
+    } else {
+      html += comp.map(a => `<div class="p-2.5 bg-surface rounded-xl border border-white/5 font-bold text-xs flex justify-between"><span>🤝 ${a}</span> <span class="text-emerald-400">Alleato Umano</span></div>`).join("");
+      html += zombies.map(z => `<div class="p-2.5 bg-surface rounded-xl border border-rose-500/30 font-bold text-xs flex justify-between"><span>🧟 ${z.nome}</span> <span class="text-rose-400">Danno 2x (PV: ${z.pv}/${z.pvMax})</span></div>`).join("");
+    }
+
+    c.innerHTML = html;
+    document.getElementById("drawer-squad").showModal();
+  },
+
+  openDossierDrawer: function() {
+    const c = document.getElementById("dossier-list-container");
+    const h = AppState.game.hero;
+    if (!c || !h) return;
+
+    const inv = h.inventario || [];
+    const prove = inv.filter(it => it.toLowerCase().includes("bolla") || it.toLowerCase().includes("cartone") || it.toLowerCase().includes("fattura") || it.toLowerCase().includes("schema") || it.toLowerCase().includes("registro"));
+
+    if (prove.length === 0) {
+      c.innerHTML = `<div class="py-6 text-center text-slate-500 text-xs">Nessuna prova d'inchiesta decifrata finora.</div>`;
+    } else {
+      c.innerHTML = prove.map(p => `
+        <div class="p-3 bg-surface rounded-xl border border-sky-500/30 text-xs space-y-1">
+          <div class="font-bold text-sky-400">📁 ${p}</div>
+          <div class="text-[10px] text-slate-300">Reperto certificato dell'Organigramma. Fornisce <b class="text-emerald-400">+1 INT permanente</b>.</div>
+        </div>
+      `).join("");
+    }
+
+    document.getElementById("drawer-dossier").showModal();
+  },
+
+  openAbandonModal: function() {
+    document.getElementById("modal-abandon").showModal();
+  },
+
+  confirmAbandon: function() {
+    document.getElementById("modal-abandon").close();
+    AppState.game.session = null;
+    this.leaveGameToHub();
+  },
+
+  leaveGameToHub: function() {
+    AppRouter.navigate("games");
+  }
+};
+
+// RENDERER INTERFACCIA
 const AppRenderer = {
-  // HARD LOCKING (NASCONDE I MODULI NON PREVISTI DAL PIANO)
   applyHardLocking: function(allowed) {
     if (!allowed) return;
-    
     document.querySelectorAll("[data-module]").forEach(el => {
       const mod = el.dataset.module;
       const isAllowed = (allowed[mod] !== false);
@@ -537,28 +1274,19 @@ const AppRenderer = {
 
   renderProfile: function(u) {
     const s = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
-    
-    // Home Banner
     s("home-username", u.nome);
     s("home-rank-points", u.puntiFedelta);
     s("home-plan-badge", `PIANO ${(u.piano || "Free").toUpperCase()}`);
-
-    // Home KPI
     s("home-megoin-card", `${u.saldoMegoin} 🪙`);
     s("home-punti-card", `${u.puntiFedelta} Pt`);
     s("home-purchases-count", u.prodottiAcquistati || 0);
 
-    const gc = document.getElementById("home-games-count");
-    if (gc) gc.textContent = "ATTIVE ➔";
-
-    // Sidebar Desktop
     s("user-avatar-desk", (u.nome || "U").charAt(0).toUpperCase());
     s("user-name-desk", u.nome);
     s("user-plan-desk", `PIANO ${(u.piano || "Free").toUpperCase()}`);
     s("user-megoin-desk", `${u.saldoMegoin} 🪙`);
     s("user-points-desk", `${u.puntiFedelta} Pt`);
 
-    // Scheda Profilo
     s("profile-card-avatar", (u.nome || "U").charAt(0).toUpperCase());
     s("profile-card-name", u.nome);
     s("profile-card-username", u.username);
@@ -567,12 +1295,10 @@ const AppRenderer = {
     s("profile-card-megoin", `${u.saldoMegoin} 🪙`);
     s("profile-card-points", `${u.puntiFedelta} Pt`);
 
-    // Azioni Profilo
     s("profile-action-plan-name", `Piano: ${(u.piano || "Free").toUpperCase()}`);
     s("profile-action-vault-count", AppState.vault.length);
   },
 
-  // RENDERER CATALOGO PIANI (CON RIMOZIONE DELLA RIGA "RISPARMIO" SU MOBILE)
   renderPlansCatalog: function() {
     const container = document.getElementById("plans-catalog-cards-container");
     if (!container || !AppState.plans || AppState.plans.length === 0) return;
@@ -584,7 +1310,6 @@ const AppRenderer = {
     const paidPlans = AppState.plans.filter(p => p.nome.toLowerCase() !== "free");
 
     container.innerHTML = `
-      <!-- 1. VISTA DESKTOP: 3 COLONNE SIMMETRICHE -->
       <div class="hidden md:grid grid-cols-3 gap-4">
         ${paidPlans.map(p => {
           const isSilver = p.nome.toLowerCase().includes("silver");
@@ -592,31 +1317,15 @@ const AppRenderer = {
           const period = isYearly ? "/anno" : "/mese";
           return `
             <div onclick="AppEngine.openPlanModal('${p.id}')" class="bg-surface/90 hover:bg-surface active:scale-[0.98] transition-all rounded-2xl border ${p.isAttivo ? 'border-sky-400 ring-2 ring-sky-400/40 shadow-xl' : (isSilver ? 'border-amber-400/60 ring-1 ring-amber-400/30' : 'border-white/10')} p-4 flex flex-col justify-between space-y-3 cursor-pointer relative group">
-              ${p.isAttivo ? `
-                <div class="absolute top-2.5 right-2.5">
-                  <span class="badge badge-xs badge-info font-black uppercase text-[8px] py-1.5 px-2">✨ ATTIVO</span>
-                </div>
-              ` : (isSilver ? `
-                <div class="absolute top-2.5 right-2.5">
-                  <span class="badge badge-xs badge-warning font-black uppercase text-[8px] py-1.5 px-2">⭐ CONSIGLIATO</span>
-                </div>
-              ` : '')}
-              
+              ${p.isAttivo ? `<div class="absolute top-2.5 right-2.5"><span class="badge badge-xs badge-info font-black uppercase text-[8px] py-1.5 px-2">✨ ATTIVO</span></div>` : ''}
               <div class="space-y-1">
                 <h4 class="font-black text-sm text-white group-hover:text-sky-400 transition-colors">${p.nome}</h4>
-                <div class="text-lg font-black text-amber-300">
-                  ${price} <span class="text-[10px] text-slate-400 font-normal">${period}</span>
-                </div>
-                ${isYearly && p.risparmio ? `
-                  <div class="text-[10px] text-emerald-400 font-bold">Risparmi ${p.risparmio} (${p.risparmi})</div>
-                ` : ''}
+                <div class="text-lg font-black text-amber-300">${price} <span class="text-[10px] text-slate-400 font-normal">${period}</span></div>
               </div>
-
               <div class="space-y-1.5 pt-2 border-t border-white/5 text-[11px] text-slate-300">
                 <div class="text-amber-400 font-bold">🪙 +${p.bonusMegoin} Megoin / mese</div>
                 <div class="text-[10px] text-slate-400 line-clamp-2">${p.descrizione || ''}</div>
               </div>
-
               <button class="btn btn-xs ${p.isAttivo ? 'btn-outline border-white/20 text-slate-400 cursor-not-allowed' : 'btn-primary'} w-full font-bold">
                 ${p.isAttivo ? 'In Uso' : 'Dettagli Piano ›'}
               </button>
@@ -625,49 +1334,29 @@ const AppRenderer = {
         }).join("")}
       </div>
 
-      <!-- 2. VISTA MOBILE: MATRICE SINTETICA (SENZA RIGA RIDONDANTE DEL RISPARMIO) -->
       <div class="md:hidden bg-surface/90 rounded-2xl border border-white/10 overflow-hidden shadow-xl">
-        <table class="w-full text-center border-collapse">
+        <table class="w-full text-center border-collapse text-[10px]">
           <thead>
             <tr class="border-b border-white/10 bg-black/40">
               <th class="p-2 text-left text-[9px] font-bold uppercase text-slate-400">Piano</th>
-              ${paidPlans.map(p => {
-                const price = isYearly ? p.prezzoAnnuale : p.prezzoMensile;
-                return `
-                  <th onclick="AppEngine.openPlanModal('${p.id}')" class="p-2 cursor-pointer">
-                    <div class="text-xs font-black text-white ${p.isAttivo ? 'text-sky-400' : ''}">${p.nome}</div>
-                    <div class="text-[10px] font-bold text-amber-300">${price}</div>
-                    ${p.isAttivo ? '<span class="badge badge-xs badge-info text-[7px] font-bold">ATTIVO</span>' : ''}
-                  </th>
-                `;
-              }).join("")}
+              ${paidPlans.map(p => `
+                <th onclick="AppEngine.openPlanModal('${p.id}')" class="p-2 cursor-pointer">
+                  <div class="font-black text-white ${p.isAttivo ? 'text-sky-400' : ''}">${p.nome}</div>
+                  <div class="text-amber-300">${isYearly ? p.prezzoAnnuale : p.prezzoMensile}</div>
+                </th>
+              `).join("")}
             </tr>
           </thead>
-          <tbody class="divide-y divide-white/5 text-[10px]">
+          <tbody class="divide-y divide-white/5">
             <tr>
-              <td class="p-2 text-left text-slate-300 font-semibold">🪙 Megoin / mese</td>
+              <td class="p-2 text-left text-slate-300 font-semibold">🪙 Megoin</td>
               ${paidPlans.map(p => `<td class="p-2 font-bold text-amber-400">+${p.bonusMegoin}</td>`).join("")}
             </tr>
-            <tr>
-              <td class="p-2 text-left text-slate-300 font-semibold">🎮 Saghe RPG</td>
-              ${paidPlans.map(p => {
-                const has = p.perks ? p.perks.some(x => x.key.includes("game") && x.enabled) : true;
-                return `<td class="p-2">${has ? '✅' : '❌'}</td>`;
-              }).join("")}
-            </tr>
-            <tr>
-              <td class="p-2 text-left text-slate-300 font-semibold">🏪 Sconti Bottega</td>
-              ${paidPlans.map(p => {
-                const has = p.perks ? p.perks.some(x => x.key.includes("shop") && x.enabled) : true;
-                return `<td class="p-2">${has ? '✅' : '❌'}</td>`;
-              }).join("")}
-            </tr>
-            <!-- NOTA: La riga "Risparmio" è stata eliminata per alleggerire la visualizzazione mobile -->
             <tr class="bg-black/30">
               <td class="p-2 text-left text-[9px] font-bold text-slate-400">Dettagli</td>
               ${paidPlans.map(p => `
                 <td class="p-1.5">
-                  <button onclick="AppEngine.openPlanModal('${p.id}')" class="btn btn-xs ${p.isAttivo ? 'btn-outline border-white/20 text-slate-400' : 'btn-primary'} px-2 font-bold text-[8px]">
+                  <button onclick="AppEngine.openPlanModal('${p.id}')" class="btn btn-xs ${p.isAttivo ? 'btn-outline border-white/20' : 'btn-primary'} px-2 font-bold text-[8px]">
                     ${p.isAttivo ? 'In Uso' : 'Apri'}
                   </button>
                 </td>
@@ -677,8 +1366,7 @@ const AppRenderer = {
         </table>
       </div>
 
-      <!-- 3. PIANO FREE STANDALONE -->
-      <div onclick="AppEngine.openPlanModal('${freePlan.id}')" class="bg-surface/60 hover:bg-surface active:scale-[0.99] transition-all p-3.5 rounded-2xl border ${freePlan.isAttivo ? 'border-sky-400/50' : 'border-white/5'} flex items-center justify-between cursor-pointer group">
+      <div onclick="AppEngine.openPlanModal('${freePlan.id}')" class="bg-surface/60 hover:bg-surface active:scale-[0.99] transition-all p-3.5 rounded-2xl border ${freePlan.isAttivo ? 'border-sky-400/50' : 'border-white/5'} flex items-center justify-between cursor-pointer group mt-3">
         <div class="flex items-center space-x-3">
           <div class="w-8 h-8 rounded-xl bg-white/5 flex items-center justify-center text-sm">⚓</div>
           <div>
@@ -735,7 +1423,7 @@ const AppRenderer = {
           </div>
         ` : ''}
         <div class="h-36 md:h-44 w-full bg-slate-900 overflow-hidden relative">
-          <img src="${p.mediaUrl}" class="w-full h-full object-cover rounded-t-2xl rounded-b-none">
+          <img src="${p.mediaUrl}" class="w-full h-full object-cover">
           <span class="badge badge-xs ${p.isDigitale ? 'badge-info' : 'badge-neutral'} absolute top-2.5 left-2.5 text-[8px] uppercase font-bold">${p.tipo || 'Fisico'}</span>
         </div>
         <div class="p-3.5 space-y-2.5">
@@ -845,7 +1533,7 @@ const AppRenderer = {
   }
 };
 
-// AVVIO APPLICAZIONE
+// AVVIO APPLICAZIONE UNIFICATA
 window.addEventListener("DOMContentLoaded", () => {
   if (window.lucide) lucide.createIcons();
   AppEngine.init();
