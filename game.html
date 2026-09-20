@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<html lang="it" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Estiqatsy RPG Engine</title>
+
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#090D16">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+  <!-- FRAMEWORK & LIBRERIE ESTERNE -->
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css" rel="stylesheet" type="text/css" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.4/howler.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+
+  <style>
+    :root {
+      --tg-bg: #090D16;
+      --tg-sec-bg: #111827;
+      --tg-text: #F9FAFB;
+    }
+    html, body {
+      background-color: #090D16;
+      color: #F9FAFB;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      touch-action: manipulation;
+      height: 100vh;
+      height: -webkit-fill-available;
+      overflow: hidden;
+    }
+    
+    /* SAFE AREA CALCOLATA PER IPHONE & NOTCH */
+    .game-safe-header {
+      padding-top: var(--tg-safe-area-inset-top, env(safe-area-inset-top, 40px));
+      background: rgba(9, 13, 22, 0.96);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    /* CONTENITORE 16:9 CON TAGLIO CENTRATO PERFETTO */
+    .cinema-frame-16-9 {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      max-height: 220px;
+      overflow: hidden;
+      background: #0d131f;
+    }
+    .cinema-frame-16-9 img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center;
+    }
+
+    /* MASCHERATURA ANTI-WATERMARK CON CITAZIONE DIEGETICA */
+    .watermark-cover-banner {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      min-height: 44px;
+      max-height: 60px;
+      background: linear-gradient(180deg, rgba(9, 13, 22, 0.4) 0%, rgba(9, 13, 22, 0.95) 45%, #090D16 100%);
+      backdrop-filter: blur(8px);
+      border-top: 1px solid rgba(255, 255, 255, 0.12);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 4px 12px;
+      z-index: 10;
+    }
+
+    .cockpit-footer {
+      background: rgba(13, 19, 31, 0.96);
+      backdrop-filter: blur(20px);
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      padding-bottom: max(env(safe-area-inset-bottom, 12px), 12px);
+    }
+
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    
+    .screen-fade {
+      animation: fadeIn 0.15s ease-out forwards;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+  </style>
+</head>
+
+<body class="h-screen w-screen flex flex-col antialiased select-none overflow-hidden bg-[#090D16]">
+
+  <!-- 1. SCHERMATA DI CARICAMENTO -->
+  <div id="game-loading" class="fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#090D16] p-6 text-center transition-opacity duration-300">
+    <div class="relative mb-4">
+      <div class="w-14 h-14 border-4 border-amber-500/20 border-t-amber-400 rounded-full animate-spin"></div>
+      <div class="absolute inset-0 flex items-center justify-center text-xl">🎲</div>
+    </div>
+    <h2 class="text-xs font-black tracking-widest text-white uppercase mb-1">Motore Narrativo RPG</h2>
+    <p class="text-[10px] text-slate-400 animate-pulse" id="game-loading-status">Caricamento mondo interattivo...</p>
+  </div>
+
+  <!-- 2. HEADER DI GIOCO FISSO -->
+  <header class="flex-none z-30 game-safe-header px-4 pb-2.5 flex items-center justify-between">
+    <button onclick="GameEngine.returnToApp()" class="btn btn-xs btn-ghost text-slate-300 flex items-center space-x-1 pl-0">
+      <i data-lucide="chevron-left" class="w-4 h-4"></i>
+      <span class="text-[10px] font-bold uppercase">App</span>
+    </button>
+    <div class="text-center">
+      <div class="text-[9px] font-black text-amber-400 uppercase tracking-widest" id="game-header-series">VIAREGTA</div>
+      <div class="text-xs font-black text-white truncate max-w-[180px]" id="game-header-episode">Episodio 1</div>
+    </div>
+    <div class="flex items-center space-x-1">
+      <button onclick="SoundEngine.toggleMute()" class="btn btn-xs btn-circle btn-ghost text-slate-400">
+        <i data-lucide="volume-2" class="w-3.5 h-3.5"></i>
+      </button>
+      <button onclick="GameEngine.openAbandonModal()" class="btn btn-xs btn-circle btn-ghost text-rose-400" title="Abbandona Partita">
+        <i data-lucide="log-out" class="w-3.5 h-3.5"></i>
+      </button>
+    </div>
+  </header>
+
+  <!-- 3. AREA CENTRALE DI GIOCO -->
+  <main class="flex-1 overflow-hidden flex flex-col justify-between relative max-w-2xl mx-auto w-full">
+
+    <!-- SEZIONE A: SELETTORE SAGHE & HUB EPISODI -->
+    <section id="view-hub" class="flex-1 overflow-y-auto p-4 space-y-4 screen-fade">
+      <div class="cinema-frame-16-9 rounded-2xl shadow-xl">
+        <img id="hub-image" src="" alt="Copertina Saga">
+        <div class="watermark-cover-banner">
+          <span class="text-[10px] text-slate-300 italic truncate" id="hub-quote">“La battigia 'un si tocca!”</span>
+          <span class="text-[9px] text-amber-300 font-bold uppercase shrink-0 ml-2" id="hub-author">Baglianti</span>
+        </div>
+      </div>
+      <div class="space-y-2">
+        <div class="flex items-center justify-between">
+          <h2 class="text-base font-black text-white" id="hub-title">Nome Saga</h2>
+          <span class="badge badge-sm badge-outline border-amber-400 text-amber-400 text-[9px] font-bold" id="hub-rules">Rules 1</span>
+        </div>
+        <p class="text-xs text-slate-300 leading-relaxed" id="hub-desc">Descrizione della saga...</p>
+      </div>
+      <div class="space-y-2 pt-2">
+        <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Capitoli Narrativi</div>
+        <div id="hub-episodes-container" class="space-y-2"></div>
+      </div>
+    </section>
+
+    <!-- SEZIONE B: WIZARD CREAZIONE PERSONAGGIO A SCHEDE SWIPEABILI -->
+    <section id="view-wizard" class="flex-1 overflow-y-auto p-4 space-y-4 hidden screen-fade">
+      
+      <!-- Passo 1: Carosello Fazioni / Classi -->
+      <div id="wizard-step-class" class="space-y-3">
+        <div class="flex items-center justify-between">
+          <span class="text-[10px] font-bold uppercase text-amber-400">Passo 1 di 4</span>
+          <span class="text-xs font-black text-white">Scegli la Fazione</span>
+        </div>
+        <!-- Carosello Orizzontale a Schede -->
+        <div class="flex space-x-3 overflow-x-auto no-scrollbar py-2 snap-x snap-mandatory" id="wizard-classes-carousel"></div>
+        <p class="text-[10px] text-center text-slate-400">Scorri orizzontalmente per confrontare le classi</p>
+      </div>
+
+      <!-- Passo 2: Selezione Abilità & Budget PX -->
+      <div id="wizard-step-abilities" class="space-y-3 hidden">
+        <div class="flex items-center justify-between">
+          <span class="text-[10px] font-bold uppercase text-amber-400">Passo 2 di 4</span>
+          <span class="badge badge-sm badge-info font-bold text-[10px]" id="wizard-px-budget">✨ 100 PX</span>
+        </div>
+        <div class="text-xs font-bold text-white">Attiva i tuoi talenti clandestini:</div>
+        <div class="grid grid-cols-2 gap-2" id="wizard-abilities-grid"></div>
+        <button onclick="GameEngine.wizardNextStep(3)" class="btn btn-sm btn-primary w-full font-bold mt-3">Procedi all'Equipaggiamento ➔</button>
+      </div>
+
+      <!-- Passo 3: Riconoscimento Nome & Start -->
+      <div id="wizard-step-name" class="space-y-3 hidden">
+        <div class="flex items-center justify-between">
+          <span class="text-[10px] font-bold uppercase text-amber-400">Passo 3 di 3</span>
+          <span class="text-xs font-black text-white">Battesimo di Fuoco</span>
+        </div>
+        <div class="bg-surface p-4 rounded-2xl border border-white/5 space-y-3">
+          <div class="text-xs text-slate-300">Inserisci il nome con cui sarai conosciuto lungo i moli:</div>
+          <input type="text" id="wizard-name-input" class="input input-sm input-bordered w-full text-xs text-white" placeholder="Es. Falco della Darsena">
+          <button onclick="GameEngine.wizardUseTelegramName()" class="btn btn-xs btn-outline border-white/20 w-full text-[10px]">Usa il tuo nome Telegram</button>
+        </div>
+        <button onclick="GameEngine.wizardFinalizeHero()" class="btn btn-md btn-primary w-full font-black shadow-lg shadow-sky-600/30">🚀 ENTRA IN GIOCO ORA</button>
+      </div>
+    </section>
+
+    <!-- SEZIONE C: GAMEPLAY & SCENA VISUAL NOVEL (ABOVE THE FOLD RIGIDO) -->
+    <section id="view-gameplay" class="flex-1 flex flex-col justify-between p-3.5 space-y-2 hidden screen-fade">
+      
+      <!-- 1. PLANCIA EROE COMPATTA (A riga singola salvaspazio) -->
+      <div class="flex-none bg-surface/90 p-2.5 rounded-xl border border-white/10 shadow-md flex items-center justify-between text-xs">
+        <div class="flex items-center space-x-2">
+          <span class="text-base" id="kpi-hero-avatar">🛟</span>
+          <div>
+            <div class="font-black text-white leading-none truncate max-w-[90px]" id="kpi-hero-name">Frank</div>
+            <div class="text-[9px] font-mono text-amber-300 mt-0.5"><span id="kpi-hero-gold">40</span> 🟡</div>
+          </div>
+        </div>
+
+        <!-- Barra Punti Vita -->
+        <div class="w-24 space-y-0.5">
+          <div class="flex justify-between text-[9px] font-mono text-slate-300">
+            <span>PV</span> <span id="kpi-hero-pv-text" class="font-bold">25/25</span>
+          </div>
+          <progress id="kpi-hero-pv-bar" class="progress progress-error w-full h-1.5" value="25" max="25"></progress>
+        </div>
+
+        <!-- 3 Modificatori D20 Compatti -->
+        <div class="flex space-x-1.5 font-mono text-[9px]">
+          <span class="bg-black/40 px-1.5 py-0.5 rounded border border-white/5">🥊 <b id="kpi-mod-for">+2</b></span>
+          <span class="bg-black/40 px-1.5 py-0.5 rounded border border-white/5">🤸 <b id="kpi-mod-des">+1</b></span>
+          <span class="bg-black/40 px-1.5 py-0.5 rounded border border-white/5">🧠 <b id="kpi-mod-int">+0</b></span>
+        </div>
+      </div>
+
+      <!-- 2. INQUADRATURA 16:9 CON COPERTURA WATERMARK POLLINATIONS -->
+      <div class="flex-none cinema-frame-16-9 rounded-xl shadow-lg border border-white/5">
+        <img id="scene-image" src="" alt="Scena">
+        <span id="scene-type-badge" class="badge badge-xs badge-info absolute top-2 left-2 text-[8px] font-black uppercase shadow">SNODO</span>
+        
+        <!-- Striscia Citazione Sovrimpressa Anti-Watermark -->
+        <div class="watermark-cover-banner">
+          <span class="text-[10px] text-amber-100/90 italic truncate pr-2" id="scene-quote">“Nessuno torna indietro dal padule.”</span>
+          <span class="text-[9px] text-amber-400 font-bold uppercase shrink-0" id="scene-author">Baglianti</span>
+        </div>
+      </div>
+
+      <!-- 3. TESTO NARRATIVO DINAMICO SCORREVOLE -->
+      <div class="flex-1 bg-surface/70 p-3 rounded-xl border border-white/5 overflow-y-auto no-scrollbar shadow-inner text-xs leading-relaxed space-y-1 max-h-[140px]">
+        <div class="font-black text-white uppercase text-[10px] tracking-wider" id="scene-title">Titolo Snodo</div>
+        <p class="text-slate-200" id="scene-text">Testo narrativo della situazione...</p>
+      </div>
+
+      <!-- 4. CONTENITORE AZIONI & BIVI NARRATIVI (ZONA POLLICE) -->
+      <div id="scene-actions-container" class="flex-none space-y-1.5 pt-1">
+        <!-- Iniettato dinamicamente (1 o 2 bottoni orizzontali o griglia duello) -->
+      </div>
+    </section>
+  </main>
+
+  <!-- 4. DOCK TATTICO IN-GAME (Sostituisce il footer generale dell'app) -->
+  <footer id="game-cockpit-footer" class="flex-none cockpit-footer flex justify-around items-center pt-2 px-3">
+    <button onclick="GameEngine.openBackpackDrawer()" class="flex flex-col items-center text-slate-400 hover:text-sky-400 active:scale-95 transition-all">
+      <i data-lucide="backpack" class="w-4 h-4"></i>
+      <span class="text-[8px] font-bold uppercase mt-0.5">Zaino</span>
+    </button>
+    <button onclick="GameEngine.openEmporioDrawer()" class="flex flex-col items-center text-slate-400 hover:text-amber-400 active:scale-95 transition-all">
+      <i data-lucide="shopping-bag" class="w-4 h-4"></i>
+      <span class="text-[8px] font-bold uppercase mt-0.5">Emporio</span>
+    </button>
+    <button onclick="GameEngine.openCambioModal()" class="flex flex-col items-center text-amber-400 hover:text-amber-300 active:scale-95 transition-all">
+      <i data-lucide="coins" class="w-4 h-4 text-glow-amber"></i>
+      <span class="text-[8px] font-black uppercase mt-0.5">Cambio 🪙</span>
+    </button>
+    <button onclick="GameEngine.openSquadDrawer()" class="flex flex-col items-center text-slate-400 hover:text-indigo-400 active:scale-95 transition-all">
+      <i data-lucide="users" class="w-4 h-4"></i>
+      <span class="text-[8px] font-bold uppercase mt-0.5">Squadra</span>
+    </button>
+    <button onclick="GameEngine.openDossierDrawer()" class="flex flex-col items-center text-slate-400 hover:text-emerald-400 active:scale-95 transition-all">
+      <i data-lucide="folder-search" class="w-4 h-4"></i>
+      <span class="text-[8px] font-bold uppercase mt-0.5">Dossier</span>
+    </button>
+  </footer>
+
+  <!-- ======================================================================= -->
+  <!-- 5. CASSETTI BOTTOM SHEET & FINESTRE MODALI                              -->
+  <!-- ======================================================================= -->
+
+  <!-- DRAWER 1: ZAINO INVENTARIO A SLOT -->
+  <dialog id="drawer-backpack" class="modal modal-bottom sm:modal-middle">
+    <div class="modal-box bg-[#0d131f] border-t border-white/10 p-4 space-y-3 max-w-md">
+      <div class="flex items-center justify-between pb-1 border-b border-white/5">
+        <div class="flex items-center space-x-2">
+          <span class="text-base">🎒</span>
+          <h3 class="text-xs font-black text-white uppercase">Zaino dell'Eroe</h3>
+        </div>
+        <button onclick="document.getElementById('drawer-backpack').close()" class="btn btn-xs btn-circle btn-ghost">✕</button>
+      </div>
+      <!-- Tab Categorie Zaino -->
+      <div class="flex space-x-1 overflow-x-auto no-scrollbar pb-1 text-[10px]" id="backpack-tabs">
+        <button onclick="GameEngine.filterBackpack('ALL')" class="badge badge-sm badge-info font-bold">Tutti</button>
+        <button onclick="GameEngine.filterBackpack('ARMI')" class="badge badge-sm badge-ghost font-bold">Armi</button>
+        <button onclick="GameEngine.filterBackpack('CURE')" class="badge badge-sm badge-ghost font-bold">Cure</button>
+        <button onclick="GameEngine.filterBackpack('DROGHE')" class="badge badge-sm badge-ghost font-bold">Droghe</button>
+      </div>
+      <div class="grid grid-cols-2 gap-2 max-h-60 overflow-y-auto" id="backpack-slots-container"></div>
+    </div>
+  </dialog>
+
+  <!-- DRAWER 2: EMPORIO MINI-SHOP -->
+  <dialog id="drawer-emporio" class="modal modal-bottom sm:modal-middle">
+    <div class="modal-box bg-[#0d131f] border-t border-white/10 p-4 space-y-3 max-w-md">
+      <div class="flex items-center justify-between pb-1 border-b border-white/5">
+        <div class="flex items-center space-x-2">
+          <span class="text-base">🏪</span>
+          <h3 class="text-xs font-black text-white uppercase">Emporio di Ciccio & CO.</h3>
+        </div>
+        <button onclick="document.getElementById('drawer-emporio').close()" class="btn btn-xs btn-circle btn-ghost">✕</button>
+      </div>
+      <div class="flex justify-between items-center bg-black/40 p-2 rounded-xl text-[10px]">
+        <span>💰 Dobloni: <b class="text-amber-400" id="emporio-gold-display">0 🟡</b></span>
+        <button onclick="GameEngine.openCambioModal()" class="btn btn-xs btn-warning font-black text-[9px]">💱 Banco Cambio</button>
+      </div>
+      <div class="grid grid-cols-2 gap-2 max-h-64 overflow-y-auto" id="emporio-items-container"></div>
+    </div>
+  </dialog>
+
+  <!-- MODALE 3: BANCO DI CAMBIO (MEGOIN ➔ ORO) -->
+  <dialog id="modal-banco-cambio" class="modal modal-bottom sm:modal-middle">
+    <div class="modal-box bg-[#0d131f] border border-amber-500/40 p-4 text-center space-y-3 max-w-xs">
+      <span class="text-3xl">💱</span>
+      <h3 class="text-sm font-black text-white">Banco di Cambio del Molo</h3>
+      <p class="text-[10px] text-slate-300">Converti gettoni Megoin in dobloni d'oro sonanti per l'avventura:</p>
+      <div class="bg-black/50 p-2 rounded-xl text-xs text-amber-300 font-mono">
+        Tuo Saldo: <b id="cambio-megoin-balance">0</b> Megoin 🪙
+      </div>
+      <div class="space-y-1.5 pt-1">
+        <button onclick="GameEngine.convertMegoinToGold(1, 100)" class="btn btn-sm btn-primary w-full font-bold text-xs">
+          Converti 1 🪙 ➔ +100 🟡 Oro
+        </button>
+        <button onclick="GameEngine.convertMegoinToGold(2, 200)" class="btn btn-sm btn-outline border-amber-400/50 text-amber-300 w-full font-bold text-xs">
+          Converti 2 🪙 ➔ +200 🟡 Oro
+        </button>
+      </div>
+      <button onclick="document.getElementById('modal-banco-cambio').close()" class="btn btn-xs btn-ghost text-slate-400 w-full mt-2">Chiudi</button>
+    </div>
+  </dialog>
+
+  <!-- DRAWER 4: SQUADRA & ZOMBI -->
+  <dialog id="drawer-squad" class="modal modal-bottom sm:modal-middle">
+    <div class="modal-box bg-[#0d131f] border-t border-white/10 p-4 space-y-3 max-w-md">
+      <div class="flex items-center justify-between pb-1 border-b border-white/5">
+        <div class="flex items-center space-x-2">
+          <span class="text-base">👥</span>
+          <h3 class="text-xs font-black text-white uppercase">Compagni & Zombi al Seguito</h3>
+        </div>
+        <button onclick="document.getElementById('drawer-squad').close()" class="btn btn-xs btn-circle btn-ghost">✕</button>
+      </div>
+      <div id="squad-list-container" class="space-y-2 text-xs"></div>
+    </div>
+  </dialog>
+
+  <!-- DRAWER 5: DOSSIER INVESTIGATIVO -->
+  <dialog id="drawer-dossier" class="modal modal-bottom sm:modal-middle">
+    <div class="modal-box bg-[#0d131f] border-t border-white/10 p-4 space-y-3 max-w-md">
+      <div class="flex items-center justify-between pb-1 border-b border-white/5">
+        <div class="flex items-center space-x-2">
+          <span class="text-base">📂</span>
+          <h3 class="text-xs font-black text-white uppercase">Organigramma Inchiesta</h3>
+        </div>
+        <button onclick="document.getElementById('drawer-dossier').close()" class="btn btn-xs btn-circle btn-ghost">✕</button>
+      </div>
+      <div id="dossier-list-container" class="space-y-2 text-xs"></div>
+    </div>
+  </dialog>
+
+  <!-- MODALE ABBANDONO PARTITA -->
+  <dialog id="modal-abandon" class="modal modal-bottom sm:modal-middle">
+    <div class="modal-box bg-[#0d131f] border border-rose-500/40 p-4 text-center space-y-3 max-w-xs">
+      <span class="text-2xl">⚠️</span>
+      <h3 class="text-xs font-black text-white">Confermi l'Abbandono?</h3>
+      <p class="text-[10px] text-slate-300">La partita attiva verrà chiusa e il punteggio salvato nei registri.</p>
+      <div class="space-y-1.5 pt-1">
+        <button onclick="GameEngine.confirmAbandon()" class="btn btn-sm btn-error w-full font-bold text-xs">Sì, Chiudi Partita</button>
+        <button onclick="document.getElementById('modal-abandon').close()" class="btn btn-sm btn-ghost w-full text-xs">Annulla</button>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- SCRIPT MOTORE AUDIO -->
+  <script src="audio.js"></script>
+
+  <!-- SCRIPT CLIENT GAMEPLAY & REST API -->
+  <script>
+    const GameConfig = {
+      GAS_URL: "https://script.google.com/macros/s/AKfycbyeCWHM9X4ycwWT7IOMwg24pySL78bJT5BRyiIR5eb0UJALWuaORzfJ2lkqLrjLv0xN/exec"
+    };
+
+    const GameState = {
+      user: null,
+      seriesList: [],
+      currentSeries: null,
+      currentEpisodio: 1,
+      hero: null,
+      node: null,
+      session: null,
+      wizard: { step: 1, chosenClass: null, chosenAbilities: [], tempGold: 40, tempPx: 100 }
+    };
+
+    const tg = window.Telegram ? window.Telegram.WebApp : null;
+    if (tg) {
+      try {
+        tg.ready();
+        tg.expand();
+        tg.setHeaderColor("#090D16");
+        tg.setBackgroundColor("#090D16");
+      } catch (e) {}
+    }
+
+    async function gameApiCall(action, params = {}) {
+      const initData = (tg && tg.initData) ? tg.initData : "";
+      let url = `${GameConfig.GAS_URL}?action=${action}&initData=${encodeURIComponent(initData)}`;
+      for (let k in params) {
+        if (params[k] !== undefined && params[k] !== null) {
+          url += `&${k}=${encodeURIComponent(params[k])}`;
+        }
+      }
+      const res = await fetch(url);
+      const json = await res.json();
+      if (!json.success && json.error) throw new Error(json.error);
+      return json.data;
+    }
+
+    const GameEngine = {
+      init: async function() {
+        try {
+          const profile = await gameApiCall("profile");
+          if (profile && profile.user) {
+            GameState.user = profile.user;
+          }
+
+          const gamesData = await gameApiCall("games");
+          if (gamesData && gamesData.series) {
+            GameState.seriesList = gamesData.series;
+            this.renderSeriesHub();
+          }
+
+          const loader = document.getElementById("game-loading");
+          if (loader) {
+            loader.classList.add("opacity-0");
+            setTimeout(() => loader.remove(), 250);
+          }
+        } catch (e) {
+          console.error(e);
+          alert("Errore caricamento: " + e.message);
+        }
+      },
+
+      returnToApp: function() {
+        window.location.href = "index.html";
+      },
+
+      renderSeriesHub: function() {
+        if (!GameState.seriesList || GameState.seriesList.length === 0) return;
+        const saga = GameState.seriesList[0];
+        GameState.currentSeries = saga;
+
+        document.getElementById("hub-title").textContent = `${saga.emoji} ${saga.serie}`;
+        document.getElementById("hub-desc").textContent = saga.descrizione || "";
+        document.getElementById("hub-image").src = saga.mediaUrl;
+        document.getElementById("hub-rules").textContent = saga.regole || "Rules 1";
+        
+        if (saga.citazione) {
+          document.getElementById("hub-quote").textContent = `"${saga.citazione}"`;
+          document.getElementById("hub-author").textContent = saga.autoreCitazione || "";
+        }
+
+        const container = document.getElementById("hub-episodes-container");
+        container.innerHTML = (saga.episodes || []).map(ep => `
+          <div class="p-3 bg-surface rounded-xl border border-white/5 flex items-center justify-between">
+            <div>
+              <div class="text-xs font-bold text-white">${ep.emoji || '▶️'} Ep. ${ep.episodio}: ${ep.titolo}</div>
+              <div class="text-[9px] text-slate-400">${ep.canContinueFree ? 'Avanzamento Eroe' : (ep.costoMegoin === 0 ? 'Gratis' : `${ep.costoMegoin} Megoin`)}</div>
+            </div>
+            <button onclick="GameEngine.startEpisode('${saga.gameKey}', ${ep.episodio})" class="btn btn-xs btn-primary font-bold px-3">
+              ${ep.canContinueFree ? 'Continua' : 'Gioca'}
+            </button>
+          </div>
+        `).join("");
+
+        this.showView("view-hub");
+        if (typeof SoundEngine !== "undefined") SoundEngine.playBgm("intro");
+      },
+
+      startEpisode: async function(gameKey, epNum) {
+        GameState.currentEpisodio = epNum;
+        if (typeof SoundEngine !== "undefined") {
+          SoundEngine.playSfx("insert_coin");
+          SoundEngine.playBgm("exploration");
+        }
+
+        try {
+          const data = await gameApiCall("game_start", { gameKey: gameKey, episodio: epNum });
+          if (data && data.success) {
+            GameState.session = { gameKey, episodio: epNum, partitaId: data.partitaId };
+            GameState.hero = data.statoEroe;
+            this.renderNode(data.nodoIniziale, data.statoEroe);
+            this.showView("view-gameplay");
+          }
+        } catch (err) {
+          alert("Impossibile avviare: " + err.message);
+        }
+      },
+
+      renderNode: function(node, hero) {
+        GameState.node = node;
+        if (hero) GameState.hero = hero;
+
+        document.getElementById("game-header-series").textContent = (GameState.currentSeries ? GameState.currentSeries.serie : "VIAREGTA").toUpperCase();
+        document.getElementById("game-header-episode").textContent = `Episodio ${GameState.currentEpisodio}`;
+
+        // Aggiornamento Plancia HUD Compatta
+        if (GameState.hero) {
+          const h = GameState.hero;
+          document.getElementById("kpi-hero-name").textContent = h.nomeEroe || "Eroe";
+          document.getElementById("kpi-hero-gold").textContent = h.oro || 0;
+          document.getElementById("kpi-hero-pv-text").textContent = `${h.pv}/${h.pvMax}`;
+          const bar = document.getElementById("kpi-hero-pv-bar");
+          bar.value = h.pv;
+          bar.max = h.pvMax;
+
+          if (h.modificatori) {
+            document.getElementById("kpi-mod-for").textContent = (h.modificatori.FORZA >= 0 ? '+' : '') + h.modificatori.FORZA;
+            document.getElementById("kpi-mod-des").textContent = (h.modificatori.DESTREZZA >= 0 ? '+' : '') + h.modificatori.DESTREZZA;
+            document.getElementById("kpi-mod-int").textContent = (h.modificatori.INTELLIGENZA >= 0 ? '+' : '') + h.modificatori.INTELLIGENZA;
+          }
+        }
+
+        // Scena Visiva 16:9 con Copertura Watermark
+        document.getElementById("scene-image").src = node.mediaUrl || "https://image.pollinations.ai/prompt/noir-italian-docks-night-cinematic?width=800&height=450&nologo=true";
+        document.getElementById("scene-type-badge").textContent = node.tipo || "SNODO";
+        document.getElementById("scene-title").textContent = node.nome || "Avventura";
+        document.getElementById("scene-text").textContent = node.testo || "";
+
+        if (node.citazione && node.citazione !== "—") {
+          document.getElementById("scene-quote").textContent = `“${node.citazione.replace(/^["'“”]+|["'“”]+$/g, '')}”`;
+          document.getElementById("scene-author").textContent = node.autoreCitazione || "";
+          document.querySelector(".watermark-cover-banner").classList.remove("hidden");
+        } else {
+          document.querySelector(".watermark-cover-banner").classList.add("hidden");
+        }
+
+        // Zona Azioni (Bivi Narrativi / Combattimento)
+        const actBox = document.getElementById("scene-actions-container");
+        const isCombat = (node.tipo === "NEMICO" || (node.id && node.id.includes("NEM_")));
+
+        if (isCombat) {
+          actBox.innerHTML = `
+            <div class="grid grid-cols-2 gap-2">
+              <button onclick="GameEngine.combatAction('attack')" class="btn btn-sm btn-error font-black shadow-md">
+                ⚔️ Attacca Round
+              </button>
+              <button onclick="GameEngine.combatAction('flee')" class="btn btn-sm btn-outline border-white/20 text-xs font-bold">
+                🏃 Fuggi
+              </button>
+            </div>
+          `;
+          return;
+        }
+
+        if (node.choices && node.choices.length > 0) {
+          if (node.choices.length === 2) {
+            actBox.innerHTML = `
+              <div class="grid grid-cols-2 gap-2">
+                <button onclick="GameEngine.advanceToNode('${node.choices[0].target}')" class="btn btn-sm btn-primary text-xs font-bold truncate">
+                  ${node.choices[0].testo}
+                </button>
+                <button onclick="GameEngine.advanceToNode('${node.choices[1].target}')" class="btn btn-sm btn-primary text-xs font-bold truncate">
+                  ${node.choices[1].testo}
+                </button>
+              </div>
+            `;
+          } else {
+            actBox.innerHTML = node.choices.map(c => `
+              <button onclick="GameEngine.advanceToNode('${c.target}')" class="btn btn-sm btn-block btn-primary text-xs font-bold mb-1.5 truncate">
+                ${c.testo}
+              </button>
+            `).join("");
+          }
+        } else {
+          actBox.innerHTML = `
+            <button onclick="GameEngine.renderSeriesHub()" class="btn btn-sm btn-block btn-outline border-white/20 text-xs font-bold">
+              🏁 Capitolo Concluso
+            </button>
+          `;
+        }
+      },
+
+      advanceToNode: async function(targetId) {
+        if (!GameState.session) return;
+        if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("click");
+
+        try {
+          const res = await gameApiCall("game_node", {
+            gameKey: GameState.session.gameKey,
+            episodio: GameState.session.episodio,
+            nodeId: targetId,
+            partitaId: GameState.session.partitaId
+          });
+          if (res && res.nodo) {
+            this.renderNode(res.nodo, res.statoEroe);
+          }
+        } catch (e) {
+          alert("Errore avanzamento: " + e.message);
+        }
+      },
+
+      combatAction: async function(subAction) {
+        if (!GameState.session) return;
+        try {
+          const res = await gameApiCall("game_action", {
+            subAction: subAction,
+            gameKey: GameState.session.gameKey,
+            episodio: GameState.session.episodio
+          });
+
+          if (res && res.combatLog) {
+            if (typeof SoundEngine !== "undefined") {
+              if (res.combatLog.isHit) SoundEngine.playSfx("hit");
+              else SoundEngine.playSfx("click");
+            }
+            alert(`⚔️ Round ${res.combatLog.round}: Hai inflitto -${res.combatLog.dmgDealt} PV! Subiti -${res.combatLog.dmgTaken} PV.`);
+            if (res.nodo) this.renderNode(res.nodo, res.statoEroe);
+          } else if (res && res.nodo) {
+            this.renderNode(res.nodo, res.statoEroe);
+          }
+        } catch (e) {
+          alert("Errore combattimento: " + e.message);
+        }
+      },
+
+      // APERTURA CASSETTI & MODALI
+      openBackpackDrawer: function() {
+        const h = GameState.hero;
+        const c = document.getElementById("backpack-slots-container");
+        if (!h || !h.inventario || h.inventario.length === 0) {
+          c.innerHTML = `<div class="col-span-full py-6 text-center text-slate-500 text-xs">Zaino vuoto.</div>`;
+        } else {
+          c.innerHTML = h.inventario.map(it => `
+            <div class="p-2 bg-surface rounded-xl border border-white/5 flex items-center justify-between text-xs">
+              <span class="truncate font-bold">${it}</span>
+              <button class="btn btn-xs btn-outline border-white/20 text-[9px]">Usa</button>
+            </div>
+          `).join("");
+        }
+        document.getElementById("drawer-backpack").showModal();
+      },
+
+      openEmporioDrawer: function() {
+        document.getElementById("emporio-gold-display").textContent = `${GameState.hero ? GameState.hero.oro : 0} 🟡`;
+        document.getElementById("drawer-emporio").showModal();
+      },
+
+      openCambioModal: function() {
+        document.getElementById("cambio-megoin-balance").textContent = GameState.user ? GameState.user.saldoMegoin : 0;
+        document.getElementById("modal-banco-cambio").showModal();
+      },
+
+      convertMegoinToGold: function(megoinCost, goldEarned) {
+        if (!GameState.user || GameState.user.saldoMegoin < megoinCost) {
+          alert("Megoin insufficienti!");
+          return;
+        }
+        GameState.user.saldoMegoin -= megoinCost;
+        if (GameState.hero) GameState.hero.oro += goldEarned;
+        
+        if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("coin");
+        if (window.confetti) confetti({ particleCount: 60, spread: 50 });
+
+        document.getElementById("cambio-megoin-balance").textContent = GameState.user.saldoMegoin;
+        document.getElementById("emporio-gold-display").textContent = `${GameState.hero.oro} 🟡`;
+        document.getElementById("kpi-hero-gold").textContent = GameState.hero.oro;
+
+        alert(`Convertiti con successo ${megoinCost} 🪙 in +${goldEarned} 🟡 Oro!`);
+        document.getElementById("modal-banco-cambio").close();
+      },
+
+      openSquadDrawer: function() {
+        const c = document.getElementById("squad-list-container");
+        const allies = (GameState.hero && GameState.hero.compagni) ? GameState.hero.compagni : [];
+        if (allies.length === 0) {
+          c.innerHTML = `<div class="py-6 text-center text-slate-500 text-xs">Sei in solitaria. Nessun compagno al seguito.</div>`;
+        } else {
+          c.innerHTML = allies.map(a => `<div class="p-2.5 bg-surface rounded-xl border border-white/5 font-bold text-xs">🤝 ${a}</div>`).join("");
+        }
+        document.getElementById("drawer-squad").showModal();
+      },
+
+      openDossierDrawer: function() {
+        const c = document.getElementById("dossier-list-container");
+        c.innerHTML = `<div class="p-3 bg-surface rounded-xl border border-white/5 text-xs text-slate-300">📁 <b>Pizzino di Yusuf:</b> Svela le mazzette a Tele-Costa News per insabbiare i traffici del porto. (+1 INT)</div>`;
+        document.getElementById("drawer-dossier").showModal();
+      },
+
+      openAbandonModal: function() {
+        document.getElementById("modal-abandon").showModal();
+      },
+
+      confirmAbandon: function() {
+        document.getElementById("modal-abandon").close();
+        GameState.session = null;
+        this.renderSeriesHub();
+      },
+
+      showView: function(viewId) {
+        ["view-hub", "view-wizard", "view-gameplay"].forEach(id => {
+          document.getElementById(id).classList.toggle("hidden", id !== viewId);
+        });
+        const footer = document.getElementById("game-cockpit-footer");
+        if (footer) {
+          footer.classList.toggle("hidden", viewId !== "view-gameplay");
+        }
+      }
+    };
+
+    window.addEventListener("DOMContentLoaded", () => {
+      if (window.lucide) lucide.createIcons();
+      GameEngine.init();
+      setTimeout(() => { if (window.lucide) lucide.createIcons(); }, 150);
+    });
+  </script>
+</body>
+</html>
