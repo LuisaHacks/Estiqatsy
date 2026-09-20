@@ -1,6 +1,6 @@
 // ============================================================================
-// PROJECT: ESTIQATSY PWA - CLIENT APPLICATION ENGINE (VERSIONE 3.6)
-// FILE: app.js
+// PROJECT: ESTIQATSY PWA - CLIENT APPLICATION ENGINE (VERSIONE 4.0)
+// FILE: app.js (MODULO GENERALE: DASHBOARD, BOTTEGA, RICETTARIO & PIANI)
 // ============================================================================
 
 const AppConfig = {
@@ -18,7 +18,6 @@ const AppState = {
   activeTab: "home",
   shop: { items: [], categories: [], activeCategory: "tutti", searchQuery: "" },
   recipes: { items: [], categories: [], activeCategory: "tutti", searchQuery: "" },
-  games: { series: [], genres: [], activeGenre: "tutti", searchQuery: "", session: null },
   carousel: { timer: null, index: 0, count: 0, isPaused: false },
   vault: []
 };
@@ -36,7 +35,7 @@ if (tg) {
   } catch (e) {}
 }
 
-// GESTORE SICURO DEL TASTO INDIETRO NATIVO TELEGRAM (PREVIENE MEMORY LEAK)
+// GESTORE TASTO INDIETRO NATIVO TELEGRAM (SOLO PER SUBVIEW ATTIVE)
 let backButtonHandler = null;
 function setupTelegramBackButton(screenName) {
   if (!tg || !tg.BackButton) return;
@@ -46,14 +45,11 @@ function setupTelegramBackButton(screenName) {
     backButtonHandler = null;
   }
 
-  const isSub = screenName.startsWith("subview-") || screenName === "view-gameplay";
+  const isSub = screenName === "subview-shop-detail" || screenName === "subview-recipe-detail";
   if (isSub) {
     tg.BackButton.show();
     backButtonHandler = () => {
-      if (screenName === "subview-series-hub" || screenName === "view-gameplay") {
-        if (typeof SoundEngine !== "undefined") SoundEngine.stopBgm();
-        AppRouter.navigate("games");
-      } else if (screenName === "subview-shop-detail") {
+      if (screenName === "subview-shop-detail") {
         AppRouter.navigate("shop");
       } else if (screenName === "subview-recipe-detail") {
         AppRouter.navigate("recipes");
@@ -72,7 +68,13 @@ const AppRouter = {
     if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("click");
     if (tg && tg.HapticFeedback) tg.HapticFeedback.selectionChanged();
 
-    // Verifica Hard Locking: se il modulo non è consentito, torna a Home e apri modale piani
+    // Se l'utente tocca giochi dal menu o dalla sidebar, reindirizza alla webapp RPG dedicata
+    if (screenName === "games" || screenName === "view-games") {
+      window.location.href = "game.html";
+      return;
+    }
+
+    // Verifica Hard Locking del modulo
     const baseModule = screenName.replace("view-", "").replace("subview-", "").split("-")[0];
     if (AppState.allowedModules && AppState.allowedModules[baseModule] === false) {
       AppRouter.navigate("home");
@@ -80,16 +82,7 @@ const AppRouter = {
       return;
     }
 
-    // Regia Audio sui cambi di sezione
-    if (typeof SoundEngine !== "undefined") {
-      if (screenName === "view-home" || screenName === "view-profile") {
-        SoundEngine.stopBgm();
-      } else if (screenName === "subview-series-hub") {
-        SoundEngine.playBgm("intro");
-      }
-    }
-
-    // Reset filtri e ricerca al cambio di scheda principale
+    // Reset filtri di ricerca al cambio di scheda principale
     if (screenName === "shop") {
       AppState.shop.activeCategory = "tutti";
       AppState.shop.searchQuery = "";
@@ -102,17 +95,11 @@ const AppRouter = {
       const rInput = document.getElementById("recipes-search-input");
       if (rInput) rInput.value = "";
       AppRenderer.renderRecipes();
-    } else if (screenName === "games") {
-      AppState.games.activeGenre = "tutti";
-      AppState.games.searchQuery = "";
-      const gInput = document.getElementById("games-search-input");
-      if (gInput) gInput.value = "";
-      AppRenderer.renderGames();
     }
 
     const allScreens = [
-      "view-home", "view-games", "view-gameplay", "view-shop", "view-recipes", "view-profile",
-      "subview-series-hub", "subview-shop-detail", "subview-recipe-detail"
+      "view-home", "view-shop", "view-recipes", "view-profile",
+      "subview-shop-detail", "subview-recipe-detail"
     ];
 
     let targetId = screenName;
@@ -167,7 +154,7 @@ const AppEngine = {
     this.loadVault();
 
     try {
-      // 1. Chiamata Profilo (include Piani da 👑Plans, Prodotti Acquistati e Moduli Autorizzati)
+      // 1. Chiamata Profilo (include Piani da 👑Plans e Moduli Autorizzati)
       const p = await apiCall("profile");
       if (p && p.user) {
         AppState.user = p.user;
@@ -177,13 +164,15 @@ const AppEngine = {
         AppRenderer.applyHardLocking(AppState.allowedModules);
       }
 
-      // 2. Caricamento asincrono parallelo in RAM
+      // 2. Caricamento rapido parallelo solo dei moduli dell'App Generale
       await Promise.allSettled([
         this.fetchShop(),
         this.fetchRecipes(),
-        this.fetchGames(),
         this.syncTransactions(false)
       ]);
+
+      // Avvia il carosello promozionale
+      this.initCarousel();
 
       const loader = document.getElementById("app-loading");
       if (loader) {
@@ -196,21 +185,21 @@ const AppEngine = {
       console.error(err);
       const eb = document.getElementById("loading-error-box");
       if (eb) {
-        eb.textContent = err.message || "Errore di connessione al Syndicate.";
+        eb.textContent = err.message || "Errore di connessione al server.";
         eb.classList.remove("hidden");
         document.getElementById("loading-retry-btn").classList.remove("hidden");
       }
     }
   },
 
-  // APERTURA MODALE LIVELLO 1: CATALOGO E COMPARAZIONE PIANI
+  // APERTURA MODALE COMPARAZIONE PIANI (LIVELLO 1)
   openPlansCatalogModal: function() {
     AppRenderer.renderPlansCatalog();
     const modal = document.getElementById("modal-plans-catalog");
     if (modal) modal.showModal();
   },
 
-  // SWITCH SAAS CICLO DI FATTURAZIONE (Mensile / Annuale)
+  // SWITCH CICLO FATTURAZIONE (Mensile / Annuale)
   setBillingCycle: function(cycle) {
     AppState.billingCycle = cycle;
     const btnM = document.getElementById("billing-toggle-monthly");
@@ -227,7 +216,7 @@ const AppEngine = {
     AppRenderer.renderPlansCatalog();
   },
 
-  // APERTURA MODALE LIVELLO 2: SCHEDA DETTAGLIATA PIANO & CHECKOUT
+  // APERTURA MODALE DETTAGLIO PIANO & CHECKOUT (LIVELLO 2)
   openPlanModal: function(planId) {
     const plan = AppState.plans.find(p => p.id === planId) || 
                  AppState.plans.find(p => p.nome.toLowerCase() === String(planId).toLowerCase());
@@ -243,7 +232,7 @@ const AppEngine = {
     s("plan-modal-period", periodText);
     s("upgrade-modal-desc", plan.descrizione || "Nessuna descrizione disponibile.");
     
-    // Iniezione dinamica dei vantaggi estratti dal foglio 👑Plans
+    // Iniezione dinamica dei vantaggi
     const perksBox = document.getElementById("plan-modal-perks-list");
     if (perksBox) {
       let htmlPerks = `
@@ -275,7 +264,7 @@ const AppEngine = {
         actBtn.disabled = false;
         actBtn.className = "btn btn-primary btn-sm w-full font-bold shadow-lg shadow-sky-600/30";
         actBtn.onclick = () => {
-          alert(`Reindirizzamento al checkout sicuro per il piano ${plan.nome} in corso...`);
+          alert(`Reindirizzamento al checkout per il piano ${plan.nome} in corso...`);
         };
       }
     }
@@ -292,46 +281,66 @@ const AppEngine = {
     }, 150);
   },
 
-  // CAROSELLO SAGHE (Ogni 5s con pausa touch)
+  // CAROSELLO IN EVIDENZA (PROMUOVE GIOCHI, BOTTEGA E RICETTE)
   initCarousel: function() {
     const track = document.getElementById("carousel-track");
     const dotsBox = document.getElementById("carousel-dots-container");
     const outer = document.getElementById("carousel-outer-wrapper");
-    if (!track || AppState.games.series.length === 0) return;
+    if (!track) return;
 
-    const list = AppState.games.series;
-    AppState.carousel.count = list.length;
+    // Slide promozionali stabili con reindirizzamenti coerenti
+    const promoSlides = [
+      {
+        badge: "AVVENTURE RPG",
+        titolo: "ViareGTA & Paul Sindaco",
+        sottotitolo: "Vivi le saghe noir tra i canali e la pineta a colpi di D20",
+        btnText: "Gioca Ora ➔",
+        action: () => { window.location.href = "game.html"; },
+        img: "https://image.pollinations.ai/prompt/noir-italian-docks-night-cinematic-libeccio-wind?width=800&height=400&nologo=true"
+      },
+      {
+        badge: "VETRINA BOTTEGA",
+        titolo: "Merci & Prodotti Esclusivi",
+        sottotitolo: "Spendi i tuoi gettoni Megoin riscattando manuali e sconti",
+        btnText: "Apri Shop",
+        action: () => { AppRouter.navigate("shop"); },
+        img: "https://image.pollinations.ai/prompt/smugglers-dockside-warehouse-bazaar-wooden-crates?width=800&height=400&nologo=true"
+      },
+      {
+        badge: "BARLADY & COCKTAIL",
+        titolo: "I Segreti della Darsena",
+        sottotitolo: "Sblocca le ricette ufficiali di cocktail, antipasti e primi",
+        btnText: "Ricettario",
+        action: () => { AppRouter.navigate("recipes"); },
+        img: "https://image.pollinations.ai/prompt/vintage-italian-cocktail-bar-amber-lighting-negroni?width=800&height=400&nologo=true"
+      }
+    ];
+
+    AppState.carousel.count = promoSlides.length;
     AppState.carousel.index = 0;
 
-    track.innerHTML = list.map((s) => `
-      <div class="min-w-full relative h-44 md:h-64 bg-slate-900 cursor-pointer overflow-hidden flex-none" onclick="AppEngine.openSeriesHub('${s.gameKey}')">
-        <img src="${s.mediaUrl}" class="w-full h-full object-cover">
+    track.innerHTML = promoSlides.map((s, idx) => `
+      <div class="min-w-full relative h-44 md:h-64 bg-slate-900 cursor-pointer overflow-hidden flex-none" onclick="AppEngine.handleCarouselClick(${idx})">
+        <img src="${s.img}" class="w-full h-full object-cover">
         <div class="absolute inset-0 bg-gradient-to-t from-[#090D16] via-black/40 to-transparent"></div>
-        
-        <!-- TAG: PARTITA IN CORSO -->
-        ${s.hasActiveGame ? `
-          <span class="badge badge-sm badge-warning font-black uppercase text-[8px] md:text-[10px] absolute top-3.5 left-3.5 shadow-lg flex items-center space-x-1 animate-pulse">
-            <span>🔴</span> <span>PARTITA IN CORSO (EP. ${s.activeEpisodio})</span>
-          </span>
-        ` : `
-          <span class="badge badge-sm badge-primary font-bold uppercase text-[8px] md:text-[10px] absolute top-3.5 left-3.5 shadow-md">
-            ${s.tipologia}
-          </span>
-        `}
-
+        <span class="badge badge-sm badge-primary font-bold uppercase text-[8px] md:text-[10px] absolute top-3.5 left-3.5 shadow-md">
+          ${s.badge}
+        </span>
         <div class="absolute bottom-4 inset-x-4 flex items-end justify-between">
           <div>
-            <h3 class="font-black text-sm md:text-lg text-white">${s.emoji} ${s.serie}</h3>
-            <p class="text-[10px] md:text-xs text-slate-300 mt-0.5">${s.episodes.length} Capitoli Disponibili • Motore ${s.regole}</p>
+            <h3 class="font-black text-sm md:text-lg text-white">${s.titolo}</h3>
+            <p class="text-[10px] md:text-xs text-slate-300 mt-0.5">${s.sottotitolo}</p>
           </div>
-          <button class="btn btn-xs md:btn-sm btn-primary font-bold px-3 shadow-lg shadow-sky-600/30">Esplora</button>
+          <button class="btn btn-xs md:btn-sm btn-primary font-bold px-3 shadow-lg shadow-sky-600/30">${s.btnText}</button>
         </div>
       </div>
     `).join("");
 
-    dotsBox.innerHTML = list.map((_, i) => `
+    dotsBox.innerHTML = promoSlides.map((_, i) => `
       <span class="w-2 h-1.5 rounded-full transition-all ${i === 0 ? 'bg-sky-400 w-4' : 'bg-white/20'}" id="car-dot-${i}"></span>
     `).join("");
+
+    this._currentPromoSlides = promoSlides;
 
     if (outer) {
       outer.onmouseenter = () => { AppState.carousel.isPaused = true; };
@@ -348,6 +357,12 @@ const AppEngine = {
     }, 5000);
   },
 
+  handleCarouselClick: function(idx) {
+    if (this._currentPromoSlides && this._currentPromoSlides[idx]) {
+      this._currentPromoSlides[idx].action();
+    }
+  },
+
   updateCarouselPosition: function() {
     const track = document.getElementById("carousel-track");
     if (!track) return;
@@ -359,235 +374,6 @@ const AppEngine = {
       if (dot) {
         dot.className = `h-1.5 rounded-full transition-all ${i === idx ? 'bg-sky-400 w-4' : 'bg-white/20 w-2'}`;
       }
-    }
-  },
-
-  // ==========================================================================
-  // GIOCHI, AVVENTURE & REGIA AUDIO BGM/SFX
-  // ==========================================================================
-  fetchGames: async function() {
-    try {
-      const data = await apiCall("games");
-      if (data && data.series) {
-        AppState.games.series = data.series;
-        AppState.games.genres = data.genres || [];
-        AppRenderer.renderGames();
-        this.initCarousel();
-      }
-    } catch (e) {}
-  },
-
-  setGameGenre: function(genre) {
-    AppState.games.activeGenre = genre;
-    AppRenderer.renderGames();
-  },
-
-  filterGames: function() {
-    const input = document.getElementById("games-search-input");
-    AppState.games.searchQuery = input ? input.value.trim().toLowerCase() : "";
-    AppRenderer.renderGamesCards();
-  },
-
-  openSeriesHub: function(gameKey) {
-    const saga = AppState.games.series.find(s => s.gameKey === gameKey);
-    if (!saga) return;
-
-    if (typeof SoundEngine !== "undefined") SoundEngine.playBgm("intro");
-
-    document.getElementById("hub-serie-title").textContent = saga.serie;
-    document.getElementById("hub-serie-desc").textContent = saga.descrizione || "";
-    document.getElementById("hub-serie-genre").textContent = saga.tipologia || "Avventura";
-    
-    const rBadge = document.getElementById("hub-serie-rules");
-    if (rBadge) rBadge.textContent = saga.regole || "Rules 2";
-
-    document.getElementById("hub-serie-img").src = saga.mediaUrl;
-
-    const qBox = document.getElementById("hub-serie-quote");
-    if (saga.citazione) {
-      const cleanQ = String(saga.citazione).replace(/^["'“”«»]+|["'“”«»]+$/g, "").trim();
-      qBox.textContent = `"${cleanQ}" ${saga.autoreCitazione ? '(' + saga.autoreCitazione + ')' : ''}`;
-      qBox.classList.remove("hidden");
-    } else {
-      qBox.classList.add("hidden");
-    }
-
-    const hb = document.getElementById("hub-hero-box");
-    if (saga.eroeSalvato && saga.eroeSalvato.nomeEroe) {
-      document.getElementById("hub-hero-name").textContent = `${saga.eroeSalvato.nomeEroe} (${saga.eroeSalvato.classe})`;
-      document.getElementById("hub-hero-progress").textContent = `Capitoli superati: ${saga.eroeSalvato.maxEpisodio}`;
-      hb.classList.remove("hidden");
-    } else {
-      hb.classList.add("hidden");
-    }
-
-    const el = document.getElementById("hub-episodes-list");
-    el.innerHTML = (saga.episodes || []).map(ep => {
-      let btnTxt = ep.canContinueFree ? "Continua (Gratis)" : `Gioca (${ep.costoMegoin} 🪙)`;
-      return `
-        <div class="p-3.5 rounded-2xl bg-surface border border-white/5 flex items-center justify-between">
-          <div>
-            <div class="text-xs md:text-sm font-bold text-white flex items-center space-x-1.5">
-              <span>${ep.emoji || '▶️'} Ep. ${ep.episodio}: ${ep.titolo}</span>
-              ${ep.isCompleted ? '<span class="badge badge-xs badge-success font-bold">Vinto</span>' : ''}
-            </div>
-            <div class="text-[10px] md:text-xs text-slate-400 mt-0.5">${ep.canContinueFree ? 'Avanzamento Eroe' : (ep.costoMegoin === 0 ? 'Gratis' : `${ep.costoMegoin} Megoin`)}</div>
-          </div>
-          <button onclick="AppEngine.startGame('${saga.gameKey}', ${ep.episodio})" class="btn btn-xs md:btn-sm btn-primary font-bold px-3.5">
-            ${btnTxt}
-          </button>
-        </div>
-      `;
-    }).join("");
-
-    AppRouter.navigate("subview-series-hub");
-  },
-
-  startGame: async function(gameKey, epNum) {
-    if (typeof SoundEngine !== "undefined") {
-      SoundEngine.playSfx("insert_coin");
-      SoundEngine.playBgm("exploration");
-    }
-
-    try {
-      const data = await apiCall("game_start", { gameKey: gameKey, episodio: epNum });
-      if (data && data.success) {
-        AppState.user.saldoMegoin = data.nuovoSaldoMegoin;
-        AppRenderer.renderProfile(AppState.user);
-        AppState.games.session = { gameKey, episodio: epNum, partitaId: data.partitaId };
-        
-        AppRenderer.renderGameNode(data.nodoIniziale, data.statoEroe);
-        AppRouter.navigate("view-gameplay");
-      }
-    } catch (err) {
-      alert("❌ " + err.message);
-    }
-  },
-
-  advanceNode: async function(targetId) {
-    const sess = AppState.games.session;
-    if (!sess) { AppRouter.navigate("games"); return; }
-
-    try {
-      const d = await apiCall("game_node", { gameKey: sess.gameKey, episodio: sess.episodio, nodeId: targetId, partitaId: sess.partitaId });
-      if (d && d.nodo) {
-        // Regia Sonora reattiva sul cambio di nodo
-        if (typeof SoundEngine !== "undefined") {
-          if (d.nodo.tipo === "NEMICO") {
-            SoundEngine.playSfx("combat_start");
-            SoundEngine.duck();
-            SoundEngine.playBgm("combat");
-          } else if (d.nodo.id === "SND_000") {
-            SoundEngine.playBgm("emporio");
-          } else if (d.nodo.tipo === "Fine" || d.nodo.id.includes("END")) {
-            SoundEngine.playSfx("victory");
-            SoundEngine.playBgm("victory");
-            if (window.confetti) confetti({ particleCount: 100, spread: 60, origin: { y: 0.6 } });
-          } else if (d.statoEroe && d.statoEroe.pv <= 0) {
-            SoundEngine.playSfx("defeat");
-            SoundEngine.playBgm("defeat");
-          } else {
-            SoundEngine.playSfx("click");
-            SoundEngine.playBgm("exploration");
-          }
-        }
-        AppRenderer.renderGameNode(d.nodo, d.statoEroe);
-      }
-    } catch (e) {
-      alert("Errore mossa: " + e.message);
-    }
-  },
-
-  // AZIONI DI COMBATTIMENTO E TATTICHE IN-GAME (action=game_action)
-  battleAttackRound: async function(enemyId) {
-    const sess = AppState.games.session;
-    if (!sess) return;
-
-    try {
-      const res = await apiCall("game_action", {
-        subAction: "attack",
-        enemyId: enemyId,
-        gameKey: sess.gameKey,
-        episodio: sess.episodio
-      });
-
-      if (res && res.combatLog) {
-        if (typeof SoundEngine !== "undefined") {
-          if (res.combatLog.isCrit) {
-            SoundEngine.playSfx("crit_hit");
-            SoundEngine.duck();
-          } else if (res.combatLog.isHit) {
-            SoundEngine.playSfx("hit");
-          } else {
-            SoundEngine.playSfx("click");
-          }
-
-          if (res.combatLog.heroDead) {
-            SoundEngine.playSfx("defeat");
-            SoundEngine.playBgm("defeat");
-          }
-        }
-        AppRenderer.renderCombatRoundResult(res.combatLog, res.nodo, res.statoEroe);
-      } else if (res && res.nodo) {
-        // Nemico abbattuto: transizione automatica allo snodo di vittoria
-        if (typeof SoundEngine !== "undefined") {
-          SoundEngine.playSfx("victory");
-          SoundEngine.playBgm("exploration");
-        }
-        AppRenderer.renderGameNode(res.nodo, res.statoEroe);
-      }
-    } catch (e) {
-      alert("Errore attacco: " + e.message);
-    }
-  },
-
-  battleFlee: async function() {
-    const sess = AppState.games.session;
-    if (!sess) return;
-
-    if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("flee");
-
-    try {
-      const res = await apiCall("game_action", {
-        subAction: "flee",
-        gameKey: sess.gameKey,
-        episodio: sess.episodio
-      });
-
-      if (res && res.nodo) {
-        // Fuga riuscita
-        if (typeof SoundEngine !== "undefined") SoundEngine.playBgm("exploration");
-        AppRenderer.renderGameNode(res.nodo, res.statoEroe);
-      } else if (res && res.fleeFailed) {
-        alert("💨 Fuga fallita! Inciampi e subisci 3 danni d'opportunità.");
-        if (res.statoEroe) AppRenderer.updateHeroVitals(res.statoEroe);
-      }
-    } catch (e) {
-      alert("Errore fuga: " + e.message);
-    }
-  },
-
-  battleBribe: async function(drugName) {
-    const sess = AppState.games.session;
-    if (!sess) return;
-
-    if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("drug");
-
-    try {
-      const res = await apiCall("game_action", {
-        subAction: "bribe",
-        drug: drugName,
-        gameKey: sess.gameKey,
-        episodio: sess.episodio
-      });
-
-      if (res && res.nodo) {
-        alert("🟡 Corruzione riuscita! La sentinella accetta la dose e si fa da parte.");
-        if (typeof SoundEngine !== "undefined") SoundEngine.playBgm("exploration");
-        AppRenderer.renderGameNode(res.nodo, res.statoEroe);
-      }
-    } catch (e) {
-      alert("Errore corruzione: " + e.message);
     }
   },
 
@@ -738,7 +524,7 @@ const AppEngine = {
 };
 
 const AppRenderer = {
-  // HARD LOCKING: NASCONDE I MODULI NON PREVISTI DAL PIANO NEL FOOTER E NELLA SIDEBAR
+  // HARD LOCKING (NASCONDE I MODULI NON PREVISTI DAL PIANO)
   applyHardLocking: function(allowed) {
     if (!allowed) return;
     
@@ -757,10 +543,13 @@ const AppRenderer = {
     s("home-rank-points", u.puntiFedelta);
     s("home-plan-badge", `PIANO ${(u.piano || "Free").toUpperCase()}`);
 
-    // Home 4 KPI
+    // Home KPI
     s("home-megoin-card", `${u.saldoMegoin} 🪙`);
     s("home-punti-card", `${u.puntiFedelta} Pt`);
     s("home-purchases-count", u.prodottiAcquistati || 0);
+
+    const gc = document.getElementById("home-games-count");
+    if (gc) gc.textContent = "ATTIVE ➔";
 
     // Sidebar Desktop
     s("user-avatar-desk", (u.nome || "U").charAt(0).toUpperCase());
@@ -783,7 +572,7 @@ const AppRenderer = {
     s("profile-action-vault-count", AppState.vault.length);
   },
 
-  // RENDERER MODALE LIVELLO 1: CATALOGO E COMPARAZIONE PIANI (Con SaaS Switch)
+  // RENDERER CATALOGO PIANI (CON RIMOZIONE DELLA RIGA "RISPARMIO" SU MOBILE)
   renderPlansCatalog: function() {
     const container = document.getElementById("plans-catalog-cards-container");
     if (!container || !AppState.plans || AppState.plans.length === 0) return;
@@ -795,7 +584,7 @@ const AppRenderer = {
     const paidPlans = AppState.plans.filter(p => p.nome.toLowerCase() !== "free");
 
     container.innerHTML = `
-      <!-- 1. VISTA DESKTOP: 3 COLONNE SIMMETRICHE SULLA STESSA RIGA -->
+      <!-- 1. VISTA DESKTOP: 3 COLONNE SIMMETRICHE -->
       <div class="hidden md:grid grid-cols-3 gap-4">
         ${paidPlans.map(p => {
           const isSilver = p.nome.toLowerCase().includes("silver");
@@ -836,7 +625,7 @@ const AppRenderer = {
         }).join("")}
       </div>
 
-      <!-- 2. VISTA MOBILE (OPZIONE B): MATRICE COMPARATIVA SINTETICA -->
+      <!-- 2. VISTA MOBILE: MATRICE SINTETICA (SENZA RIGA RIDONDANTE DEL RISPARMIO) -->
       <div class="md:hidden bg-surface/90 rounded-2xl border border-white/10 overflow-hidden shadow-xl">
         <table class="w-full text-center border-collapse">
           <thead>
@@ -873,12 +662,7 @@ const AppRenderer = {
                 return `<td class="p-2">${has ? '✅' : '❌'}</td>`;
               }).join("")}
             </tr>
-            ${isYearly ? `
-              <tr class="bg-emerald-950/20">
-                <td class="p-2 text-left text-emerald-400 font-semibold">🎉 Risparmio</td>
-                ${paidPlans.map(p => `<td class="p-2 font-bold text-emerald-400">${p.risparmio || '0%'}</td>`).join("")}
-              </tr>
-            ` : ''}
+            <!-- NOTA: La riga "Risparmio" è stata eliminata per alleggerire la visualizzazione mobile -->
             <tr class="bg-black/30">
               <td class="p-2 text-left text-[9px] font-bold text-slate-400">Dettagli</td>
               ${paidPlans.map(p => `
@@ -893,7 +677,7 @@ const AppRenderer = {
         </table>
       </div>
 
-      <!-- 3. PIANO FREE STANDALONE (FUORI CONFRONTO, SOTTO A TUTTA LARGHEZZA) -->
+      <!-- 3. PIANO FREE STANDALONE -->
       <div onclick="AppEngine.openPlanModal('${freePlan.id}')" class="bg-surface/60 hover:bg-surface active:scale-[0.99] transition-all p-3.5 rounded-2xl border ${freePlan.isAttivo ? 'border-sky-400/50' : 'border-white/5'} flex items-center justify-between cursor-pointer group">
         <div class="flex items-center space-x-3">
           <div class="w-8 h-8 rounded-xl bg-white/5 flex items-center justify-center text-sm">⚓</div>
@@ -910,251 +694,6 @@ const AppRenderer = {
     `;
 
     if (window.lucide) lucide.createIcons();
-  },
-
-  renderGames: function() {
-    const cc = document.getElementById("games-genre-chips");
-    if (cc && AppState.games.genres.length > 0) {
-      const all = ["tutti", ...AppState.games.genres];
-      cc.innerHTML = all.map(g => `
-        <button onclick="AppEngine.setGameGenre('${g}')" class="px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap transition-all ${AppState.games.activeGenre.toLowerCase() === g.toLowerCase() ? 'bg-sky-500 text-white' : 'bg-surface text-slate-400 border border-white/5'}">
-          ${g.toUpperCase()}
-        </button>
-      `).join("");
-    }
-    this.renderGamesCards();
-  },
-
-  renderGamesCards: function() {
-    const grid = document.getElementById("games-gallery-container");
-    if (!grid) return;
-    let list = AppState.games.series;
-
-    if (AppState.games.activeGenre !== "tutti") {
-      list = list.filter(s => s.tipologia.toLowerCase() === AppState.games.activeGenre.toLowerCase());
-    }
-    if (AppState.games.searchQuery) {
-      list = list.filter(s => s.serie.toLowerCase().includes(AppState.games.searchQuery));
-    }
-
-    const hc = document.getElementById("home-games-count");
-    if (hc) hc.textContent = AppState.games.series.length;
-
-    if (list.length === 0) {
-      grid.innerHTML = `<div class="col-span-full text-center py-8 text-slate-500 text-xs">Nessuna saga trovata.</div>`;
-      return;
-    }
-
-    grid.innerHTML = list.map(s => `
-      <div onclick="AppEngine.openSeriesHub('${s.gameKey}')" class="bg-surface rounded-2xl border border-white/5 flex flex-col justify-between overflow-hidden cursor-pointer group shadow-lg active:scale-[0.98] transition-transform p-0 relative">
-        <div class="h-44 md:h-52 w-full bg-slate-900 relative overflow-hidden">
-          <img src="${s.mediaUrl}" class="w-full h-full object-cover rounded-t-2xl rounded-b-none">
-          
-          ${s.hasActiveGame ? `
-            <span class="badge badge-xs md:badge-sm badge-warning font-black uppercase text-[8px] md:text-[9px] absolute top-3 left-3 shadow-lg animate-pulse">
-              🔴 PARTITA ATTIVA
-            </span>
-          ` : `
-            <span class="badge badge-xs md:badge-sm badge-primary absolute top-3 left-3 font-bold uppercase text-[8px] md:text-[9px]">${s.tipologia}</span>
-          `}
-          
-          <span class="badge badge-xs md:badge-sm badge-neutral absolute top-3 right-3 font-bold uppercase text-[8px] md:text-[9px]">${s.regole}</span>
-        </div>
-        <div class="p-4 space-y-3">
-          <div>
-            <h3 class="font-black text-sm md:text-base text-white">${s.emoji} ${s.serie}</h3>
-            <p class="text-[10px] md:text-xs text-slate-400 mt-0.5">${s.episodes.length} Capitoli Disponibili</p>
-          </div>
-          <div class="pt-2.5 border-t border-white/5 flex items-center justify-between">
-            <span class="text-[10px] md:text-xs font-bold text-sky-400 uppercase tracking-wider">Esplora Saga</span>
-            <span class="btn btn-xs md:btn-sm btn-primary px-3.5 font-bold shadow-md shadow-sky-600/30">Apri</span>
-          </div>
-        </div>
-      </div>
-    `).join("");
-
-    if (window.lucide) lucide.createIcons();
-  },
-
-  // RENDERING VISUAL NOVEL & DUELLI (CON DOCK EROE E MODIFICATORI D20)
-  renderGameNode: function(node, hero) {
-    document.getElementById("gameplay-node-title").textContent = node.nome || "Avventura";
-    document.getElementById("gameplay-node-text").textContent = node.testo || "";
-    document.getElementById("gameplay-node-img").src = node.mediaUrl || "https://image.pollinations.ai/prompt/noir-italian-docks-night-cinematic?width=600&height=600&nologo=true";
-
-    const badge = document.getElementById("gameplay-node-badge");
-    if (badge) badge.textContent = node.tipo || "SNODO";
-
-    const qBox = document.getElementById("gameplay-node-quote");
-    if (node.citazione && node.citazione !== "—") {
-      const cleanQ = String(node.citazione).replace(/^["'“”«»]+|["'“”«»]+$/g, "").trim();
-      qBox.textContent = `"${cleanQ}" ${node.autoreCitazione ? '(' + node.autoreCitazione + ')' : ''}`;
-      qBox.classList.remove("hidden");
-    } else {
-      qBox.classList.add("hidden");
-    }
-
-    if (hero) {
-      AppRenderer.updateHeroVitals(hero);
-    }
-
-    const box = document.getElementById("gameplay-choices-container");
-    if (!box) return;
-
-    const isCombat = (node.tipo === "NEMICO" || (node.id && node.id.includes("NEM_")));
-
-    // SCHERMATA COMBATTIMENTO
-    if (isCombat) {
-      const enemyPV = node.pv || 20;
-      let htmlCombat = `
-        <!-- Scheda Minaccia Nemico -->
-        <div class="p-3.5 rounded-2xl bg-black/40 border border-rose-500/30 space-y-2 mb-3">
-          <div class="flex justify-between items-center text-xs">
-            <span class="font-black text-white flex items-center space-x-1.5">
-              <span>👾</span> <span>${node.nome}</span>
-            </span>
-            <span class="badge badge-xs badge-error font-bold">${node.categoria || 'Nemico'}</span>
-          </div>
-          <div class="flex justify-between text-[10px] font-mono text-slate-400">
-            <span>Salute Nemico</span> <span>${enemyPV} PV</span>
-          </div>
-          <progress class="progress progress-error w-full h-2" value="${enemyPV}" max="${enemyPV}"></progress>
-        </div>
-
-        <!-- Plancia Azioni Tattiche di Guerra -->
-        <div class="grid grid-cols-2 gap-2">
-          <button onclick="AppEngine.battleAttackRound('${node.id}')" class="btn btn-error btn-md text-xs font-black shadow-lg shadow-rose-600/30">
-            ⚔️ Attacca Round
-          </button>
-          ${!node.isBoss ? `
-            <button onclick="AppEngine.battleFlee()" class="btn btn-outline border-white/20 btn-md text-xs font-bold">
-              🏃 Tenta Fuga
-            </button>
-          ` : `
-            <button disabled class="btn btn-outline border-white/10 btn-md text-xs font-bold text-slate-500 cursor-not-allowed">
-              🔒 Fuga Impossibile
-            </button>
-          `}
-        </div>
-      `;
-
-      // Corruzione Nemici Soldato (se il giocatore ha droga nello zaino)
-      if (node.isSoldato && hero && hero.inventario && hero.inventario.length > 0) {
-        htmlCombat += `
-          <div class="pt-2">
-            <button onclick="AppEngine.battleBribe('${hero.inventario[0]}')" class="btn btn-warning btn-sm w-full text-xs font-bold shadow-md">
-              💊 Corrompi con ${hero.inventario[0]}
-            </button>
-          </div>
-        `;
-      }
-
-      box.innerHTML = htmlCombat;
-      return;
-    }
-
-    // ENIGMA / QUIZ A 4 RISPOSTE
-    if (node.quiz) {
-      box.innerHTML = `
-        <div class="p-3.5 rounded-2xl bg-black/40 border border-sky-500/30 space-y-2.5 mb-3">
-          <div class="text-xs font-bold text-amber-300">❓ ${node.quiz.domanda}</div>
-          <div class="grid grid-cols-1 gap-2 pt-1">
-            ${node.quiz.opzioni.map(opt => `
-              <button onclick="AppEngine.advanceNode('${opt === node.quiz.rispostaCorretta ? (node.destSuccesso || 'SND_001') : (node.destFallimento || 'SND_010')}')" class="btn btn-sm btn-outline border-white/20 text-xs font-bold text-left justify-start">
-                • ${opt}
-              </button>
-            `).join("")}
-          </div>
-        </div>
-      `;
-      return;
-    }
-
-    // NORMALI BIVI NARRATIVI
-    if (node.choices && node.choices.length > 0) {
-      if (node.choices.length === 2) {
-        box.innerHTML = `
-          <div class="grid grid-cols-2 gap-2 mt-2">
-            <button onclick="AppEngine.advanceNode('${node.choices[0].target}')" class="btn btn-primary btn-md text-xs font-bold leading-tight">
-              ${node.choices[0].testo}
-            </button>
-            <button onclick="AppEngine.advanceNode('${node.choices[1].target}')" class="btn btn-primary btn-md text-xs font-bold leading-tight">
-              ${node.choices[1].testo}
-            </button>
-          </div>
-        `;
-      } else {
-        box.innerHTML = `
-          <div class="space-y-2 mt-2">
-            ${node.choices.map(b => `
-              <button onclick="AppEngine.advanceNode('${b.target}')" class="btn btn-block btn-md btn-primary text-xs font-bold">
-                ${b.testo}
-              </button>
-            `).join("")}
-          </div>
-        `;
-      }
-    } else {
-      box.innerHTML = `
-        <button onclick="AppRouter.navigate('games')" class="btn btn-block btn-md btn-outline border-white/20 text-xs font-bold mt-2">
-          🏠 Torna alle Saghe
-        </button>
-      `;
-    }
-  },
-
-  // AGGIORNAMENTO PLANCIA EROE (Salute, Oro, PX, Modificatori D20)
-  updateHeroVitals: function(hero) {
-    if (!hero) return;
-    const s = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
-    
-    s("gameplay-hero-name", hero.nomeEroe || "Eroe");
-    s("gameplay-hero-class", hero.classe || "Avventuriero");
-    s("gameplay-gold", `${hero.oro || 0} 🟡`);
-    s("gameplay-px", `${hero.px || 0} ✨`);
-    s("gameplay-pv-label", `${hero.pv}/${hero.pvMax}`);
-    
-    const bar = document.getElementById("gameplay-pv-bar");
-    if (bar) {
-      bar.value = hero.pv;
-      bar.max = hero.pvMax;
-    }
-
-    // Aggiornamento Modificatori D20
-    if (hero.stats && hero.modificatori) {
-      s("gameplay-stat-for", `${hero.stats.FORZA} (${hero.modificatori.FORZA >= 0 ? '+' : ''}${hero.modificatori.FORZA})`);
-      s("gameplay-stat-des", `${hero.stats.DESTREZZA} (${hero.modificatori.DESTREZZA >= 0 ? '+' : ''}${hero.modificatori.DESTREZZA})`);
-      s("gameplay-stat-int", `${hero.stats.INTELLIGENZA} (${hero.modificatori.INTELLIGENZA >= 0 ? '+' : ''}${hero.modificatori.INTELLIGENZA})`);
-    }
-  },
-
-  renderCombatRoundResult: function(log, node, hero) {
-    if (hero) AppRenderer.updateHeroVitals(hero);
-    const box = document.getElementById("gameplay-choices-container");
-    if (!box) return;
-
-    box.innerHTML = `
-      <div class="p-3.5 rounded-2xl bg-black/50 border border-white/10 space-y-2 text-xs mb-3">
-        <div class="font-bold text-amber-300">⚔️ ROUND ${log.round} - ESITO DUELLO</div>
-        <div class="text-[11px] text-slate-200">
-          • Tuo attacco D20 (${log.d20Hero}${log.modHero >= 0 ? '+' : ''}${log.modHero} = <b>${log.totHero}</b>): 
-          ${log.isHit ? `<span class="text-emerald-400 font-bold">A SEGNO (-${log.dmgDealt} PV!)</span>` : '<span class="text-slate-400">A VUOTO!</span>'}
-        </div>
-        <div class="text-[11px] text-slate-200">
-          • Contrattacco nemico: 
-          ${log.dmgTaken > 0 ? `<span class="text-rose-400 font-bold">COLPITO (-${log.dmgTaken} PV!)</span>` : '<span class="text-emerald-400">SCHIVATO!</span>'}
-        </div>
-      </div>
-
-      <div class="grid grid-cols-2 gap-2">
-        <button onclick="AppEngine.battleAttackRound('${node.id}')" class="btn btn-error btn-md text-xs font-black shadow-lg shadow-rose-600/30">
-          ⚔️ Round Successivo
-        </button>
-        <button onclick="AppEngine.battleFlee()" class="btn btn-outline border-white/20 btn-md text-xs font-bold">
-          🏃 Tenta Fuga
-        </button>
-      </div>
-    `;
   },
 
   renderShop: function() {
@@ -1289,7 +828,7 @@ const AppRenderer = {
     const c = document.getElementById("profile-vault-container");
     if (!c) return;
     if (AppState.vault.length === 0) {
-      c.innerHTML = `<div class="text-center py-4 text-slate-500">Nessun file scaricato finora.</div>`;
+      c.innerHTML = `<div class="text-center py-4 text-slate-500 text-xs">Nessun file scaricato finora.</div>`;
       return;
     }
     c.innerHTML = AppState.vault.map(v => `
