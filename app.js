@@ -1,5 +1,5 @@
 // ============================================================================
-// PROJECT: ESTIQATSY PWA - CLIENT APPLICATION ENGINE (VERSIONE 3.5)
+// PROJECT: ESTIQATSY PWA - CLIENT APPLICATION ENGINE (VERSIONE 3.6)
 // FILE: app.js
 // ============================================================================
 
@@ -36,7 +36,7 @@ if (tg) {
   } catch (e) {}
 }
 
-// GESTORE SICURO DEL TASTO INDIETRO NATIVO TELEGRAM
+// GESTORE SICURO DEL TASTO INDIETRO NATIVO TELEGRAM (PREVIENE MEMORY LEAK)
 let backButtonHandler = null;
 function setupTelegramBackButton(screenName) {
   if (!tg || !tg.BackButton) return;
@@ -72,7 +72,7 @@ const AppRouter = {
     if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("click");
     if (tg && tg.HapticFeedback) tg.HapticFeedback.selectionChanged();
 
-    // Gestione Hard Locking: blocca la navigazione verso sezioni non incluse nel piano
+    // Verifica Hard Locking: se il modulo non è consentito, torna a Home e apri modale piani
     const baseModule = screenName.replace("view-", "").replace("subview-", "").split("-")[0];
     if (AppState.allowedModules && AppState.allowedModules[baseModule] === false) {
       AppRouter.navigate("home");
@@ -80,7 +80,7 @@ const AppRouter = {
       return;
     }
 
-    // Regia BGM sui cambi di schermata
+    // Regia Audio sui cambi di sezione
     if (typeof SoundEngine !== "undefined") {
       if (screenName === "view-home" || screenName === "view-profile") {
         SoundEngine.stopBgm();
@@ -177,7 +177,7 @@ const AppEngine = {
         AppRenderer.applyHardLocking(AppState.allowedModules);
       }
 
-      // 2. Caricamento parallelo dei cataloghi in memoria RAM
+      // 2. Caricamento asincrono parallelo in RAM
       await Promise.allSettled([
         this.fetchShop(),
         this.fetchRecipes(),
@@ -976,7 +976,7 @@ const AppRenderer = {
     if (window.lucide) lucide.createIcons();
   },
 
-  // RENDERING VISUAL NOVEL & DUELLI
+  // RENDERING VISUAL NOVEL & DUELLI (CON DOCK EROE E MODIFICATORI D20)
   renderGameNode: function(node, hero) {
     document.getElementById("gameplay-node-title").textContent = node.nome || "Avventura";
     document.getElementById("gameplay-node-text").textContent = node.testo || "";
@@ -1103,16 +1103,28 @@ const AppRenderer = {
     }
   },
 
+  // AGGIORNAMENTO PLANCIA EROE (Salute, Oro, PX, Modificatori D20)
   updateHeroVitals: function(hero) {
     if (!hero) return;
     const s = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+    
     s("gameplay-hero-name", hero.nomeEroe || "Eroe");
     s("gameplay-hero-class", hero.classe || "Avventuriero");
+    s("gameplay-gold", `${hero.oro || 0} 🟡`);
+    s("gameplay-px", `${hero.px || 0} ✨`);
     s("gameplay-pv-label", `${hero.pv}/${hero.pvMax}`);
+    
     const bar = document.getElementById("gameplay-pv-bar");
     if (bar) {
       bar.value = hero.pv;
       bar.max = hero.pvMax;
+    }
+
+    // Aggiornamento Modificatori D20
+    if (hero.stats && hero.modificatori) {
+      s("gameplay-stat-for", `${hero.stats.FORZA} (${hero.modificatori.FORZA >= 0 ? '+' : ''}${hero.modificatori.FORZA})`);
+      s("gameplay-stat-des", `${hero.stats.DESTREZZA} (${hero.modificatori.DESTREZZA >= 0 ? '+' : ''}${hero.modificatori.DESTREZZA})`);
+      s("gameplay-stat-int", `${hero.stats.INTELLIGENZA} (${hero.modificatori.INTELLIGENZA >= 0 ? '+' : ''}${hero.modificatori.INTELLIGENZA})`);
     }
   },
 
