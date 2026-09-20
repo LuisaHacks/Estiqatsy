@@ -1,5 +1,5 @@
 // ============================================================================
-// PROJECT: ESTIQATSY PWA - CLIENT APPLICATION ENGINE (VERSIONE 3.1)
+// PROJECT: ESTIQATSY PWA - CLIENT APPLICATION ENGINE (VERSIONE 3.2)
 // FILE: app.js
 // ============================================================================
 
@@ -14,6 +14,7 @@ const AppState = {
   user: null,
   allowedModules: { home: true, shop: true, games: true, recipes: true, profile: true },
   plans: [],
+  billingCycle: "monthly", // 'monthly' | 'yearly'
   activeTab: "home",
   shop: { items: [], categories: [], activeCategory: "tutti", searchQuery: "" },
   recipes: { items: [], categories: [], activeCategory: "tutti", searchQuery: "" },
@@ -69,6 +70,14 @@ const AppRouter = {
   navigate: function(screenName) {
     if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("click");
     if (tg && tg.HapticFeedback) tg.HapticFeedback.selectionChanged();
+
+    // Verifica Hard Locking: se il modulo non è consentito, torna a Home e suggerisci upgrade
+    const baseModule = screenName.replace("view-", "").replace("subview-", "").split("-")[0];
+    if (AppState.allowedModules && AppState.allowedModules[baseModule] === false) {
+      AppRouter.navigate("home");
+      AppEngine.openPlansCatalogModal();
+      return;
+    }
 
     // Reset filtri e ricerca al cambio di scheda principale
     if (screenName === "shop") {
@@ -148,17 +157,17 @@ const AppEngine = {
     this.loadVault();
 
     try {
-      // 1. Profilo con Piani inclusi
+      // 1. Chiamata Profilo (include Piani da 👑Plans, Prodotti Acquistati e Moduli Autorizzati)
       const p = await apiCall("profile");
       if (p && p.user) {
         AppState.user = p.user;
         AppState.allowedModules = p.allowedModules || AppState.allowedModules;
         AppState.plans = p.plans || [];
         AppRenderer.renderProfile(p.user);
-        AppRenderer.renderPlans(AppState.plans);
+        AppRenderer.applyHardLocking(AppState.allowedModules);
       }
 
-      // 2. Caricamento asincrono parallelo
+      // 2. Caricamento asincrono parallelo in RAM
       await Promise.allSettled([
         this.fetchShop(),
         this.fetchRecipes(),
@@ -182,6 +191,87 @@ const AppEngine = {
         document.getElementById("loading-retry-btn").classList.remove("hidden");
       }
     }
+  },
+
+  // APERTURA MODALE LIVELLO 1: CATALOGO E COMPARAZIONE PIANI
+  openPlansCatalogModal: function() {
+    AppRenderer.renderPlansCatalog();
+    const modal = document.getElementById("modal-plans-catalog");
+    if (modal) modal.showModal();
+  },
+
+  // SWITCH SAAS CICLO DI FATTURAZIONE (Mensile / Annuale)
+  setBillingCycle: function(cycle) {
+    AppState.billingCycle = cycle;
+    const btnM = document.getElementById("billing-toggle-monthly");
+    const btnY = document.getElementById("billing-toggle-yearly");
+
+    const isYearly = (cycle === "yearly");
+    if (btnM) {
+      btnM.className = `flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition-all ${!isYearly ? 'bg-sky-500 text-white shadow-md' : 'text-slate-400'}`;
+    }
+    if (btnY) {
+      btnY.className = `flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition-all ${isYearly ? 'bg-sky-500 text-white shadow-md' : 'text-slate-400'} flex items-center justify-center space-x-1`;
+    }
+
+    AppRenderer.renderPlansCatalog();
+  },
+
+  // APERTURA MODALE LIVELLO 2: SCHEDA DETTAGLIATA PIANO & CHECKOUT
+  openPlanModal: function(planId) {
+    const plan = AppState.plans.find(p => p.id === planId) || 
+                 AppState.plans.find(p => p.nome.toLowerCase() === String(planId).toLowerCase());
+    if (!plan) return;
+
+    const isYearly = (AppState.billingCycle === "yearly");
+    const priceText = isYearly ? (plan.prezzoAnnuale || plan.prezzoMensile) : (plan.prezzoMensile || "€ 0,00");
+    const periodText = isYearly ? "/anno" : "/mese";
+
+    const s = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+    s("upgrade-modal-title", plan.nome);
+    s("plan-modal-price", priceText);
+    s("plan-modal-period", periodText);
+    s("upgrade-modal-desc", plan.descrizione || "Nessuna descrizione disponibile.");
+    
+    // Iniezione dinamica al 100% dei vantaggi estratti dal foglio 👑Plans
+    const perksBox = document.getElementById("plan-modal-perks-list");
+    if (perksBox) {
+      let htmlPerks = `
+        <div class="flex items-center space-x-2 text-amber-300 font-bold pb-1 border-b border-white/5">
+          <span>🪙</span> <span>+${plan.bonusMegoin} Megoin al mese inclusi</span>
+        </div>
+      `;
+
+      if (plan.perks && plan.perks.length > 0) {
+        htmlPerks += plan.perks.map(pk => `
+          <div class="flex items-center space-x-2 ${pk.enabled ? 'text-slate-200' : 'text-slate-500'}">
+            <span>${pk.enabled ? '✅' : '❌'}</span>
+            <span>${pk.label}</span>
+          </div>
+        `).join("");
+      }
+
+      perksBox.innerHTML = htmlPerks;
+    }
+
+    const actBtn = document.getElementById("upgrade-modal-action-btn");
+    if (actBtn) {
+      if (plan.isAttivo) {
+        actBtn.textContent = "Piano Attualmente in Uso";
+        actBtn.disabled = true;
+        actBtn.className = "btn btn-outline border-white/20 btn-sm w-full text-slate-400 font-bold cursor-not-allowed";
+      } else {
+        actBtn.textContent = `Attiva ${plan.nome} (${priceText}${periodText})`;
+        actBtn.disabled = false;
+        actBtn.className = "btn btn-primary btn-sm w-full font-bold shadow-lg shadow-sky-600/30";
+        actBtn.onclick = () => {
+          alert(`Reindirizzamento al checkout sicuro per il piano ${plan.nome} in corso...`);
+        };
+      }
+    }
+
+    const detailModal = document.getElementById("modal-plan-upgrade");
+    if (detailModal) detailModal.showModal();
   },
 
   openVaultSection: function() {
@@ -260,48 +350,6 @@ const AppEngine = {
         dot.className = `h-1.5 rounded-full transition-all ${i === idx ? 'bg-sky-400 w-4' : 'bg-white/20 w-2'}`;
       }
     }
-  },
-
-  // APERTURA MODALE PIANO DETTAGLIATO
-  openPlanModal: function(planId) {
-    const plan = AppState.plans.find(p => p.id === planId) || AppState.plans.find(p => p.nome.toLowerCase() === planId.toLowerCase());
-    if (!plan) return;
-
-    document.getElementById("upgrade-modal-title").textContent = plan.nome;
-    document.getElementById("plan-modal-price").textContent = plan.prezzoMensile || "€ 0,00";
-    document.getElementById("upgrade-modal-desc").textContent = plan.descrizione || "Nessuna descrizione disponibile.";
-    
-    const perksBox = document.getElementById("plan-modal-perks-list");
-    perksBox.innerHTML = `
-      <div class="flex items-center space-x-2 text-amber-300 font-bold">
-        <span>🪙</span> <span>+${plan.bonusMegoin} Megoin al mese inclusi</span>
-      </div>
-      <div class="flex items-center space-x-2 ${plan.perks.giochi ? 'text-slate-200' : 'text-slate-500'}">
-        <span>${plan.perks.giochi ? '✅' : '❌'}</span> <span>Accesso a tutte le Saghe RPG</span>
-      </div>
-      <div class="flex items-center space-x-2 ${plan.perks.shop ? 'text-slate-200' : 'text-slate-500'}">
-        <span>${plan.perks.shop ? '✅' : '❌'}</span> <span>Sconti e Merce Esclusiva in Bottega</span>
-      </div>
-      <div class="flex items-center space-x-2 ${plan.perks.ricette ? 'text-slate-200' : 'text-slate-500'}">
-        <span>${plan.perks.ricette ? '✅' : '❌'}</span> <span>Ricettario Completo Barlady</span>
-      </div>
-    `;
-
-    const actBtn = document.getElementById("upgrade-modal-action-btn");
-    if (plan.isAttivo) {
-      actBtn.textContent = "Piano Attualmente in Uso";
-      actBtn.disabled = true;
-      actBtn.className = "btn btn-outline border-white/20 btn-sm w-full text-slate-400 font-bold cursor-not-allowed";
-    } else {
-      actBtn.textContent = `Attiva ${plan.nome} (${plan.prezzoMensile || 'Tariffa'}/mese)`;
-      actBtn.disabled = false;
-      actBtn.className = "btn btn-primary btn-sm w-full font-bold shadow-lg shadow-sky-600/30";
-      actBtn.onclick = () => {
-        alert("Reindirizzamento al checkout sicuro PayPal in corso...");
-      };
-    }
-
-    document.getElementById("modal-plan-upgrade").showModal();
   },
 
   // GIOCHI E AVVENTURE
@@ -563,12 +611,26 @@ const AppEngine = {
 };
 
 const AppRenderer = {
+  // HARD LOCKING: NASCONDE I MODULI NON PREVISTI DAL PIANO NEL FOOTER E NELLA SIDEBAR
+  applyHardLocking: function(allowed) {
+    if (!allowed) return;
+    
+    document.querySelectorAll("[data-module]").forEach(el => {
+      const mod = el.dataset.module;
+      const isAllowed = (allowed[mod] !== false);
+      el.classList.toggle("hidden", !isAllowed);
+    });
+  },
+
   renderProfile: function(u) {
     const s = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
     
-    // Home Banner & 4 KPI
+    // Home Banner
     s("home-username", u.nome);
     s("home-rank-points", u.puntiFedelta);
+    s("home-plan-badge", `PIANO ${(u.piano || "Free").toUpperCase()}`);
+
+    // Home 4 KPI
     s("home-megoin-card", `${u.saldoMegoin} 🪙`);
     s("home-punti-card", `${u.puntiFedelta} Pt`);
     s("home-purchases-count", u.prodottiAcquistati || 0);
@@ -576,7 +638,7 @@ const AppRenderer = {
     // Sidebar Desktop
     s("user-avatar-desk", (u.nome || "U").charAt(0).toUpperCase());
     s("user-name-desk", u.nome);
-    s("user-plan-desk", `PIANO ${u.piano.toUpperCase()}`);
+    s("user-plan-desk", `PIANO ${(u.piano || "Free").toUpperCase()}`);
     s("user-megoin-desk", `${u.saldoMegoin} 🪙`);
     s("user-points-desk", `${u.puntiFedelta} Pt`);
 
@@ -584,60 +646,63 @@ const AppRenderer = {
     s("profile-card-avatar", (u.nome || "U").charAt(0).toUpperCase());
     s("profile-card-name", u.nome);
     s("profile-card-username", u.username);
-    s("profile-card-plan", `PIANO ${u.piano.toUpperCase()}`);
+    s("profile-card-plan", `PIANO ${(u.piano || "Free").toUpperCase()}`);
     s("profile-card-id", `ID: ${u.chatId}`);
     s("profile-card-megoin", `${u.saldoMegoin} 🪙`);
     s("profile-card-points", `${u.puntiFedelta} Pt`);
+
+    // Azioni Profilo
+    s("profile-action-plan-name", `Piano: ${(u.piano || "Free").toUpperCase()}`);
+    s("profile-action-vault-count", AppState.vault.length);
   },
 
-  // RENDERER PRICE TABLE UNIVERSALE (Bronze - Silver - Gold in riga + Free Standalone)
-  renderPlans: function(plans) {
-    if (!plans || plans.length === 0) return;
+  // RENDERER MODALE LIVELLO 1: CATALOGO E COMPARAZIONE PIANI (Con SaaS Switch)
+  renderPlansCatalog: function() {
+    const container = document.getElementById("plans-catalog-cards-container");
+    if (!container || !AppState.plans || AppState.plans.length === 0) return;
 
-    const freePlan = plans.find(p => p.nome.toLowerCase() === "free") || {
-      id: "P_FREE", nome: "Free", prezzoMensile: "€ 0,00", bonusMegoin: 1, isAttivo: true, descrizione: "Accesso base per tutti gli avventurieri."
+    const isYearly = (AppState.billingCycle === "yearly");
+    const freePlan = AppState.plans.find(p => p.nome.toLowerCase() === "free") || {
+      id: "Plan_1", nome: "Free", prezzoMensile: "€ 0,00", prezzoAnnuale: "€ 0,00", bonusMegoin: 1, isAttivo: true, descrizione: "Accesso base per tutti gli avventurieri."
     };
-    const paidPlans = plans.filter(p => p.nome.toLowerCase() !== "free");
+    const paidPlans = AppState.plans.filter(p => p.nome.toLowerCase() !== "free");
 
-    const htmlContent = `
+    container.innerHTML = `
       <!-- 1. VISTA DESKTOP: 3 COLONNE SIMMETRICHE SULLA STESSA RIGA -->
-      <div class="hidden md:grid grid-cols-3 gap-4 lg:gap-6">
+      <div class="hidden md:grid grid-cols-3 gap-4">
         ${paidPlans.map(p => {
           const isSilver = p.nome.toLowerCase().includes("silver");
+          const price = isYearly ? p.prezzoAnnuale : p.prezzoMensile;
+          const period = isYearly ? "/anno" : "/mese";
           return `
-            <div onclick="AppEngine.openPlanModal('${p.id}')" class="bg-surface/90 hover:bg-surface active:scale-[0.98] transition-all rounded-2xl border ${p.isAttivo ? 'border-sky-400 ring-2 ring-sky-400/40 shadow-xl' : (isSilver ? 'border-amber-400/50 ring-1 ring-amber-400/30' : 'border-white/10')} p-5 flex flex-col justify-between space-y-4 cursor-pointer relative group">
+            <div onclick="AppEngine.openPlanModal('${p.id}')" class="bg-surface/90 hover:bg-surface active:scale-[0.98] transition-all rounded-2xl border ${p.isAttivo ? 'border-sky-400 ring-2 ring-sky-400/40 shadow-xl' : (isSilver ? 'border-amber-400/60 ring-1 ring-amber-400/30' : 'border-white/10')} p-4 flex flex-col justify-between space-y-3 cursor-pointer relative group">
               ${p.isAttivo ? `
-                <div class="absolute top-3 right-3">
-                  <span class="badge badge-sm badge-info font-black uppercase text-[8px] py-2 px-2.5">✨ ATTIVO</span>
+                <div class="absolute top-2.5 right-2.5">
+                  <span class="badge badge-xs badge-info font-black uppercase text-[8px] py-1.5 px-2">✨ ATTIVO</span>
                 </div>
               ` : (isSilver ? `
-                <div class="absolute top-3 right-3">
-                  <span class="badge badge-sm badge-warning font-black uppercase text-[8px] py-2 px-2.5">⭐ CONSIGLIATO</span>
+                <div class="absolute top-2.5 right-2.5">
+                  <span class="badge badge-xs badge-warning font-black uppercase text-[8px] py-1.5 px-2">⭐ CONSIGLIATO</span>
                 </div>
               ` : '')}
               
-              <div class="space-y-1.5">
-                <h4 class="font-black text-base text-white group-hover:text-sky-400 transition-colors">${p.nome}</h4>
-                <div class="text-xl font-black text-amber-300">
-                  ${p.prezzoMensile} <span class="text-xs text-slate-400 font-normal">/mese</span>
+              <div class="space-y-1">
+                <h4 class="font-black text-sm text-white group-hover:text-sky-400 transition-colors">${p.nome}</h4>
+                <div class="text-lg font-black text-amber-300">
+                  ${price} <span class="text-[10px] text-slate-400 font-normal">${period}</span>
                 </div>
-                <p class="text-xs text-slate-300 leading-relaxed pt-1 line-clamp-2">${p.descrizione || ''}</p>
+                ${isYearly && p.risparmio ? `
+                  <div class="text-[10px] text-emerald-400 font-bold">Risparmi ${p.risparmio} (${p.risparmi})</div>
+                ` : ''}
               </div>
 
-              <div class="space-y-2 pt-3 border-t border-white/5 text-xs text-slate-300">
-                <div class="text-amber-400 font-bold flex items-center space-x-1.5">
-                  <span>🪙</span> <span>+${p.bonusMegoin} Megoin al mese</span>
-                </div>
-                <div class="text-slate-400 flex items-center space-x-1.5">
-                  <span>${p.perks.giochi ? '✅' : '❌'}</span> <span>Saghe RPG Incluse</span>
-                </div>
-                <div class="text-slate-400 flex items-center space-x-1.5">
-                  <span>${p.perks.shop ? '✅' : '❌'}</span> <span>Sconti Bottega Attivi</span>
-                </div>
+              <div class="space-y-1.5 pt-2 border-t border-white/5 text-[11px] text-slate-300">
+                <div class="text-amber-400 font-bold">🪙 +${p.bonusMegoin} Megoin / mese</div>
+                <div class="text-[10px] text-slate-400 line-clamp-2">${p.descrizione || ''}</div>
               </div>
 
-              <button class="btn btn-sm ${p.isAttivo ? 'btn-outline border-white/20 text-slate-400 cursor-not-allowed' : 'btn-primary'} w-full font-bold shadow-md">
-                ${p.isAttivo ? 'In Uso' : 'Dettagli & Attiva'}
+              <button class="btn btn-xs ${p.isAttivo ? 'btn-outline border-white/20 text-slate-400 cursor-not-allowed' : 'btn-primary'} w-full font-bold">
+                ${p.isAttivo ? 'In Uso' : 'Dettagli Piano ›'}
               </button>
             </div>
           `;
@@ -648,39 +713,50 @@ const AppRenderer = {
       <div class="md:hidden bg-surface/90 rounded-2xl border border-white/10 overflow-hidden shadow-xl">
         <table class="w-full text-center border-collapse">
           <thead>
-            <tr class="border-b border-white/10 bg-black/30">
-              <th class="p-2.5 text-left text-[10px] font-bold uppercase text-slate-400">Vantaggi</th>
-              ${paidPlans.map(p => `
-                <th onclick="AppEngine.openPlanModal('${p.id}')" class="p-2.5 cursor-pointer">
-                  <div class="text-xs font-black text-white ${p.isAttivo ? 'text-sky-400' : ''}">${p.nome}</div>
-                  <div class="text-[10px] font-bold text-amber-300">${p.prezzoMensile}</div>
-                  ${p.isAttivo ? '<span class="badge badge-xs badge-info text-[7px] font-bold mt-0.5">ATTIVO</span>' : ''}
-                </th>
-              `).join("")}
+            <tr class="border-b border-white/10 bg-black/40">
+              <th class="p-2 text-left text-[9px] font-bold uppercase text-slate-400">Piano</th>
+              ${paidPlans.map(p => {
+                const price = isYearly ? p.prezzoAnnuale : p.prezzoMensile;
+                return `
+                  <th onclick="AppEngine.openPlanModal('${p.id}')" class="p-2 cursor-pointer">
+                    <div class="text-xs font-black text-white ${p.isAttivo ? 'text-sky-400' : ''}">${p.nome}</div>
+                    <div class="text-[10px] font-bold text-amber-300">${price}</div>
+                    ${p.isAttivo ? '<span class="badge badge-xs badge-info text-[7px] font-bold">ATTIVO</span>' : ''}
+                  </th>
+                `;
+              }).join("")}
             </tr>
           </thead>
-          <tbody class="divide-y divide-white/5 text-[11px]">
+          <tbody class="divide-y divide-white/5 text-[10px]">
             <tr>
-              <td class="p-2.5 text-left text-slate-300 font-semibold">🪙 Megoin / mese</td>
-              ${paidPlans.map(p => `<td class="p-2.5 font-bold text-amber-400">+${p.bonusMegoin}</td>`).join("")}
+              <td class="p-2 text-left text-slate-300 font-semibold">🪙 Megoin / mese</td>
+              ${paidPlans.map(p => `<td class="p-2 font-bold text-amber-400">+${p.bonusMegoin}</td>`).join("")}
             </tr>
             <tr>
-              <td class="p-2.5 text-left text-slate-300 font-semibold">🎮 Saghe RPG</td>
-              ${paidPlans.map(p => `<td class="p-2.5">${p.perks.giochi ? '✅' : '❌'}</td>`).join("")}
+              <td class="p-2 text-left text-slate-300 font-semibold">🎮 Saghe RPG</td>
+              ${paidPlans.map(p => {
+                const has = p.perks ? p.perks.some(x => x.key.includes("game") && x.enabled) : true;
+                return `<td class="p-2">${has ? '✅' : '❌'}</td>`;
+              }).join("")}
             </tr>
             <tr>
-              <td class="p-2.5 text-left text-slate-300 font-semibold">🏪 Sconti Bottega</td>
-              ${paidPlans.map(p => `<td class="p-2.5">${p.perks.shop ? '✅' : '❌'}</td>`).join("")}
+              <td class="p-2 text-left text-slate-300 font-semibold">🏪 Sconti Bottega</td>
+              ${paidPlans.map(p => {
+                const has = p.perks ? p.perks.some(x => x.key.includes("shop") && x.enabled) : true;
+                return `<td class="p-2">${has ? '✅' : '❌'}</td>`;
+              }).join("")}
             </tr>
-            <tr>
-              <td class="p-2.5 text-left text-slate-300 font-semibold">🍸 Ricette Barlady</td>
-              ${paidPlans.map(p => `<td class="p-2.5">${p.perks.ricette ? '✅' : '❌'}</td>`).join("")}
-            </tr>
-            <tr class="bg-black/20">
-              <td class="p-2.5 text-left text-[10px] font-bold text-slate-400">Scheda Piano</td>
+            ${isYearly ? `
+              <tr class="bg-emerald-950/20">
+                <td class="p-2 text-left text-emerald-400 font-semibold">🎉 Risparmio</td>
+                ${paidPlans.map(p => `<td class="p-2 font-bold text-emerald-400">${p.risparmio || '0%'}</td>`).join("")}
+              </tr>
+            ` : ''}
+            <tr class="bg-black/30">
+              <td class="p-2 text-left text-[9px] font-bold text-slate-400">Dettagli</td>
               ${paidPlans.map(p => `
-                <td class="p-2">
-                  <button onclick="AppEngine.openPlanModal('${p.id}')" class="btn btn-xs ${p.isAttivo ? 'btn-outline border-white/20 text-slate-400' : 'btn-primary'} px-2 font-bold text-[9px]">
+                <td class="p-1.5">
+                  <button onclick="AppEngine.openPlanModal('${p.id}')" class="btn btn-xs ${p.isAttivo ? 'btn-outline border-white/20 text-slate-400' : 'btn-primary'} px-2 font-bold text-[8px]">
                     ${p.isAttivo ? 'In Uso' : 'Apri'}
                   </button>
                 </td>
@@ -691,27 +767,20 @@ const AppRenderer = {
       </div>
 
       <!-- 3. PIANO FREE STANDALONE (FUORI CONFRONTO, SOTTO A TUTTA LARGHEZZA) -->
-      <div onclick="AppEngine.openPlanModal('${freePlan.id}')" class="bg-surface/60 hover:bg-surface active:scale-[0.99] transition-all p-3.5 md:p-4 rounded-2xl border ${freePlan.isAttivo ? 'border-sky-400/50' : 'border-white/5'} flex items-center justify-between cursor-pointer group">
+      <div onclick="AppEngine.openPlanModal('${freePlan.id}')" class="bg-surface/60 hover:bg-surface active:scale-[0.99] transition-all p-3.5 rounded-2xl border ${freePlan.isAttivo ? 'border-sky-400/50' : 'border-white/5'} flex items-center justify-between cursor-pointer group">
         <div class="flex items-center space-x-3">
-          <div class="w-9 h-9 rounded-xl bg-white/5 flex items-center justify-center text-sm">⚓</div>
+          <div class="w-8 h-8 rounded-xl bg-white/5 flex items-center justify-center text-sm">⚓</div>
           <div>
             <div class="flex items-center space-x-2">
-              <span class="text-xs md:text-sm font-black text-white group-hover:text-sky-400 transition-colors">Piano Base (Free)</span>
-              ${freePlan.isAttivo ? '<span class="badge badge-xs badge-info font-bold text-[8px] uppercase">PIANO ATTUALE</span>' : ''}
+              <span class="text-xs font-black text-white group-hover:text-sky-400 transition-colors">Piano Base (Free)</span>
+              ${freePlan.isAttivo ? '<span class="badge badge-xs badge-info font-bold text-[8px] uppercase">IN USO</span>' : ''}
             </div>
-            <p class="text-[10px] md:text-xs text-slate-400 mt-0.5">Include 1 Megoin mensile • Gratuito per sempre</p>
+            <p class="text-[10px] text-slate-400 mt-0.5">Include 1 Megoin mensile • Gratuito per sempre</p>
           </div>
         </div>
-        <button class="btn btn-xs btn-ghost text-slate-400 group-hover:text-white font-bold text-[10px]">Info ›</button>
+        <button class="btn btn-xs btn-ghost text-slate-400 group-hover:text-white font-bold text-[10px]">Dettagli ›</button>
       </div>
     `;
-
-    // Renderizza sia nella Home che nella pagina Profilo
-    const hBox = document.getElementById("home-plans-container");
-    if (hBox) hBox.innerHTML = htmlContent;
-
-    const pBox = document.getElementById("profile-plans-container");
-    if (pBox) pBox.innerHTML = htmlContent;
 
     if (window.lucide) lucide.createIcons();
   },
@@ -795,8 +864,6 @@ const AppRenderer = {
     }
 
     if (hero) {
-      document.getElementById("gameplay-hero-name").textContent = hero.nomeEroe || "Eroe";
-      document.getElementById("gameplay-hero-class").textContent = hero.classe || "Avventuriero";
       document.getElementById("gameplay-pv-label").textContent = `${hero.pv}/${hero.pvMax}`;
       const bar = document.getElementById("gameplay-pv-bar");
       bar.value = hero.pv;
