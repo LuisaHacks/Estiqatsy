@@ -1,6 +1,6 @@
 // ============================================================================
-// PROJECT: ESTIQATSY SYNDICATE & RPG ENGINE (VERSIONE 4.6 - SPA UNIFICATA)
-// FILE: app.js (CLIENT CONTROLLER: APP, SHOP, RICETTE, WIZARD RULES 2 & GAMEPLAY)
+// PROJECT: ESTIQATSY SYNDICATE & RPG ENGINE (VERSIONE 4.7 - COVERFLOW REVOLUTION)
+// FILE: app.js (CLIENT CONTROLLER: WIZARD 3D, SHOP, RICETTE & GAMEPLAY NOIR)
 // ============================================================================
 
 const AppConfig = {
@@ -35,8 +35,8 @@ const AppState = {
       classes: [],
       abilities: [],
       shopCatalog: [],
-      filteredShop: [],
       shopCategory: "ARMI",
+      activeClassIndex: 0,
       chosenClass: null,
       chosenAbilities: [],
       boughtItems: [],
@@ -64,7 +64,6 @@ if (tg) {
   } catch (e) {}
 }
 
-// GESTORE TASTO INDIETRO TELEGRAM
 let backButtonHandler = null;
 function setupTelegramBackButton(screenName) {
   if (!tg || !tg.BackButton) return;
@@ -185,7 +184,6 @@ const AppRouter = {
   }
 };
 
-// GATEWAY API REST
 async function apiCall(action, extraParams = {}) {
   const initData = (tg && tg.initData) ? tg.initData : "";
   let url = `${AppConfig.GAS_URL}?action=${action}&initData=${encodeURIComponent(initData)}`;
@@ -200,7 +198,7 @@ async function apiCall(action, extraParams = {}) {
   return json.data;
 }
 
-// HELPER: DEDUPLICAZIONE DIFENSIVA O(N) CONTRO DOPPIONI DI BACKEND
+// DEDUPLICAZIONE RIGIDA O(N) CONTRO ENTITÀ DOPPIE
 function deduplicateEntities(list) {
   if (!Array.isArray(list)) return [];
   const seen = new Set();
@@ -213,7 +211,6 @@ function deduplicateEntities(list) {
   });
 }
 
-// CLASSIFICATORE REPARTI PER L'EMPORIO DI CICCIO (EP. 0 / RULES 2)
 function classifyShopCategory(item) {
   if (!item) return "STRUMENTI";
   const cat = String(item.categoria || "").toUpperCase();
@@ -229,7 +226,7 @@ function classifyShopCategory(item) {
 }
 
 // ============================================================================
-// APP ENGINE: INIZIALIZZAZIONE & GENERAL SERVICES
+// APP ENGINE
 // ============================================================================
 const AppEngine = {
   init: async function() {
@@ -581,7 +578,7 @@ const AppEngine = {
 };
 
 // ============================================================================
-// GAME ENGINE - CONTROLLER NOIR RPG (RULES 2 INTEGRATO)
+// GAME ENGINE - CONTROLLER NOIR RPG & RULES 2
 // ============================================================================
 const GameEngine = {
   loadSeriesCatalog: async function() {
@@ -690,7 +687,7 @@ const GameEngine = {
   },
 
   // =========================================================================
-  // WIZARD RULES 2 A 4 PASSI (DEDUPLICATO, CINEMA CARD 16:9 & SHOP CICCO)
+  // WIZARD RULES 2: SPOTLIGHT 3D COVER-FLOW & DEDUPLICAZIONE RIGIDA
   // =========================================================================
   openWizard: async function(gameKey, epNum, isVeteran = false, savedHero = null) {
     try {
@@ -698,12 +695,13 @@ const GameEngine = {
       const wizData = await apiCall("game_wizard_data", { gameKey: gameKey });
       
       AppState.game.wizard.isVeteran = isVeteran;
-      // DEDUPLICAZIONE RIGIDA
+      // DEDUPLICAZIONE GARANTITA
       AppState.game.wizard.classes = deduplicateEntities(wizData.classes || []);
       AppState.game.wizard.abilities = deduplicateEntities(wizData.abilities || []);
       AppState.game.wizard.shopCatalog = deduplicateEntities(wizData.shopItems || AppState.shop.items || []);
       AppState.game.wizard.chosenAbilities = [];
       AppState.game.wizard.boughtItems = [];
+      AppState.game.wizard.activeClassIndex = 0;
 
       if (isVeteran && savedHero) {
         AppState.game.wizard.chosenClass = {
@@ -720,7 +718,6 @@ const GameEngine = {
         AppState.game.wizard.startingGold = savedHero.oro || 40;
         AppState.game.wizard.currentGold = savedHero.oro || 40;
         
-        // I veterani partono direttamente dal Passo 2 (Spesa PX)
         this.wizardShowStep(2);
         this.renderWizardStep2();
       } else {
@@ -740,13 +737,22 @@ const GameEngine = {
     }
   },
 
-  // PASSO 1: UNIFIED CINEMA CARDS CON MODIFICATORI D20 & IMMAGINE POLLINATIONS
+  // =========================================================================
+  // MOTORE SOLUZIONE 1: 3D SPOTLIGHT COVER-FLOW (TAROCCHI DEL SALMASTRO)
+  // =========================================================================
   renderWizardStep1: function() {
-    const c = document.getElementById("wizard-classes-carousel");
-    if (!c) return;
+    const stage = document.getElementById("wizard-classes-stage");
+    const dotsBox = document.getElementById("wizard-coverflow-dots");
+    if (!stage) return;
 
-    c.innerHTML = AppState.game.wizard.classes.map(cls => {
-      const isSelected = (AppState.game.wizard.chosenClass && AppState.game.wizard.chosenClass.id === cls.id);
+    const classes = AppState.game.wizard.classes || [];
+    if (classes.length === 0) {
+      stage.innerHTML = `<div class="text-slate-500 text-xs text-center py-10">Nessuna classe disponibile.</div>`;
+      return;
+    }
+
+    // Render carte nel palcoscenico
+    stage.innerHTML = classes.map((cls, idx) => {
       const pol = (cls.schieramento || "Destra").toLowerCase();
       const isDestra = pol === "destra";
 
@@ -758,19 +764,19 @@ const GameEngine = {
       const cleanQuote = (cls.citazione || "A Viareggio non ci sono eroi: chi non colpisce per primo finisce a fondo.").replace(/^["'“”]+|["'“”]+$/g, "");
 
       return `
-        <div class="wizard-carousel-item bg-[#0d131f] rounded-2xl border ${isSelected ? 'border-sky-400 ring-2 ring-sky-400/40 shadow-2xl' : 'border-white/10'} overflow-hidden flex flex-col justify-between transition-all group">
+        <div id="coverflow-card-${idx}" onclick="GameEngine.coverflowSelectIndex(${idx})" class="coverflow-card bg-[#0d131f] border border-white/15 overflow-hidden flex flex-col justify-between shadow-2xl">
           
-          <!-- Inquadratura 16:9 Cinema con Banner Copri-Watermark -->
-          <div class="relative w-full h-36 sm:h-44 bg-slate-950 overflow-hidden">
-            <img src="${cls.mediaUrl}" class="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500" alt="${cls.nome}">
+          <!-- Inquadratura Cinema 16:9 con Copertura Anti-Watermark -->
+          <div class="relative w-full h-40 sm:h-48 bg-slate-950 overflow-hidden flex-none">
+            <img src="${cls.mediaUrl}" class="w-full h-full object-cover object-center" alt="${cls.nome}">
             
             <span class="badge badge-xs ${isDestra ? 'badge-info' : 'badge-error'} font-black uppercase text-[8px] absolute top-2.5 left-2.5 shadow-md">
               ${(cls.schieramento || 'Destra').toUpperCase()} (+1 Danno)
             </span>
 
             <div class="absolute top-2.5 right-2.5 flex space-x-1">
-              <span class="badge badge-xs bg-black/70 backdrop-blur-md text-rose-300 font-mono font-bold text-[8px]">❤️ ${cls.pv} PV</span>
-              <span class="badge badge-xs bg-black/70 backdrop-blur-md text-amber-300 font-mono font-bold text-[8px]">🟡 ${cls.oro}</span>
+              <span class="badge badge-xs bg-black/75 backdrop-blur-md text-rose-300 font-mono font-bold text-[8.5px]">❤️ ${cls.pv} PV</span>
+              <span class="badge badge-xs bg-black/75 backdrop-blur-md text-amber-300 font-mono font-bold text-[8.5px]">🟡 ${cls.oro}</span>
             </div>
 
             <div class="watermark-cover-banner">
@@ -779,16 +785,16 @@ const GameEngine = {
             </div>
           </div>
 
-          <!-- Dettagli & Modificatori D20 -->
+          <!-- Corpo Carta: Dati & Modificatori D20 -->
           <div class="p-3.5 space-y-2 flex-1 flex flex-col justify-between">
             <div>
-              <div class="flex items-center space-x-1.5">
-                <span class="text-lg">${cls.emoji || '🥋'}</span>
+              <div class="flex items-center space-x-2">
+                <span class="text-xl">${cls.emoji || '🥋'}</span>
                 <h4 class="font-black text-sm text-white">${cls.nome}</h4>
               </div>
 
-              <!-- Modificatori D20 Formattati -->
-              <div class="grid grid-cols-3 gap-1 py-1.5 px-2 rounded-xl bg-black/40 border border-white/5 text-center font-mono text-[9px] mt-2">
+              <!-- Trittico Modificatori D20 -->
+              <div class="grid grid-cols-3 gap-1 py-1 px-2 rounded-xl bg-black/45 border border-white/5 text-center font-mono text-[9px] mt-1.5">
                 <div>🥊 FOR <b>${cls.forza || 10}</b> <span class="text-slate-400">(${fmt(forMod)})</span></div>
                 <div>🤸 DES <b>${cls.destrezza || 10}</b> <span class="text-slate-400">(${fmt(desMod)})</span></div>
                 <div>🧠 INT <b>${cls.intelligenza || 10}</b> <span class="text-slate-400">(${fmt(intMod)})</span></div>
@@ -797,28 +803,157 @@ const GameEngine = {
               <p class="text-[10px] text-slate-300 line-clamp-3 leading-relaxed mt-2">${cls.descrizione || ''}</p>
             </div>
 
-            <!-- Footer con Dotazione & Selettore -->
+            <!-- Footer Dotazione & Status Scelta -->
             <div class="pt-2 border-t border-white/5 flex items-center justify-between text-[10px]">
-              <span class="text-slate-400 truncate max-w-[130px]" title="Dotazione di Serie">🎒 ${cls.armaIniziale ? cls.armaIniziale.nome : (cls.equipLoot || 'Pugni')}</span>
-              <button onclick="GameEngine.wizardSelectClass('${cls.id}')" class="btn btn-xs ${isSelected ? 'btn-success' : 'btn-outline border-white/20'} font-bold px-3">
-                ${isSelected ? '✓ Selezionata' : 'Scegli'}
+              <span class="text-slate-400 truncate max-w-[140px]">🎒 ${cls.armaIniziale ? cls.armaIniziale.nome : (cls.equipLoot || 'Pugni')}</span>
+              <button class="btn btn-xs btn-primary font-bold px-3 shadow" id="coverflow-action-btn-${idx}">
+                Seleziona
               </button>
             </div>
           </div>
         </div>
       `;
     }).join("");
+
+    // Indicatori a Pallini
+    if (dotsBox) {
+      dotsBox.innerHTML = classes.map((_, i) => `
+        <span onclick="GameEngine.coverflowSelectIndex(${i})" class="h-1.5 rounded-full transition-all cursor-pointer ${i === AppState.game.wizard.activeClassIndex ? 'bg-sky-400 w-4 shadow' : 'bg-white/20 w-1.5'}"></span>
+      `).join("");
+    }
+
+    // Gestione Gesture Touch / Swipe
+    this.initCoverflowGestures();
+
+    // Aggiorna posizionamento 3D Cover Flow
+    this.updateCoverflowStage();
   },
 
-  wizardSelectClass: function(clsId) {
-    const found = AppState.game.wizard.classes.find(c => c.id === clsId);
-    if (!found) return;
-    AppState.game.wizard.chosenClass = found;
-    AppState.game.wizard.startingGold = found.oro || 40;
-    AppState.game.wizard.currentGold = found.oro || 40;
-    AppState.game.wizard.boughtItems = [];
+  updateCoverflowStage: function() {
+    const classes = AppState.game.wizard.classes || [];
+    const activeIdx = AppState.game.wizard.activeClassIndex;
+    const isDesktop = window.innerWidth >= 768;
+    const spacing = isDesktop ? 220 : 160;
+
+    classes.forEach((cls, i) => {
+      const el = document.getElementById(`coverflow-card-${i}`);
+      const btn = document.getElementById(`coverflow-action-btn-${i}`);
+      if (!el) return;
+
+      const offset = i - activeIdx;
+      const absOffset = Math.abs(offset);
+
+      if (absOffset > 2 && !isDesktop) {
+        // Nascondi carte troppo distanti su mobile per salvare RAM
+        el.style.display = "none";
+        return;
+      } else {
+        el.style.display = "flex";
+      }
+
+      const isCenter = (offset === 0);
+      const isDestra = (cls.schieramento || "Destra").toLowerCase() === "destra";
+
+      // Calcolo prospettiva 3D Cover Flow
+      const translateX = offset * spacing;
+      const rotateY = offset * (isDesktop ? -20 : -15);
+      const scale = isCenter ? (isDesktop ? 1.08 : 1.05) : Math.max(0.75, 0.90 - absOffset * 0.08);
+      const zIndex = 30 - absOffset * 5;
+      const opacity = isCenter ? 1 : Math.max(0.25, 0.60 - absOffset * 0.15);
+
+      el.style.transform = `translateX(${translateX}px) translateZ(${isCenter ? 50 : 0}px) rotateY(${rotateY}deg) scale(${scale})`;
+      el.style.zIndex = zIndex;
+      el.style.opacity = opacity;
+
+      // Alone al neon sulla carta al centro
+      el.classList.toggle("glow-destra", isCenter && isDestra);
+      el.classList.toggle("glow-sinistra", isCenter && !isDestra);
+
+      if (btn) {
+        if (isCenter) {
+          btn.textContent = "✓ In Uso";
+          btn.className = "btn btn-xs btn-success font-black px-3 shadow";
+        } else {
+          btn.textContent = "Mostra";
+          btn.className = "btn btn-xs btn-outline border-white/20 text-slate-400 font-bold px-2";
+        }
+      }
+    });
+
+    // Aggiorna classe scelta nello stato
+    AppState.game.wizard.chosenClass = classes[activeIdx];
+    AppState.game.wizard.startingGold = classes[activeIdx] ? classes[activeIdx].oro : 40;
+    AppState.game.wizard.currentGold = classes[activeIdx] ? classes[activeIdx].oro : 40;
+
+    // Aggiorna pallini
+    const dotsBox = document.getElementById("wizard-coverflow-dots");
+    if (dotsBox) {
+      dotsBox.querySelectorAll("span").forEach((d, i) => {
+        d.className = `h-1.5 rounded-full transition-all cursor-pointer ${i === activeIdx ? 'bg-sky-400 w-4 shadow' : 'bg-white/20 w-1.5'}`;
+      });
+    }
+
+    if (tg && tg.HapticFeedback) tg.HapticFeedback.selectionChanged();
+  },
+
+  coverflowSelectIndex: function(idx) {
+    if (idx === AppState.game.wizard.activeClassIndex) return;
+    AppState.game.wizard.activeClassIndex = idx;
     if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("click");
-    this.renderWizardStep1();
+    this.updateCoverflowStage();
+  },
+
+  coverflowNext: function() {
+    const total = (AppState.game.wizard.classes || []).length;
+    if (total <= 1) return;
+    AppState.game.wizard.activeClassIndex = (AppState.game.wizard.activeClassIndex + 1) % total;
+    if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("click");
+    this.updateCoverflowStage();
+  },
+
+  coverflowPrev: function() {
+    const total = (AppState.game.wizard.classes || []).length;
+    if (total <= 1) return;
+    AppState.game.wizard.activeClassIndex = (AppState.game.wizard.activeClassIndex - 1 + total) % total;
+    if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("click");
+    this.updateCoverflowStage();
+  },
+
+  initCoverflowGestures: function() {
+    const stage = document.getElementById("wizard-classes-stage");
+    if (!stage || stage._hasGestures) return;
+    stage._hasGestures = true;
+
+    let touchStartX = 0;
+    let touchEndX = 0;
+
+    stage.addEventListener("touchstart", e => {
+      touchStartX = e.changedTouches[0].screenX;
+    }, { passive: true });
+
+    stage.addEventListener("touchend", e => {
+      touchEndX = e.changedTouches[0].screenX;
+      const diff = touchStartX - touchEndX;
+      if (Math.abs(diff) > 40) {
+        if (diff > 0) GameEngine.coverflowNext();
+        else GameEngine.coverflowPrev();
+      }
+    }, { passive: true });
+
+    // Supporto rotellina del mouse su desktop
+    stage.addEventListener("wheel", e => {
+      if (Math.abs(e.deltaX) > 20 || Math.abs(e.deltaY) > 20) {
+        if (e.deltaX > 0 || e.deltaY > 0) GameEngine.coverflowNext();
+        else GameEngine.coverflowPrev();
+      }
+    }, { passive: true });
+
+    // Tasti freccia da tastiera
+    window.addEventListener("keydown", e => {
+      if (AppState.game.wizard.step !== 1) return;
+      if (e.key === "ArrowRight") GameEngine.coverflowNext();
+      else if (e.key === "ArrowLeft") GameEngine.coverflowPrev();
+    });
   },
 
   wizardConfirmStep1: function() {
@@ -830,7 +965,7 @@ const GameEngine = {
     this.wizardShowStep(2);
   },
 
-  // PASSO 2: APPRENDIMENTO TALENTI CLANDESTINI
+  // PASSO 2: TALENTI CLANDESTINI
   renderWizardStep2: function() {
     const grid = document.getElementById("wizard-abilities-grid");
     const budgetBadge = document.getElementById("wizard-px-budget");
@@ -885,11 +1020,10 @@ const GameEngine = {
     this.wizardShowStep(3);
   },
 
-  // PASSO 3: MERCATO NERO DI CICCIO (CRAFTING/EQUIPAGGIAMENTO PRE-PARTITA)
+  // PASSO 3: MERCATO NERO DI CICCIO (PRE-ADVENTURE)
   filterWizardShop: function(category) {
     AppState.game.wizard.shopCategory = category;
 
-    // Aggiorna chip attive
     const chipsBox = document.getElementById("wizard-shop-category-chips");
     if (chipsBox) {
       chipsBox.querySelectorAll("button").forEach(btn => {
@@ -908,7 +1042,7 @@ const GameEngine = {
     const filtered = allItems.filter(it => classifyShopCategory(it) === category);
 
     if (filtered.length === 0) {
-      container.innerHTML = `<div class="col-span-full py-8 text-center text-slate-500 text-xs">Nessun articolo disponibile in questo reparto.</div>`;
+      container.innerHTML = `<div class="col-span-full py-8 text-center text-slate-500 text-xs">Nessun articolo in questo reparto.</div>`;
       return;
     }
 
@@ -945,7 +1079,6 @@ const GameEngine = {
     const it = AppState.game.wizard.shopCatalog.find(i => i.id === itemId);
     if (!it) return;
 
-    // Regola del veicolo singolo
     if (classifyShopCategory(it) === "VEICOLI") {
       const hasVehicle = AppState.game.wizard.boughtItems.some(x => classifyShopCategory(x) === "VEICOLI");
       if (hasVehicle) {
@@ -990,14 +1123,12 @@ const GameEngine = {
     s("wizard-recap-pv", `❤️ ${cls.pv || 25} PV`);
     s("wizard-recap-gold", `🟡 ${AppState.game.wizard.currentGold} Oro`);
 
-    // Talenti
     const abls = AppState.game.wizard.chosenAbilities.map(id => {
       const a = AppState.game.wizard.abilities.find(x => x.id === id);
       return a ? a.nome : id;
     });
     s("wizard-recap-abilities", abls.length > 0 ? abls.join(", ") : "Nessun talento sbloccato");
 
-    // Dotazione
     const initGear = cls.armaIniziale ? cls.armaIniziale.nome : (cls.equipLoot || "Pugni");
     const bought = AppState.game.wizard.boughtItems.map(i => i.nome);
     const fullInv = [initGear, ...bought];
@@ -1034,7 +1165,6 @@ const GameEngine = {
     if (s3) s3.classList.toggle("hidden", stepNum !== 3);
     if (s4) s4.classList.toggle("hidden", stepNum !== 4);
 
-    // Indicatori di progresso 1..4
     for (let i = 1; i <= 4; i++) {
       const ind = document.getElementById(`wiz-step-ind-${i}`);
       if (ind) {
@@ -1096,7 +1226,7 @@ const GameEngine = {
   },
 
   // =========================================================================
-  // RENDERING SCENA NARRATIVA & COCKPIT
+  // SCENA NARRATIVA & DUELLI
   // =========================================================================
   renderNode: function(node, hero) {
     AppState.game.node = node;
@@ -1404,7 +1534,7 @@ const GameEngine = {
   },
 
   // =========================================================================
-  // CASSETTI TATTICI COCKPIT
+  // CASSETTI COCKPIT
   // =========================================================================
   openBackpackDrawer: function() {
     this.filterBackpack(AppState.game.backpackFilter || "ALL");
@@ -1603,14 +1733,12 @@ const GameEngine = {
 
         AppState.user.saldoMegoin = res.nuovoSaldoMegoin;
         
-        // Se siamo durante il Wizard:
         if (AppState.game.wizard && AppState.game.wizard.currentGold !== undefined) {
           AppState.game.wizard.currentGold += goldEarned;
           const wizGoldDisp = document.getElementById("wizard-shop-gold-display");
           if (wizGoldDisp) wizGoldDisp.textContent = `💰 ${AppState.game.wizard.currentGold} 🟡`;
         }
 
-        // Se siamo in Gameplay:
         if (AppState.game.hero) {
           AppState.game.hero.oro = res.nuovoOro;
           this.renderNode(AppState.game.node, AppState.game.hero);
@@ -1714,7 +1842,7 @@ const GameEngine = {
 };
 
 // ============================================================================
-// APP RENDERER (DASHBOARD & VETRINE)
+// APP RENDERER
 // ============================================================================
 const AppRenderer = {
   applyHardLocking: function(allowed) {
