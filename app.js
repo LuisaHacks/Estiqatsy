@@ -1,5 +1,5 @@
 // ============================================================================
-// PROJECT: ESTIQATSY PWA - CLIENT APPLICATION ENGINE (VERSIONE 3.0)
+// PROJECT: ESTIQATSY PWA - CLIENT APPLICATION ENGINE (VERSIONE 3.1)
 // FILE: app.js
 // ============================================================================
 
@@ -19,7 +19,6 @@ const AppState = {
   recipes: { items: [], categories: [], activeCategory: "tutti", searchQuery: "" },
   games: { series: [], genres: [], activeGenre: "tutti", searchQuery: "", session: null },
   carousel: { timer: null, index: 0, count: 0, isPaused: false },
-  hudMode: "app", // 'app' | 'game'
   vault: []
 };
 
@@ -36,7 +35,7 @@ if (tg) {
   } catch (e) {}
 }
 
-// GESTORE SICURO DEL TASTO INDIETRO TELEGRAM (PREVIENE MEMORY LEAK)
+// GESTORE SICURO DEL TASTO INDIETRO NATIVO TELEGRAM
 let backButtonHandler = null;
 function setupTelegramBackButton(screenName) {
   if (!tg || !tg.BackButton) return;
@@ -91,10 +90,6 @@ const AppRouter = {
       if (gInput) gInput.value = "";
       AppRenderer.renderGames();
     }
-
-    // Commutazione automatica dell'HUD Mobile: Gioco vs Navigazione
-    const isGameplay = (screenName === "view-gameplay");
-    AppRenderer.toggleHUDMode(isGameplay ? "game" : "app");
 
     const allScreens = [
       "view-home", "view-games", "view-gameplay", "view-shop", "view-recipes", "view-profile",
@@ -153,7 +148,7 @@ const AppEngine = {
     this.loadVault();
 
     try {
-      // 1. Chiamata Profilo (che include già Piani e Prodotti Acquistati in 0ms)
+      // 1. Profilo con Piani inclusi
       const p = await apiCall("profile");
       if (p && p.user) {
         AppState.user = p.user;
@@ -163,7 +158,7 @@ const AppEngine = {
         AppRenderer.renderPlans(AppState.plans);
       }
 
-      // 2. Caricamento parallelo dei cataloghi nella RAM del telefono
+      // 2. Caricamento asincrono parallelo
       await Promise.allSettled([
         this.fetchShop(),
         this.fetchRecipes(),
@@ -189,7 +184,6 @@ const AppEngine = {
     }
   },
 
-  // NAVIGAZIONE DIRETTA AL CAVEAU DAL 4° KPI DELLA HOME
   openVaultSection: function() {
     AppRouter.navigate("profile");
     setTimeout(() => {
@@ -198,7 +192,7 @@ const AppEngine = {
     }, 150);
   },
 
-  // CAROSELLO SAGHE AUTOMATICO (Ogni 5s con pausa touch)
+  // CAROSELLO SAGHE (Ogni 5s con pausa touch)
   initCarousel: function() {
     const track = document.getElementById("carousel-track");
     const dotsBox = document.getElementById("carousel-dots-container");
@@ -210,27 +204,27 @@ const AppEngine = {
     AppState.carousel.index = 0;
 
     track.innerHTML = list.map((s) => `
-      <div class="min-w-full relative h-40 md:h-52 bg-slate-900 cursor-pointer overflow-hidden flex-none" onclick="AppEngine.openSeriesHub('${s.gameKey}')">
+      <div class="min-w-full relative h-44 md:h-64 bg-slate-900 cursor-pointer overflow-hidden flex-none" onclick="AppEngine.openSeriesHub('${s.gameKey}')">
         <img src="${s.mediaUrl}" class="w-full h-full object-cover">
         <div class="absolute inset-0 bg-gradient-to-t from-[#090D16] via-black/40 to-transparent"></div>
         
         <!-- TAG: PARTITA IN CORSO -->
         ${s.hasActiveGame ? `
-          <span class="badge badge-sm badge-warning font-black uppercase text-[8px] absolute top-3 left-3 shadow-lg flex items-center space-x-1 animate-pulse">
+          <span class="badge badge-sm badge-warning font-black uppercase text-[8px] md:text-[10px] absolute top-3.5 left-3.5 shadow-lg flex items-center space-x-1 animate-pulse">
             <span>🔴</span> <span>PARTITA IN CORSO (EP. ${s.activeEpisodio})</span>
           </span>
         ` : `
-          <span class="badge badge-sm badge-primary font-bold uppercase text-[8px] absolute top-3 left-3 shadow-md">
+          <span class="badge badge-sm badge-primary font-bold uppercase text-[8px] md:text-[10px] absolute top-3.5 left-3.5 shadow-md">
             ${s.tipologia}
           </span>
         `}
 
-        <div class="absolute bottom-3 inset-x-3 flex items-end justify-between">
+        <div class="absolute bottom-4 inset-x-4 flex items-end justify-between">
           <div>
-            <h3 class="font-black text-sm text-white">${s.emoji} ${s.serie}</h3>
-            <p class="text-[10px] text-slate-300 mt-0.5">${s.episodes.length} Capitoli Disponibili • Motore ${s.regole}</p>
+            <h3 class="font-black text-sm md:text-lg text-white">${s.emoji} ${s.serie}</h3>
+            <p class="text-[10px] md:text-xs text-slate-300 mt-0.5">${s.episodes.length} Capitoli Disponibili • Motore ${s.regole}</p>
           </div>
-          <button class="btn btn-xs btn-primary font-bold px-3 shadow-lg shadow-sky-600/30">Esplora</button>
+          <button class="btn btn-xs md:btn-sm btn-primary font-bold px-3 shadow-lg shadow-sky-600/30">Esplora</button>
         </div>
       </div>
     `).join("");
@@ -239,14 +233,11 @@ const AppEngine = {
       <span class="w-2 h-1.5 rounded-full transition-all ${i === 0 ? 'bg-sky-400 w-4' : 'bg-white/20'}" id="car-dot-${i}"></span>
     `).join("");
 
-    // Pausa automatica al tocco o passaggio del mouse
     if (outer) {
       outer.onmouseenter = () => { AppState.carousel.isPaused = true; };
       outer.onmouseleave = () => { AppState.carousel.isPaused = false; };
       outer.ontouchstart = () => { AppState.carousel.isPaused = true; };
-      outer.ontouchend = () => { 
-        setTimeout(() => { AppState.carousel.isPaused = false; }, 3000); 
-      };
+      outer.ontouchend = () => { setTimeout(() => { AppState.carousel.isPaused = false; }, 3000); };
     }
 
     if (AppState.carousel.timer) clearInterval(AppState.carousel.timer);
@@ -269,6 +260,48 @@ const AppEngine = {
         dot.className = `h-1.5 rounded-full transition-all ${i === idx ? 'bg-sky-400 w-4' : 'bg-white/20 w-2'}`;
       }
     }
+  },
+
+  // APERTURA MODALE PIANO DETTAGLIATO
+  openPlanModal: function(planId) {
+    const plan = AppState.plans.find(p => p.id === planId) || AppState.plans.find(p => p.nome.toLowerCase() === planId.toLowerCase());
+    if (!plan) return;
+
+    document.getElementById("upgrade-modal-title").textContent = plan.nome;
+    document.getElementById("plan-modal-price").textContent = plan.prezzoMensile || "€ 0,00";
+    document.getElementById("upgrade-modal-desc").textContent = plan.descrizione || "Nessuna descrizione disponibile.";
+    
+    const perksBox = document.getElementById("plan-modal-perks-list");
+    perksBox.innerHTML = `
+      <div class="flex items-center space-x-2 text-amber-300 font-bold">
+        <span>🪙</span> <span>+${plan.bonusMegoin} Megoin al mese inclusi</span>
+      </div>
+      <div class="flex items-center space-x-2 ${plan.perks.giochi ? 'text-slate-200' : 'text-slate-500'}">
+        <span>${plan.perks.giochi ? '✅' : '❌'}</span> <span>Accesso a tutte le Saghe RPG</span>
+      </div>
+      <div class="flex items-center space-x-2 ${plan.perks.shop ? 'text-slate-200' : 'text-slate-500'}">
+        <span>${plan.perks.shop ? '✅' : '❌'}</span> <span>Sconti e Merce Esclusiva in Bottega</span>
+      </div>
+      <div class="flex items-center space-x-2 ${plan.perks.ricette ? 'text-slate-200' : 'text-slate-500'}">
+        <span>${plan.perks.ricette ? '✅' : '❌'}</span> <span>Ricettario Completo Barlady</span>
+      </div>
+    `;
+
+    const actBtn = document.getElementById("upgrade-modal-action-btn");
+    if (plan.isAttivo) {
+      actBtn.textContent = "Piano Attualmente in Uso";
+      actBtn.disabled = true;
+      actBtn.className = "btn btn-outline border-white/20 btn-sm w-full text-slate-400 font-bold cursor-not-allowed";
+    } else {
+      actBtn.textContent = `Attiva ${plan.nome} (${plan.prezzoMensile || 'Tariffa'}/mese)`;
+      actBtn.disabled = false;
+      actBtn.className = "btn btn-primary btn-sm w-full font-bold shadow-lg shadow-sky-600/30";
+      actBtn.onclick = () => {
+        alert("Reindirizzamento al checkout sicuro PayPal in corso...");
+      };
+    }
+
+    document.getElementById("modal-plan-upgrade").showModal();
   },
 
   // GIOCHI E AVVENTURE
@@ -330,15 +363,15 @@ const AppEngine = {
     el.innerHTML = (saga.episodes || []).map(ep => {
       let btnTxt = ep.canContinueFree ? "Continua (Gratis)" : `Gioca (${ep.costoMegoin} 🪙)`;
       return `
-        <div class="p-3 rounded-2xl bg-surface border border-white/5 flex items-center justify-between">
+        <div class="p-3.5 rounded-2xl bg-surface border border-white/5 flex items-center justify-between">
           <div>
-            <div class="text-xs font-bold text-white flex items-center space-x-1.5">
+            <div class="text-xs md:text-sm font-bold text-white flex items-center space-x-1.5">
               <span>${ep.emoji || '▶️'} Ep. ${ep.episodio}: ${ep.titolo}</span>
               ${ep.isCompleted ? '<span class="badge badge-xs badge-success font-bold">Vinto</span>' : ''}
             </div>
-            <div class="text-[10px] text-slate-400 mt-0.5">${ep.canContinueFree ? 'Avanzamento Eroe' : (ep.costoMegoin === 0 ? 'Gratis' : `${ep.costoMegoin} Megoin`)}</div>
+            <div class="text-[10px] md:text-xs text-slate-400 mt-0.5">${ep.canContinueFree ? 'Avanzamento Eroe' : (ep.costoMegoin === 0 ? 'Gratis' : `${ep.costoMegoin} Megoin`)}</div>
           </div>
-          <button onclick="AppEngine.startGame('${saga.gameKey}', ${ep.episodio})" class="btn btn-xs btn-primary font-bold px-3">
+          <button onclick="AppEngine.startGame('${saga.gameKey}', ${ep.episodio})" class="btn btn-xs md:btn-sm btn-primary font-bold px-3.5">
             ${btnTxt}
           </button>
         </div>
@@ -357,7 +390,6 @@ const AppEngine = {
         AppRenderer.renderProfile(AppState.user);
         AppState.games.session = { gameKey, episodio: epNum, partitaId: data.partitaId };
         
-        AppRenderer.updateGameHUD(data.statoEroe);
         AppRenderer.renderGameNode(data.nodoIniziale, data.statoEroe);
         AppRouter.navigate("view-gameplay");
       }
@@ -377,7 +409,6 @@ const AppEngine = {
           if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("victory");
           if (window.confetti) confetti({ particleCount: 100, spread: 60, origin: { y: 0.6 } });
         }
-        AppRenderer.updateGameHUD(d.statoEroe);
         AppRenderer.renderGameNode(d.nodo, d.statoEroe);
       }
     } catch (e) {
@@ -425,7 +456,7 @@ const AppEngine = {
     if (item.isLocked) {
       btn.textContent = `🔒 Richiede Piano ${item.requiredPlan}`;
       btn.className = "btn btn-warning btn-sm font-bold";
-      btn.onclick = () => AppEngine.showUpgradeModal(`Piano ${item.requiredPlan}`, `Riservato agli affiliati con Piano ${item.requiredPlan}.`);
+      btn.onclick = () => AppEngine.openPlanModal(item.requiredPlan);
     } else {
       btn.textContent = item.prezzoMegoin === 0 ? "🎁 Riscatta Gratis" : `Acquista (${item.prezzoMegoin} 🪙)`;
       btn.className = "btn btn-primary btn-sm font-bold";
@@ -453,7 +484,7 @@ const AppEngine = {
     }
   },
 
-  // RICETTE E BARLADY
+  // RICETTE
   fetchRecipes: async function() {
     try {
       const data = await apiCall("recipes");
@@ -528,58 +559,13 @@ const AppEngine = {
       b.classList.add("hidden");
     }
     document.getElementById("modal-fulfillment").showModal();
-  },
-
-  showUpgradeModal: function(title, desc) {
-    document.getElementById("upgrade-modal-title").textContent = title;
-    document.getElementById("upgrade-modal-desc").textContent = desc;
-    const btn = document.getElementById("upgrade-modal-action-btn");
-    btn.onclick = () => {
-      document.getElementById("modal-plan-upgrade").close();
-      AppRouter.navigate("home");
-      setTimeout(() => {
-        const el = document.getElementById("home-plans-container");
-        if (el) el.scrollIntoView({ behavior: "smooth" });
-      }, 150);
-    };
-    document.getElementById("modal-plan-upgrade").showModal();
   }
 };
 
 const AppRenderer = {
-  // COMMUTATORE MODALITÀ HUD DINAMICO (App vs Gioco)
-  toggleHUDMode: function(mode) {
-    const isGame = (mode === "game");
-    const la = document.getElementById("hud-left-app");
-    const ra = document.getElementById("hud-right-app");
-    const lg = document.getElementById("hud-left-game");
-    const rg = document.getElementById("hud-right-game");
-
-    if (la) la.classList.toggle("hidden", isGame);
-    if (ra) ra.classList.toggle("hidden", isGame);
-    if (lg) lg.classList.toggle("hidden", !isGame);
-    if (rg) rg.classList.toggle("hidden", !isGame);
-  },
-
-  updateGameHUD: function(hero) {
-    if (!hero) return;
-    const s = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
-    s("hud-hero-name", hero.nomeEroe || "Eroe");
-    s("hud-hero-class", hero.classe || "Avventuriero");
-    s("hud-game-gold", `${hero.oro || 0} 🟡`);
-    s("hud-game-px", `${hero.px || 0} 🔷`);
-  },
-
   renderProfile: function(u) {
     const s = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
     
-    // HUD Mobile (Navigazione)
-    s("hud-user-avatar", (u.nome || "U").charAt(0).toUpperCase());
-    s("hud-user-name", u.nome);
-    s("hud-user-plan", u.piano);
-    s("hud-user-megoin", `${u.saldoMegoin} 🪙`);
-    s("hud-user-points", `${u.puntiFedelta} ⭐`);
-
     // Home Banner & 4 KPI
     s("home-username", u.nome);
     s("home-rank-points", u.puntiFedelta);
@@ -601,48 +587,131 @@ const AppRenderer = {
     s("profile-card-plan", `PIANO ${u.piano.toUpperCase()}`);
     s("profile-card-id", `ID: ${u.chatId}`);
     s("profile-card-megoin", `${u.saldoMegoin} 🪙`);
+    s("profile-card-points", `${u.puntiFedelta} Pt`);
   },
 
-  // VETRINA PIANI DI ABBONAMENTO (Con tag PIANO ATTIVO)
+  // RENDERER PRICE TABLE UNIVERSALE (Bronze - Silver - Gold in riga + Free Standalone)
   renderPlans: function(plans) {
-    const c = document.getElementById("home-plans-container");
-    if (!c || !plans || plans.length === 0) return;
+    if (!plans || plans.length === 0) return;
 
-    c.innerHTML = plans.map(p => `
-      <div class="bg-surface/90 rounded-2xl border ${p.isAttivo ? 'border-sky-400 ring-1 ring-sky-400/50 shadow-lg shadow-sky-500/10' : 'border-white/5'} p-4 flex flex-col justify-between space-y-3 relative overflow-hidden">
-        ${p.isAttivo ? `
-          <div class="absolute top-2.5 right-2.5">
-            <span class="badge badge-xs badge-info font-black uppercase text-[8px] py-2 px-2.5">✨ PIANO ATTIVO</span>
-          </div>
-        ` : ''}
-        
-        <div class="space-y-1">
-          <h4 class="font-black text-sm text-white">${p.nome}</h4>
-          <div class="text-xs font-black text-amber-300">
-            ${p.prezzoMensile || 'Gratuito'} <span class="text-[10px] text-slate-400 font-normal">/mese</span>
-          </div>
-          <p class="text-[10px] text-slate-300 leading-relaxed pt-1">${p.descrizione || ''}</p>
-        </div>
+    const freePlan = plans.find(p => p.nome.toLowerCase() === "free") || {
+      id: "P_FREE", nome: "Free", prezzoMensile: "€ 0,00", bonusMegoin: 1, isAttivo: true, descrizione: "Accesso base per tutti gli avventurieri."
+    };
+    const paidPlans = plans.filter(p => p.nome.toLowerCase() !== "free");
 
-        <div class="space-y-1.5 pt-2 border-t border-white/5 text-[10px] text-slate-300">
-          <div class="text-amber-400 font-bold">🪙 +${p.bonusMegoin} Megoin al mese</div>
-          <div class="text-slate-400">${p.perks.giochi ? '✅ Saghe RPG Incluse' : '❌ Saghe escluse'}</div>
-          <div class="text-slate-400">${p.perks.shop ? '✅ Sconti Bottega Attivi' : '❌ Prezzi standard'}</div>
-        </div>
+    const htmlContent = `
+      <!-- 1. VISTA DESKTOP: 3 COLONNE SIMMETRICHE SULLA STESSA RIGA -->
+      <div class="hidden md:grid grid-cols-3 gap-4 lg:gap-6">
+        ${paidPlans.map(p => {
+          const isSilver = p.nome.toLowerCase().includes("silver");
+          return `
+            <div onclick="AppEngine.openPlanModal('${p.id}')" class="bg-surface/90 hover:bg-surface active:scale-[0.98] transition-all rounded-2xl border ${p.isAttivo ? 'border-sky-400 ring-2 ring-sky-400/40 shadow-xl' : (isSilver ? 'border-amber-400/50 ring-1 ring-amber-400/30' : 'border-white/10')} p-5 flex flex-col justify-between space-y-4 cursor-pointer relative group">
+              ${p.isAttivo ? `
+                <div class="absolute top-3 right-3">
+                  <span class="badge badge-sm badge-info font-black uppercase text-[8px] py-2 px-2.5">✨ ATTIVO</span>
+                </div>
+              ` : (isSilver ? `
+                <div class="absolute top-3 right-3">
+                  <span class="badge badge-sm badge-warning font-black uppercase text-[8px] py-2 px-2.5">⭐ CONSIGLIATO</span>
+                </div>
+              ` : '')}
+              
+              <div class="space-y-1.5">
+                <h4 class="font-black text-base text-white group-hover:text-sky-400 transition-colors">${p.nome}</h4>
+                <div class="text-xl font-black text-amber-300">
+                  ${p.prezzoMensile} <span class="text-xs text-slate-400 font-normal">/mese</span>
+                </div>
+                <p class="text-xs text-slate-300 leading-relaxed pt-1 line-clamp-2">${p.descrizione || ''}</p>
+              </div>
 
-        <div class="pt-1">
-          ${p.isAttivo ? `
-            <button disabled class="btn btn-xs btn-outline border-white/20 w-full text-slate-400 font-bold cursor-not-allowed">
-              In Uso
-            </button>
-          ` : `
-            <button onclick="AppEngine.showUpgradeModal('${p.nome}', 'Passa a ${p.nome} per ${p.prezzoMensile || 'tariffa indicata'}.')" class="btn btn-xs btn-primary w-full font-bold shadow-md shadow-sky-600/20">
-              Passa a questo Piano
-            </button>
-          `}
-        </div>
+              <div class="space-y-2 pt-3 border-t border-white/5 text-xs text-slate-300">
+                <div class="text-amber-400 font-bold flex items-center space-x-1.5">
+                  <span>🪙</span> <span>+${p.bonusMegoin} Megoin al mese</span>
+                </div>
+                <div class="text-slate-400 flex items-center space-x-1.5">
+                  <span>${p.perks.giochi ? '✅' : '❌'}</span> <span>Saghe RPG Incluse</span>
+                </div>
+                <div class="text-slate-400 flex items-center space-x-1.5">
+                  <span>${p.perks.shop ? '✅' : '❌'}</span> <span>Sconti Bottega Attivi</span>
+                </div>
+              </div>
+
+              <button class="btn btn-sm ${p.isAttivo ? 'btn-outline border-white/20 text-slate-400 cursor-not-allowed' : 'btn-primary'} w-full font-bold shadow-md">
+                ${p.isAttivo ? 'In Uso' : 'Dettagli & Attiva'}
+              </button>
+            </div>
+          `;
+        }).join("")}
       </div>
-    `).join("");
+
+      <!-- 2. VISTA MOBILE (OPZIONE B): MATRICE COMPARATIVA SINTETICA -->
+      <div class="md:hidden bg-surface/90 rounded-2xl border border-white/10 overflow-hidden shadow-xl">
+        <table class="w-full text-center border-collapse">
+          <thead>
+            <tr class="border-b border-white/10 bg-black/30">
+              <th class="p-2.5 text-left text-[10px] font-bold uppercase text-slate-400">Vantaggi</th>
+              ${paidPlans.map(p => `
+                <th onclick="AppEngine.openPlanModal('${p.id}')" class="p-2.5 cursor-pointer">
+                  <div class="text-xs font-black text-white ${p.isAttivo ? 'text-sky-400' : ''}">${p.nome}</div>
+                  <div class="text-[10px] font-bold text-amber-300">${p.prezzoMensile}</div>
+                  ${p.isAttivo ? '<span class="badge badge-xs badge-info text-[7px] font-bold mt-0.5">ATTIVO</span>' : ''}
+                </th>
+              `).join("")}
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-white/5 text-[11px]">
+            <tr>
+              <td class="p-2.5 text-left text-slate-300 font-semibold">🪙 Megoin / mese</td>
+              ${paidPlans.map(p => `<td class="p-2.5 font-bold text-amber-400">+${p.bonusMegoin}</td>`).join("")}
+            </tr>
+            <tr>
+              <td class="p-2.5 text-left text-slate-300 font-semibold">🎮 Saghe RPG</td>
+              ${paidPlans.map(p => `<td class="p-2.5">${p.perks.giochi ? '✅' : '❌'}</td>`).join("")}
+            </tr>
+            <tr>
+              <td class="p-2.5 text-left text-slate-300 font-semibold">🏪 Sconti Bottega</td>
+              ${paidPlans.map(p => `<td class="p-2.5">${p.perks.shop ? '✅' : '❌'}</td>`).join("")}
+            </tr>
+            <tr>
+              <td class="p-2.5 text-left text-slate-300 font-semibold">🍸 Ricette Barlady</td>
+              ${paidPlans.map(p => `<td class="p-2.5">${p.perks.ricette ? '✅' : '❌'}</td>`).join("")}
+            </tr>
+            <tr class="bg-black/20">
+              <td class="p-2.5 text-left text-[10px] font-bold text-slate-400">Scheda Piano</td>
+              ${paidPlans.map(p => `
+                <td class="p-2">
+                  <button onclick="AppEngine.openPlanModal('${p.id}')" class="btn btn-xs ${p.isAttivo ? 'btn-outline border-white/20 text-slate-400' : 'btn-primary'} px-2 font-bold text-[9px]">
+                    ${p.isAttivo ? 'In Uso' : 'Apri'}
+                  </button>
+                </td>
+              `).join("")}
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- 3. PIANO FREE STANDALONE (FUORI CONFRONTO, SOTTO A TUTTA LARGHEZZA) -->
+      <div onclick="AppEngine.openPlanModal('${freePlan.id}')" class="bg-surface/60 hover:bg-surface active:scale-[0.99] transition-all p-3.5 md:p-4 rounded-2xl border ${freePlan.isAttivo ? 'border-sky-400/50' : 'border-white/5'} flex items-center justify-between cursor-pointer group">
+        <div class="flex items-center space-x-3">
+          <div class="w-9 h-9 rounded-xl bg-white/5 flex items-center justify-center text-sm">⚓</div>
+          <div>
+            <div class="flex items-center space-x-2">
+              <span class="text-xs md:text-sm font-black text-white group-hover:text-sky-400 transition-colors">Piano Base (Free)</span>
+              ${freePlan.isAttivo ? '<span class="badge badge-xs badge-info font-bold text-[8px] uppercase">PIANO ATTUALE</span>' : ''}
+            </div>
+            <p class="text-[10px] md:text-xs text-slate-400 mt-0.5">Include 1 Megoin mensile • Gratuito per sempre</p>
+          </div>
+        </div>
+        <button class="btn btn-xs btn-ghost text-slate-400 group-hover:text-white font-bold text-[10px]">Info ›</button>
+      </div>
+    `;
+
+    // Renderizza sia nella Home che nella pagina Profilo
+    const hBox = document.getElementById("home-plans-container");
+    if (hBox) hBox.innerHTML = htmlContent;
+
+    const pBox = document.getElementById("profile-plans-container");
+    if (pBox) pBox.innerHTML = htmlContent;
 
     if (window.lucide) lucide.createIcons();
   },
@@ -682,27 +751,27 @@ const AppRenderer = {
 
     grid.innerHTML = list.map(s => `
       <div onclick="AppEngine.openSeriesHub('${s.gameKey}')" class="bg-surface rounded-2xl border border-white/5 flex flex-col justify-between overflow-hidden cursor-pointer group shadow-lg active:scale-[0.98] transition-transform p-0 relative">
-        <div class="h-40 md:h-48 w-full bg-slate-900 relative overflow-hidden">
+        <div class="h-44 md:h-52 w-full bg-slate-900 relative overflow-hidden">
           <img src="${s.mediaUrl}" class="w-full h-full object-cover rounded-t-2xl rounded-b-none">
           
           ${s.hasActiveGame ? `
-            <span class="badge badge-xs badge-warning font-black uppercase text-[8px] absolute top-2.5 left-2.5 shadow-lg animate-pulse">
+            <span class="badge badge-xs md:badge-sm badge-warning font-black uppercase text-[8px] md:text-[9px] absolute top-3 left-3 shadow-lg animate-pulse">
               🔴 PARTITA ATTIVA
             </span>
           ` : `
-            <span class="badge badge-xs badge-primary absolute top-2.5 left-2.5 font-bold uppercase text-[8px]">${s.tipologia}</span>
+            <span class="badge badge-xs md:badge-sm badge-primary absolute top-3 left-3 font-bold uppercase text-[8px] md:text-[9px]">${s.tipologia}</span>
           `}
           
-          <span class="badge badge-xs badge-neutral absolute top-2.5 right-2.5 font-bold uppercase text-[8px]">${s.regole}</span>
+          <span class="badge badge-xs md:badge-sm badge-neutral absolute top-3 right-3 font-bold uppercase text-[8px] md:text-[9px]">${s.regole}</span>
         </div>
         <div class="p-4 space-y-3">
           <div>
-            <h3 class="font-black text-sm text-white">${s.emoji} ${s.serie}</h3>
-            <p class="text-[10px] text-slate-400 mt-0.5">${s.episodes.length} Capitoli Disponibili</p>
+            <h3 class="font-black text-sm md:text-base text-white">${s.emoji} ${s.serie}</h3>
+            <p class="text-[10px] md:text-xs text-slate-400 mt-0.5">${s.episodes.length} Capitoli Disponibili</p>
           </div>
           <div class="pt-2.5 border-t border-white/5 flex items-center justify-between">
-            <span class="text-[10px] font-bold text-sky-400 uppercase tracking-wider">Esplora Saga</span>
-            <span class="btn btn-xs btn-primary px-3 font-bold shadow-md shadow-sky-600/30">Apri</span>
+            <span class="text-[10px] md:text-xs font-bold text-sky-400 uppercase tracking-wider">Esplora Saga</span>
+            <span class="btn btn-xs md:btn-sm btn-primary px-3.5 font-bold shadow-md shadow-sky-600/30">Apri</span>
           </div>
         </div>
       </div>
@@ -726,6 +795,8 @@ const AppRenderer = {
     }
 
     if (hero) {
+      document.getElementById("gameplay-hero-name").textContent = hero.nomeEroe || "Eroe";
+      document.getElementById("gameplay-hero-class").textContent = hero.classe || "Avventuriero";
       document.getElementById("gameplay-pv-label").textContent = `${hero.pv}/${hero.pvMax}`;
       const bar = document.getElementById("gameplay-pv-bar");
       bar.value = hero.pv;
@@ -819,17 +890,17 @@ const AppRenderer = {
             <span class="text-[9px] font-black text-amber-300 uppercase">Piano ${p.requiredPlan}</span>
           </div>
         ` : ''}
-        <div class="h-32 md:h-40 w-full bg-slate-900 overflow-hidden relative">
+        <div class="h-36 md:h-44 w-full bg-slate-900 overflow-hidden relative">
           <img src="${p.mediaUrl}" class="w-full h-full object-cover rounded-t-2xl rounded-b-none">
           <span class="badge badge-xs ${p.isDigitale ? 'badge-info' : 'badge-neutral'} absolute top-2.5 left-2.5 text-[8px] uppercase font-bold">${p.tipo || 'Fisico'}</span>
         </div>
         <div class="p-3.5 space-y-2.5">
           <div>
             <div class="text-[9px] font-bold text-sky-400 uppercase">${p.categoria}</div>
-            <h4 class="font-bold text-xs text-white line-clamp-1 mt-0.5">${p.nome}</h4>
+            <h4 class="font-bold text-xs md:text-sm text-white line-clamp-1 mt-0.5">${p.nome}</h4>
           </div>
           <div class="pt-2 border-t border-white/5 flex items-center justify-between">
-            <span class="text-xs font-black text-amber-300 text-glow-amber">${p.prezzoMegoin} 🪙</span>
+            <span class="text-xs md:text-sm font-black text-amber-300 text-glow-amber">${p.prezzoMegoin} 🪙</span>
             <span class="text-[10px] text-slate-400 font-bold">${p.isEsaurito ? 'Finito' : '€ ' + p.prezzoEuro}</span>
           </div>
         </div>
@@ -876,7 +947,7 @@ const AppRenderer = {
             <img src="${r.mediaUrl}" class="w-full h-full object-cover">
           </div>
           <div class="overflow-hidden">
-            <h4 class="font-bold text-xs text-white truncate">${r.piatto}</h4>
+            <h4 class="font-bold text-xs md:text-sm text-white truncate">${r.piatto}</h4>
             <div class="text-[10px] text-slate-400 mt-0.5 truncate">${r.categoria} • ⏱️ ${r.tempo}</div>
           </div>
         </div>
@@ -897,10 +968,10 @@ const AppRenderer = {
     c.innerHTML = txs.map(t => `
       <div class="py-2.5 flex justify-between items-center">
         <div>
-          <div class="font-bold text-white text-xs">${t.tipo}</div>
+          <div class="font-bold text-white text-xs md:text-sm">${t.tipo}</div>
           <div class="text-[10px] text-slate-400">${t.data} • ${t.dettaglio}</div>
         </div>
-        <div class="font-mono text-xs font-bold ${t.megoin.includes('+') ? 'text-emerald-400' : 'text-amber-400'}">
+        <div class="font-mono text-xs md:text-sm font-bold ${t.megoin.includes('+') ? 'text-emerald-400' : 'text-amber-400'}">
           ${t.megoin}
         </div>
       </div>
@@ -919,7 +990,7 @@ const AppRenderer = {
     c.innerHTML = AppState.vault.map(v => `
       <div class="p-3 rounded-2xl bg-surface/80 border border-white/5 flex items-center justify-between">
         <div>
-          <div class="font-bold text-white text-xs">${v.nome}</div>
+          <div class="font-bold text-white text-xs md:text-sm">${v.nome}</div>
           <div class="text-[10px] text-slate-400">${v.data}</div>
         </div>
         <a href="${v.url}" target="_blank" class="btn btn-xs btn-success font-bold px-3">Scarica</a>
