@@ -1,6 +1,6 @@
 // ============================================================================
-// PROJECT: ESTIQATSY SYNDICATE & RPG ENGINE (VERSIONE 4.5 - SPA UNIFICATA)
-// FILE: app.js (CLIENT CONTROLLER: APP, SHOP, RICETTE, WIZARD & RULES 2)
+// PROJECT: ESTIQATSY SYNDICATE & RPG ENGINE (VERSIONE 4.6 - SPA UNIFICATA)
+// FILE: app.js (CLIENT CONTROLLER: APP, SHOP, RICETTE, WIZARD RULES 2 & GAMEPLAY)
 // ============================================================================
 
 const AppConfig = {
@@ -14,19 +14,19 @@ const AppState = {
   user: null,
   allowedModules: { home: true, shop: true, games: true, recipes: true, profile: true },
   plans: [],
-  billingCycle: "monthly", // 'monthly' | 'yearly'
+  billingCycle: "monthly",
   activeTab: "home",
   shop: { items: [], categories: [], activeCategory: "tutti", searchQuery: "" },
   recipes: { items: [], categories: [], activeCategory: "tutti", searchQuery: "" },
   carousel: { timer: null, index: 0, count: 0, isPaused: false },
   vault: [],
 
-  // MOTORE DI GIOCO INTEGRATO (RULES 2)
+  // MOTORE DI GIOCO RULES 2
   game: {
     seriesList: [],
     currentSeries: null,
     currentEpisodio: 1,
-    session: null, // { gameKey, episodio, partitaId }
+    session: null,
     hero: null,
     node: null,
     wizard: {
@@ -34,16 +34,20 @@ const AppState = {
       isVeteran: false,
       classes: [],
       abilities: [],
-      shopItems: [],
+      shopCatalog: [],
+      filteredShop: [],
+      shopCategory: "ARMI",
       chosenClass: null,
       chosenAbilities: [],
+      boughtItems: [],
       heroName: "",
       remainingPx: 100,
-      startingGold: 40
+      startingGold: 40,
+      currentGold: 40
     },
-    emporioMode: "buy", // "buy" | "sell"
+    emporioMode: "buy",
     backpackFilter: "ALL",
-    pendingVictory: null // Conserva i dati post-duello per il Triage Necromantico
+    pendingVictory: null
   }
 };
 
@@ -60,7 +64,7 @@ if (tg) {
   } catch (e) {}
 }
 
-// GESTORE TASTO INDIETRO NATIVO TELEGRAM
+// GESTORE TASTO INDIETRO TELEGRAM
 let backButtonHandler = null;
 function setupTelegramBackButton(screenName) {
   if (!tg || !tg.BackButton) return;
@@ -93,7 +97,7 @@ function setupTelegramBackButton(screenName) {
   }
 }
 
-// ROUTER CENTRALIZZATO (APP MODE vs GAME COCKPIT MODE)
+// ROUTER CENTRALIZZATO
 const AppRouter = {
   navigate: function(screenName) {
     if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("click");
@@ -181,7 +185,7 @@ const AppRouter = {
   }
 };
 
-// GATEWAY CHIAMATE API REST (CON INITDATA CIFRATO)
+// GATEWAY API REST
 async function apiCall(action, extraParams = {}) {
   const initData = (tg && tg.initData) ? tg.initData : "";
   let url = `${AppConfig.GAS_URL}?action=${action}&initData=${encodeURIComponent(initData)}`;
@@ -196,7 +200,37 @@ async function apiCall(action, extraParams = {}) {
   return json.data;
 }
 
-// MOTORE GENERALE APPLICATIVO
+// HELPER: DEDUPLICAZIONE DIFENSIVA O(N) CONTRO DOPPIONI DI BACKEND
+function deduplicateEntities(list) {
+  if (!Array.isArray(list)) return [];
+  const seen = new Set();
+  return list.filter(item => {
+    if (!item) return false;
+    const key = String(item.id || item.nome || item.name || JSON.stringify(item)).toLowerCase().trim();
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+// CLASSIFICATORE REPARTI PER L'EMPORIO DI CICCIO (EP. 0 / RULES 2)
+function classifyShopCategory(item) {
+  if (!item) return "STRUMENTI";
+  const cat = String(item.categoria || "").toUpperCase();
+  const sub = String(item.sottocategoria || "").toUpperCase();
+  const name = String(item.nome || "").toLowerCase();
+
+  if (cat.includes("ARMA")) return "ARMI";
+  if (cat.includes("VEICOLO")) return "VEICOLI";
+  if (cat.includes("TALISMAN")) return "TALISMANI";
+  if (cat.includes("CURA") || name.includes("cecina") || name.includes("trabaccolara") || name.includes("fritto") || name.includes("ponce") || name.includes("focaccia")) return "CURE";
+  if (cat.includes("DROGA") || cat.includes("INGREDIENTE") || sub.includes("THC") || sub.includes("STIMOLANTE") || sub.includes("ALLUCINOGENO") || sub.includes("TRANQUILLANTE") || sub.includes("OPPIACEO")) return "DROGHE";
+  return "STRUMENTI";
+}
+
+// ============================================================================
+// APP ENGINE: INIZIALIZZAZIONE & GENERAL SERVICES
+// ============================================================================
 const AppEngine = {
   init: async function() {
     this.loadVault();
@@ -309,7 +343,6 @@ const AppEngine = {
     }, 150);
   },
 
-  // CAROSELLO
   initCarousel: function() {
     const track = document.getElementById("carousel-track");
     const dotsBox = document.getElementById("carousel-dots-container");
@@ -404,12 +437,11 @@ const AppEngine = {
     }
   },
 
-  // SHOP
   fetchShop: async function() {
     try {
       const data = await apiCall("shop");
       if (data && data.items) {
-        AppState.shop.items = data.items;
+        AppState.shop.items = deduplicateEntities(data.items);
         AppState.shop.categories = data.categories || [];
         AppRenderer.renderShop();
       }
@@ -472,12 +504,11 @@ const AppEngine = {
     }
   },
 
-  // RICETTE
   fetchRecipes: async function() {
     try {
       const data = await apiCall("recipes");
       if (data && data.recipes) {
-        AppState.recipes.items = data.recipes;
+        AppState.recipes.items = deduplicateEntities(data.recipes);
         AppState.recipes.categories = data.categories || [];
         AppRenderer.renderRecipes();
       }
@@ -517,7 +548,6 @@ const AppEngine = {
     AppRouter.navigate("subview-recipe-detail");
   },
 
-  // TRANSAZIONI & CAVEAU
   syncTransactions: async function(force = false) {
     try {
       const d = await apiCall("my_transactions");
@@ -551,16 +581,16 @@ const AppEngine = {
 };
 
 // ============================================================================
-// GAME ENGINE - CONTROLLER NOIR RPG & RULES 2
+// GAME ENGINE - CONTROLLER NOIR RPG (RULES 2 INTEGRATO)
 // ============================================================================
 const GameEngine = {
   loadSeriesCatalog: async function() {
     try {
       const gamesData = await apiCall("games");
       if (gamesData && gamesData.series) {
-        AppState.game.seriesList = gamesData.series;
+        AppState.game.seriesList = deduplicateEntities(gamesData.series);
         const gc = document.getElementById("home-games-count");
-        if (gc) gc.textContent = gamesData.series.length;
+        if (gc) gc.textContent = AppState.game.seriesList.length;
       }
     } catch (e) {
       console.warn("Errore caricamento giochi:", e);
@@ -624,7 +654,7 @@ const GameEngine = {
     if (img) img.src = saga.mediaUrl;
 
     if (saga.citazione) {
-      s("hub-quote", `“${saga.citazione}”`);
+      s("hub-quote", `“${saga.citazione.replace(/^["'“”]+|["'“”]+$/g, '')}”`);
       s("hub-author", saga.autoreCitazione || "");
     }
 
@@ -648,111 +678,159 @@ const GameEngine = {
     AppRouter.navigate("subview-game-detail");
   },
 
-  // GESTIONE PARTENZA: NUOVO EROE vs FLUSSO VETERANI
   startEpisode: async function(gameKey, epNum, canContinueFree) {
     AppState.game.currentEpisodio = epNum;
 
-    // Se veterano: entra in modalità Briefing per spendere i PX guadagnati ed equipaggiarsi
     if (canContinueFree && AppState.game.currentSeries && AppState.game.currentSeries.eroeSalvato) {
       this.openWizard(gameKey, epNum, true, AppState.game.currentSeries.eroeSalvato);
       return;
     }
 
-    // Se nuovo eroe: avvia il Wizard completo a 4 passi da Ep. 0
     this.openWizard(gameKey, epNum, false, null);
   },
 
-  // WIZARD A 4 PASSI (RULES 2)
+  // =========================================================================
+  // WIZARD RULES 2 A 4 PASSI (DEDUPLICATO, CINEMA CARD 16:9 & SHOP CICCO)
+  // =========================================================================
   openWizard: async function(gameKey, epNum, isVeteran = false, savedHero = null) {
     try {
       if (typeof SoundEngine !== "undefined") SoundEngine.playBgm("wizard");
       const wizData = await apiCall("game_wizard_data", { gameKey: gameKey });
       
       AppState.game.wizard.isVeteran = isVeteran;
-      AppState.game.wizard.classes = wizData.classes || [];
-      AppState.game.wizard.abilities = wizData.abilities || [];
+      // DEDUPLICAZIONE RIGIDA
+      AppState.game.wizard.classes = deduplicateEntities(wizData.classes || []);
+      AppState.game.wizard.abilities = deduplicateEntities(wizData.abilities || []);
+      AppState.game.wizard.shopCatalog = deduplicateEntities(wizData.shopItems || AppState.shop.items || []);
       AppState.game.wizard.chosenAbilities = [];
+      AppState.game.wizard.boughtItems = [];
 
       if (isVeteran && savedHero) {
         AppState.game.wizard.chosenClass = {
-          nome: savedHero.nomeEroe,
+          id: savedHero.classeId || "CLS_0001_S1_E0",
+          nome: savedHero.classe || savedHero.nomeEroe,
           schieramento: savedHero.schieramentoPolitico || "Destra",
           pv: savedHero.pvMax || 25,
           oro: savedHero.oro || 40,
-          emoji: "🎖️"
+          emoji: "🎖️",
+          mediaUrl: savedHero.mediaUrl || "https://image.pollinations.ai/prompt/veteran-coastal-adventurer-portrait?width=800&height=450&nologo=true"
         };
         AppState.game.wizard.heroName = savedHero.nomeEroe;
         AppState.game.wizard.remainingPx = savedHero.px || 0;
         AppState.game.wizard.startingGold = savedHero.oro || 40;
+        AppState.game.wizard.currentGold = savedHero.oro || 40;
         
-        // Il veterano parte direttamente dal Passo 2 (Spesa PX)
-        AppState.game.wizard.step = 2;
+        // I veterani partono direttamente dal Passo 2 (Spesa PX)
+        this.wizardShowStep(2);
         this.renderWizardStep2();
       } else {
-        AppState.game.wizard.step = 1;
-        AppState.game.wizard.chosenClass = wizData.classes[0] || null;
+        const firstCls = AppState.game.wizard.classes[0] || null;
+        AppState.game.wizard.chosenClass = firstCls;
         AppState.game.wizard.remainingPx = 100;
-        AppState.game.wizard.startingGold = wizData.classes[0] ? wizData.classes[0].oro : 40;
+        AppState.game.wizard.startingGold = firstCls ? firstCls.oro : 40;
+        AppState.game.wizard.currentGold = firstCls ? firstCls.oro : 40;
+
+        this.wizardShowStep(1);
         this.renderWizardStep1();
       }
 
       AppRouter.navigate("view-wizard");
     } catch (e) {
-      alert("Errore caricamento configurazione: " + e.message);
+      alert("Errore caricamento wizard: " + e.message);
     }
   },
 
+  // PASSO 1: UNIFIED CINEMA CARDS CON MODIFICATORI D20 & IMMAGINE POLLINATIONS
   renderWizardStep1: function() {
     const c = document.getElementById("wizard-classes-carousel");
     if (!c) return;
 
     c.innerHTML = AppState.game.wizard.classes.map(cls => {
       const isSelected = (AppState.game.wizard.chosenClass && AppState.game.wizard.chosenClass.id === cls.id);
-      const isDestra = (cls.schieramento.toLowerCase() === "destra");
+      const pol = (cls.schieramento || "Destra").toLowerCase();
+      const isDestra = pol === "destra";
+
+      const forMod = Math.floor(((cls.forza || 10) - 10) / 2);
+      const desMod = Math.floor(((cls.destrezza || 10) - 10) / 2);
+      const intMod = Math.floor(((cls.intelligenza || 10) - 10) / 2);
+      const fmt = v => (v >= 0 ? "+" + v : String(v));
+
+      const cleanQuote = (cls.citazione || "A Viareggio non ci sono eroi: chi non colpisce per primo finisce a fondo.").replace(/^["'“”]+|["'“”]+$/g, "");
+
       return `
-        <div onclick="GameEngine.wizardSelectClass('${cls.id}')" class="min-w-[240px] max-w-[260px] bg-surface p-4 rounded-2xl border ${isSelected ? 'border-sky-400 ring-2 ring-sky-400/50 shadow-xl' : 'border-white/10'} snap-center cursor-pointer flex flex-col justify-between space-y-3">
-          <div>
-            <div class="flex items-center justify-between">
-              <span class="text-2xl">${cls.emoji}</span>
-              <span class="badge badge-xs ${isDestra ? 'badge-info' : 'badge-error'} font-black uppercase text-[8px]">${cls.schieramento}</span>
+        <div class="wizard-carousel-item bg-[#0d131f] rounded-2xl border ${isSelected ? 'border-sky-400 ring-2 ring-sky-400/40 shadow-2xl' : 'border-white/10'} overflow-hidden flex flex-col justify-between transition-all group">
+          
+          <!-- Inquadratura 16:9 Cinema con Banner Copri-Watermark -->
+          <div class="relative w-full h-36 sm:h-44 bg-slate-950 overflow-hidden">
+            <img src="${cls.mediaUrl}" class="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500" alt="${cls.nome}">
+            
+            <span class="badge badge-xs ${isDestra ? 'badge-info' : 'badge-error'} font-black uppercase text-[8px] absolute top-2.5 left-2.5 shadow-md">
+              ${(cls.schieramento || 'Destra').toUpperCase()} (+1 Danno)
+            </span>
+
+            <div class="absolute top-2.5 right-2.5 flex space-x-1">
+              <span class="badge badge-xs bg-black/70 backdrop-blur-md text-rose-300 font-mono font-bold text-[8px]">❤️ ${cls.pv} PV</span>
+              <span class="badge badge-xs bg-black/70 backdrop-blur-md text-amber-300 font-mono font-bold text-[8px]">🟡 ${cls.oro}</span>
             </div>
-            <h4 class="font-black text-sm text-white mt-1">${cls.nome}</h4>
-            <div class="text-[10px] text-amber-300 font-bold mt-0.5">❤️ ${cls.pv} PV • 🟡 ${cls.oro} Oro</div>
-            <div class="text-[9px] text-slate-400 font-mono mt-1">FOR: ${cls.forza} • DES: ${cls.destrezza} • INT: ${cls.intelligenza}</div>
-            <p class="text-[10px] text-slate-300 line-clamp-3 mt-2">${cls.descrizione}</p>
+
+            <div class="watermark-cover-banner">
+              <span class="text-[9.5px] text-slate-300 italic truncate pr-2">“${cleanQuote}”</span>
+              <span class="text-[8.5px] text-amber-400 font-bold uppercase shrink-0">${cls.autoreCitazione || 'Darsena'}</span>
+            </div>
           </div>
-          <div class="pt-2 border-t border-white/5 flex items-center justify-between text-[10px]">
-            <span class="text-slate-400">Arma: <b>${cls.armaIniziale ? cls.armaIniziale.nome : 'Pugni'}</b></span>
-            <button class="btn btn-xs ${isSelected ? 'btn-success' : 'btn-outline border-white/20'} font-bold">
-              ${isSelected ? 'Selezionata' : 'Scegli'}
-            </button>
+
+          <!-- Dettagli & Modificatori D20 -->
+          <div class="p-3.5 space-y-2 flex-1 flex flex-col justify-between">
+            <div>
+              <div class="flex items-center space-x-1.5">
+                <span class="text-lg">${cls.emoji || '🥋'}</span>
+                <h4 class="font-black text-sm text-white">${cls.nome}</h4>
+              </div>
+
+              <!-- Modificatori D20 Formattati -->
+              <div class="grid grid-cols-3 gap-1 py-1.5 px-2 rounded-xl bg-black/40 border border-white/5 text-center font-mono text-[9px] mt-2">
+                <div>🥊 FOR <b>${cls.forza || 10}</b> <span class="text-slate-400">(${fmt(forMod)})</span></div>
+                <div>🤸 DES <b>${cls.destrezza || 10}</b> <span class="text-slate-400">(${fmt(desMod)})</span></div>
+                <div>🧠 INT <b>${cls.intelligenza || 10}</b> <span class="text-slate-400">(${fmt(intMod)})</span></div>
+              </div>
+
+              <p class="text-[10px] text-slate-300 line-clamp-3 leading-relaxed mt-2">${cls.descrizione || ''}</p>
+            </div>
+
+            <!-- Footer con Dotazione & Selettore -->
+            <div class="pt-2 border-t border-white/5 flex items-center justify-between text-[10px]">
+              <span class="text-slate-400 truncate max-w-[130px]" title="Dotazione di Serie">🎒 ${cls.armaIniziale ? cls.armaIniziale.nome : (cls.equipLoot || 'Pugni')}</span>
+              <button onclick="GameEngine.wizardSelectClass('${cls.id}')" class="btn btn-xs ${isSelected ? 'btn-success' : 'btn-outline border-white/20'} font-bold px-3">
+                ${isSelected ? '✓ Selezionata' : 'Scegli'}
+              </button>
+            </div>
           </div>
         </div>
       `;
     }).join("");
-
-    this.wizardShowStep(1);
   },
 
-  // Selezione esplicita senza avanzamento involontario
   wizardSelectClass: function(clsId) {
     const found = AppState.game.wizard.classes.find(c => c.id === clsId);
     if (!found) return;
     AppState.game.wizard.chosenClass = found;
     AppState.game.wizard.startingGold = found.oro || 40;
+    AppState.game.wizard.currentGold = found.oro || 40;
+    AppState.game.wizard.boughtItems = [];
     if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("click");
     this.renderWizardStep1();
   },
 
   wizardConfirmStep1: function() {
     if (!AppState.game.wizard.chosenClass) {
-      alert("Seleziona prima una classe!");
+      alert("Seleziona prima un archetipo!");
       return;
     }
     this.renderWizardStep2();
-    this.wizardNextStep(2);
+    this.wizardShowStep(2);
   },
 
+  // PASSO 2: APPRENDIMENTO TALENTI CLANDESTINI
   renderWizardStep2: function() {
     const grid = document.getElementById("wizard-abilities-grid");
     const budgetBadge = document.getElementById("wizard-px-budget");
@@ -760,24 +838,24 @@ const GameEngine = {
 
     if (budgetBadge) budgetBadge.textContent = `✨ ${AppState.game.wizard.remainingPx} PX Disponibili`;
 
-    const userFaction = AppState.game.wizard.chosenClass ? AppState.game.wizard.chosenClass.schieramento.toLowerCase() : "destra";
+    const userFaction = AppState.game.wizard.chosenClass ? (AppState.game.wizard.chosenClass.schieramento || "Destra").toLowerCase() : "destra";
 
     grid.innerHTML = AppState.game.wizard.abilities.map(abl => {
       const isSelected = AppState.game.wizard.chosenAbilities.includes(abl.id);
-      const req = (abl.requisitoClasse || "").toLowerCase();
-      const isCompatible = (req.includes("tutti") || req.includes(userFaction));
+      const req = String(abl.requisitoClasse || abl.requisitiCodificati || "tutti").toLowerCase();
+      const isCompatible = req.includes("tutti") || req.includes(userFaction);
 
       return `
-        <div onclick="${isCompatible ? `GameEngine.wizardToggleAbility('${abl.id}')` : ''}" class="p-3 rounded-xl border ${isSelected ? 'border-sky-400 bg-sky-500/10' : (isCompatible ? 'border-white/10 bg-surface/70 cursor-pointer' : 'border-white/5 bg-black/40 opacity-40 cursor-not-allowed')} flex items-center justify-between">
+        <div onclick="${isCompatible ? `GameEngine.wizardToggleAbility('${abl.id}')` : ''}" class="p-3 rounded-xl border ${isSelected ? 'border-sky-400 bg-sky-500/15 shadow-md ring-1 ring-sky-400/40' : (isCompatible ? 'border-white/10 bg-surface/70 cursor-pointer hover:bg-surface active:scale-[0.99]' : 'border-white/5 bg-black/40 opacity-40 cursor-not-allowed')} flex items-center justify-between transition-all">
           <div class="overflow-hidden pr-2">
-            <div class="flex items-center space-x-1.5">
-              <span>${abl.emoji}</span>
-              <span class="text-xs font-bold text-white truncate">${abl.nome}</span>
+            <div class="flex items-center space-x-2">
+              <span class="text-base">${abl.emoji || '⚡'}</span>
+              <span class="text-xs font-black text-white truncate">${abl.nome}</span>
             </div>
-            <div class="text-[9px] text-slate-400 line-clamp-1 mt-0.5">${abl.descrizione}</div>
+            <div class="text-[9.5px] text-slate-300 line-clamp-2 mt-1 leading-tight">${abl.descrizione || abl.effetto || ''}</div>
           </div>
-          <span class="badge badge-xs ${isSelected ? 'badge-primary' : 'badge-ghost'} font-bold text-[8px] shrink-0">
-            ${isSelected ? 'ATTIVA' : (isCompatible ? `${abl.costoPX} PX` : '🔒')}
+          <span class="badge badge-xs ${isSelected ? 'badge-primary' : (isCompatible ? 'badge-ghost border-white/20' : 'badge-neutral')} font-black text-[8px] py-2 px-2 shrink-0">
+            ${isSelected ? 'ATTIVO ✓' : (isCompatible ? `${abl.costoPX || 100} PX` : '🔒')}
           </span>
         </div>
       `;
@@ -802,19 +880,144 @@ const GameEngine = {
     this.renderWizardStep2();
   },
 
-  wizardNextStep: function(stepNum) {
-    AppState.game.wizard.step = stepNum;
-    if (stepNum === 3) {
-      const recap = document.getElementById("wizard-class-recap");
-      if (recap && AppState.game.wizard.chosenClass) {
-        recap.textContent = `${AppState.game.wizard.chosenClass.nome} (${AppState.game.wizard.chosenClass.schieramento})`;
+  wizardConfirmStep2: function() {
+    this.filterWizardShop(AppState.game.wizard.shopCategory || "ARMI");
+    this.wizardShowStep(3);
+  },
+
+  // PASSO 3: MERCATO NERO DI CICCIO (CRAFTING/EQUIPAGGIAMENTO PRE-PARTITA)
+  filterWizardShop: function(category) {
+    AppState.game.wizard.shopCategory = category;
+
+    // Aggiorna chip attive
+    const chipsBox = document.getElementById("wizard-shop-category-chips");
+    if (chipsBox) {
+      chipsBox.querySelectorAll("button").forEach(btn => {
+        const isAct = btn.textContent.toUpperCase().includes(category);
+        btn.className = `badge badge-sm ${isAct ? 'badge-info' : 'badge-ghost'} font-bold cursor-pointer transition-all`;
+      });
+    }
+
+    const goldDisp = document.getElementById("wizard-shop-gold-display");
+    if (goldDisp) goldDisp.textContent = `💰 ${AppState.game.wizard.currentGold} 🟡`;
+
+    const container = document.getElementById("wizard-shop-grid");
+    if (!container) return;
+
+    const allItems = AppState.game.wizard.shopCatalog || [];
+    const filtered = allItems.filter(it => classifyShopCategory(it) === category);
+
+    if (filtered.length === 0) {
+      container.innerHTML = `<div class="col-span-full py-8 text-center text-slate-500 text-xs">Nessun articolo disponibile in questo reparto.</div>`;
+      return;
+    }
+
+    container.innerHTML = filtered.map(it => {
+      const price = Math.abs(parseInt(it.costoOro || it.costo || it.prezzoMegoin * 10, 10)) || 15;
+      const canAfford = (AppState.game.wizard.currentGold >= price);
+
+      return `
+        <div class="bg-surface/80 p-2.5 rounded-xl border border-white/5 flex flex-col justify-between space-y-2 text-xs shadow-md">
+          <div>
+            <div class="flex items-center justify-between">
+              <span class="text-sm">${it.emoji || '📦'}</span>
+              <span class="font-mono text-[9px] text-amber-300 font-bold">${price} 🟡</span>
+            </div>
+            <div class="font-bold text-white line-clamp-1 mt-1">${it.nome}</div>
+            <div class="text-[9px] text-slate-400 line-clamp-2 mt-0.5">${it.descrizione || ''}</div>
+          </div>
+          <button onclick="GameEngine.buyWizardShopItem('${it.id}', ${price})" class="btn btn-xs ${canAfford ? 'btn-primary' : 'btn-outline border-white/10 text-slate-500 cursor-not-allowed'} font-bold text-[9px] w-full" ${!canAfford ? 'disabled' : ''}>
+            ${canAfford ? 'Acquista' : 'Oro Insufficiente'}
+          </button>
+        </div>
+      `;
+    }).join("");
+
+    this.updateWizardShopBackpackSummary();
+  },
+
+  buyWizardShopItem: function(itemId, price) {
+    if (AppState.game.wizard.currentGold < price) {
+      alert("Monete d'oro insufficienti!");
+      return;
+    }
+
+    const it = AppState.game.wizard.shopCatalog.find(i => i.id === itemId);
+    if (!it) return;
+
+    // Regola del veicolo singolo
+    if (classifyShopCategory(it) === "VEICOLI") {
+      const hasVehicle = AppState.game.wizard.boughtItems.some(x => classifyShopCategory(x) === "VEICOLI");
+      if (hasVehicle) {
+        alert("Puoi possedere un solo Veicolo nello zaino!");
+        return;
       }
     }
+
+    AppState.game.wizard.currentGold -= price;
+    AppState.game.wizard.boughtItems.push(it);
+
+    if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("cash_register");
+    this.filterWizardShop(AppState.game.wizard.shopCategory);
+  },
+
+  resetWizardShop: function() {
+    AppState.game.wizard.currentGold = AppState.game.wizard.startingGold;
+    AppState.game.wizard.boughtItems = [];
+    if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("click");
+    this.filterWizardShop(AppState.game.wizard.shopCategory);
+  },
+
+  updateWizardShopBackpackSummary: function() {
+    const countEl = document.getElementById("wizard-shop-backpack-count");
+    if (countEl) {
+      const initCount = AppState.game.wizard.chosenClass ? 1 : 0;
+      const total = initCount + AppState.game.wizard.boughtItems.length;
+      countEl.textContent = `${total} oggetti`;
+    }
+  },
+
+  // PASSO 4: RIEPILOGO & BATTESIMO
+  renderWizardStep4: function() {
+    const cls = AppState.game.wizard.chosenClass;
+    if (!cls) return;
+
+    const s = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+    s("wizard-class-recap", `${cls.nome} (${cls.schieramento})`);
+    s("wizard-recap-avatar", cls.emoji || "🥋");
+    s("wizard-recap-classname", cls.nome);
+    s("wizard-recap-faction", `${(cls.schieramento || 'Destra').toUpperCase()} (+1 Danno)`);
+    s("wizard-recap-pv", `❤️ ${cls.pv || 25} PV`);
+    s("wizard-recap-gold", `🟡 ${AppState.game.wizard.currentGold} Oro`);
+
+    // Talenti
+    const abls = AppState.game.wizard.chosenAbilities.map(id => {
+      const a = AppState.game.wizard.abilities.find(x => x.id === id);
+      return a ? a.nome : id;
+    });
+    s("wizard-recap-abilities", abls.length > 0 ? abls.join(", ") : "Nessun talento sbloccato");
+
+    // Dotazione
+    const initGear = cls.armaIniziale ? cls.armaIniziale.nome : (cls.equipLoot || "Pugni");
+    const bought = AppState.game.wizard.boughtItems.map(i => i.nome);
+    const fullInv = [initGear, ...bought];
+    s("wizard-recap-inventory", fullInv.join(", "));
+
+    const nameInput = document.getElementById("wizard-name-input");
+    if (nameInput && !nameInput.value.trim()) {
+      nameInput.value = AppState.game.wizard.isVeteran 
+        ? AppState.game.wizard.heroName 
+        : (AppState.user ? AppState.user.nome : "Avventuriero");
+    }
+  },
+
+  wizardNextStep: function(stepNum) {
+    AppState.game.wizard.step = stepNum;
+    if (stepNum === 4) this.renderWizardStep4();
     this.wizardShowStep(stepNum);
   },
 
   wizardPrevStep: function(stepNum) {
-    // Se veterano, non può tornare allo step 1 (classe fissa)
     if (AppState.game.wizard.isVeteran && stepNum === 1) return;
     AppState.game.wizard.step = stepNum;
     this.wizardShowStep(stepNum);
@@ -823,10 +1026,23 @@ const GameEngine = {
   wizardShowStep: function(stepNum) {
     const s1 = document.getElementById("wizard-step-class");
     const s2 = document.getElementById("wizard-step-abilities");
-    const s3 = document.getElementById("wizard-step-name");
+    const s3 = document.getElementById("wizard-step-shop");
+    const s4 = document.getElementById("wizard-step-name");
+
     if (s1) s1.classList.toggle("hidden", stepNum !== 1);
     if (s2) s2.classList.toggle("hidden", stepNum !== 2);
     if (s3) s3.classList.toggle("hidden", stepNum !== 3);
+    if (s4) s4.classList.toggle("hidden", stepNum !== 4);
+
+    // Indicatori di progresso 1..4
+    for (let i = 1; i <= 4; i++) {
+      const ind = document.getElementById(`wiz-step-ind-${i}`);
+      if (ind) {
+        ind.className = (i === stepNum) 
+          ? "font-black text-sky-400" 
+          : (i < stepNum ? "text-emerald-400 font-bold" : "text-slate-500");
+      }
+    }
   },
 
   wizardUseTelegramName: function() {
@@ -841,13 +1057,16 @@ const GameEngine = {
       : (AppState.user ? AppState.user.nome : "Avventuriero");
     const heroName = (input && input.value.trim()) ? input.value.trim() : defaultName;
 
-    this.executeStartGame({
+    const payload = {
       gameKey: AppState.game.currentSeries.gameKey,
       episodio: AppState.game.currentEpisodio,
       classId: AppState.game.wizard.chosenClass ? AppState.game.wizard.chosenClass.id : "CLS_0001_S1_E0",
       abilityIds: AppState.game.wizard.chosenAbilities.join(","),
+      boughtItems: AppState.game.wizard.boughtItems.map(i => i.id || i.nome).join(","),
       heroName: heroName
-    });
+    };
+
+    this.executeStartGame(payload);
   },
 
   executeStartGame: async function(payloadParams) {
@@ -876,7 +1095,9 @@ const GameEngine = {
     }
   },
 
-  // RENDERING SNODO NARRATIVO
+  // =========================================================================
+  // RENDERING SCENA NARRATIVA & COCKPIT
+  // =========================================================================
   renderNode: function(node, hero) {
     AppState.game.node = node;
     if (hero) AppState.game.hero = hero;
@@ -886,7 +1107,6 @@ const GameEngine = {
     s("game-header-series", (AppState.game.currentSeries ? AppState.game.currentSeries.serie : "GIOCO").toUpperCase());
     s("game-header-episode", `Episodio ${AppState.game.currentEpisodio}`);
 
-    // Plancia Eroe Compatta
     if (AppState.game.hero) {
       const h = AppState.game.hero;
       s("kpi-hero-name", h.nomeEroe);
@@ -906,7 +1126,6 @@ const GameEngine = {
       }
     }
 
-    // Inquadratura Cinema & Banner Diegetico Anti-Watermark
     const img = document.getElementById("scene-image");
     if (img) img.src = node.mediaUrl || "https://image.pollinations.ai/prompt/noir-docks-night-cinematic?width=800&height=450&nologo=true";
 
@@ -923,13 +1142,11 @@ const GameEngine = {
       if (wBanner) wBanner.classList.add("hidden");
     }
 
-    // Area Azioni Tattiche
     const actBox = document.getElementById("scene-actions-container");
     if (!actBox) return;
 
     const isCombat = (node.tipo === "NEMICO" || (node.id && node.id.includes("NEM_")));
 
-    // SCONTRO DUELLO O PARTY VS PARTY
     if (isCombat) {
       if (typeof SoundEngine !== "undefined") SoundEngine.playBgm("combat");
 
@@ -956,7 +1173,6 @@ const GameEngine = {
       return;
     }
 
-    // ENIGMI & QUIZ
     if (node.quiz) {
       actBox.innerHTML = `
         <div class="p-2 rounded-xl bg-black/40 border border-white/5 space-y-1.5 text-xs">
@@ -973,7 +1189,6 @@ const GameEngine = {
       return;
     }
 
-    // BIVI NARRATIVI
     if (node.choices && node.choices.length > 0) {
       if (node.choices.length === 2) {
         actBox.innerHTML = `
@@ -1021,7 +1236,6 @@ const GameEngine = {
     }
   },
 
-  // RISOLUZIONE COMBATTIMENTO CON DADO E TRIAGE NECROMANTICO POST-VITTORIA
   combatAction: async function(subAction) {
     if (!AppState.game.session) return;
 
@@ -1067,12 +1281,10 @@ const GameEngine = {
             }, 300);
           }
 
-          // VITTORIA CON TRIAGE NECROMANTICO (RULES 2)
           if (res.status === "VICTORY") {
             if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("victory");
             if (window.confetti) confetti({ particleCount: 70, spread: 60 });
             
-            // Verifica opzioni di necromanzia
             const hasNecroAbl = (AppState.game.hero && AppState.game.hero.abilita && AppState.game.hero.abilita.includes("Necromanzia") && AppState.game.hero.pv > 1);
             AppState.game.pendingVictory = res.nextView;
 
@@ -1099,7 +1311,6 @@ const GameEngine = {
     }
   },
 
-  // PROMPT DI RIANIMAZIONE ZOMBI
   renderNecromancyPrompt: function(deadEnemy) {
     const actBox = document.getElementById("scene-actions-container");
     if (!actBox) return;
@@ -1193,7 +1404,7 @@ const GameEngine = {
   },
 
   // =========================================================================
-  // I 5 CASSETTI TATTICI DEL COCKPIT (CONVERSIONE, EQUIPAGGIA & DOSSIER REALI)
+  // CASSETTI TATTICI COCKPIT
   // =========================================================================
   openBackpackDrawer: function() {
     this.filterBackpack(AppState.game.backpackFilter || "ALL");
@@ -1217,14 +1428,14 @@ const GameEngine = {
       const isArma = (it === h.armaAttiva);
       const isVeicolo = (it === h.veicoloAttivo);
       
-      // Determina l'azione appropriata (Equipaggia vs Consuma)
       let btnLabel = "Usa";
       let btnAction = `GameEngine.useBackpackItem('${it.replace(/'/g, "\\'")}')`;
       
-      if (it.toLowerCase().includes("remo") || it.toLowerCase().includes("serramanico") || it.toLowerCase().includes("fiocina") || it.toLowerCase().includes("mannaia") || it.toLowerCase().includes("catena") || it.toLowerCase().includes("tondino") || it.toLowerCase().includes("coltello") || it.toLowerCase().includes("arpione") || it.toLowerCase().includes("tubo")) {
+      const low = it.toLowerCase();
+      if (low.includes("remo") || low.includes("serramanico") || low.includes("fiocina") || low.includes("mannaia") || low.includes("catena") || low.includes("tondino") || low.includes("coltello") || low.includes("arpione") || low.includes("tubo")) {
         btnLabel = isArma ? "In Pugno" : "Impugna";
         btnAction = `GameEngine.equipItem('${it.replace(/'/g, "\\'")}', 'weapon')`;
-      } else if (it.toLowerCase().includes("ciao") || it.toLowerCase().includes("apecar") || it.toLowerCase().includes("panda") || it.toLowerCase().includes("monopattino") || it.toLowerCase().includes("bici") || it.toLowerCase().includes("barchino") || it.toLowerCase().includes("parapendio") || it.toLowerCase().includes("canoa")) {
+      } else if (low.includes("ciao") || low.includes("apecar") || low.includes("panda") || low.includes("monopattino") || low.includes("bici") || low.includes("barchino") || low.includes("parapendio") || low.includes("canoa")) {
         btnLabel = isVeicolo ? "In Uso" : "Attiva";
         btnAction = `GameEngine.equipItem('${it.replace(/'/g, "\\'")}', 'vehicle')`;
       }
@@ -1292,7 +1503,6 @@ const GameEngine = {
     if (drawer) drawer.showModal();
   },
 
-  // EMPORIO REALE (DATI DINAMICI DALLO SHOP / EPISODIO 0)
   setEmporioMode: function(mode) {
     AppState.game.emporioMode = mode;
     const btnBuy = document.getElementById("emporio-tab-buy");
@@ -1318,7 +1528,6 @@ const GameEngine = {
         </div>
       `).join("");
     } else {
-      // Modalità Acquisto: Merci reali caricate dallo shop
       const shopItems = AppState.shop.items || [];
       if (shopItems.length === 0) {
         container.innerHTML = `<div class="col-span-full py-6 text-center text-slate-500 text-xs">Nessun articolo disponibile all'Emporio.</div>`;
@@ -1369,12 +1578,12 @@ const GameEngine = {
   },
 
   openCambioModal: function() {
-    document.getElementById("cambio-megoin-balance").textContent = AppState.user ? AppState.user.saldoMegoin : 0;
+    const balEl = document.getElementById("cambio-megoin-balance");
+    if (balEl) balEl.textContent = AppState.user ? AppState.user.saldoMegoin : 0;
     const modal = document.getElementById("modal-banco-cambio");
     if (modal) modal.showModal();
   },
 
-  // CONVERSIONE ATOMICA (MEGOIN ➔ ORO)
   convertMegoinToGold: async function(megoinCost, goldEarned) {
     if (!AppState.user || AppState.user.saldoMegoin < megoinCost) {
       alert("Saldo Megoin insufficiente!");
@@ -1393,13 +1602,27 @@ const GameEngine = {
         if (window.confetti) confetti({ particleCount: 60, spread: 50 });
 
         AppState.user.saldoMegoin = res.nuovoSaldoMegoin;
-        if (AppState.game.hero) AppState.game.hero.oro = res.nuovoOro;
+        
+        // Se siamo durante il Wizard:
+        if (AppState.game.wizard && AppState.game.wizard.currentGold !== undefined) {
+          AppState.game.wizard.currentGold += goldEarned;
+          const wizGoldDisp = document.getElementById("wizard-shop-gold-display");
+          if (wizGoldDisp) wizGoldDisp.textContent = `💰 ${AppState.game.wizard.currentGold} 🟡`;
+        }
+
+        // Se siamo in Gameplay:
+        if (AppState.game.hero) {
+          AppState.game.hero.oro = res.nuovoOro;
+          this.renderNode(AppState.game.node, AppState.game.hero);
+          const empGoldDisp = document.getElementById("emporio-gold-display");
+          if (empGoldDisp) empGoldDisp.textContent = `${res.nuovoOro} 🟡`;
+        }
 
         AppRenderer.renderProfile(AppState.user);
-        this.renderNode(AppState.game.node, AppState.game.hero);
 
-        document.getElementById("cambio-megoin-balance").textContent = res.nuovoSaldoMegoin;
-        document.getElementById("emporio-gold-display").textContent = `${res.nuovoOro} 🟡`;
+        const balEl = document.getElementById("cambio-megoin-balance");
+        if (balEl) balEl.textContent = res.nuovoSaldoMegoin;
+
         alert(`✅ Convertiti con successo ${megoinCost} 🪙 in +${goldEarned} 🟡 Oro!`);
         document.getElementById("modal-banco-cambio").close();
       }
@@ -1429,7 +1652,6 @@ const GameEngine = {
     if (drawer) drawer.showModal();
   },
 
-  // DOSSIER INVESTIGATIVO DELLE 6 FAZIONI (ORGANIGRAMMA REALE)
   openDossierDrawer: function() {
     const c = document.getElementById("dossier-list-container");
     const h = AppState.game.hero;
@@ -1491,7 +1713,9 @@ const GameEngine = {
   }
 };
 
-// RENDERER INTERFACCIA
+// ============================================================================
+// APP RENDERER (DASHBOARD & VETRINE)
+// ============================================================================
 const AppRenderer = {
   applyHardLocking: function(allowed) {
     if (!allowed) return;
@@ -1763,7 +1987,7 @@ const AppRenderer = {
   }
 };
 
-// AVVIO APPLICAZIONE UNIFICATA
+// AVVIO APPLICAZIONE
 window.addEventListener("DOMContentLoaded", () => {
   if (window.lucide) lucide.createIcons();
   AppEngine.init();
