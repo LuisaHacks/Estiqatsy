@@ -56,7 +56,7 @@ if (tg) {
   } catch (e) {}
 }
 
-// GESTORE TASTO INDIETRO TELEGRAM NATIVO
+// GESTORE TASTO INDIETRO NATIVO TELEGRAM
 let backButtonHandler = null;
 function setupTelegramBackButton(screenName) {
   if (!tg || !tg.BackButton) return;
@@ -66,7 +66,11 @@ function setupTelegramBackButton(screenName) {
     backButtonHandler = null;
   }
 
-  const isSub = (screenName === "subview-shop-detail" || screenName === "subview-recipe-detail");
+  const isSub = (
+    screenName === "subview-shop-detail" || 
+    screenName === "subview-recipe-detail" || 
+    screenName === "subview-game-detail"
+  );
   const isGameActive = (screenName === "view-gameplay" || screenName === "view-wizard");
 
   if (isSub || isGameActive) {
@@ -74,6 +78,7 @@ function setupTelegramBackButton(screenName) {
     backButtonHandler = () => {
       if (screenName === "subview-shop-detail") AppRouter.navigate("shop");
       else if (screenName === "subview-recipe-detail") AppRouter.navigate("recipes");
+      else if (screenName === "subview-game-detail") AppRouter.navigate("games");
       else if (screenName === "view-wizard") AppRouter.navigate("games");
       else if (screenName === "view-gameplay") GameEngine.openAbandonModal();
       else AppRouter.navigate("home");
@@ -90,10 +95,10 @@ const AppRouter = {
     if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("click");
     if (tg && tg.HapticFeedback) tg.HapticFeedback.selectionChanged();
 
-    // Reindirizzamento logico per le saghe
+    // Reindirizzamento logico per il catalogo giochi
     if (screenName === "games" || screenName === "view-games") {
       screenName = "view-hub";
-      GameEngine.renderSeriesHub();
+      GameEngine.renderGamesCatalog();
     }
 
     // Verifica Hard Locking del modulo
@@ -104,7 +109,7 @@ const AppRouter = {
       return;
     }
 
-    // Reset filtri ricerca
+    // Reset filtri ricerca al cambio scheda
     if (screenName === "shop") {
       AppState.shop.activeCategory = "tutti";
       AppState.shop.searchQuery = "";
@@ -122,7 +127,7 @@ const AppRouter = {
     const allScreens = [
       "view-home", "view-shop", "view-recipes", "view-profile",
       "subview-shop-detail", "subview-recipe-detail",
-      "view-hub", "view-wizard", "view-gameplay"
+      "view-hub", "subview-game-detail", "view-wizard", "view-gameplay"
     ];
 
     let targetId = screenName;
@@ -307,7 +312,7 @@ const AppEngine = {
     }, 150);
   },
 
-  // CAROSELLO IN EVIDENZA
+  // CAROSELLO PROMOZIONALE
   initCarousel: function() {
     const track = document.getElementById("carousel-track");
     const dotsBox = document.getElementById("carousel-dots-container");
@@ -316,7 +321,7 @@ const AppEngine = {
 
     const promoSlides = [
       {
-        badge: "AVVENTURE RPG",
+        badge: "GIOCHI NOIR RPG",
         titolo: "ViareGTA & Paul Sindaco",
         sottotitolo: "Vivi le saghe noir tra i canali e la pineta a colpi di D20",
         btnText: "Gioca Ora ➔",
@@ -549,7 +554,7 @@ const AppEngine = {
 };
 
 // ============================================================================
-// GAME ENGINE - MOTORE RPG RULES 2 & INTERFACCIA COCKPIT
+// GAME ENGINE - CONTROLLER GIOCHI NOIR RPG & REGOLE 2
 // ============================================================================
 const GameEngine = {
   loadSeriesCatalog: async function() {
@@ -561,17 +566,62 @@ const GameEngine = {
         if (gc) gc.textContent = gamesData.series.length;
       }
     } catch (e) {
-      console.warn("Errore caricamento saghe:", e);
+      console.warn("Errore caricamento giochi:", e);
     }
   },
 
-  renderSeriesHub: function() {
-    if (!AppState.game.seriesList || AppState.game.seriesList.length === 0) return;
-    const saga = AppState.game.seriesList[0]; // Serie principale: Paul Sindaco
+  // RENDERER CATALOGO COMPLETO GIOCHI (RULES 2 & RULES 1)
+  renderGamesCatalog: function() {
+    const container = document.getElementById("games-catalog-container");
+    const counter = document.getElementById("games-total-counter");
+    if (!container) return;
+
+    const list = AppState.game.seriesList || [];
+    if (counter) counter.textContent = `${list.length} Giochi Registrati`;
+
+    if (list.length === 0) {
+      container.innerHTML = `<div class="col-span-full py-12 text-center text-slate-500 text-xs">Nessun gioco trovato nei registri.</div>`;
+      return;
+    }
+
+    container.innerHTML = list.map(saga => {
+      const isRules2 = (saga.regole && saga.regole.toLowerCase().includes("rules2"));
+      return `
+        <div onclick="GameEngine.openGameDetail('${saga.gameKey}')" class="bg-surface/90 hover:bg-surface rounded-2xl border ${isRules2 ? 'border-sky-500/40 ring-1 ring-sky-500/20' : 'border-white/10'} p-4 flex flex-col justify-between space-y-3 cursor-pointer active:scale-[0.98] transition-all shadow-xl group">
+          <div class="h-36 w-full rounded-xl overflow-hidden relative bg-black/40">
+            <img src="${saga.mediaUrl}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+            <span class="badge badge-xs ${isRules2 ? 'badge-primary' : 'badge-warning'} font-black uppercase text-[8px] absolute top-2.5 left-2.5 shadow">
+              ${saga.regole || 'Rules 2'}
+            </span>
+          </div>
+          <div>
+            <div class="flex items-center justify-between">
+              <h3 class="text-sm font-black text-white group-hover:text-sky-400 transition-colors">${saga.emoji || '🎮'} ${saga.serie}</h3>
+              <span class="text-[9px] text-slate-400 font-mono">${(saga.episodes || []).length} Ep.</span>
+            </div>
+            <p class="text-[11px] text-slate-300 line-clamp-2 mt-1 leading-relaxed">${saga.descrizione || ''}</p>
+          </div>
+          <div class="pt-2 border-t border-white/5 flex items-center justify-between text-[10px]">
+            <span class="text-slate-400">${saga.hasActiveGame ? '⚔️ Partita in corso' : 'Pronto al lancio'}</span>
+            <button class="btn btn-xs ${isRules2 ? 'btn-primary' : 'btn-outline border-white/20'} font-bold">
+              Esplora Capitoli ›
+            </button>
+          </div>
+        </div>
+      `;
+    }).join("");
+
+    if (typeof SoundEngine !== "undefined") SoundEngine.playBgm("intro");
+  },
+
+  openGameDetail: function(gameKey) {
+    const saga = AppState.game.seriesList.find(s => s.gameKey === gameKey);
+    if (!saga) return;
+
     AppState.game.currentSeries = saga;
 
     const s = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
-    s("hub-title", `${saga.emoji} ${saga.serie}`);
+    s("hub-title", `${saga.emoji || '🎮'} ${saga.serie}`);
     s("hub-desc", saga.descrizione || "");
     s("hub-rules", saga.regole || "Rules 2");
 
@@ -600,13 +650,13 @@ const GameEngine = {
       `).join("");
     }
 
-    if (typeof SoundEngine !== "undefined") SoundEngine.playBgm("intro");
+    AppRouter.navigate("subview-game-detail");
   },
 
   startEpisode: async function(gameKey, epNum, canContinueFree) {
     AppState.game.currentEpisodio = epNum;
 
-    // Se l'eroe è veterano e può continuare gratis, avvia subito senza Wizard
+    // Se l'eroe è veterano ed ha diritto all'avanzamento gratuito, avvia direttamente
     if (canContinueFree) {
       if (typeof SoundEngine !== "undefined") SoundEngine.playBgm("exploration");
       this.executeStartGame({ gameKey, episodio: epNum });
@@ -690,7 +740,7 @@ const GameEngine = {
 
     grid.innerHTML = AppState.game.wizard.abilities.map(abl => {
       const isSelected = AppState.game.wizard.chosenAbilities.includes(abl.id);
-      const req = abl.requisitoClasse.toLowerCase();
+      const req = (abl.requisitoClasse || "").toLowerCase();
       const isCompatible = (req.includes("tutti") || req.includes(userFaction));
 
       return `
@@ -802,7 +852,7 @@ const GameEngine = {
     const s = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
 
     // 1. Header Gioco
-    s("game-header-series", (AppState.game.currentSeries ? AppState.game.currentSeries.serie : "SERIE").toUpperCase());
+    s("game-header-series", (AppState.game.currentSeries ? AppState.game.currentSeries.serie : "GIOCO").toUpperCase());
     s("game-header-episode", `Episodio ${AppState.game.currentEpisodio}`);
 
     // 2. HUD Plancia Eroe Compatta
@@ -914,7 +964,7 @@ const GameEngine = {
     } else {
       actBox.innerHTML = `
         <button onclick="GameEngine.renderSeriesHub()" class="btn btn-sm btn-block btn-outline border-white/20 text-xs font-bold">
-          🏁 Capitolo Concluso ➔ Torna all'Hub
+          🏁 Capitolo Concluso ➔ Torna ai Giochi
         </button>
       `;
     }
@@ -943,11 +993,11 @@ const GameEngine = {
   combatAction: async function(subAction) {
     if (!AppState.game.session) return;
 
-    // 1. Avvio Immediato Suspense Dado
     const diceModal = document.getElementById("modal-dice-suspense");
     const diceCube = document.getElementById("dice-visual-cube");
     const s = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
 
+    // 1. Avvio Immediato Animazione Dado & Suono (0 ms di latenza percepita)
     if (subAction === "attack_round") {
       s("dice-roll-title", "Lancio D20 in corso...");
       s("dice-roll-result", "--");
@@ -958,14 +1008,14 @@ const GameEngine = {
     }
 
     try {
-      // 2. Chiamata Server Parallela
+      // 2. Risoluzione Server-Authoritative
       const res = await apiCall("game_action", {
         subAction: subAction,
         gameKey: AppState.game.session.gameKey,
         episodio: AppState.game.session.episodio
       });
 
-      // 3. Risoluzione Dado
+      // 3. Risoluzione Visiva all'Arrivo dei Dati
       if (subAction === "attack_round" && res.combatLog) {
         const log = res.combatLog;
         if (diceCube) diceCube.classList.remove("dice-rolling");
@@ -975,7 +1025,7 @@ const GameEngine = {
         setTimeout(() => {
           if (diceModal) diceModal.close();
 
-          // Feedback Visivo Danneggiamento Fluttuante
+          // Feedback Visivo Danno Fluttuante (No alert)
           if (log.isHit) {
             this.showFloatingDamage(`💥 -${log.dmgDealt} PV`, log.isCrit, false);
             if (typeof SoundEngine !== "undefined") SoundEngine.playSfx(log.isCrit ? "crit_hit" : "hit");
@@ -989,7 +1039,7 @@ const GameEngine = {
             }, 300);
           }
 
-          // Aggiornamento Scena o Fine Duello
+          // Aggiornamento Scena o Esito Duello
           if (res.status === "VICTORY") {
             if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("victory");
             if (window.confetti) confetti({ particleCount: 70, spread: 60 });
@@ -1000,7 +1050,7 @@ const GameEngine = {
           } else {
             this.renderNode(res.nodo, res.statoEroe);
           }
-        }, 800);
+        }, 750);
       } else if (res.nextView) {
         this.renderNode(res.nextView.nodo, res.nextView.statoEroe);
       } else if (res.nodo) {
@@ -1046,16 +1096,16 @@ const GameEngine = {
     if (!node || !node.quiz) return;
     const isCorrect = (selectedOpz.trim().toLowerCase() === node.quiz.rispostaCorretta.trim().toLowerCase());
     if (isCorrect) {
-      alert("✅ Risposta Esatta!");
+      this.showFloatingDamage("✅ Esatto!", false, false);
       this.advanceToNode(node.destSuccesso);
     } else {
-      alert("❌ Risposta Errata!");
+      this.showFloatingDamage("❌ Errato!", false, true);
       this.advanceToNode(node.destFallimento);
     }
   },
 
   // =========================================================================
-  // I 5 CASSETTI TATTICI DEL COCKPIT (POPOLAMENTO REALE)
+  // I 5 CASSETTI TATTICI DEL COCKPIT (POPOLAMENTO REALE & FINANZA ATOMICA)
   // =========================================================================
   openBackpackDrawer: function() {
     this.filterBackpack(AppState.game.backpackFilter || "ALL");
@@ -1139,14 +1189,22 @@ const GameEngine = {
         </div>
       `).join("");
     } else {
-      // Modalità Acquisto
+      // Modalità Acquisto: Mini-Shop Responsivo (2 col mobile, 3 col tablet, 4 col desktop)
       container.innerHTML = `
-        <div class="p-2.5 bg-surface rounded-xl border border-white/5 flex items-center justify-between text-xs">
+        <div class="p-2.5 bg-surface rounded-xl border border-white/5 flex flex-col justify-between text-xs space-y-2">
           <div><div class="font-bold text-white">Focaccia Unta</div><div class="text-[9px] text-amber-300">12 🟡 • Cura 16 PV</div></div>
           <button class="btn btn-xs btn-primary font-bold text-[9px]">Compra</button>
         </div>
-        <div class="p-2.5 bg-surface rounded-xl border border-white/5 flex items-center justify-between text-xs">
+        <div class="p-2.5 bg-surface rounded-xl border border-white/5 flex flex-col justify-between text-xs space-y-2">
           <div><div class="font-bold text-white">Danpei Gold</div><div class="text-[9px] text-amber-300">22 🟡 • THC Puro</div></div>
+          <button class="btn btn-xs btn-primary font-bold text-[9px]">Compra</button>
+        </div>
+        <div class="p-2.5 bg-surface rounded-xl border border-white/5 flex flex-col justify-between text-xs space-y-2">
+          <div><div class="font-bold text-white">Serramanico</div><div class="text-[9px] text-amber-300">15 🟡 • Danno 4</div></div>
+          <button class="btn btn-xs btn-primary font-bold text-[9px]">Compra</button>
+        </div>
+        <div class="p-2.5 bg-surface rounded-xl border border-white/5 flex flex-col justify-between text-xs space-y-2">
+          <div><div class="font-bold text-white">Kit Garze</div><div class="text-[9px] text-amber-300">14 🟡 • Cura 22 PV</div></div>
           <button class="btn btn-xs btn-primary font-bold text-[9px]">Compra</button>
         </div>
       `;
@@ -1158,7 +1216,7 @@ const GameEngine = {
       const idx = AppState.game.hero.inventario.indexOf(itemName);
       if (idx !== -1) {
         AppState.game.hero.inventario.splice(idx, 1);
-        AppState.game.hero.oro += 10; // Valore medio ricettazione al 25%
+        AppState.game.hero.oro += 10; // Riacquisto al 25% medio
         if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("cash_register");
         this.openEmporioDrawer();
         this.renderNode(AppState.game.node, AppState.game.hero);
@@ -1171,6 +1229,7 @@ const GameEngine = {
     document.getElementById("modal-banco-cambio").showModal();
   },
 
+  // CONVERSIONE ATOMICA SERVER-SIDE (MEGOIN ➔ ORO)
   convertMegoinToGold: async function(megoinCost, goldEarned) {
     if (!AppState.user || AppState.user.saldoMegoin < megoinCost) {
       alert("Saldo Megoin insufficiente!");
