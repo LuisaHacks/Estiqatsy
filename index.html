@@ -100,7 +100,6 @@
 
   <!-- 2. SIDEBAR DESKTOP FISSA (>= 768px): COMMAND CENTER -->
   <aside class="hidden md:flex flex-col w-72 lg:w-80 bg-[#0d131f] border-r border-white/5 h-full pt-14 p-5 space-y-6 flex-none z-30">
-    <!-- Scheda Agente Syndicate -->
     <div class="bg-surface/90 p-4 rounded-2xl border border-white/10 shadow-xl space-y-4">
       <div class="flex items-center space-x-3.5">
         <div class="w-14 h-14 rounded-2xl bg-gradient-to-tr from-sky-600 to-indigo-600 flex items-center justify-center font-black text-xl text-white ring-2 ring-sky-500/40 shadow-lg shadow-sky-600/30 flex-shrink-0" id="user-avatar-desk">F</div>
@@ -153,7 +152,7 @@
         <i data-lucide="volume-2" class="w-4 h-4"></i>
         <span id="audio-status-desk" class="badge badge-xs badge-success text-[8px]">ON</span>
       </button>
-      <span class="text-[10px] text-slate-500 font-mono">v3.2 Syndicate</span>
+      <span class="text-[10px] text-slate-500 font-mono">v3.3 Syndicate</span>
     </div>
   </aside>
 
@@ -168,7 +167,7 @@
       </div>
     </header>
 
-    <!-- AREA SCROLLABILE CONTENUTI (Zero Spazio Inutile su Desktop) -->
+    <!-- AREA SCROLLABILE CONTENUTI -->
     <main class="flex-1 overflow-y-auto overflow-x-hidden relative" id="app-main-scroll">
       <div class="p-3.5 md:p-8 lg:p-10 max-w-[1400px] mx-auto space-y-6">
 
@@ -176,7 +175,7 @@
         <!-- SCHERMATA: HOME -->
         <!-- ================================================================= -->
         <section id="view-home" class="space-y-6 app-screen">
-          <!-- Hero Banner di Benvenuto (Con Badge Piano Interattivo) -->
+          <!-- Hero Banner di Benvenuto -->
           <div class="rounded-3xl p-6 md:p-8 bg-gradient-to-br from-slate-900 via-slate-900 to-indigo-950 border border-white/10 shadow-2xl space-y-3.5 relative overflow-hidden">
             <div class="flex items-center space-x-2.5 flex-wrap gap-y-2">
               <span class="badge badge-sm badge-outline border-sky-400 text-sky-400 font-bold uppercase text-[9px] md:text-[10px]">Piattaforma Ufficiale</span>
@@ -301,30 +300,60 @@
           </div>
         </section>
 
-        <!-- SOTTO-SCHERMATA: GAMEPLAY VISUAL NOVEL (Senza tasto indietro interno) -->
+        <!-- ================================================================= -->
+        <!-- SOTTO-SCHERMATA: GAMEPLAY RPG & VISUAL NOVEL                      -->
+        <!-- ================================================================= -->
         <section id="view-gameplay" class="space-y-4 hidden app-screen -mx-3.5 md:mx-auto max-w-3xl">
-          <!-- Scheda Eroe & Barra PV -->
-          <div class="px-3.5 md:px-0 flex items-center justify-between">
-            <div>
-              <div class="text-sm font-black text-white leading-none" id="gameplay-hero-name">Eroe</div>
-              <div class="text-[10px] text-slate-400 mt-0.5" id="gameplay-hero-class">Avventuriero</div>
-            </div>
-            <div class="w-40 space-y-1">
-              <div class="flex justify-between text-[10px] font-mono text-slate-300">
-                <span>PV</span> <span id="gameplay-pv-label">25/25</span>
+          <!-- 1. PLANCIA DEI KPI EROE (Salute, Risorse e Statistiche D20) -->
+          <div class="px-3.5 md:px-0 space-y-2">
+            <!-- Riga Superiore: Avatar, Identità, Risorse e Barra PV -->
+            <div class="bg-surface/90 p-3.5 rounded-2xl border border-white/10 shadow-lg flex items-center justify-between">
+              <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-sky-600 to-indigo-600 flex items-center justify-center font-black text-sm text-white shadow-md flex-shrink-0" id="gameplay-hero-avatar">🥋</div>
+                <div>
+                  <div class="flex items-center space-x-1.5">
+                    <span class="text-xs md:text-sm font-black text-white leading-none truncate max-w-[130px]" id="gameplay-hero-name">Eroe</span>
+                    <span class="badge badge-xs badge-info font-bold text-[8px] uppercase" id="gameplay-hero-class">Avventuriero</span>
+                  </div>
+                  <!-- Borsello in-game: Oro e PX -->
+                  <div class="flex items-center space-x-2.5 mt-1 text-[10px] font-mono">
+                    <span class="text-amber-300 font-bold tabular-nums" id="gameplay-gold">0 🟡</span>
+                    <span class="text-sky-400 font-bold tabular-nums" id="gameplay-px">0 ✨</span>
+                  </div>
+                </div>
               </div>
-              <progress id="gameplay-pv-bar" class="progress progress-error w-full h-2.5" value="25" max="25"></progress>
+
+              <!-- Barra Punti Vita con Valore Numerico -->
+              <div class="w-36 space-y-1 text-right">
+                <div class="flex justify-between text-[10px] font-mono text-slate-300">
+                  <span class="font-bold text-slate-400">PV</span> <span id="gameplay-pv-label" class="font-bold text-white tabular-nums">25/25</span>
+                </div>
+                <progress id="gameplay-pv-bar" class="progress progress-error w-full h-2.5" value="25" max="25"></progress>
+              </div>
+            </div>
+
+            <!-- Riga Inferiore: I 3 Modificatori D20 Calcolati in tempo reale -->
+            <div class="grid grid-cols-3 gap-2 text-center text-[10px] font-mono">
+              <div class="bg-black/40 py-1.5 px-2 rounded-xl border border-white/5 flex items-center justify-center space-x-1">
+                <span>🥊</span> <span class="text-slate-400">FOR:</span> <span class="font-bold text-white tabular-nums" id="gameplay-stat-for">10 (+0)</span>
+              </div>
+              <div class="bg-black/40 py-1.5 px-2 rounded-xl border border-white/5 flex items-center justify-center space-x-1">
+                <span>🤸</span> <span class="text-slate-400">DES:</span> <span class="font-bold text-white tabular-nums" id="gameplay-stat-des">10 (+0)</span>
+              </div>
+              <div class="bg-black/40 py-1.5 px-2 rounded-xl border border-white/5 flex items-center justify-center space-x-1">
+                <span>🧠</span> <span class="text-slate-400">INT:</span> <span class="font-bold text-white tabular-nums" id="gameplay-stat-int">10 (+0)</span>
+              </div>
             </div>
           </div>
 
-          <!-- Immagine Snodo con Citazione Sovrimpressa -->
+          <!-- 2. SCENA VISUAL NOVEL: Immagine 100% con Citazione Sovrimpressa -->
           <div class="w-full aspect-square rounded-none md:rounded-2xl relative bg-surface overflow-hidden shadow-2xl">
             <img id="gameplay-node-img" src="" class="w-full h-full object-cover" alt="">
-            <span id="gameplay-node-badge" class="badge badge-sm badge-info absolute top-3 left-3 text-[9px] font-black uppercase">SNODO</span>
+            <span id="gameplay-node-badge" class="badge badge-sm badge-info absolute top-3 left-3 text-[9px] font-black uppercase shadow-md">SNODO</span>
             <div id="gameplay-node-quote" class="absolute bottom-0 inset-x-0 h-[14%] min-h-[48px] bg-black/85 backdrop-blur-md border-t border-white/10 px-4 flex items-center justify-center text-center text-xs italic text-amber-200/90 leading-tight"></div>
           </div>
 
-          <!-- Testo e Bivio delle Scelte -->
+          <!-- 3. NARRAZIONE & DOCK DELLE AZIONI TATTICHE (Bivi / Duello / Quiz) -->
           <div class="px-3.5 md:px-0 space-y-3">
             <div class="bg-surface/80 p-4 md:p-6 rounded-2xl border border-white/5 space-y-2 shadow-lg">
               <h3 id="gameplay-node-title" class="text-xs md:text-sm font-black text-white uppercase tracking-wider"></h3>
@@ -411,7 +440,7 @@
         </section>
 
         <!-- ================================================================= -->
-        <!-- SCHERMATA: PROFILO & CAVEAU (Con Pulsante Piani e Download Affiancati) -->
+        <!-- SCHERMATA: PROFILO & CAVEAU (Con Pulsante Piani e Download)       -->
         <!-- ================================================================= -->
         <section id="view-profile" class="space-y-6 hidden app-screen">
           <!-- Scheda Profilo Agente -->
@@ -431,11 +460,11 @@
             <!-- Metriche Utente in Somma -->
             <div class="text-right space-y-1">
               <div>
-                <div class="text-[9px] text-slate-400 font-bold uppercase">Saldo Megoin</div>
+                <div class="text-[9px] text-slate-400 uppercase font-bold">Saldo Megoin</div>
                 <div class="text-base md:text-lg font-black text-amber-300 text-glow-amber tabular-nums" id="profile-card-megoin">0 🪙</div>
               </div>
               <div>
-                <div class="text-[9px] text-slate-400 font-bold uppercase">Punti Fedeltà</div>
+                <div class="text-[9px] text-slate-400 uppercase font-bold">Punti Fedeltà</div>
                 <div class="text-base md:text-lg font-black text-emerald-400 tabular-nums" id="profile-card-points">0 Pt</div>
               </div>
             </div>
