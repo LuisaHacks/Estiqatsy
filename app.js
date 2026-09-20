@@ -1,5 +1,5 @@
 // ============================================================================
-// PROJECT: ESTIQATSY PWA - CLIENT APPLICATION ENGINE (VERSIONE 3.2)
+// PROJECT: ESTIQATSY PWA - CLIENT APPLICATION ENGINE (VERSIONE 3.5)
 // FILE: app.js
 // ============================================================================
 
@@ -51,6 +51,7 @@ function setupTelegramBackButton(screenName) {
     tg.BackButton.show();
     backButtonHandler = () => {
       if (screenName === "subview-series-hub" || screenName === "view-gameplay") {
+        if (typeof SoundEngine !== "undefined") SoundEngine.stopBgm();
         AppRouter.navigate("games");
       } else if (screenName === "subview-shop-detail") {
         AppRouter.navigate("shop");
@@ -71,12 +72,21 @@ const AppRouter = {
     if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("click");
     if (tg && tg.HapticFeedback) tg.HapticFeedback.selectionChanged();
 
-    // Verifica Hard Locking: se il modulo non è consentito, torna a Home e suggerisci upgrade
+    // Gestione Hard Locking: blocca la navigazione verso sezioni non incluse nel piano
     const baseModule = screenName.replace("view-", "").replace("subview-", "").split("-")[0];
     if (AppState.allowedModules && AppState.allowedModules[baseModule] === false) {
       AppRouter.navigate("home");
       AppEngine.openPlansCatalogModal();
       return;
+    }
+
+    // Regia BGM sui cambi di schermata
+    if (typeof SoundEngine !== "undefined") {
+      if (screenName === "view-home" || screenName === "view-profile") {
+        SoundEngine.stopBgm();
+      } else if (screenName === "subview-series-hub") {
+        SoundEngine.playBgm("intro");
+      }
     }
 
     // Reset filtri e ricerca al cambio di scheda principale
@@ -167,7 +177,7 @@ const AppEngine = {
         AppRenderer.applyHardLocking(AppState.allowedModules);
       }
 
-      // 2. Caricamento asincrono parallelo in RAM
+      // 2. Caricamento parallelo dei cataloghi in memoria RAM
       await Promise.allSettled([
         this.fetchShop(),
         this.fetchRecipes(),
@@ -233,11 +243,11 @@ const AppEngine = {
     s("plan-modal-period", periodText);
     s("upgrade-modal-desc", plan.descrizione || "Nessuna descrizione disponibile.");
     
-    // Iniezione dinamica al 100% dei vantaggi estratti dal foglio 👑Plans
+    // Iniezione dinamica dei vantaggi estratti dal foglio 👑Plans
     const perksBox = document.getElementById("plan-modal-perks-list");
     if (perksBox) {
       let htmlPerks = `
-        <div class="flex items-center space-x-2 text-amber-300 font-bold pb-1 border-b border-white/5">
+        <div class="flex items-center space-x-2 text-amber-300 font-bold pb-1.5 border-b border-white/5">
           <span>🪙</span> <span>+${plan.bonusMegoin} Megoin al mese inclusi</span>
         </div>
       `;
@@ -352,7 +362,9 @@ const AppEngine = {
     }
   },
 
-  // GIOCHI E AVVENTURE
+  // ==========================================================================
+  // GIOCHI, AVVENTURE & REGIA AUDIO BGM/SFX
+  // ==========================================================================
   fetchGames: async function() {
     try {
       const data = await apiCall("games");
@@ -379,6 +391,8 @@ const AppEngine = {
   openSeriesHub: function(gameKey) {
     const saga = AppState.games.series.find(s => s.gameKey === gameKey);
     if (!saga) return;
+
+    if (typeof SoundEngine !== "undefined") SoundEngine.playBgm("intro");
 
     document.getElementById("hub-serie-title").textContent = saga.serie;
     document.getElementById("hub-serie-desc").textContent = saga.descrizione || "";
@@ -430,7 +444,11 @@ const AppEngine = {
   },
 
   startGame: async function(gameKey, epNum) {
-    if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("dice");
+    if (typeof SoundEngine !== "undefined") {
+      SoundEngine.playSfx("insert_coin");
+      SoundEngine.playBgm("exploration");
+    }
+
     try {
       const data = await apiCall("game_start", { gameKey: gameKey, episodio: epNum });
       if (data && data.success) {
@@ -447,20 +465,129 @@ const AppEngine = {
   },
 
   advanceNode: async function(targetId) {
-    if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("hit");
     const sess = AppState.games.session;
     if (!sess) { AppRouter.navigate("games"); return; }
+
     try {
       const d = await apiCall("game_node", { gameKey: sess.gameKey, episodio: sess.episodio, nodeId: targetId, partitaId: sess.partitaId });
       if (d && d.nodo) {
-        if (d.nodo.tipo === "Fine" || d.nodo.id.includes("END")) {
-          if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("victory");
-          if (window.confetti) confetti({ particleCount: 100, spread: 60, origin: { y: 0.6 } });
+        // Regia Sonora reattiva sul cambio di nodo
+        if (typeof SoundEngine !== "undefined") {
+          if (d.nodo.tipo === "NEMICO") {
+            SoundEngine.playSfx("combat_start");
+            SoundEngine.duck();
+            SoundEngine.playBgm("combat");
+          } else if (d.nodo.id === "SND_000") {
+            SoundEngine.playBgm("emporio");
+          } else if (d.nodo.tipo === "Fine" || d.nodo.id.includes("END")) {
+            SoundEngine.playSfx("victory");
+            SoundEngine.playBgm("victory");
+            if (window.confetti) confetti({ particleCount: 100, spread: 60, origin: { y: 0.6 } });
+          } else if (d.statoEroe && d.statoEroe.pv <= 0) {
+            SoundEngine.playSfx("defeat");
+            SoundEngine.playBgm("defeat");
+          } else {
+            SoundEngine.playSfx("click");
+            SoundEngine.playBgm("exploration");
+          }
         }
         AppRenderer.renderGameNode(d.nodo, d.statoEroe);
       }
     } catch (e) {
       alert("Errore mossa: " + e.message);
+    }
+  },
+
+  // AZIONI DI COMBATTIMENTO E TATTICHE IN-GAME (action=game_action)
+  battleAttackRound: async function(enemyId) {
+    const sess = AppState.games.session;
+    if (!sess) return;
+
+    try {
+      const res = await apiCall("game_action", {
+        subAction: "attack",
+        enemyId: enemyId,
+        gameKey: sess.gameKey,
+        episodio: sess.episodio
+      });
+
+      if (res && res.combatLog) {
+        if (typeof SoundEngine !== "undefined") {
+          if (res.combatLog.isCrit) {
+            SoundEngine.playSfx("crit_hit");
+            SoundEngine.duck();
+          } else if (res.combatLog.isHit) {
+            SoundEngine.playSfx("hit");
+          } else {
+            SoundEngine.playSfx("click");
+          }
+
+          if (res.combatLog.heroDead) {
+            SoundEngine.playSfx("defeat");
+            SoundEngine.playBgm("defeat");
+          }
+        }
+        AppRenderer.renderCombatRoundResult(res.combatLog, res.nodo, res.statoEroe);
+      } else if (res && res.nodo) {
+        // Nemico abbattuto: transizione automatica allo snodo di vittoria
+        if (typeof SoundEngine !== "undefined") {
+          SoundEngine.playSfx("victory");
+          SoundEngine.playBgm("exploration");
+        }
+        AppRenderer.renderGameNode(res.nodo, res.statoEroe);
+      }
+    } catch (e) {
+      alert("Errore attacco: " + e.message);
+    }
+  },
+
+  battleFlee: async function() {
+    const sess = AppState.games.session;
+    if (!sess) return;
+
+    if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("flee");
+
+    try {
+      const res = await apiCall("game_action", {
+        subAction: "flee",
+        gameKey: sess.gameKey,
+        episodio: sess.episodio
+      });
+
+      if (res && res.nodo) {
+        // Fuga riuscita
+        if (typeof SoundEngine !== "undefined") SoundEngine.playBgm("exploration");
+        AppRenderer.renderGameNode(res.nodo, res.statoEroe);
+      } else if (res && res.fleeFailed) {
+        alert("💨 Fuga fallita! Inciampi e subisci 3 danni d'opportunità.");
+        if (res.statoEroe) AppRenderer.updateHeroVitals(res.statoEroe);
+      }
+    } catch (e) {
+      alert("Errore fuga: " + e.message);
+    }
+  },
+
+  battleBribe: async function(drugName) {
+    const sess = AppState.games.session;
+    if (!sess) return;
+
+    if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("drug");
+
+    try {
+      const res = await apiCall("game_action", {
+        subAction: "bribe",
+        drug: drugName,
+        gameKey: sess.gameKey,
+        episodio: sess.episodio
+      });
+
+      if (res && res.nodo) {
+        alert("🟡 Corruzione riuscita! La sentinella accetta la dose e si fa da parte.");
+        if (typeof SoundEngine !== "undefined") SoundEngine.playBgm("exploration");
+        AppRenderer.renderGameNode(res.nodo, res.statoEroe);
+      }
+    } catch (e) {
+      alert("Errore corruzione: " + e.message);
     }
   },
 
@@ -849,10 +976,14 @@ const AppRenderer = {
     if (window.lucide) lucide.createIcons();
   },
 
+  // RENDERING VISUAL NOVEL & DUELLI
   renderGameNode: function(node, hero) {
     document.getElementById("gameplay-node-title").textContent = node.nome || "Avventura";
     document.getElementById("gameplay-node-text").textContent = node.testo || "";
     document.getElementById("gameplay-node-img").src = node.mediaUrl || "https://image.pollinations.ai/prompt/noir-italian-docks-night-cinematic?width=600&height=600&nologo=true";
+
+    const badge = document.getElementById("gameplay-node-badge");
+    if (badge) badge.textContent = node.tipo || "SNODO";
 
     const qBox = document.getElementById("gameplay-node-quote");
     if (node.citazione && node.citazione !== "—") {
@@ -864,29 +995,82 @@ const AppRenderer = {
     }
 
     if (hero) {
-      document.getElementById("gameplay-pv-label").textContent = `${hero.pv}/${hero.pvMax}`;
-      const bar = document.getElementById("gameplay-pv-bar");
-      bar.value = hero.pv;
-      bar.max = hero.pvMax;
+      AppRenderer.updateHeroVitals(hero);
     }
 
     const box = document.getElementById("gameplay-choices-container");
+    if (!box) return;
+
     const isCombat = (node.tipo === "NEMICO" || (node.id && node.id.includes("NEM_")));
 
+    // SCHERMATA COMBATTIMENTO
     if (isCombat) {
-      box.innerHTML = `
-        <div class="grid grid-cols-2 gap-2 mt-2">
-          <button onclick="AppEngine.advanceNode('${node.destSuccesso || 'SND_001'}')" class="btn btn-error btn-md text-xs font-black">
+      const enemyPV = node.pv || 20;
+      let htmlCombat = `
+        <!-- Scheda Minaccia Nemico -->
+        <div class="p-3.5 rounded-2xl bg-black/40 border border-rose-500/30 space-y-2 mb-3">
+          <div class="flex justify-between items-center text-xs">
+            <span class="font-black text-white flex items-center space-x-1.5">
+              <span>👾</span> <span>${node.nome}</span>
+            </span>
+            <span class="badge badge-xs badge-error font-bold">${node.categoria || 'Nemico'}</span>
+          </div>
+          <div class="flex justify-between text-[10px] font-mono text-slate-400">
+            <span>Salute Nemico</span> <span>${enemyPV} PV</span>
+          </div>
+          <progress class="progress progress-error w-full h-2" value="${enemyPV}" max="${enemyPV}"></progress>
+        </div>
+
+        <!-- Plancia Azioni Tattiche di Guerra -->
+        <div class="grid grid-cols-2 gap-2">
+          <button onclick="AppEngine.battleAttackRound('${node.id}')" class="btn btn-error btn-md text-xs font-black shadow-lg shadow-rose-600/30">
             ⚔️ Attacca Round
           </button>
-          <button onclick="AppEngine.advanceNode('${node.destFallback || 'SND_001'}')" class="btn btn-outline border-white/20 btn-md text-xs font-bold">
-            🏃 Fuggi
-          </button>
+          ${!node.isBoss ? `
+            <button onclick="AppEngine.battleFlee()" class="btn btn-outline border-white/20 btn-md text-xs font-bold">
+              🏃 Tenta Fuga
+            </button>
+          ` : `
+            <button disabled class="btn btn-outline border-white/10 btn-md text-xs font-bold text-slate-500 cursor-not-allowed">
+              🔒 Fuga Impossibile
+            </button>
+          `}
+        </div>
+      `;
+
+      // Corruzione Nemici Soldato (se il giocatore ha droga nello zaino)
+      if (node.isSoldato && hero && hero.inventario && hero.inventario.length > 0) {
+        htmlCombat += `
+          <div class="pt-2">
+            <button onclick="AppEngine.battleBribe('${hero.inventario[0]}')" class="btn btn-warning btn-sm w-full text-xs font-bold shadow-md">
+              💊 Corrompi con ${hero.inventario[0]}
+            </button>
+          </div>
+        `;
+      }
+
+      box.innerHTML = htmlCombat;
+      return;
+    }
+
+    // ENIGMA / QUIZ A 4 RISPOSTE
+    if (node.quiz) {
+      box.innerHTML = `
+        <div class="p-3.5 rounded-2xl bg-black/40 border border-sky-500/30 space-y-2.5 mb-3">
+          <div class="text-xs font-bold text-amber-300">❓ ${node.quiz.domanda}</div>
+          <div class="grid grid-cols-1 gap-2 pt-1">
+            ${node.quiz.opzioni.map(opt => `
+              <button onclick="AppEngine.advanceNode('${opt === node.quiz.rispostaCorretta ? (node.destSuccesso || 'SND_001') : (node.destFallimento || 'SND_010')}')" class="btn btn-sm btn-outline border-white/20 text-xs font-bold text-left justify-start">
+                • ${opt}
+              </button>
+            `).join("")}
+          </div>
         </div>
       `;
       return;
     }
 
+    // NORMALI BIVI NARRATIVI
     if (node.choices && node.choices.length > 0) {
       if (node.choices.length === 2) {
         box.innerHTML = `
@@ -917,6 +1101,48 @@ const AppRenderer = {
         </button>
       `;
     }
+  },
+
+  updateHeroVitals: function(hero) {
+    if (!hero) return;
+    const s = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+    s("gameplay-hero-name", hero.nomeEroe || "Eroe");
+    s("gameplay-hero-class", hero.classe || "Avventuriero");
+    s("gameplay-pv-label", `${hero.pv}/${hero.pvMax}`);
+    const bar = document.getElementById("gameplay-pv-bar");
+    if (bar) {
+      bar.value = hero.pv;
+      bar.max = hero.pvMax;
+    }
+  },
+
+  renderCombatRoundResult: function(log, node, hero) {
+    if (hero) AppRenderer.updateHeroVitals(hero);
+    const box = document.getElementById("gameplay-choices-container");
+    if (!box) return;
+
+    box.innerHTML = `
+      <div class="p-3.5 rounded-2xl bg-black/50 border border-white/10 space-y-2 text-xs mb-3">
+        <div class="font-bold text-amber-300">⚔️ ROUND ${log.round} - ESITO DUELLO</div>
+        <div class="text-[11px] text-slate-200">
+          • Tuo attacco D20 (${log.d20Hero}${log.modHero >= 0 ? '+' : ''}${log.modHero} = <b>${log.totHero}</b>): 
+          ${log.isHit ? `<span class="text-emerald-400 font-bold">A SEGNO (-${log.dmgDealt} PV!)</span>` : '<span class="text-slate-400">A VUOTO!</span>'}
+        </div>
+        <div class="text-[11px] text-slate-200">
+          • Contrattacco nemico: 
+          ${log.dmgTaken > 0 ? `<span class="text-rose-400 font-bold">COLPITO (-${log.dmgTaken} PV!)</span>` : '<span class="text-emerald-400">SCHIVATO!</span>'}
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-2">
+        <button onclick="AppEngine.battleAttackRound('${node.id}')" class="btn btn-error btn-md text-xs font-black shadow-lg shadow-rose-600/30">
+          ⚔️ Round Successivo
+        </button>
+        <button onclick="AppEngine.battleFlee()" class="btn btn-outline border-white/20 btn-md text-xs font-bold">
+          🏃 Tenta Fuga
+        </button>
+      </div>
+    `;
   },
 
   renderShop: function() {
