@@ -45,7 +45,7 @@
     .no-scrollbar::-webkit-scrollbar { display: none; }
     .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
-    /* TESTATA UNIVERSALE A LARGHEZZA PIENA */
+    /* TESTATE & FOOTER */
     .universal-top-bar {
       padding-top: var(--tg-safe-area-inset-top, env(safe-area-inset-top, 0px));
       height: calc(var(--tg-safe-area-inset-top, env(safe-area-inset-top, 0px)) + 48px);
@@ -53,7 +53,6 @@
       backdrop-filter: blur(20px);
       border-bottom: 1px solid rgba(255, 255, 255, 0.08);
     }
-
     .glass-footer {
       background: rgba(9, 13, 22, 0.96);
       backdrop-filter: blur(20px);
@@ -66,7 +65,7 @@
       padding-bottom: max(env(safe-area-inset-bottom, 12px), 12px);
     }
 
-    /* INQUADRATURA 16:9 CINEMA NOIR UNIFICATA */
+    /* INQUADRATURA 16:9 CINEMA NOIR */
     .cinema-frame-rigid {
       position: relative;
       width: 100%;
@@ -76,9 +75,7 @@
       border-radius: 0.85rem;
     }
     @media (min-width: 768px) {
-      .cinema-frame-rigid {
-        height: 220px;
-      }
+      .cinema-frame-rigid { height: 220px; }
     }
     .cinema-frame-rigid img {
       width: 100%;
@@ -87,7 +84,7 @@
       object-position: center 25%;
     }
 
-    /* BANNER DIEGETICO COPERTURA WATERMARK POLLINATIONS */
+    /* BANNER DIEGETICO COPERTURA WATERMARK */
     .watermark-cover-banner {
       position: absolute;
       bottom: 0;
@@ -105,7 +102,7 @@
       z-index: 10;
     }
 
-    /* SCATOLA NARRATIVA DINAMICA */
+    /* SCATOLA NARRATIVA */
     .narrative-box-rigid {
       min-height: 100px;
       max-height: 140px;
@@ -118,43 +115,54 @@
       line-height: 1.5;
     }
 
-    /* CAROSELLO WIZARD AD ALTE PRESTAZIONI CON PEEKING MOBILE */
-    .wizard-carousel-mobile {
+    /* ========================================================================= */
+    /* MOTORE STILE SOLUZIONE 1: 3D SPOTLIGHT COVER-FLOW (I TAROCCHI DEL SALMASTRO) */
+    /* ========================================================================= */
+    .coverflow-stage-wrapper {
+      position: relative;
+      width: 100%;
+      height: 480px;
       display: flex;
-      gap: 0.75rem;
-      overflow-x: auto;
-      scroll-snap-type: x mandatory;
-      padding-bottom: 0.5rem;
-      -webkit-overflow-scrolling: touch;
-    }
-    .wizard-carousel-item {
-      scroll-snap-align: center;
-      flex: 0 0 calc(88vw - 16px);
-      max-width: 320px;
+      align-items: center;
+      justify-content: center;
+      perspective: 1200px;
+      overflow: hidden;
+      touch-action: pan-y;
+      user-select: none;
     }
     @media (min-width: 768px) {
-      .wizard-carousel-mobile {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        overflow-x: visible;
-        scroll-snap-type: none;
-      }
-      .wizard-carousel-item {
-        max-width: none;
-        flex: auto;
-      }
-    }
-    @media (min-width: 1024px) {
-      .wizard-carousel-mobile {
-        grid-template-columns: repeat(4, minmax(0, 1fr));
-      }
+      .coverflow-stage-wrapper { height: 520px; }
     }
 
-    /* EFFETTI VISIVI */
+    .coverflow-card {
+      position: absolute;
+      width: 300px;
+      height: 440px;
+      transition: transform 0.45s cubic-bezier(0.2, 0.8, 0.2, 1), 
+                  opacity 0.45s ease, 
+                  box-shadow 0.45s ease;
+      will-change: transform, opacity;
+      transform-style: preserve-3d;
+      border-radius: 1.25rem;
+      cursor: pointer;
+    }
+    @media (min-width: 768px) {
+      .coverflow-card { width: 330px; height: 470px; }
+    }
+
+    /* ALONI NEON DI FAZIONE PER IL CENTRO */
+    .glow-destra {
+      box-shadow: 0 0 35px -5px rgba(56, 189, 248, 0.5), 0 0 15px rgba(56, 189, 248, 0.3);
+      border-color: #38bdf8 !important;
+    }
+    .glow-sinistra {
+      box-shadow: 0 0 35px -5px rgba(244, 63, 94, 0.55), 0 0 15px rgba(244, 63, 94, 0.35);
+      border-color: #f43f5e !important;
+    }
+
     .text-glow-amber { text-shadow: 0 0 12px rgba(245, 158, 11, 0.5); }
     .text-glow-rose { text-shadow: 0 0 12px rgba(244, 63, 94, 0.6); }
 
-    /* ANIMAZIONE DADO D20 SUSPENSE */
     .dice-rolling {
       animation: diceTumble 0.6s cubic-bezier(0.25, 1, 0.5, 1) infinite;
     }
@@ -163,8 +171,6 @@
       50% { transform: rotate(180deg) scale(1.15); }
       100% { transform: rotate(360deg) scale(0.9); }
     }
-
-    /* NUMERI DANNO FLUTTUANTI */
     @keyframes floatUpFade {
       0% { opacity: 0; transform: translateY(10px) scale(0.8); }
       20% { opacity: 1; transform: translateY(-5px) scale(1.1); }
@@ -227,10 +233,8 @@
   <!-- 3. STRUTTURA PRINCIPALE: SIDEBAR + MAIN AREA -->
   <div class="flex-1 flex flex-col md:flex-row min-h-0 overflow-hidden relative">
 
-    <!-- SIDEBAR DESKTOP & TABLET (>= 768px) -->
+    <!-- SIDEBAR DESKTOP & TABLET -->
     <aside id="desktop-sidebar" class="hidden md:flex flex-col w-72 lg:w-80 bg-[#0d131f] border-r border-white/5 h-full p-4 space-y-4 flex-none z-20">
-      
-      <!-- Card Profilo Desktop -->
       <div class="bg-surface/90 p-3.5 rounded-2xl border border-white/10 shadow-xl space-y-3">
         <div class="flex items-center space-x-3">
           <div id="user-avatar-desk" class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-sky-600 to-indigo-600 flex items-center justify-center font-black text-lg text-white ring-2 ring-sky-500/40 shadow-lg shadow-sky-600/30 flex-shrink-0">
@@ -259,7 +263,6 @@
         </div>
       </div>
 
-      <!-- Menu Navigazione Desktop -->
       <nav class="flex-1 space-y-1.5" id="desktop-nav-menu">
         <button id="desk-nav-home" onclick="AppRouter.navigate('home')" class="desk-nav-btn w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl text-xs font-bold text-sky-400 bg-white/5" data-tab="home">
           <i data-lucide="home" class="w-4 h-4"></i> <span>Dashboard Home</span>
@@ -282,13 +285,12 @@
         </button>
       </nav>
 
-      <!-- Footer Sidebar -->
       <div class="pt-3 border-t border-white/5 flex items-center justify-between">
         <button onclick="SoundEngine.toggleMute()" class="btn btn-ghost btn-xs text-slate-400 flex items-center space-x-1.5">
           <i data-lucide="volume-2" class="w-4 h-4"></i>
           <span id="audio-status-desk" class="badge badge-xs badge-success text-[8px] font-black">ON</span>
         </button>
-        <span class="text-[10px] text-slate-500 font-mono">v4.5 Syndicate SPA</span>
+        <span class="text-[10px] text-slate-500 font-mono">v4.6 CoverFlow</span>
       </div>
     </aside>
 
@@ -297,15 +299,12 @@
       <main class="flex-1 overflow-y-auto overflow-x-hidden relative" id="app-main-scroll">
         <div class="p-3.5 md:p-6 lg:p-8 max-w-[1400px] mx-auto space-y-6">
 
-          <!-- =============================================================== -->
-          <!-- VISTA 1: HOME DASHBOARD                                         -->
-          <!-- =============================================================== -->
+          <!-- VISTA 1: HOME DASHBOARD -->
           <section id="view-home" class="space-y-6 app-screen">
             <div class="rounded-3xl p-6 md:p-8 bg-gradient-to-br from-slate-900 via-slate-900 to-indigo-950 border border-white/10 shadow-2xl space-y-3.5 relative overflow-hidden">
               <div class="flex items-center space-x-2.5 flex-wrap gap-y-2">
                 <span class="badge badge-sm badge-outline border-sky-400 text-sky-400 font-bold uppercase text-[9px] md:text-[10px]">Piattaforma Ufficiale</span>
                 <span class="text-xs md:text-sm font-bold text-emerald-400">⭐ <span id="home-rank-points">0</span> Punti Fedeltà</span>
-                
                 <button onclick="AppEngine.openPlansCatalogModal()" class="badge badge-sm badge-info font-black uppercase text-[9px] md:text-[10px] py-2 px-3 shadow-md hover:scale-105 active:scale-95 transition-all cursor-pointer flex items-center space-x-1.5">
                   <span>👑</span> <span id="home-plan-badge">PIANO FREE</span> <span class="text-white/60">›</span>
                 </button>
@@ -328,7 +327,7 @@
               </div>
             </div>
 
-            <!-- Griglia 4 KPI Interattivi -->
+            <!-- Griglia 4 KPI -->
             <div class="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
               <div onclick="AppRouter.navigate('profile')" class="bg-surface/80 hover:bg-surface active:scale-[0.98] transition-all p-3.5 md:p-4 rounded-2xl border border-white/5 cursor-pointer flex justify-between items-start group shadow-md">
                 <div>
@@ -375,16 +374,14 @@
             </div>
           </section>
 
-          <!-- =============================================================== -->
-          <!-- VISTA 2: CATALOGO GIOCHI RPG (RULES 1 & RULES 2)                -->
-          <!-- =============================================================== -->
+          <!-- VISTA 2: CATALOGO GIOCHI RPG -->
           <section id="view-hub" class="space-y-6 hidden app-screen max-w-4xl mx-auto">
             <div class="flex items-center justify-between pb-2 border-b border-white/10">
               <div>
                 <span class="text-[10px] font-bold uppercase tracking-widest text-sky-400">CATALOGO SAGHE</span>
                 <h2 class="text-lg md:text-2xl font-black text-white">Giochi Noir RPG</h2>
               </div>
-              <span class="text-xs text-slate-400 font-mono" id="games-total-counter">Caricamento giochi...</span>
+              <span class="text-xs text-slate-400 font-mono" id="games-total-counter">Caricamento...</span>
             </div>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="games-catalog-container"></div>
           </section>
@@ -413,8 +410,8 @@
           <!-- =============================================================== -->
           <section id="view-wizard" class="space-y-4 hidden app-screen max-w-4xl mx-auto">
             
-            <!-- Barra Avanzamento Wizard a 4 Passi -->
-            <div class="flex items-center justify-between px-2 py-1.5 rounded-xl bg-black/40 border border-white/5 text-[10px] font-mono">
+            <!-- Barra Avanzamento Wizard -->
+            <div class="flex items-center justify-between px-3 py-2 rounded-xl bg-black/50 border border-white/10 text-[10px] sm:text-xs font-mono">
               <span id="wiz-step-ind-1" class="font-black text-sky-400">1. Archetipo</span>
               <span class="text-slate-600">›</span>
               <span id="wiz-step-ind-2" class="text-slate-500">2. Talenti</span>
@@ -424,7 +421,7 @@
               <span id="wiz-step-ind-4" class="text-slate-500">4. Battesimo</span>
             </div>
 
-            <!-- PASSO 1: ARCHETIPO & FAZIONE (DESTRA / SINISTRA) -->
+            <!-- PASSO 1: 3D SPOTLIGHT COVER-FLOW (I TAROCCHI DEL SALMASTRO) -->
             <div id="wizard-step-class" class="space-y-3">
               <div class="flex items-center justify-between pb-1 border-b border-white/5">
                 <div>
@@ -434,20 +431,34 @@
                 <span class="badge badge-sm badge-info font-mono font-bold text-[9px]">Episodio 0</span>
               </div>
               <p class="text-xs text-slate-300 leading-relaxed">
-                Ogni archetipo appartiene a uno schieramento politico: <b class="text-sky-300">Destra</b> (+1 Danno vs Mazzu/Ideologi) o <b class="text-rose-300">Sinistra</b> (+1 Danno vs Camorristi/Burocrati).
+                Trascina o usa le frecce per sfogliare i tarocchi: <b class="text-sky-300">Destra</b> (+1 Danno vs Mazzu/Ideologi) o <b class="text-rose-300">Sinistra</b> (+1 Danno vs Camorristi/Burocrati).
               </p>
               
-              <!-- Griglia / Carosello Responsive con Unified Cards & Immagini Pollinations -->
-              <div class="wizard-carousel-mobile py-2" id="wizard-classes-carousel"></div>
+              <!-- Palcoscenico 3D Cover Flow Interattivo -->
+              <div class="relative py-2">
+                <!-- Frecce Laterali Floating Desktop/Tablet -->
+                <button onclick="GameEngine.coverflowPrev()" class="hidden sm:flex absolute left-2 top-1/2 -translate-y-1/2 z-30 btn btn-circle btn-sm bg-black/70 border border-white/20 text-white hover:bg-sky-500 hover:border-sky-400 transition-all shadow-xl">
+                  ❮
+                </button>
+                <button onclick="GameEngine.coverflowNext()" class="hidden sm:flex absolute right-2 top-1/2 -translate-y-1/2 z-30 btn btn-circle btn-sm bg-black/70 border border-white/20 text-white hover:bg-sky-500 hover:border-sky-400 transition-all shadow-xl">
+                  ❯
+                </button>
+
+                <!-- Stage 3D Container -->
+                <div class="coverflow-stage-wrapper" id="wizard-classes-stage"></div>
+
+                <!-- Indicatori a Pallini -->
+                <div class="flex justify-center items-center space-x-1.5 mt-2" id="wizard-coverflow-dots"></div>
+              </div>
               
               <div class="pt-2">
                 <button id="wizard-step1-confirm-btn" onclick="GameEngine.wizardConfirmStep1()" class="btn btn-sm md:btn-md btn-primary w-full font-bold text-xs shadow-lg shadow-sky-600/30">
-                  ➡️ Conferma Classe e Procedi ai Talenti (Passo 2/4)
+                  ➡️ Conferma Archetipo e Procedi ai Talenti (Passo 2/4)
                 </button>
               </div>
             </div>
 
-            <!-- PASSO 2: TALENTI CLANDESTINI (BUDGET PX DINAMICO) -->
+            <!-- PASSO 2: TALENTI CLANDESTINI (MODULI TATTICI) -->
             <div id="wizard-step-abilities" class="space-y-3 hidden">
               <div class="flex items-center justify-between pb-1 border-b border-white/5">
                 <div>
@@ -457,7 +468,7 @@
                 <span class="badge badge-sm badge-info font-mono font-bold text-[10px]" id="wizard-px-budget">✨ 100 PX Disponibili</span>
               </div>
               <p class="text-xs text-slate-300 leading-relaxed">
-                Spendi i tuoi Punti Esperienza iniziali (100 PX a talento). Le abilità contrarie al tuo schieramento politico sono bloccate (🔒):
+                Spendi i tuoi Punti Esperienza iniziali (100 PX a talento). Quelli contrari al tuo schieramento sono bloccati (🔒):
               </p>
               
               <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5" id="wizard-abilities-grid"></div>
@@ -465,7 +476,7 @@
               <div class="flex gap-2 pt-2">
                 <button onclick="GameEngine.wizardPrevStep(1)" class="btn btn-sm btn-ghost text-xs">🔙 Modifica Classe</button>
                 <button onclick="GameEngine.wizardConfirmStep2()" class="btn btn-sm btn-primary flex-1 font-bold text-xs shadow-lg shadow-sky-600/30">
-                  ➡️ Conferma Talenti e Vai all'Emporio (Passo 3/4)
+                  ➡️ Vai all'Emporio di Ciccio (Passo 3/4)
                 </button>
               </div>
             </div>
@@ -486,7 +497,7 @@
                 Spendi le tue monete d'oro per armi, veicoli, strumenti da scasso o scorte chimiche prima di scendere nella mota:
               </p>
 
-              <!-- Chips Reparti Mercato Nero -->
+              <!-- Chips Reparti -->
               <div class="flex space-x-1.5 overflow-x-auto no-scrollbar pb-1 text-[10px]" id="wizard-shop-category-chips">
                 <button onclick="GameEngine.filterWizardShop('ARMI')" class="badge badge-sm badge-info font-bold cursor-pointer">🗡️ Armi</button>
                 <button onclick="GameEngine.filterWizardShop('VEICOLI')" class="badge badge-sm badge-ghost font-bold cursor-pointer">🛴 Veicoli</button>
@@ -496,10 +507,10 @@
                 <button onclick="GameEngine.filterWizardShop('TALISMANI')" class="badge badge-sm badge-ghost font-bold cursor-pointer">📿 Talismani</button>
               </div>
 
-              <!-- Griglia Articoli Acquistabili -->
+              <!-- Griglia Articoli -->
               <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2.5 max-h-72 overflow-y-auto pr-1" id="wizard-shop-grid"></div>
 
-              <!-- Sommario Dotazione Zaino Live -->
+              <!-- Sommario Dotazione Zaino -->
               <div id="wizard-shop-backpack-summary" class="p-2.5 rounded-xl bg-black/50 border border-white/5 text-[11px] flex items-center justify-between">
                 <span class="text-slate-400">🎒 Zaino di Partenza: <b id="wizard-shop-backpack-count" class="text-white">0 oggetti</b></span>
                 <button onclick="GameEngine.resetWizardShop()" class="btn btn-xs btn-ghost text-rose-400 text-[9px]">🔄 Ripristina Oro Iniziale</button>
@@ -513,7 +524,7 @@
               </div>
             </div>
 
-            <!-- PASSO 4: BATTESIMO DELL'EROE & START NARRATIVO -->
+            <!-- PASSO 4: BATTESIMO DELL'EROE & RIEPILOGO FINALE -->
             <div id="wizard-step-name" class="space-y-3 hidden">
               <div class="flex items-center justify-between pb-1 border-b border-white/5">
                 <div>
@@ -523,7 +534,7 @@
                 <span class="text-xs font-black text-amber-400 font-mono" id="wizard-class-recap">Classe</span>
               </div>
 
-              <!-- Card Riepilogo Profilo Completo -->
+              <!-- Card Riepilogo -->
               <div class="bg-surface p-4 rounded-2xl border border-white/10 shadow-xl space-y-3 text-xs" id="wizard-final-recap-box">
                 <div class="flex items-center justify-between border-b border-white/5 pb-2">
                   <div class="flex items-center space-x-2">
@@ -560,12 +571,10 @@
             </div>
           </section>
 
-          <!-- =============================================================== -->
-          <!-- VISTA 4: GAMEPLAY VISUAL NOVEL (ABOVE-THE-FOLD RIGIDO)          -->
-          <!-- =============================================================== -->
+          <!-- VISTA 4: GAMEPLAY VISUAL NOVEL -->
           <section id="view-gameplay" class="flex flex-col justify-between space-y-2 hidden app-screen max-w-2xl mx-auto w-full relative">
             
-            <!-- 1. HUD Compatto Eroe -->
+            <!-- HUD Eroe -->
             <div class="flex-none bg-surface/90 px-3 py-2 rounded-xl border border-white/10 shadow-md flex items-center justify-between text-xs h-11">
               <div class="flex items-center space-x-2">
                 <span class="text-lg" id="kpi-hero-avatar">🥋</span>
@@ -575,7 +584,7 @@
                 </div>
               </div>
 
-              <!-- Barra Salute PV -->
+              <!-- Barra PV -->
               <div class="w-24 sm:w-32 space-y-0.5">
                 <div class="flex justify-between text-[9px] font-mono text-slate-300">
                   <span>PV</span> <span id="kpi-hero-pv-text" class="font-bold">25/25</span>
@@ -591,34 +600,30 @@
               </div>
             </div>
 
-            <!-- 2. Inquadratura 16:9 con Copertura Anti-Watermark -->
+            <!-- Inquadratura 16:9 con Copertura Anti-Watermark -->
             <div class="flex-none cinema-frame-rigid shadow-lg border border-white/5 relative">
               <img id="scene-image" src="" alt="Scena di Gioco">
               <span id="scene-type-badge" class="badge badge-xs badge-info absolute top-2 left-2 text-[8px] font-black uppercase shadow">SNODO</span>
 
-              <!-- Contenitore Numeri Danno Fluttuanti -->
               <div id="floating-damage-box" class="absolute inset-0 pointer-events-none z-20 flex items-center justify-center"></div>
 
-              <!-- Banner Diegetico -->
               <div class="watermark-cover-banner" id="scene-watermark-banner">
                 <span class="text-[10px] text-amber-100/90 italic truncate pr-2" id="scene-quote"></span>
                 <span class="text-[9px] text-amber-400 font-bold uppercase shrink-0" id="scene-author"></span>
               </div>
             </div>
 
-            <!-- 3. Box Narrativo Ottimizzato -->
+            <!-- Box Narrativo -->
             <div class="flex-none narrative-box-rigid no-scrollbar shadow-inner space-y-1">
               <div class="font-black text-white uppercase text-[10px] tracking-wider" id="scene-title">Titolo Snodo</div>
               <p class="text-slate-200" id="scene-text">Caricamento narrazione...</p>
             </div>
 
-            <!-- 4. Area Azioni Tattiche (Bivi, Round Scontro o Triage Zombi) -->
+            <!-- Area Azioni -->
             <div id="scene-actions-container" class="flex-none space-y-1.5 pt-0.5 min-h-[46px]"></div>
           </section>
 
-          <!-- =============================================================== -->
-          <!-- VISTA 5: BOTTEGA (SHOP)                                         -->
-          <!-- =============================================================== -->
+          <!-- VISTA 5: BOTTEGA (SHOP) -->
           <section id="view-shop" class="space-y-4 hidden app-screen">
             <div class="relative w-full">
               <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
@@ -628,7 +633,7 @@
             <div id="shop-products-grid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4"></div>
           </section>
 
-          <!-- SOTTO-SCHERMATA: DETTAGLIO ARTICOLO SHOP -->
+          <!-- SOTTO-SCHERMATA: DETTAGLIO SHOP -->
           <section id="subview-shop-detail" class="space-y-4 hidden app-screen max-w-2xl mx-auto">
             <div class="pb-2 border-b border-white/5">
               <span id="detail-shop-cat" class="text-[10px] font-bold text-sky-400 uppercase">Reparto</span>
@@ -650,9 +655,7 @@
             </div>
           </section>
 
-          <!-- =============================================================== -->
-          <!-- VISTA 6: BARLADY & RICETTE                                      -->
-          <!-- =============================================================== -->
+          <!-- VISTA 6: BARLADY & RICETTE -->
           <section id="view-recipes" class="space-y-4 hidden app-screen">
             <div class="relative w-full">
               <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
@@ -688,9 +691,7 @@
             </div>
           </section>
 
-          <!-- =============================================================== -->
-          <!-- VISTA 7: PROFILO, CAVEAU & TRANSAZIONI                          -->
-          <!-- =============================================================== -->
+          <!-- VISTA 7: PROFILO, CAVEAU & TRANSAZIONI -->
           <section id="view-profile" class="space-y-6 hidden app-screen">
             <div class="rounded-3xl p-6 bg-gradient-to-tr from-slate-900 via-indigo-950 to-slate-900 border border-white/10 shadow-xl flex items-center justify-between">
               <div class="flex items-center space-x-4">
@@ -741,7 +742,7 @@
               </button>
             </div>
 
-            <!-- Caveau Digitale -->
+            <!-- Caveau -->
             <div id="profile-vault-container-card" class="bg-surface/70 p-5 rounded-2xl border border-white/5 space-y-3">
               <h3 class="text-xs md:text-sm font-bold uppercase tracking-wider text-slate-300 flex items-center space-x-1.5">
                 <i data-lucide="download" class="w-4 h-4 text-emerald-400"></i>
@@ -750,7 +751,7 @@
               <div id="profile-vault-container" class="space-y-2 text-xs md:text-sm"></div>
             </div>
 
-            <!-- Storico Transazioni -->
+            <!-- Transazioni -->
             <div class="bg-surface/70 p-5 rounded-2xl border border-white/5 space-y-3">
               <div class="flex justify-between items-center">
                 <h3 class="text-xs md:text-sm font-bold uppercase tracking-wider text-slate-300 flex items-center space-x-1.5">
@@ -766,7 +767,7 @@
         </div>
       </main>
 
-      <!-- 4.A FOOTER MOBILE: MODALITÀ APP STANDARD -->
+      <!-- 4.A FOOTER MOBILE APP -->
       <footer id="main-app-footer" class="md:hidden flex-none z-30 glass-footer flex justify-around items-center pt-2.5 pb-6 px-1">
         <button id="mob-nav-home" onclick="AppRouter.navigate('home')" class="nav-tab flex flex-col items-center py-1 px-3 text-sky-400" data-tab="home">
           <i data-lucide="home" class="w-4 h-4"></i>
@@ -791,7 +792,7 @@
         </button>
       </footer>
 
-      <!-- 4.B FOOTER MOBILE: COCKPIT TATTICO (Attivo durante il gameplay) -->
+      <!-- 4.B FOOTER MOBILE COCKPIT -->
       <footer id="main-game-cockpit-footer" class="hidden flex-none cockpit-footer flex justify-around items-center pt-2 px-3 z-30">
         <button onclick="GameEngine.openBackpackDrawer()" class="flex flex-col items-center text-slate-300 hover:text-sky-400 active:scale-95 transition-all">
           <i data-lucide="backpack" class="w-4 h-4"></i>
@@ -818,11 +819,7 @@
     </div>
   </div>
 
-  <!-- ======================================================================= -->
-  <!-- 5. CASSETTI BOTTOM SHEET & FINESTRE MODALI                              -->
-  <!-- ======================================================================= -->
-
-  <!-- MODALE: ANIMAZIONE LANCIO DADO D20 SUSPENSE -->
+  <!-- 5. CASSETTI & MODALI -->
   <dialog id="modal-dice-suspense" class="modal modal-middle">
     <div class="modal-box bg-[#0d131f]/95 border border-sky-500/50 p-6 text-center space-y-4 max-w-xs shadow-2xl">
       <div class="relative w-20 h-20 mx-auto flex items-center justify-center">
@@ -838,7 +835,7 @@
     </div>
   </dialog>
 
-  <!-- DRAWER 1: ZAINO INVENTARIO CON FILTRI -->
+  <!-- DRAWER ZAINO -->
   <dialog id="drawer-backpack" class="modal modal-bottom sm:modal-middle">
     <div class="modal-box bg-[#0d131f] border-t border-white/10 p-4 space-y-3 max-w-md">
       <div class="flex items-center justify-between pb-1 border-b border-white/5">
@@ -861,7 +858,7 @@
     </div>
   </dialog>
 
-  <!-- DRAWER 2: EMPORIO DI CICCIO & CO. (COCKPIT PLAY) -->
+  <!-- DRAWER EMPORIO -->
   <dialog id="drawer-emporio" class="modal modal-bottom sm:modal-middle">
     <div class="modal-box bg-[#0d131f] border-t border-white/10 p-4 space-y-3 max-w-4xl w-full">
       <div class="flex items-center justify-between pb-1 border-b border-white/5">
@@ -883,7 +880,7 @@
     </div>
   </dialog>
 
-  <!-- MODALE 3: BANCO DI CAMBIO CLANDESTINO (MEGOIN ➔ ORO ATOMICO) -->
+  <!-- MODALE BANCO DI CAMBIO -->
   <dialog id="modal-banco-cambio" class="modal modal-bottom sm:modal-middle">
     <div class="modal-box bg-[#0d131f] border border-amber-500/40 p-4 text-center space-y-3 max-w-xs">
       <span class="text-3xl">💱</span>
@@ -904,7 +901,7 @@
     </div>
   </dialog>
 
-  <!-- DRAWER 4: SQUADRA & ZOMBI (PARTY VS PARTY) -->
+  <!-- DRAWER SQUADRA -->
   <dialog id="drawer-squad" class="modal modal-bottom sm:modal-middle">
     <div class="modal-box bg-[#0d131f] border-t border-white/10 p-4 space-y-3 max-w-md">
       <div class="flex items-center justify-between pb-1 border-b border-white/5">
@@ -919,7 +916,7 @@
     </div>
   </dialog>
 
-  <!-- DRAWER 5: DOSSIER D'INCHIESTA & ORGANIGRAMMA DEL POTERE -->
+  <!-- DRAWER DOSSIER -->
   <dialog id="drawer-dossier" class="modal modal-bottom sm:modal-middle">
     <div class="modal-box bg-[#0d131f] border-t border-white/10 p-4 space-y-3 max-w-md">
       <div class="flex items-center justify-between pb-1 border-b border-white/5">
@@ -934,7 +931,7 @@
     </div>
   </dialog>
 
-  <!-- MODALE ABBANDONO PARTITA -->
+  <!-- MODALE ABBANDONO -->
   <dialog id="modal-abandon" class="modal modal-bottom sm:modal-middle">
     <div class="modal-box bg-[#0d131f] border border-rose-500/40 p-4 text-center space-y-3 max-w-xs shadow-2xl">
       <span class="text-2xl">⚠️</span>
@@ -947,7 +944,7 @@
     </div>
   </dialog>
 
-  <!-- MODALE COMPARATORE PIANI SAAS -->
+  <!-- MODALE COMPARATORE PIANI -->
   <dialog id="modal-plans-catalog" class="modal modal-bottom sm:modal-middle">
     <div class="modal-box bg-[#0d131f] border border-sky-500/30 p-5 space-y-4 max-w-2xl text-left shadow-2xl">
       <div class="flex items-center justify-between pb-2 border-b border-white/10">
@@ -967,7 +964,7 @@
     </div>
   </dialog>
 
-  <!-- MODALE DETTAGLIO PIANO / CHECKOUT -->
+  <!-- MODALE DETTAGLIO PIANO -->
   <dialog id="modal-plan-upgrade" class="modal modal-bottom sm:modal-middle">
     <div class="modal-box bg-[#0d131f] border border-sky-500/40 p-5 text-left space-y-4 max-w-md shadow-2xl">
       <div class="flex items-center justify-between pb-2 border-b border-white/10">
@@ -1000,7 +997,6 @@
     </div>
   </dialog>
 
-  <!-- SCRIPT APPLICATIVI -->
   <script src="audio.js"></script>
   <script src="app.js"></script>
 </body>
