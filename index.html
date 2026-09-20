@@ -18,6 +18,25 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.4/howler.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
 
+  <!-- =========================================================================
+       ARCHITETTURA FUTURA: INTEGRAZIONE SUBSCRIPTION ENGINE CON WHOP
+       =========================================================================
+       1. WEBHOOK RICEVENTE SU GAS (doPost in Logic.gs):
+          - Endpoint ascolterà gli eventi: `membership.went_valid`, `membership.went_invalid`.
+          - Metadata: Nel link di checkout Whop verrà passato `?metadata_chat_id={{chat_id}}`.
+       2. AUTOMAZIONE ELEVAZIONE PIANO (Foglio 👤Users):
+          - Ricezione pagamento -> Verifica firma webhook Whop.
+          - Aggiornamento colonna `Estiqatsy Bot Plan` (es. da 'Free' a 'Bronze'/'Silver'/'Gold').
+          - Scadenza abbonamento impostata alla fine del periodo di fatturazione.
+       3. GESTIONE DEI PERMESSI AUTOMATICA (Hard Locking vs Soft Locking):
+          - HARD LOCKING (Macro-Sezioni): All'avvio dell'app, `allowedModules` autorizza o
+            nasconde del tutto i pulsanti di navigazione (Footer mobile & Sidebar desktop)
+            in base a quanto stabilito nelle colonne del foglio 👑Plans.
+          - SOFT LOCKING (Micro-Contenuti Interni): Dentro i moduli abilitati, articoli
+            della bottega, chatbot e news mostrano badge e lucchetti in base alle colonne
+            `Accesso_Piano_X` (es. `PROD-004` accessibile solo a Gold/Admin).
+       ========================================================================= -->
+
   <style>
     :root {
       --tg-bg: #090D16;
@@ -79,16 +98,20 @@
     <button id="loading-retry-btn" onclick="location.reload()" class="hidden mt-4 btn btn-sm btn-primary">Riprova</button>
   </div>
 
-  <!-- 2. SIDEBAR DESKTOP FISSA (>= 768px): COMMAND CENTER POTENZIATO -->
+  <!-- 2. SIDEBAR DESKTOP FISSA (>= 768px): COMMAND CENTER -->
   <aside class="hidden md:flex flex-col w-72 lg:w-80 bg-[#0d131f] border-r border-white/5 h-full pt-14 p-5 space-y-6 flex-none z-30">
-    <!-- Scheda Agente Syndicate Ridisegnata -->
+    <!-- Scheda Agente Syndicate -->
     <div class="bg-surface/90 p-4 rounded-2xl border border-white/10 shadow-xl space-y-4">
       <div class="flex items-center space-x-3.5">
         <div class="w-14 h-14 rounded-2xl bg-gradient-to-tr from-sky-600 to-indigo-600 flex items-center justify-center font-black text-xl text-white ring-2 ring-sky-500/40 shadow-lg shadow-sky-600/30 flex-shrink-0" id="user-avatar-desk">F</div>
         <div class="overflow-hidden">
           <div class="text-[10px] font-bold text-slate-400 tracking-[0.2em] uppercase">⚓ ESTIQATSY</div>
           <div class="text-base font-black text-white truncate" id="user-name-desk">Utente</div>
-          <span class="badge badge-sm badge-info font-black text-[9px] uppercase tracking-wider py-2 px-2.5 mt-0.5" id="user-plan-desk">PIANO FREE</span>
+          
+          <!-- Badge Piano Desktop Cliccabile -> Apre Catalogo Piani -->
+          <button onclick="AppEngine.openPlansCatalogModal()" class="badge badge-sm badge-info font-black text-[9px] uppercase tracking-wider py-2 px-2.5 mt-0.5 hover:scale-105 active:scale-95 transition-all cursor-pointer flex items-center space-x-1" title="Clicca per visualizzare o cambiare piano">
+            <span>👑</span> <span id="user-plan-desk">PIANO FREE</span> <span class="text-white/60">›</span>
+          </button>
         </div>
       </div>
 
@@ -105,22 +128,22 @@
       </div>
     </div>
 
-    <!-- Voci di Navigazione Desktop -->
+    <!-- Voci di Navigazione Desktop (Con Hard Locking via data-module) -->
     <nav class="flex-1 space-y-2" id="desktop-nav-menu">
-      <button onclick="AppRouter.navigate('home')" class="desk-nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-xs font-bold text-sky-400 bg-white/5" data-tab="home">
+      <button id="desk-nav-home" onclick="AppRouter.navigate('home')" class="desk-nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-xs font-bold text-sky-400 bg-white/5" data-tab="home">
         <i data-lucide="home" class="w-4 h-4"></i> <span>Dashboard Home</span>
       </button>
-      <button onclick="AppRouter.navigate('games')" class="desk-nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-xs font-bold text-slate-300 hover:bg-white/5" data-tab="games">
+      <button id="desk-nav-games" data-module="games" onclick="AppRouter.navigate('games')" class="desk-nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-xs font-bold text-slate-300 hover:bg-white/5" data-tab="games">
         <i data-lucide="gamepad-2" class="w-4 h-4"></i> <span>Avventure RPG</span>
       </button>
-      <button onclick="AppRouter.navigate('shop')" class="desk-nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-xs font-bold text-slate-300 hover:bg-white/5" data-tab="shop">
+      <button id="desk-nav-shop" data-module="shop" onclick="AppRouter.navigate('shop')" class="desk-nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-xs font-bold text-slate-300 hover:bg-white/5" data-tab="shop">
         <i data-lucide="shopping-bag" class="w-4 h-4"></i> <span>Vetrina Bottega</span>
       </button>
-      <button onclick="AppRouter.navigate('recipes')" class="desk-nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-xs font-bold text-slate-300 hover:bg-white/5" data-tab="recipes">
+      <button id="desk-nav-recipes" data-module="recipes" onclick="AppRouter.navigate('recipes')" class="desk-nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-xs font-bold text-slate-300 hover:bg-white/5" data-tab="recipes">
         <i data-lucide="utensils" class="w-4 h-4"></i> <span>Barlady & Ricette</span>
       </button>
-      <button onclick="AppRouter.navigate('profile')" class="desk-nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-xs font-bold text-slate-300 hover:bg-white/5" data-tab="profile">
-        <i data-lucide="user" class="w-4 h-4"></i> <span>Profilo & Piani</span>
+      <button id="desk-nav-profile" onclick="AppRouter.navigate('profile')" class="desk-nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-xs font-bold text-slate-300 hover:bg-white/5" data-tab="profile">
+        <i data-lucide="user" class="w-4 h-4"></i> <span>Profilo & Download</span>
       </button>
     </nav>
 
@@ -130,11 +153,11 @@
         <i data-lucide="volume-2" class="w-4 h-4"></i>
         <span id="audio-status-desk" class="badge badge-xs badge-success text-[8px]">ON</span>
       </button>
-      <span class="text-[10px] text-slate-500 font-mono">v3.1 Syndicate</span>
+      <span class="text-[10px] text-slate-500 font-mono">v3.2 Syndicate</span>
     </div>
   </aside>
 
-  <!-- 3. CORPO CENTRALE A PIENA LARGHEZZA SENZA SPRECHI -->
+  <!-- 3. CORPO CENTRALE (Mobile & Desktop) -->
   <div class="flex-1 flex flex-col h-full min-w-0 overflow-hidden relative">
 
     <!-- HEADER MOBILE A TUTTA LARGHEZZA: Logo centrato tra i tasti nativi Telegram -->
@@ -145,34 +168,40 @@
       </div>
     </header>
 
-    <!-- AREA SCROLLABILE CONTENUTI -->
+    <!-- AREA SCROLLABILE CONTENUTI (Zero Spazio Inutile su Desktop) -->
     <main class="flex-1 overflow-y-auto overflow-x-hidden relative" id="app-main-scroll">
-      <!-- Contenitore Desktop a piena larghezza (max-w-[1400px]) per saturare lo spazio -->
       <div class="p-3.5 md:p-8 lg:p-10 max-w-[1400px] mx-auto space-y-6">
 
         <!-- ================================================================= -->
         <!-- SCHERMATA: HOME -->
         <!-- ================================================================= -->
         <section id="view-home" class="space-y-6 app-screen">
-          <!-- Hero Banner di Benvenuto -->
-          <div class="rounded-3xl p-6 md:p-8 bg-gradient-to-br from-slate-900 via-slate-900 to-indigo-950 border border-white/10 shadow-2xl space-y-3 relative overflow-hidden">
-            <div class="flex items-center space-x-2">
+          <!-- Hero Banner di Benvenuto (Con Badge Piano Interattivo) -->
+          <div class="rounded-3xl p-6 md:p-8 bg-gradient-to-br from-slate-900 via-slate-900 to-indigo-950 border border-white/10 shadow-2xl space-y-3.5 relative overflow-hidden">
+            <div class="flex items-center space-x-2.5 flex-wrap gap-y-2">
               <span class="badge badge-sm badge-outline border-sky-400 text-sky-400 font-bold uppercase text-[9px] md:text-[10px]">Piattaforma Ufficiale</span>
               <span class="text-xs md:text-sm font-bold text-emerald-400" id="home-rank-badge">⭐ <span id="home-rank-points">0</span> Punti Fedeltà</span>
+              
+              <!-- Badge Piano Cliccabile in Home -> Apre Modale Catalogo -->
+              <button onclick="AppEngine.openPlansCatalogModal()" class="badge badge-sm badge-info font-black uppercase text-[9px] md:text-[10px] py-2 px-3 shadow-md hover:scale-105 active:scale-95 transition-all cursor-pointer flex items-center space-x-1.5" title="Clicca per visualizzare o cambiare piano">
+                <span>👑</span> <span id="home-plan-badge">PIANO FREE</span> <span class="text-white/60">›</span>
+              </button>
             </div>
+
             <div>
               <h2 class="text-xl md:text-3xl font-black text-white leading-tight">Darsena Noir, <span id="home-username" class="text-sky-400">Ospite</span>.</h2>
               <p class="text-xs md:text-sm text-slate-300 leading-relaxed max-w-2xl mt-1.5">
                 Vivi le saghe investigative, sblocca le ricette dei moli e spendi i tuoi gettoni Megoin nella bottega del porto.
               </p>
             </div>
+
             <div class="pt-2 flex gap-3">
               <button onclick="AppRouter.navigate('games')" class="btn btn-sm md:btn-md btn-primary text-xs md:text-sm font-bold shadow-lg shadow-sky-600/30">🎮 Avventure</button>
               <button onclick="AppRouter.navigate('shop')" class="btn btn-sm md:btn-md btn-outline border-white/20 text-xs md:text-sm font-bold">🏪 Bottega</button>
             </div>
           </div>
 
-          <!-- Griglia 4 KPI Interattivi (Tipografia Scalata con font grandi) -->
+          <!-- Griglia 4 KPI Interattivi (Con font scalati e click reattivi) -->
           <div class="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
             <!-- 1. Megoin -> Profilo -->
             <div onclick="AppRouter.navigate('profile')" class="bg-surface/80 hover:bg-surface active:scale-[0.98] transition-all p-3.5 md:p-4 rounded-2xl border border-white/5 cursor-pointer flex justify-between items-start group shadow-md">
@@ -201,7 +230,7 @@
               <i data-lucide="chevron-right" class="w-4 h-4 text-slate-500 group-hover:text-sky-400 transition-colors"></i>
             </div>
 
-            <!-- 4. Prodotti Acquistati -> Caveau Digitale -->
+            <!-- 4. Prodotti Acquistati -> Caveau Profilo -->
             <div onclick="AppEngine.openVaultSection()" class="bg-surface/80 hover:bg-surface active:scale-[0.98] transition-all p-3.5 md:p-4 rounded-2xl border border-white/5 cursor-pointer flex justify-between items-start group shadow-md">
               <div>
                 <div class="text-[9px] md:text-[11px] uppercase font-bold text-slate-400 tracking-wider">Prodotti Acquistati</div>
@@ -211,7 +240,7 @@
             </div>
           </div>
 
-          <!-- CAROSELLO SAGHE (Auto 5s, pausa al tocco, tag Partita in Corso) -->
+          <!-- CAROSELLO SAGHE ED EPISODI (Scorrimento 5s, pausa al tocco, tag Partita in Corso) -->
           <div class="space-y-2.5">
             <div class="flex items-center justify-between">
               <span class="text-xs md:text-sm font-bold uppercase tracking-wider text-slate-400">Saghe & Episodi Usciti</span>
@@ -220,19 +249,8 @@
             
             <div class="relative overflow-hidden rounded-2xl bg-surface border border-white/5 shadow-2xl" id="carousel-outer-wrapper">
               <div class="flex transition-transform duration-500 ease-out" id="carousel-track">
-                <!-- Slide iniettate da app.js -->
+                <!-- Slide iniettate dinamicamente da app.js -->
               </div>
-            </div>
-          </div>
-
-          <!-- VETRINA PIANI DI ABBONAMENTO: Opzione B Mobile (Matrice) / 3 Colonne Desktop -->
-          <div class="space-y-3 pt-2">
-            <div class="flex justify-between items-center">
-              <span class="text-xs md:text-sm font-bold uppercase tracking-wider text-slate-400">Piani di Abbonamento Syndicate</span>
-              <span class="text-[10px] md:text-xs text-sky-400">Tocca un piano per i dettagli</span>
-            </div>
-            <div id="home-plans-container" class="space-y-3">
-              <!-- Renderizzato dinamicamente da app.js -->
             </div>
           </div>
         </section>
@@ -393,10 +411,10 @@
         </section>
 
         <!-- ================================================================= -->
-        <!-- SCHERMATA: PROFILO & CAVEAU & PRICE TABLE -->
+        <!-- SCHERMATA: PROFILO & CAVEAU (Con Pulsante Piani e Download Affiancati) -->
         <!-- ================================================================= -->
         <section id="view-profile" class="space-y-6 hidden app-screen">
-          <!-- Scheda Profilo con Saldo Megoin e Punti Fedeltà integrati -->
+          <!-- Scheda Profilo Agente -->
           <div class="rounded-3xl p-6 bg-gradient-to-tr from-slate-900 via-indigo-950 to-slate-900 border border-white/10 shadow-xl flex items-center justify-between">
             <div class="flex items-center space-x-4">
               <div class="w-14 h-14 rounded-2xl bg-gradient-to-tr from-sky-500 to-indigo-600 flex items-center justify-center font-black text-xl text-white shadow-lg" id="profile-card-avatar">F</div>
@@ -409,37 +427,50 @@
                 </div>
               </div>
             </div>
+
+            <!-- Metriche Utente in Somma -->
             <div class="text-right space-y-1">
               <div>
-                <div class="text-[9px] text-slate-400 uppercase font-bold">Saldo Megoin</div>
+                <div class="text-[9px] text-slate-400 font-bold uppercase">Saldo Megoin</div>
                 <div class="text-base md:text-lg font-black text-amber-300 text-glow-amber tabular-nums" id="profile-card-megoin">0 🪙</div>
               </div>
               <div>
-                <div class="text-[9px] text-slate-400 uppercase font-bold">Punti Fedeltà</div>
+                <div class="text-[9px] text-slate-400 font-bold uppercase">Punti Fedeltà</div>
                 <div class="text-base md:text-lg font-black text-emerald-400 tabular-nums" id="profile-card-points">0 Pt</div>
               </div>
             </div>
           </div>
 
-          <!-- PRICE TABLE IN PROFILO: Bronze - Silver - Gold + Free Standalone -->
-          <div class="space-y-3">
-            <div class="flex justify-between items-center">
-              <h3 class="text-xs md:text-sm font-bold uppercase tracking-wider text-slate-300 flex items-center space-x-1.5">
-                <i data-lucide="crown" class="w-4 h-4 text-amber-400"></i>
-                <span>Livelli di Affiliazione Syndicate</span>
-              </h3>
-              <span class="text-[10px] md:text-xs text-sky-400">Confronta e scegli il tuo rango</span>
-            </div>
-            <div id="profile-plans-container" class="space-y-3">
-              <!-- Renderizzato dinamicamente da app.js -->
-            </div>
+          <!-- Pulsanti Rapidi Profilo: Piani Abbonamento & Download Caveau Affiancati -->
+          <div class="grid grid-cols-2 gap-3">
+            <button onclick="AppEngine.openPlansCatalogModal()" class="p-3.5 rounded-2xl bg-surface/90 hover:bg-surface border border-sky-500/30 flex items-center justify-between group active:scale-[0.98] transition-all shadow-md">
+              <div class="flex items-center space-x-2.5">
+                <span class="text-xl">👑</span>
+                <div class="text-left">
+                  <div class="text-xs font-black text-white group-hover:text-sky-400 transition-colors" id="profile-action-plan-name">Piano: FREE</div>
+                  <div class="text-[9px] text-slate-400 uppercase font-bold">Cambia / Dettagli ›</div>
+                </div>
+              </div>
+              <span class="badge badge-xs badge-info font-black text-[8px]">INFO</span>
+            </button>
+
+            <button onclick="AppEngine.openVaultSection()" class="p-3.5 rounded-2xl bg-surface/90 hover:bg-surface border border-purple-500/30 flex items-center justify-between group active:scale-[0.98] transition-all shadow-md">
+              <div class="flex items-center space-x-2.5">
+                <span class="text-xl">📥</span>
+                <div class="text-left">
+                  <div class="text-xs font-black text-white group-hover:text-purple-400 transition-colors">I Miei Download</div>
+                  <div class="text-[9px] text-slate-400 uppercase font-bold">Caveau Digitale ›</div>
+                </div>
+              </div>
+              <span class="badge badge-xs badge-secondary font-black text-[8px]" id="profile-action-vault-count">0</span>
+            </button>
           </div>
 
-          <!-- Sezione Caveau con ID Ancorato per Salto Diretto dal 4° KPI Home -->
+          <!-- Sezione Caveau con ID Ancorato per Salto Diretto -->
           <div id="profile-vault-container-card" class="bg-surface/70 p-5 rounded-2xl border border-white/5 space-y-3">
             <h3 class="text-xs md:text-sm font-bold uppercase tracking-wider text-slate-300 flex items-center space-x-1.5">
               <i data-lucide="download" class="w-4 h-4 text-emerald-400"></i>
-              <span>Caveau Digitale (I tuoi Download)</span>
+              <span>File & Prodotti Digitali Riscattati</span>
             </h3>
             <div id="profile-vault-container" class="space-y-2 text-xs md:text-sm"></div>
           </div>
@@ -460,25 +491,25 @@
       </div>
     </main>
 
-    <!-- 4. FOOTER MOBILE STICKY FISSO A TUTTA LARGHEZZA (pb-6 per la barra di iOS) -->
+    <!-- 4. FOOTER MOBILE STICKY FISSO A TUTTA LARGHEZZA (Con Hard Locking via data-module) -->
     <footer class="md:hidden flex-none z-30 glass-footer flex justify-around items-center pt-2.5 pb-6 px-1">
-      <button onclick="AppRouter.navigate('home')" class="nav-tab flex flex-col items-center py-1 px-3 text-sky-400" data-tab="home">
+      <button id="mob-nav-home" onclick="AppRouter.navigate('home')" class="nav-tab flex flex-col items-center py-1 px-3 text-sky-400" data-tab="home">
         <i data-lucide="home" class="w-4 h-4"></i>
         <span class="text-[9px] font-bold uppercase mt-0.5">Home</span>
       </button>
-      <button onclick="AppRouter.navigate('games')" class="nav-tab flex flex-col items-center py-1 px-3 text-slate-400" data-tab="games">
+      <button id="mob-nav-games" data-module="games" onclick="AppRouter.navigate('games')" class="nav-tab flex flex-col items-center py-1 px-3 text-slate-400" data-tab="games">
         <i data-lucide="gamepad-2" class="w-4 h-4"></i>
         <span class="text-[9px] font-bold uppercase mt-0.5">Giochi</span>
       </button>
-      <button onclick="AppRouter.navigate('shop')" class="nav-tab flex flex-col items-center py-1 px-3 text-slate-400" data-tab="shop">
+      <button id="mob-nav-shop" data-module="shop" onclick="AppRouter.navigate('shop')" class="nav-tab flex flex-col items-center py-1 px-3 text-slate-400" data-tab="shop">
         <i data-lucide="shopping-bag" class="w-4 h-4"></i>
         <span class="text-[9px] font-bold uppercase mt-0.5">Shop</span>
       </button>
-      <button onclick="AppRouter.navigate('recipes')" class="nav-tab flex flex-col items-center py-1 px-3 text-slate-400" data-tab="recipes">
+      <button id="mob-nav-recipes" data-module="recipes" onclick="AppRouter.navigate('recipes')" class="nav-tab flex flex-col items-center py-1 px-3 text-slate-400" data-tab="recipes">
         <i data-lucide="utensils" class="w-4 h-4"></i>
         <span class="text-[9px] font-bold uppercase mt-0.5">Ricette</span>
       </button>
-      <button onclick="AppRouter.navigate('profile')" class="nav-tab flex flex-col items-center py-1 px-3 text-slate-400" data-tab="profile">
+      <button id="mob-nav-profile" onclick="AppRouter.navigate('profile')" class="nav-tab flex flex-col items-center py-1 px-3 text-slate-400" data-tab="profile">
         <i data-lucide="user" class="w-4 h-4"></i>
         <span class="text-[9px] font-bold uppercase mt-0.5">Profilo</span>
       </button>
@@ -486,7 +517,67 @@
 
   </div>
 
-  <!-- 5. FINESTRE MODALI DI DIALOGO -->
+  <!-- ======================================================================= -->
+  <!-- 5. FINESTRE MODALI DI DIALOGO                                           -->
+  <!-- ======================================================================= -->
+
+  <!-- MODALE LIVELLO 1: CATALOGO PIANI COMPARATIVO CON SWITCH MENSILE/ANNUALE -->
+  <dialog id="modal-plans-catalog" class="modal modal-bottom sm:modal-middle">
+    <div class="modal-box bg-[#0d131f] border border-sky-500/30 p-5 space-y-4 max-w-2xl text-left">
+      <div class="flex items-center justify-between pb-2 border-b border-white/10">
+        <div>
+          <span class="text-[9px] font-bold uppercase tracking-wider text-sky-400">AFFILIAZIONE SYNDICATE</span>
+          <h3 class="text-base md:text-lg font-black text-white">Scegli il Tuo Piano</h3>
+        </div>
+        <button onclick="document.getElementById('modal-plans-catalog').close()" class="btn btn-sm btn-circle btn-ghost text-slate-400">✕</button>
+      </div>
+
+      <!-- SaaS Billing Toggle Switch: Mensile / Annuale -->
+      <div class="flex items-center justify-center p-1 rounded-xl bg-black/40 border border-white/5 max-w-xs mx-auto">
+        <button id="billing-toggle-monthly" onclick="AppEngine.setBillingCycle('monthly')" class="flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition-all bg-sky-500 text-white shadow-md">
+          Mensile
+        </button>
+        <button id="billing-toggle-yearly" onclick="AppEngine.setBillingCycle('yearly')" class="flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition-all text-slate-400 flex items-center justify-center space-x-1">
+          <span>Annuale</span>
+          <span class="badge badge-xs badge-warning font-black text-[8px] py-1 px-1.5">-20%</span>
+        </button>
+      </div>
+
+      <!-- Contenitore Schede Piani Dinamiche (Matrice Mobile o 3 Colonne Desktop + Free Standalone) -->
+      <div id="plans-catalog-cards-container" class="space-y-3">
+        <!-- Iniettato dinamicamente da app.js -->
+      </div>
+    </div>
+  </dialog>
+
+  <!-- MODALE LIVELLO 2: SCHEDA DETTAGLIATA PIANO & CHECKOUT -->
+  <dialog id="modal-plan-upgrade" class="modal modal-bottom sm:modal-middle">
+    <div class="modal-box bg-[#0d131f] border border-sky-500/40 p-5 text-left space-y-4 max-w-md">
+      <div class="flex items-center justify-between pb-2 border-b border-white/10">
+        <div>
+          <span class="text-[9px] font-bold uppercase tracking-wider text-sky-400" id="plan-modal-badge">SCHEDA DETTAGLIATA PIANO</span>
+          <h3 class="text-lg font-black text-white" id="upgrade-modal-title">Nome Piano</h3>
+        </div>
+        <div class="text-right">
+          <div class="text-base font-black text-amber-300" id="plan-modal-price">€ 0,00</div>
+          <span class="text-[9px] text-slate-400" id="plan-modal-period">/mese</span>
+        </div>
+      </div>
+
+      <p class="text-xs text-slate-300 leading-relaxed" id="upgrade-modal-desc"></p>
+      
+      <!-- Lista Vantaggi Estratti Dinamicamente dal Foglio 👑Plans -->
+      <div class="p-3.5 rounded-xl bg-black/40 border border-white/5 space-y-2 text-xs" id="plan-modal-perks-list"></div>
+
+      <!-- Pulsanti d'Azione Modale -->
+      <div class="pt-2 flex flex-col gap-2">
+        <button id="upgrade-modal-action-btn" class="btn btn-primary btn-sm w-full font-bold shadow-lg shadow-sky-600/30">Attiva Piano con PayPal</button>
+        <button onclick="document.getElementById('modal-plan-upgrade').close()" class="btn btn-sm btn-ghost w-full text-xs text-slate-400">Chiudi</button>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- MODALE CONFERMA ACQUISTO BOTTEGA -->
   <dialog id="modal-fulfillment" class="modal modal-bottom sm:modal-middle">
     <div class="modal-box bg-surface border border-emerald-500/30 p-5 text-center space-y-3 max-w-sm">
       <div class="text-3xl">🎉</div>
@@ -497,31 +588,7 @@
     </div>
   </dialog>
 
-  <!-- MODALE DETTAGLI PIANO -->
-  <dialog id="modal-plan-upgrade" class="modal modal-bottom sm:modal-middle">
-    <div class="modal-box bg-surface border border-sky-500/30 p-5 text-left space-y-3.5 max-w-md">
-      <div class="flex items-center justify-between pb-2 border-b border-white/10">
-        <div>
-          <span class="text-[9px] font-bold uppercase tracking-wider text-sky-400" id="plan-modal-badge">DETTAGLI ABBONAMENTO</span>
-          <h3 class="text-lg font-black text-white" id="upgrade-modal-title">Nome Piano</h3>
-        </div>
-        <div class="text-right">
-          <div class="text-base font-black text-amber-300" id="plan-modal-price">€ 0,00</div>
-          <span class="text-[9px] text-slate-400" id="plan-modal-period">/mese</span>
-        </div>
-      </div>
-      <p class="text-xs text-slate-300 leading-relaxed" id="upgrade-modal-desc"></p>
-      
-      <div class="p-3 rounded-xl bg-black/40 border border-white/5 space-y-1.5 text-xs" id="plan-modal-perks-list"></div>
-
-      <div class="pt-2 flex flex-col gap-2">
-        <button id="upgrade-modal-action-btn" class="btn btn-primary btn-sm w-full font-bold shadow-lg shadow-sky-600/30">Attiva Piano con PayPal</button>
-        <button onclick="document.getElementById('modal-plan-upgrade').close()" class="btn btn-sm btn-ghost w-full text-xs text-slate-400">Chiudi</button>
-      </div>
-    </div>
-  </dialog>
-
-  <!-- SCRIPT DELL'APPLICAZIONE -->
+  <!-- SCRIPT APPLICATIVI -->
   <script src="audio.js"></script>
   <script src="app.js"></script>
 </body>
