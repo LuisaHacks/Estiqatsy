@@ -1,6 +1,6 @@
 // ============================================================================
-// PROJECT: ESTIQATSY SYNDICATE & RPG ENGINE (VERSIONE 4.4 - SPA UNIFICATA)
-// FILE: app.js (CLIENT CONTROLLER: APP, SHOP, RICETTE, WIZARD & REGOLE 2)
+// PROJECT: ESTIQATSY SYNDICATE & RPG ENGINE (VERSIONE 4.5 - SPA UNIFICATA)
+// FILE: app.js (CLIENT CONTROLLER: APP, SHOP, RICETTE, WIZARD & RULES 2)
 // ============================================================================
 
 const AppConfig = {
@@ -31,15 +31,19 @@ const AppState = {
     node: null,
     wizard: {
       step: 1,
+      isVeteran: false,
       classes: [],
       abilities: [],
+      shopItems: [],
       chosenClass: null,
       chosenAbilities: [],
       heroName: "",
-      remainingPx: 100
+      remainingPx: 100,
+      startingGold: 40
     },
     emporioMode: "buy", // "buy" | "sell"
-    backpackFilter: "ALL"
+    backpackFilter: "ALL",
+    pendingVictory: null // Conserva i dati post-duello per il Triage Necromantico
   }
 };
 
@@ -89,19 +93,17 @@ function setupTelegramBackButton(screenName) {
   }
 }
 
-// ROUTER CENTRALIZZATO A DUE MODALITÀ (APP MODE vs GAME COCKPIT MODE)
+// ROUTER CENTRALIZZATO (APP MODE vs GAME COCKPIT MODE)
 const AppRouter = {
   navigate: function(screenName) {
     if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("click");
     if (tg && tg.HapticFeedback) tg.HapticFeedback.selectionChanged();
 
-    // Reindirizzamento logico per il catalogo giochi
     if (screenName === "games" || screenName === "view-games") {
       screenName = "view-hub";
       GameEngine.renderGamesCatalog();
     }
 
-    // Verifica Hard Locking del modulo
     const baseModule = screenName.replace("view-", "").replace("subview-", "").split("-")[0];
     if (AppState.allowedModules && AppState.allowedModules[baseModule] === false) {
       AppRouter.navigate("home");
@@ -109,7 +111,6 @@ const AppRouter = {
       return;
     }
 
-    // Reset filtri ricerca al cambio scheda
     if (screenName === "shop") {
       AppState.shop.activeCategory = "tutti";
       AppState.shop.searchQuery = "";
@@ -135,7 +136,6 @@ const AppRouter = {
       targetId = "view-" + screenName;
     }
 
-    // Attivazione schermata target
     allScreens.forEach(id => {
       const el = document.getElementById(id);
       if (el) el.classList.toggle("hidden", id !== targetId);
@@ -144,7 +144,6 @@ const AppRouter = {
     const scrollArea = document.getElementById("app-main-scroll");
     if (scrollArea) scrollArea.scrollTop = 0;
 
-    // MACCHINA A STATI DELLA NAVIGAZIONE: APP MODE vs GAME COCKPIT MODE
     const isGameplay = (targetId === "view-gameplay");
     const appHeader = document.getElementById("main-app-header");
     const gameHeader = document.getElementById("main-game-header");
@@ -163,7 +162,6 @@ const AppRouter = {
       if (gameFooter) gameFooter.classList.add("hidden");
     }
 
-    // Evidenziazione tab attivi (Mobile Footer & Desktop Sidebar)
     const baseTab = screenName.replace("view-", "").replace("subview-", "").split("-")[0];
     document.querySelectorAll(".nav-tab").forEach(btn => {
       const isActive = (btn.dataset.tab === baseTab || (baseTab === "hub" && btn.dataset.tab === "games"));
@@ -183,7 +181,7 @@ const AppRouter = {
   }
 };
 
-// GATEWAY CHIAMATE API REST (ZERO TRUST CON INITDATA CIFRATO)
+// GATEWAY CHIAMATE API REST (CON INITDATA CIFRATO)
 async function apiCall(action, extraParams = {}) {
   const initData = (tg && tg.initData) ? tg.initData : "";
   let url = `${AppConfig.GAS_URL}?action=${action}&initData=${encodeURIComponent(initData)}`;
@@ -204,7 +202,6 @@ const AppEngine = {
     this.loadVault();
 
     try {
-      // 1. Profilo e Piani Utente
       const p = await apiCall("profile");
       if (p && p.user) {
         AppState.user = p.user;
@@ -214,7 +211,6 @@ const AppEngine = {
         AppRenderer.applyHardLocking(AppState.allowedModules);
       }
 
-      // 2. Caricamento Parallelo Moduli
       await Promise.allSettled([
         this.fetchShop(),
         this.fetchRecipes(),
@@ -237,7 +233,8 @@ const AppEngine = {
       if (eb) {
         eb.textContent = err.message || "Errore di connessione al server.";
         eb.classList.remove("hidden");
-        document.getElementById("loading-retry-btn").classList.remove("hidden");
+        const retryBtn = document.getElementById("loading-retry-btn");
+        if (retryBtn) retryBtn.classList.remove("hidden");
       }
     }
   },
@@ -312,7 +309,7 @@ const AppEngine = {
     }, 150);
   },
 
-  // CAROSELLO PROMOZIONALE
+  // CAROSELLO
   initCarousel: function() {
     const track = document.getElementById("carousel-track");
     const dotsBox = document.getElementById("carousel-dots-container");
@@ -322,7 +319,7 @@ const AppEngine = {
     const promoSlides = [
       {
         badge: "GIOCHI NOIR RPG",
-        titolo: "ViareGTA & Paul Sindaco",
+        titolo: "Paul Sindaco & ViareGTA",
         sottotitolo: "Vivi le saghe noir tra i canali e la pineta a colpi di D20",
         btnText: "Gioca Ora ➔",
         action: () => { AppRouter.navigate("games"); },
@@ -407,7 +404,7 @@ const AppEngine = {
     }
   },
 
-  // SHOP E BOTTEGA
+  // SHOP
   fetchShop: async function() {
     try {
       const data = await apiCall("shop");
@@ -554,7 +551,7 @@ const AppEngine = {
 };
 
 // ============================================================================
-// GAME ENGINE - CONTROLLER GIOCHI NOIR RPG & REGOLE 2
+// GAME ENGINE - CONTROLLER NOIR RPG & RULES 2
 // ============================================================================
 const GameEngine = {
   loadSeriesCatalog: async function() {
@@ -570,7 +567,6 @@ const GameEngine = {
     }
   },
 
-  // RENDERER CATALOGO COMPLETO GIOCHI (RULES 2 & RULES 1)
   renderGamesCatalog: function() {
     const container = document.getElementById("games-catalog-container");
     const counter = document.getElementById("games-total-counter");
@@ -623,7 +619,6 @@ const GameEngine = {
     const s = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
     s("hub-title", `${saga.emoji || '🎮'} ${saga.serie}`);
     s("hub-desc", saga.descrizione || "");
-    s("hub-rules", saga.regole || "Rules 2");
 
     const img = document.getElementById("hub-image");
     if (img) img.src = saga.mediaUrl;
@@ -644,7 +639,7 @@ const GameEngine = {
             </div>
           </div>
           <button onclick="GameEngine.startEpisode('${saga.gameKey}', ${ep.episodio}, ${!!ep.canContinueFree})" class="btn btn-xs btn-primary font-bold px-3 shadow-md">
-            ${ep.canContinueFree ? 'Continua' : 'Gioca'}
+            ${ep.canContinueFree ? 'Continua Veterano' : 'Gioca'}
           </button>
         </div>
       `).join("");
@@ -653,37 +648,57 @@ const GameEngine = {
     AppRouter.navigate("subview-game-detail");
   },
 
+  // GESTIONE PARTENZA: NUOVO EROE vs FLUSSO VETERANI
   startEpisode: async function(gameKey, epNum, canContinueFree) {
     AppState.game.currentEpisodio = epNum;
 
-    // Se l'eroe è veterano ed ha diritto all'avanzamento gratuito, avvia direttamente
-    if (canContinueFree) {
-      if (typeof SoundEngine !== "undefined") SoundEngine.playBgm("exploration");
-      this.executeStartGame({ gameKey, episodio: epNum });
+    // Se veterano: entra in modalità Briefing per spendere i PX guadagnati ed equipaggiarsi
+    if (canContinueFree && AppState.game.currentSeries && AppState.game.currentSeries.eroeSalvato) {
+      this.openWizard(gameKey, epNum, true, AppState.game.currentSeries.eroeSalvato);
       return;
     }
 
-    // Se è un nuovo eroe, carica il Wizard da Episodio 0
-    this.openWizard(gameKey, epNum);
+    // Se nuovo eroe: avvia il Wizard completo a 4 passi da Ep. 0
+    this.openWizard(gameKey, epNum, false, null);
   },
 
-  // WIZARD CREAZIONE PERSONAGGIO (RULES 2)
-  openWizard: async function(gameKey, epNum) {
+  // WIZARD A 4 PASSI (RULES 2)
+  openWizard: async function(gameKey, epNum, isVeteran = false, savedHero = null) {
     try {
       if (typeof SoundEngine !== "undefined") SoundEngine.playBgm("wizard");
       const wizData = await apiCall("game_wizard_data", { gameKey: gameKey });
       
+      AppState.game.wizard.isVeteran = isVeteran;
       AppState.game.wizard.classes = wizData.classes || [];
       AppState.game.wizard.abilities = wizData.abilities || [];
-      AppState.game.wizard.step = 1;
-      AppState.game.wizard.chosenClass = wizData.classes[0] || null;
       AppState.game.wizard.chosenAbilities = [];
-      AppState.game.wizard.remainingPx = 100;
 
-      this.renderWizardStep1();
+      if (isVeteran && savedHero) {
+        AppState.game.wizard.chosenClass = {
+          nome: savedHero.nomeEroe,
+          schieramento: savedHero.schieramentoPolitico || "Destra",
+          pv: savedHero.pvMax || 25,
+          oro: savedHero.oro || 40,
+          emoji: "🎖️"
+        };
+        AppState.game.wizard.heroName = savedHero.nomeEroe;
+        AppState.game.wizard.remainingPx = savedHero.px || 0;
+        AppState.game.wizard.startingGold = savedHero.oro || 40;
+        
+        // Il veterano parte direttamente dal Passo 2 (Spesa PX)
+        AppState.game.wizard.step = 2;
+        this.renderWizardStep2();
+      } else {
+        AppState.game.wizard.step = 1;
+        AppState.game.wizard.chosenClass = wizData.classes[0] || null;
+        AppState.game.wizard.remainingPx = 100;
+        AppState.game.wizard.startingGold = wizData.classes[0] ? wizData.classes[0].oro : 40;
+        this.renderWizardStep1();
+      }
+
       AppRouter.navigate("view-wizard");
     } catch (e) {
-      alert("Errore caricamento classi: " + e.message);
+      alert("Errore caricamento configurazione: " + e.message);
     }
   },
 
@@ -719,14 +734,23 @@ const GameEngine = {
     this.wizardShowStep(1);
   },
 
+  // Selezione esplicita senza avanzamento involontario
   wizardSelectClass: function(clsId) {
     const found = AppState.game.wizard.classes.find(c => c.id === clsId);
     if (!found) return;
     AppState.game.wizard.chosenClass = found;
+    AppState.game.wizard.startingGold = found.oro || 40;
     if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("click");
     this.renderWizardStep1();
+  },
+
+  wizardConfirmStep1: function() {
+    if (!AppState.game.wizard.chosenClass) {
+      alert("Seleziona prima una classe!");
+      return;
+    }
     this.renderWizardStep2();
-    setTimeout(() => this.wizardNextStep(2), 200);
+    this.wizardNextStep(2);
   },
 
   renderWizardStep2: function() {
@@ -734,7 +758,7 @@ const GameEngine = {
     const budgetBadge = document.getElementById("wizard-px-budget");
     if (!grid) return;
 
-    if (budgetBadge) budgetBadge.textContent = `✨ ${AppState.game.wizard.remainingPx} PX`;
+    if (budgetBadge) budgetBadge.textContent = `✨ ${AppState.game.wizard.remainingPx} PX Disponibili`;
 
     const userFaction = AppState.game.wizard.chosenClass ? AppState.game.wizard.chosenClass.schieramento.toLowerCase() : "destra";
 
@@ -770,7 +794,7 @@ const GameEngine = {
         AppState.game.wizard.chosenAbilities.push(ablId);
         AppState.game.wizard.remainingPx -= 100;
       } else {
-        alert("Budget PX esaurito!");
+        alert("Punti Esperienza insufficienti!");
         return;
       }
     }
@@ -790,14 +814,19 @@ const GameEngine = {
   },
 
   wizardPrevStep: function(stepNum) {
+    // Se veterano, non può tornare allo step 1 (classe fissa)
+    if (AppState.game.wizard.isVeteran && stepNum === 1) return;
     AppState.game.wizard.step = stepNum;
     this.wizardShowStep(stepNum);
   },
 
   wizardShowStep: function(stepNum) {
-    document.getElementById("wizard-step-class").classList.toggle("hidden", stepNum !== 1);
-    document.getElementById("wizard-step-abilities").classList.toggle("hidden", stepNum !== 2);
-    document.getElementById("wizard-step-name").classList.toggle("hidden", stepNum !== 3);
+    const s1 = document.getElementById("wizard-step-class");
+    const s2 = document.getElementById("wizard-step-abilities");
+    const s3 = document.getElementById("wizard-step-name");
+    if (s1) s1.classList.toggle("hidden", stepNum !== 1);
+    if (s2) s2.classList.toggle("hidden", stepNum !== 2);
+    if (s3) s3.classList.toggle("hidden", stepNum !== 3);
   },
 
   wizardUseTelegramName: function() {
@@ -807,7 +836,10 @@ const GameEngine = {
 
   wizardFinalizeHero: function() {
     const input = document.getElementById("wizard-name-input");
-    const heroName = (input && input.value.trim()) ? input.value.trim() : (AppState.user ? AppState.user.nome : "Avventuriero");
+    const defaultName = AppState.game.wizard.isVeteran 
+      ? AppState.game.wizard.heroName 
+      : (AppState.user ? AppState.user.nome : "Avventuriero");
+    const heroName = (input && input.value.trim()) ? input.value.trim() : defaultName;
 
     this.executeStartGame({
       gameKey: AppState.game.currentSeries.gameKey,
@@ -840,22 +872,21 @@ const GameEngine = {
         AppRouter.navigate("view-gameplay");
       }
     } catch (err) {
-      alert("Impossibile avviare la partita: " + err.message);
+      alert("Impossibile avviare la sessione: " + err.message);
     }
   },
 
-  // RENDERING SNODO NARRATIVO (ABOVE-THE-FOLD RIGIDO)
+  // RENDERING SNODO NARRATIVO
   renderNode: function(node, hero) {
     AppState.game.node = node;
     if (hero) AppState.game.hero = hero;
 
     const s = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
 
-    // 1. Header Gioco
     s("game-header-series", (AppState.game.currentSeries ? AppState.game.currentSeries.serie : "GIOCO").toUpperCase());
     s("game-header-episode", `Episodio ${AppState.game.currentEpisodio}`);
 
-    // 2. HUD Plancia Eroe Compatta
+    // Plancia Eroe Compatta
     if (AppState.game.hero) {
       const h = AppState.game.hero;
       s("kpi-hero-name", h.nomeEroe);
@@ -875,7 +906,7 @@ const GameEngine = {
       }
     }
 
-    // 3. Inquadratura 16:9 Cinema & Copertura Anti-Watermark
+    // Inquadratura Cinema & Banner Diegetico Anti-Watermark
     const img = document.getElementById("scene-image");
     if (img) img.src = node.mediaUrl || "https://image.pollinations.ai/prompt/noir-docks-night-cinematic?width=800&height=450&nologo=true";
 
@@ -892,19 +923,24 @@ const GameEngine = {
       if (wBanner) wBanner.classList.add("hidden");
     }
 
-    // 4. Area Azioni Tattiche (Bivi Narrativi / Combattimento)
+    // Area Azioni Tattiche
     const actBox = document.getElementById("scene-actions-container");
     if (!actBox) return;
 
     const isCombat = (node.tipo === "NEMICO" || (node.id && node.id.includes("NEM_")));
 
+    // SCONTRO DUELLO O PARTY VS PARTY
     if (isCombat) {
       if (typeof SoundEngine !== "undefined") SoundEngine.playBgm("combat");
 
-      const canBribe = node.corruption && node.corruption.canCorrupt;
-      const bribeLabel = (node.corruption && node.corruption.validDrugs.some(d => d.costoDosi === 0))
-        ? "🟡 Corrompi (Gratis)"
-        : "🟡 Corrompi";
+      let bribeHtml = "";
+      if (node.corruption && node.corruption.canCorrupt && node.corruption.validDrugs.length > 0) {
+        bribeHtml = node.corruption.validDrugs.map(d => `
+          <button onclick="GameEngine.combatBribe('${d.nome.replace(/'/g, "\\'")}')" class="btn btn-xs btn-block btn-warning font-bold text-[10px] mt-1 shadow-md">
+            💊 Cedi ${d.nome} ${d.costoDosi === 0 ? '(0 dosi - Alleato)' : ''}
+          </button>
+        `).join("");
+      }
 
       actBox.innerHTML = `
         <div class="grid grid-cols-2 gap-2">
@@ -915,16 +951,12 @@ const GameEngine = {
             🏃 Fuggi
           </button>
         </div>
-        ${canBribe ? `
-          <button onclick="GameEngine.combatBribe('${node.corruption.validDrugs[0].nome}')" class="btn btn-xs btn-block btn-warning font-bold text-[10px] mt-1 shadow-md">
-            ${bribeLabel}
-          </button>
-        ` : ''}
+        ${bribeHtml}
       `;
       return;
     }
 
-    // Gestione Quiz Enigma
+    // ENIGMI & QUIZ
     if (node.quiz) {
       actBox.innerHTML = `
         <div class="p-2 rounded-xl bg-black/40 border border-white/5 space-y-1.5 text-xs">
@@ -941,7 +973,7 @@ const GameEngine = {
       return;
     }
 
-    // Bivi Narrativi Standard
+    // BIVI NARRATIVI
     if (node.choices && node.choices.length > 0) {
       if (node.choices.length === 2) {
         actBox.innerHTML = `
@@ -963,7 +995,7 @@ const GameEngine = {
       }
     } else {
       actBox.innerHTML = `
-        <button onclick="GameEngine.renderSeriesHub()" class="btn btn-sm btn-block btn-outline border-white/20 text-xs font-bold">
+        <button onclick="GameEngine.renderGamesCatalog()" class="btn btn-sm btn-block btn-outline border-white/20 text-xs font-bold">
           🏁 Capitolo Concluso ➔ Torna ai Giochi
         </button>
       `;
@@ -989,7 +1021,7 @@ const GameEngine = {
     }
   },
 
-  // PATTERN "CASINO SUSPENSE ROLL" PER IL COMBATTIMENTO SENZA ALERT
+  // RISOLUZIONE COMBATTIMENTO CON DADO E TRIAGE NECROMANTICO POST-VITTORIA
   combatAction: async function(subAction) {
     if (!AppState.game.session) return;
 
@@ -997,7 +1029,6 @@ const GameEngine = {
     const diceCube = document.getElementById("dice-visual-cube");
     const s = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
 
-    // 1. Avvio Immediato Animazione Dado & Suono (0 ms di latenza percepita)
     if (subAction === "attack_round") {
       s("dice-roll-title", "Lancio D20 in corso...");
       s("dice-roll-result", "--");
@@ -1008,14 +1039,12 @@ const GameEngine = {
     }
 
     try {
-      // 2. Risoluzione Server-Authoritative
       const res = await apiCall("game_action", {
         subAction: subAction,
         gameKey: AppState.game.session.gameKey,
         episodio: AppState.game.session.episodio
       });
 
-      // 3. Risoluzione Visiva all'Arrivo dei Dati
       if (subAction === "attack_round" && res.combatLog) {
         const log = res.combatLog;
         if (diceCube) diceCube.classList.remove("dice-rolling");
@@ -1025,7 +1054,6 @@ const GameEngine = {
         setTimeout(() => {
           if (diceModal) diceModal.close();
 
-          // Feedback Visivo Danno Fluttuante (No alert)
           if (log.isHit) {
             this.showFloatingDamage(`💥 -${log.dmgDealt} PV`, log.isCrit, false);
             if (typeof SoundEngine !== "undefined") SoundEngine.playSfx(log.isCrit ? "crit_hit" : "hit");
@@ -1035,15 +1063,24 @@ const GameEngine = {
 
           if (log.dmgTaken > 0) {
             setTimeout(() => {
-              this.showFloatingDamage(`💔 -${log.dmgTaken} PV Eroe`, false, true);
+              this.showFloatingDamage(`💔 -${log.dmgTaken} PV Squadra`, false, true);
             }, 300);
           }
 
-          // Aggiornamento Scena o Esito Duello
+          // VITTORIA CON TRIAGE NECROMANTICO (RULES 2)
           if (res.status === "VICTORY") {
             if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("victory");
             if (window.confetti) confetti({ particleCount: 70, spread: 60 });
-            this.renderNode(res.nextView.nodo, res.nextView.statoEroe);
+            
+            // Verifica opzioni di necromanzia
+            const hasNecroAbl = (AppState.game.hero && AppState.game.hero.abilita && AppState.game.hero.abilita.includes("Necromanzia") && AppState.game.hero.pv > 1);
+            AppState.game.pendingVictory = res.nextView;
+
+            if (hasNecroAbl && !res.victoryData.chainInfected) {
+              this.renderNecromancyPrompt(res.victoryData.enemy);
+            } else {
+              this.renderNode(res.nextView.nodo, res.nextView.statoEroe);
+            }
           } else if (res.status === "DEFEAT") {
             if (typeof SoundEngine !== "undefined") SoundEngine.playBgm("defeat");
             this.renderNode(res.nextView.nodo, res.nextView.statoEroe);
@@ -1062,6 +1099,57 @@ const GameEngine = {
     }
   },
 
+  // PROMPT DI RIANIMAZIONE ZOMBI
+  renderNecromancyPrompt: function(deadEnemy) {
+    const actBox = document.getElementById("scene-actions-container");
+    if (!actBox) return;
+
+    actBox.innerHTML = `
+      <div class="p-2.5 rounded-xl bg-purple-950/80 border border-purple-500/50 text-center space-y-2 text-xs">
+        <div class="font-black text-purple-300">🧟 RIANIMAZIONE ZOMBI DISPONIBILE</div>
+        <div class="text-[10px] text-slate-300">Il cadavere di ${deadEnemy ? deadEnemy.nome : 'questo nemico'} può risorgere al tuo comando (Danno x2).</div>
+        <div class="grid grid-cols-2 gap-2 pt-1">
+          <button onclick="GameEngine.executeResurrectZombie('${deadEnemy ? deadEnemy.id : ''}')" class="btn btn-xs btn-secondary font-bold">
+            🧟 Rianima (1 PV)
+          </button>
+          <button onclick="GameEngine.skipNecromancy()" class="btn btn-xs btn-outline border-white/20 text-slate-300">
+            Avanza oltre ▶️
+          </button>
+        </div>
+      </div>
+    `;
+  },
+
+  executeResurrectZombie: async function(enemyId) {
+    try {
+      const res = await apiCall("game_action", {
+        subAction: "resurrect_zombie",
+        targetId: enemyId,
+        method: "ABILITA",
+        gameKey: AppState.game.session.gameKey,
+        episodio: AppState.game.session.episodio
+      });
+      if (res && res.success) {
+        if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("zombie");
+        this.showFloatingDamage("🧟 Risorto!", false, false);
+        if (AppState.game.pendingVictory) {
+          this.renderNode(AppState.game.pendingVictory.nodo, res.statoEroe);
+          AppState.game.pendingVictory = null;
+        }
+      }
+    } catch (e) {
+      alert("Rianimazione fallita: " + e.message);
+      this.skipNecromancy();
+    }
+  },
+
+  skipNecromancy: function() {
+    if (AppState.game.pendingVictory) {
+      this.renderNode(AppState.game.pendingVictory.nodo, AppState.game.pendingVictory.statoEroe);
+      AppState.game.pendingVictory = null;
+    }
+  },
+
   combatBribe: async function(drugName) {
     if (!AppState.game.session) return;
     try {
@@ -1077,7 +1165,7 @@ const GameEngine = {
         this.renderNode(res.nextView.nodo, res.nextView.statoEroe);
       }
     } catch (e) {
-      alert("Corruzione fallita: " + e.message);
+      alert("Corruzione non riuscita: " + e.message);
     }
   },
 
@@ -1105,11 +1193,12 @@ const GameEngine = {
   },
 
   // =========================================================================
-  // I 5 CASSETTI TATTICI DEL COCKPIT (POPOLAMENTO REALE & FINANZA ATOMICA)
+  // I 5 CASSETTI TATTICI DEL COCKPIT (CONVERSIONE, EQUIPAGGIA & DOSSIER REALI)
   // =========================================================================
   openBackpackDrawer: function() {
     this.filterBackpack(AppState.game.backpackFilter || "ALL");
-    document.getElementById("drawer-backpack").showModal();
+    const drawer = document.getElementById("drawer-backpack");
+    if (drawer) drawer.showModal();
   },
 
   filterBackpack: function(cat) {
@@ -1124,17 +1213,55 @@ const GameEngine = {
       return;
     }
 
-    c.innerHTML = inv.map(it => `
-      <div class="p-2.5 bg-surface rounded-xl border border-white/5 flex items-center justify-between text-xs">
-        <div class="overflow-hidden pr-2">
-          <div class="font-bold text-white truncate">${it}</div>
-          <div class="text-[9px] text-slate-400">${it === h.armaAttiva ? '🗡️ [ARMA ATTIVA]' : (it === h.veicoloAttivo ? '🛴 [VEICOLO ATTIVO]' : 'Oggetto')}</div>
+    c.innerHTML = inv.map(it => {
+      const isArma = (it === h.armaAttiva);
+      const isVeicolo = (it === h.veicoloAttivo);
+      
+      // Determina l'azione appropriata (Equipaggia vs Consuma)
+      let btnLabel = "Usa";
+      let btnAction = `GameEngine.useBackpackItem('${it.replace(/'/g, "\\'")}')`;
+      
+      if (it.toLowerCase().includes("remo") || it.toLowerCase().includes("serramanico") || it.toLowerCase().includes("fiocina") || it.toLowerCase().includes("mannaia") || it.toLowerCase().includes("catena") || it.toLowerCase().includes("tondino") || it.toLowerCase().includes("coltello") || it.toLowerCase().includes("arpione") || it.toLowerCase().includes("tubo")) {
+        btnLabel = isArma ? "In Pugno" : "Impugna";
+        btnAction = `GameEngine.equipItem('${it.replace(/'/g, "\\'")}', 'weapon')`;
+      } else if (it.toLowerCase().includes("ciao") || it.toLowerCase().includes("apecar") || it.toLowerCase().includes("panda") || it.toLowerCase().includes("monopattino") || it.toLowerCase().includes("bici") || it.toLowerCase().includes("barchino") || it.toLowerCase().includes("parapendio") || it.toLowerCase().includes("canoa")) {
+        btnLabel = isVeicolo ? "In Uso" : "Attiva";
+        btnAction = `GameEngine.equipItem('${it.replace(/'/g, "\\'")}', 'vehicle')`;
+      }
+
+      return `
+        <div class="p-2.5 bg-surface rounded-xl border border-white/5 flex items-center justify-between text-xs">
+          <div class="overflow-hidden pr-2">
+            <div class="font-bold text-white truncate">${it}</div>
+            <div class="text-[9px] text-slate-400">${isArma ? '🗡️ [ARMA ATTIVA]' : (isVeicolo ? '🛴 [VEICOLO ATTIVO]' : 'Articolo')}</div>
+          </div>
+          <button onclick="${btnAction}" class="btn btn-xs ${isArma || isVeicolo ? 'btn-success' : 'btn-outline border-white/20'} text-[9px] shrink-0">
+            ${btnLabel}
+          </button>
         </div>
-        <button onclick="GameEngine.useBackpackItem('${it.replace(/'/g, "\\'")}')" class="btn btn-xs btn-outline border-white/20 text-[9px] shrink-0">
-          Usa
-        </button>
-      </div>
-    `).join("");
+      `;
+    }).join("");
+  },
+
+  equipItem: async function(itemName, type) {
+    if (!AppState.game.session) return;
+    try {
+      const res = await apiCall("game_action", {
+        subAction: "equip",
+        item: itemName,
+        type: type,
+        gameKey: AppState.game.session.gameKey,
+        episodio: AppState.game.session.episodio
+      });
+      if (res && res.success) {
+        if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("click");
+        AppState.game.hero = res.statoEroe;
+        this.renderNode(AppState.game.node, res.statoEroe);
+        this.filterBackpack(AppState.game.backpackFilter);
+      }
+    } catch (e) {
+      alert("Impossibile equipaggiare: " + e.message);
+    }
   },
 
   useBackpackItem: async function(itemName) {
@@ -1161,9 +1288,11 @@ const GameEngine = {
     const h = AppState.game.hero;
     document.getElementById("emporio-gold-display").textContent = `${h ? h.oro : 0} 🟡`;
     this.setEmporioMode(AppState.game.emporioMode || "buy");
-    document.getElementById("drawer-emporio").showModal();
+    const drawer = document.getElementById("drawer-emporio");
+    if (drawer) drawer.showModal();
   },
 
+  // EMPORIO REALE (DATI DINAMICI DALLO SHOP / EPISODIO 0)
   setEmporioMode: function(mode) {
     AppState.game.emporioMode = mode;
     const btnBuy = document.getElementById("emporio-tab-buy");
@@ -1189,26 +1318,41 @@ const GameEngine = {
         </div>
       `).join("");
     } else {
-      // Modalità Acquisto: Mini-Shop Responsivo (2 col mobile, 3 col tablet, 4 col desktop)
-      container.innerHTML = `
+      // Modalità Acquisto: Merci reali caricate dallo shop
+      const shopItems = AppState.shop.items || [];
+      if (shopItems.length === 0) {
+        container.innerHTML = `<div class="col-span-full py-6 text-center text-slate-500 text-xs">Nessun articolo disponibile all'Emporio.</div>`;
+        return;
+      }
+
+      container.innerHTML = shopItems.slice(0, 8).map(item => `
         <div class="p-2.5 bg-surface rounded-xl border border-white/5 flex flex-col justify-between text-xs space-y-2">
-          <div><div class="font-bold text-white">Focaccia Unta</div><div class="text-[9px] text-amber-300">12 🟡 • Cura 16 PV</div></div>
-          <button class="btn btn-xs btn-primary font-bold text-[9px]">Compra</button>
+          <div>
+            <div class="font-bold text-white truncate">${item.nome}</div>
+            <div class="text-[9px] text-amber-300 font-mono">${item.prezzoMegoin * 10} 🟡</div>
+          </div>
+          <button onclick="GameEngine.buyFromEmporio('${item.id}', ${item.prezzoMegoin * 10})" class="btn btn-xs btn-primary font-bold text-[9px]">
+            Compra
+          </button>
         </div>
-        <div class="p-2.5 bg-surface rounded-xl border border-white/5 flex flex-col justify-between text-xs space-y-2">
-          <div><div class="font-bold text-white">Danpei Gold</div><div class="text-[9px] text-amber-300">22 🟡 • THC Puro</div></div>
-          <button class="btn btn-xs btn-primary font-bold text-[9px]">Compra</button>
-        </div>
-        <div class="p-2.5 bg-surface rounded-xl border border-white/5 flex flex-col justify-between text-xs space-y-2">
-          <div><div class="font-bold text-white">Serramanico</div><div class="text-[9px] text-amber-300">15 🟡 • Danno 4</div></div>
-          <button class="btn btn-xs btn-primary font-bold text-[9px]">Compra</button>
-        </div>
-        <div class="p-2.5 bg-surface rounded-xl border border-white/5 flex flex-col justify-between text-xs space-y-2">
-          <div><div class="font-bold text-white">Kit Garze</div><div class="text-[9px] text-amber-300">14 🟡 • Cura 22 PV</div></div>
-          <button class="btn btn-xs btn-primary font-bold text-[9px]">Compra</button>
-        </div>
-      `;
+      `).join("");
     }
+  },
+
+  buyFromEmporio: function(itemId, goldCost) {
+    if (!AppState.game.hero) return;
+    if (AppState.game.hero.oro < goldCost) {
+      alert("Monete d'oro insufficienti!");
+      return;
+    }
+    const item = AppState.shop.items.find(i => i.id === itemId);
+    if (!item) return;
+
+    AppState.game.hero.oro -= goldCost;
+    AppState.game.hero.inventario.push(item.nome);
+    if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("cash_register");
+    this.openEmporioDrawer();
+    this.renderNode(AppState.game.node, AppState.game.hero);
   },
 
   sellToEmporio: function(itemName) {
@@ -1216,7 +1360,7 @@ const GameEngine = {
       const idx = AppState.game.hero.inventario.indexOf(itemName);
       if (idx !== -1) {
         AppState.game.hero.inventario.splice(idx, 1);
-        AppState.game.hero.oro += 10; // Riacquisto al 25% medio
+        AppState.game.hero.oro += 10;
         if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("cash_register");
         this.openEmporioDrawer();
         this.renderNode(AppState.game.node, AppState.game.hero);
@@ -1226,10 +1370,11 @@ const GameEngine = {
 
   openCambioModal: function() {
     document.getElementById("cambio-megoin-balance").textContent = AppState.user ? AppState.user.saldoMegoin : 0;
-    document.getElementById("modal-banco-cambio").showModal();
+    const modal = document.getElementById("modal-banco-cambio");
+    if (modal) modal.showModal();
   },
 
-  // CONVERSIONE ATOMICA SERVER-SIDE (MEGOIN ➔ ORO)
+  // CONVERSIONE ATOMICA (MEGOIN ➔ ORO)
   convertMegoinToGold: async function(megoinCost, goldEarned) {
     if (!AppState.user || AppState.user.saldoMegoin < megoinCost) {
       alert("Saldo Megoin insufficiente!");
@@ -1276,41 +1421,67 @@ const GameEngine = {
       html = `<div class="py-6 text-center text-slate-500 text-xs">Sei in solitaria. Nessun alleato o zombi presente.</div>`;
     } else {
       html += comp.map(a => `<div class="p-2.5 bg-surface rounded-xl border border-white/5 font-bold text-xs flex justify-between"><span>🤝 ${a}</span> <span class="text-emerald-400">Alleato Umano</span></div>`).join("");
-      html += zombies.map(z => `<div class="p-2.5 bg-surface rounded-xl border border-rose-500/30 font-bold text-xs flex justify-between"><span>🧟 ${z.nome}</span> <span class="text-rose-400">Danno 2x (PV: ${z.pv}/${z.pvMax})</span></div>`).join("");
+      html += zombies.map(z => `<div class="p-2.5 bg-surface rounded-xl border border-rose-500/30 font-bold text-xs flex justify-between"><span>🧟 ${z.nome}</span> <span class="text-rose-400">Danno x2 (❤️ ${z.pv}/${z.pvMax})</span></div>`).join("");
     }
 
     c.innerHTML = html;
-    document.getElementById("drawer-squad").showModal();
+    const drawer = document.getElementById("drawer-squad");
+    if (drawer) drawer.showModal();
   },
 
+  // DOSSIER INVESTIGATIVO DELLE 6 FAZIONI (ORGANIGRAMMA REALE)
   openDossierDrawer: function() {
     const c = document.getElementById("dossier-list-container");
     const h = AppState.game.hero;
     if (!c || !h) return;
 
     const inv = h.inventario || [];
-    const prove = inv.filter(it => it.toLowerCase().includes("bolla") || it.toLowerCase().includes("cartone") || it.toLowerCase().includes("fattura") || it.toLowerCase().includes("schema") || it.toLowerCase().includes("registro"));
+    const infoItems = inv.filter(it => {
+      const low = it.toLowerCase();
+      return low.includes("bolla") || low.includes("cartone") || low.includes("fattura") || 
+             low.includes("schema") || low.includes("registro") || low.includes("appunto") || 
+             low.includes("tracce") || low.includes("file") || low.includes("foto") || low.includes("quaderno");
+    });
 
-    if (prove.length === 0) {
-      c.innerHTML = `<div class="py-6 text-center text-slate-500 text-xs">Nessuna prova d'inchiesta decifrata finora.</div>`;
+    if (infoItems.length === 0) {
+      c.innerHTML = `<div class="py-6 text-center text-slate-500 text-xs">Nessun reperto d'inchiesta raccolto finora.</div>`;
     } else {
-      c.innerHTML = prove.map(p => `
-        <div class="p-3 bg-surface rounded-xl border border-sky-500/30 text-xs space-y-1">
-          <div class="font-bold text-sky-400">📁 ${p}</div>
-          <div class="text-[10px] text-slate-300">Reperto certificato dell'Organigramma. Fornisce <b class="text-emerald-400">+1 INT permanente</b>.</div>
-        </div>
-      `).join("");
+      c.innerHTML = infoItems.map(p => {
+        const low = p.toLowerCase();
+        let targetFaction = "Generale";
+        let isPermanent = low.includes("bolla") || low.includes("cartone") || low.includes("fattura") || low.includes("schema") || low.includes("registro");
+
+        if (low.includes("tarik") || low.includes("lecciona")) targetFaction = "Mazzu";
+        else if (low.includes("patek") || low.includes("appalti")) targetFaction = "Camorristi";
+        else if (low.includes("banchina vip")) targetFaction = "Burocrati";
+        else if (low.includes("duccio") || low.includes("jerry") || low.includes("quaderno")) targetFaction = "Ideologi";
+
+        return `
+          <div class="p-3 bg-surface rounded-xl border border-sky-500/30 text-xs space-y-1">
+            <div class="flex items-center justify-between">
+              <span class="font-bold text-sky-400">📁 ${p}</span>
+              <span class="badge badge-xs badge-info font-mono text-[8px]">${targetFaction}</span>
+            </div>
+            <div class="text-[10px] text-slate-300">
+              ${isPermanent ? 'Reperto dell\'Organigramma: <b class="text-emerald-400">+1 INT permanente</b>' : `Reperto mirato: <b class="text-amber-300">+1 INT vs ${targetFaction}</b>`}
+            </div>
+          </div>
+        `;
+      }).join("");
     }
 
-    document.getElementById("drawer-dossier").showModal();
+    const drawer = document.getElementById("drawer-dossier");
+    if (drawer) drawer.showModal();
   },
 
   openAbandonModal: function() {
-    document.getElementById("modal-abandon").showModal();
+    const modal = document.getElementById("modal-abandon");
+    if (modal) modal.showModal();
   },
 
   confirmAbandon: function() {
-    document.getElementById("modal-abandon").close();
+    const modal = document.getElementById("modal-abandon");
+    if (modal) modal.close();
     AppState.game.session = null;
     this.leaveGameToHub();
   },
