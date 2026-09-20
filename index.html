@@ -40,10 +40,10 @@
       from { opacity: 0; }
       to { opacity: 1; }
     }
-    ::-webkit-scrollbar { width: 3px; height: 3px; }
-    ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 999px; }
+    ::-webkit-scrollbar { width: 4px; height: 4px; }
+    ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.12); border-radius: 999px; }
     
-    /* GESTIONE CALCOLATA AREA SICURA PER IPHONE & DYNAMIC ISLAND */
+    /* SAFE AREA CALCOLATA PER IPHONE & DYNAMIC ISLAND */
     .safe-header {
       padding-top: var(--tg-safe-area-inset-top, env(safe-area-inset-top, 48px));
       height: calc(var(--tg-safe-area-inset-top, env(safe-area-inset-top, 48px)) + 48px);
@@ -79,63 +79,65 @@
     <button id="loading-retry-btn" onclick="location.reload()" class="hidden mt-4 btn btn-sm btn-primary">Riprova</button>
   </div>
 
-  <!-- 2. SIDEBAR FISSA PER DESKTOP (>= 768px): COMMAND CENTER -->
-  <aside class="hidden md:flex flex-col w-64 lg:w-72 bg-[#0d131f] border-r border-white/5 h-full pt-14 p-5 space-y-5 flex-none z-30">
-    <div class="bg-surface/80 p-4 rounded-2xl border border-white/5 space-y-3">
-      <div class="flex items-center space-x-3">
-        <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-sky-600 to-indigo-600 flex items-center justify-center font-black text-lg text-white shadow-md shadow-sky-600/20" id="user-avatar-desk">F</div>
+  <!-- 2. SIDEBAR DESKTOP FISSA (>= 768px): COMMAND CENTER POTENZIATO -->
+  <aside class="hidden md:flex flex-col w-72 lg:w-80 bg-[#0d131f] border-r border-white/5 h-full pt-14 p-5 space-y-6 flex-none z-30">
+    <!-- Scheda Agente Syndicate Ridisegnata -->
+    <div class="bg-surface/90 p-4 rounded-2xl border border-white/10 shadow-xl space-y-4">
+      <div class="flex items-center space-x-3.5">
+        <div class="w-14 h-14 rounded-2xl bg-gradient-to-tr from-sky-600 to-indigo-600 flex items-center justify-center font-black text-xl text-white ring-2 ring-sky-500/40 shadow-lg shadow-sky-600/30 flex-shrink-0" id="user-avatar-desk">F</div>
         <div class="overflow-hidden">
-          <div class="text-[10px] font-bold text-slate-400 tracking-widest uppercase">⚓ ESTIQATSY</div>
-          <div class="text-sm font-black text-white truncate" id="user-name-desk">Utente</div>
-          <span class="badge badge-xs badge-info font-bold text-[8px] uppercase mt-0.5" id="user-plan-desk">FREE</span>
+          <div class="text-[10px] font-bold text-slate-400 tracking-[0.2em] uppercase">⚓ ESTIQATSY</div>
+          <div class="text-base font-black text-white truncate" id="user-name-desk">Utente</div>
+          <span class="badge badge-sm badge-info font-black text-[9px] uppercase tracking-wider py-2 px-2.5 mt-0.5" id="user-plan-desk">PIANO FREE</span>
         </div>
       </div>
 
-      <!-- Metriche Desktop Sdoppiate -->
-      <div class="grid grid-cols-2 gap-2 pt-2 border-t border-white/5">
-        <div class="bg-black/30 p-2 rounded-xl text-center">
-          <div class="text-[8px] text-slate-400 font-bold uppercase">Megoin</div>
-          <div class="text-xs font-black text-amber-400 text-glow-amber tabular-nums" id="user-megoin-desk">0 🪙</div>
+      <!-- Plancia Metriche Personali Desktop -->
+      <div class="grid grid-cols-2 gap-2 pt-3 border-t border-white/10">
+        <div class="bg-black/40 p-2.5 rounded-xl text-center border border-white/5">
+          <div class="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Megoin</div>
+          <div class="text-sm lg:text-base font-black text-amber-400 text-glow-amber tabular-nums mt-0.5" id="user-megoin-desk">0 🪙</div>
         </div>
-        <div class="bg-black/30 p-2 rounded-xl text-center">
-          <div class="text-[8px] text-slate-400 font-bold uppercase">Fedeltà</div>
-          <div class="text-xs font-black text-emerald-400 tabular-nums" id="user-points-desk">0 Pt</div>
+        <div class="bg-black/40 p-2.5 rounded-xl text-center border border-white/5">
+          <div class="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Fedeltà</div>
+          <div class="text-sm lg:text-base font-black text-emerald-400 tabular-nums mt-0.5" id="user-points-desk">0 Pt</div>
         </div>
       </div>
     </div>
 
     <!-- Voci di Navigazione Desktop -->
-    <nav class="flex-1 space-y-1.5" id="desktop-nav-menu">
-      <button onclick="AppRouter.navigate('home')" class="desk-nav-btn w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl text-xs font-bold text-sky-400 bg-white/5" data-tab="home">
+    <nav class="flex-1 space-y-2" id="desktop-nav-menu">
+      <button onclick="AppRouter.navigate('home')" class="desk-nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-xs font-bold text-sky-400 bg-white/5" data-tab="home">
         <i data-lucide="home" class="w-4 h-4"></i> <span>Dashboard Home</span>
       </button>
-      <button onclick="AppRouter.navigate('games')" class="desk-nav-btn w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl text-xs font-bold text-slate-300 hover:bg-white/5" data-tab="games">
+      <button onclick="AppRouter.navigate('games')" class="desk-nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-xs font-bold text-slate-300 hover:bg-white/5" data-tab="games">
         <i data-lucide="gamepad-2" class="w-4 h-4"></i> <span>Avventure RPG</span>
       </button>
-      <button onclick="AppRouter.navigate('shop')" class="desk-nav-btn w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl text-xs font-bold text-slate-300 hover:bg-white/5" data-tab="shop">
+      <button onclick="AppRouter.navigate('shop')" class="desk-nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-xs font-bold text-slate-300 hover:bg-white/5" data-tab="shop">
         <i data-lucide="shopping-bag" class="w-4 h-4"></i> <span>Vetrina Bottega</span>
       </button>
-      <button onclick="AppRouter.navigate('recipes')" class="desk-nav-btn w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl text-xs font-bold text-slate-300 hover:bg-white/5" data-tab="recipes">
+      <button onclick="AppRouter.navigate('recipes')" class="desk-nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-xs font-bold text-slate-300 hover:bg-white/5" data-tab="recipes">
         <i data-lucide="utensils" class="w-4 h-4"></i> <span>Barlady & Ricette</span>
       </button>
-      <button onclick="AppRouter.navigate('profile')" class="desk-nav-btn w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl text-xs font-bold text-slate-300 hover:bg-white/5" data-tab="profile">
-        <i data-lucide="user" class="w-4 h-4"></i> <span>Profilo & Caveau</span>
+      <button onclick="AppRouter.navigate('profile')" class="desk-nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-xs font-bold text-slate-300 hover:bg-white/5" data-tab="profile">
+        <i data-lucide="user" class="w-4 h-4"></i> <span>Profilo & Piani</span>
       </button>
     </nav>
 
+    <!-- Footer Sidebar -->
     <div class="pt-3 border-t border-white/5 flex items-center justify-between">
       <button onclick="SoundEngine.toggleMute()" class="btn btn-ghost btn-xs text-slate-400">
         <i data-lucide="volume-2" class="w-4 h-4"></i>
         <span id="audio-status-desk" class="badge badge-xs badge-success text-[8px]">ON</span>
       </button>
-      <span class="text-[9px] text-slate-500 font-mono">v3.0 Noir</span>
+      <span class="text-[10px] text-slate-500 font-mono">v3.1 Syndicate</span>
     </div>
   </aside>
 
-  <!-- 3. CORPO CENTRALE (Mobile & Desktop) -->
+  <!-- 3. CORPO CENTRALE A PIENA LARGHEZZA SENZA SPRECHI -->
   <div class="flex-1 flex flex-col h-full min-w-0 overflow-hidden relative">
 
-    <!-- HEADER MOBILE A TUTTA LARGHEZZA: Disceso sotto la Dynamic Island e allineato ai tasti Telegram -->
+    <!-- HEADER MOBILE A TUTTA LARGHEZZA: Logo centrato tra i tasti nativi Telegram -->
     <header class="md:hidden flex-none z-30 safe-header px-4 flex items-center justify-center relative">
       <div class="flex items-center space-x-2 pointer-events-none">
         <span class="text-base">⚓</span>
@@ -145,88 +147,92 @@
 
     <!-- AREA SCROLLABILE CONTENUTI -->
     <main class="flex-1 overflow-y-auto overflow-x-hidden relative" id="app-main-scroll">
-      <div class="p-3 md:p-6 max-w-5xl mx-auto space-y-4">
+      <!-- Contenitore Desktop a piena larghezza (max-w-[1400px]) per saturare lo spazio -->
+      <div class="p-3.5 md:p-8 lg:p-10 max-w-[1400px] mx-auto space-y-6">
 
         <!-- ================================================================= -->
         <!-- SCHERMATA: HOME -->
         <!-- ================================================================= -->
-        <section id="view-home" class="space-y-4 app-screen">
+        <section id="view-home" class="space-y-6 app-screen">
           <!-- Hero Banner di Benvenuto -->
-          <div class="rounded-3xl p-5 md:p-7 bg-gradient-to-br from-slate-900 via-slate-900 to-indigo-950 border border-white/10 shadow-2xl space-y-3">
+          <div class="rounded-3xl p-6 md:p-8 bg-gradient-to-br from-slate-900 via-slate-900 to-indigo-950 border border-white/10 shadow-2xl space-y-3 relative overflow-hidden">
             <div class="flex items-center space-x-2">
-              <span class="badge badge-xs badge-outline border-sky-400 text-sky-400 font-bold uppercase text-[8px]">Piattaforma Ufficiale</span>
-              <span class="text-[10px] font-bold text-emerald-400" id="home-rank-badge">⭐ <span id="home-rank-points">0</span> Punti Fedeltà</span>
+              <span class="badge badge-sm badge-outline border-sky-400 text-sky-400 font-bold uppercase text-[9px] md:text-[10px]">Piattaforma Ufficiale</span>
+              <span class="text-xs md:text-sm font-bold text-emerald-400" id="home-rank-badge">⭐ <span id="home-rank-points">0</span> Punti Fedeltà</span>
             </div>
             <div>
-              <h2 class="text-xl md:text-2xl font-black text-white leading-tight">Darsena Noir, <span id="home-username" class="text-sky-400">Ospite</span>.</h2>
-              <p class="text-[11px] md:text-xs text-slate-300 leading-relaxed max-w-lg mt-1">
+              <h2 class="text-xl md:text-3xl font-black text-white leading-tight">Darsena Noir, <span id="home-username" class="text-sky-400">Ospite</span>.</h2>
+              <p class="text-xs md:text-sm text-slate-300 leading-relaxed max-w-2xl mt-1.5">
                 Vivi le saghe investigative, sblocca le ricette dei moli e spendi i tuoi gettoni Megoin nella bottega del porto.
               </p>
             </div>
-            <div class="pt-1 flex gap-2">
-              <button onclick="AppRouter.navigate('games')" class="btn btn-xs md:btn-sm btn-primary font-bold shadow-lg shadow-sky-600/30">🎮 Avventure</button>
-              <button onclick="AppRouter.navigate('shop')" class="btn btn-xs md:btn-sm btn-outline border-white/20 font-bold">🏪 Bottega</button>
+            <div class="pt-2 flex gap-3">
+              <button onclick="AppRouter.navigate('games')" class="btn btn-sm md:btn-md btn-primary text-xs md:text-sm font-bold shadow-lg shadow-sky-600/30">🎮 Avventure</button>
+              <button onclick="AppRouter.navigate('shop')" class="btn btn-sm md:btn-md btn-outline border-white/20 text-xs md:text-sm font-bold">🏪 Bottega</button>
             </div>
           </div>
 
-          <!-- Griglia 4 KPI Interattivi (Scorciatoie con Tap) -->
-          <div class="grid grid-cols-2 md:grid-cols-4 gap-2.5">
+          <!-- Griglia 4 KPI Interattivi (Tipografia Scalata con font grandi) -->
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
             <!-- 1. Megoin -> Profilo -->
-            <div onclick="AppRouter.navigate('profile')" class="bg-surface/80 hover:bg-surface active:scale-[0.97] transition-all p-3 rounded-2xl border border-white/5 cursor-pointer flex justify-between items-start group">
+            <div onclick="AppRouter.navigate('profile')" class="bg-surface/80 hover:bg-surface active:scale-[0.98] transition-all p-3.5 md:p-4 rounded-2xl border border-white/5 cursor-pointer flex justify-between items-start group shadow-md">
               <div>
-                <div class="text-[8px] uppercase font-bold text-slate-400">Megoin</div>
-                <div class="text-base font-black text-amber-300 text-glow-amber tabular-nums" id="home-megoin-card">0 🪙</div>
+                <div class="text-[9px] md:text-[11px] uppercase font-bold text-slate-400 tracking-wider">Megoin</div>
+                <div class="text-lg md:text-2xl font-black text-amber-300 text-glow-amber tabular-nums mt-1" id="home-megoin-card">0 🪙</div>
               </div>
-              <i data-lucide="chevron-right" class="w-3.5 h-3.5 text-slate-500 group-hover:text-amber-400 transition-colors"></i>
+              <i data-lucide="chevron-right" class="w-4 h-4 text-slate-500 group-hover:text-amber-400 transition-colors"></i>
             </div>
 
             <!-- 2. Punti Fedeltà -> Profilo -->
-            <div onclick="AppRouter.navigate('profile')" class="bg-surface/80 hover:bg-surface active:scale-[0.97] transition-all p-3 rounded-2xl border border-white/5 cursor-pointer flex justify-between items-start group">
+            <div onclick="AppRouter.navigate('profile')" class="bg-surface/80 hover:bg-surface active:scale-[0.98] transition-all p-3.5 md:p-4 rounded-2xl border border-white/5 cursor-pointer flex justify-between items-start group shadow-md">
               <div>
-                <div class="text-[8px] uppercase font-bold text-slate-400">Punti Fedeltà</div>
-                <div class="text-base font-black text-emerald-400 tabular-nums" id="home-punti-card">0 Pt</div>
+                <div class="text-[9px] md:text-[11px] uppercase font-bold text-slate-400 tracking-wider">Punti Fedeltà</div>
+                <div class="text-lg md:text-2xl font-black text-emerald-400 tabular-nums mt-1" id="home-punti-card">0 Pt</div>
               </div>
-              <i data-lucide="chevron-right" class="w-3.5 h-3.5 text-slate-500 group-hover:text-emerald-400 transition-colors"></i>
+              <i data-lucide="chevron-right" class="w-4 h-4 text-slate-500 group-hover:text-emerald-400 transition-colors"></i>
             </div>
 
             <!-- 3. Saghe Attive -> Giochi -->
-            <div onclick="AppRouter.navigate('games')" class="bg-surface/80 hover:bg-surface active:scale-[0.97] transition-all p-3 rounded-2xl border border-white/5 cursor-pointer flex justify-between items-start group">
+            <div onclick="AppRouter.navigate('games')" class="bg-surface/80 hover:bg-surface active:scale-[0.98] transition-all p-3.5 md:p-4 rounded-2xl border border-white/5 cursor-pointer flex justify-between items-start group shadow-md">
               <div>
-                <div class="text-[8px] uppercase font-bold text-slate-400">Saghe Attive</div>
-                <div class="text-base font-black text-sky-400 tabular-nums" id="home-games-count">0</div>
+                <div class="text-[9px] md:text-[11px] uppercase font-bold text-slate-400 tracking-wider">Saghe Attive</div>
+                <div class="text-lg md:text-2xl font-black text-sky-400 tabular-nums mt-1" id="home-games-count">0</div>
               </div>
-              <i data-lucide="chevron-right" class="w-3.5 h-3.5 text-slate-500 group-hover:text-sky-400 transition-colors"></i>
+              <i data-lucide="chevron-right" class="w-4 h-4 text-slate-500 group-hover:text-sky-400 transition-colors"></i>
             </div>
 
             <!-- 4. Prodotti Acquistati -> Caveau Digitale -->
-            <div onclick="AppEngine.openVaultSection()" class="bg-surface/80 hover:bg-surface active:scale-[0.97] transition-all p-3 rounded-2xl border border-white/5 cursor-pointer flex justify-between items-start group">
+            <div onclick="AppEngine.openVaultSection()" class="bg-surface/80 hover:bg-surface active:scale-[0.98] transition-all p-3.5 md:p-4 rounded-2xl border border-white/5 cursor-pointer flex justify-between items-start group shadow-md">
               <div>
-                <div class="text-[8px] uppercase font-bold text-slate-400">Prodotti Acquistati</div>
-                <div class="text-base font-black text-purple-400 tabular-nums" id="home-purchases-count">0</div>
+                <div class="text-[9px] md:text-[11px] uppercase font-bold text-slate-400 tracking-wider">Prodotti Acquistati</div>
+                <div class="text-lg md:text-2xl font-black text-purple-400 tabular-nums mt-1" id="home-purchases-count">0</div>
               </div>
-              <i data-lucide="chevron-right" class="w-3.5 h-3.5 text-slate-500 group-hover:text-purple-400 transition-colors"></i>
+              <i data-lucide="chevron-right" class="w-4 h-4 text-slate-500 group-hover:text-purple-400 transition-colors"></i>
             </div>
           </div>
 
-          <!-- CAROSELLO SAGHE (Scorrimento 5s, pausa al tocco, tag Partita in Corso) -->
-          <div class="space-y-2">
+          <!-- CAROSELLO SAGHE (Auto 5s, pausa al tocco, tag Partita in Corso) -->
+          <div class="space-y-2.5">
             <div class="flex items-center justify-between">
-              <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Saghe & Episodi Usciti</span>
-              <div class="flex space-x-1" id="carousel-dots-container"></div>
+              <span class="text-xs md:text-sm font-bold uppercase tracking-wider text-slate-400">Saghe & Episodi Usciti</span>
+              <div class="flex space-x-1.5" id="carousel-dots-container"></div>
             </div>
             
-            <div class="relative overflow-hidden rounded-2xl bg-surface border border-white/5 shadow-xl" id="carousel-outer-wrapper">
+            <div class="relative overflow-hidden rounded-2xl bg-surface border border-white/5 shadow-2xl" id="carousel-outer-wrapper">
               <div class="flex transition-transform duration-500 ease-out" id="carousel-track">
-                <!-- Slide iniettate dinamicamente da app.js -->
+                <!-- Slide iniettate da app.js -->
               </div>
             </div>
           </div>
 
-          <!-- VETRINA PIANI DI ABBONAMENTO (Con tag Piano Attivo) -->
-          <div class="space-y-2 pt-2">
-            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Piani di Abbonamento Syndicate</span>
-            <div id="home-plans-container" class="grid grid-cols-1 md:grid-cols-3 gap-3">
-              <!-- Card dei Piani iniettate dinamicamente da app.js -->
+          <!-- VETRINA PIANI DI ABBONAMENTO: Opzione B Mobile (Matrice) / 3 Colonne Desktop -->
+          <div class="space-y-3 pt-2">
+            <div class="flex justify-between items-center">
+              <span class="text-xs md:text-sm font-bold uppercase tracking-wider text-slate-400">Piani di Abbonamento Syndicate</span>
+              <span class="text-[10px] md:text-xs text-sky-400">Tocca un piano per i dettagli</span>
+            </div>
+            <div id="home-plans-container" class="space-y-3">
+              <!-- Renderizzato dinamicamente da app.js -->
             </div>
           </div>
         </section>
@@ -237,74 +243,74 @@
         <section id="view-games" class="space-y-4 hidden app-screen">
           <div class="relative w-full">
             <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
-            <input type="text" id="games-search-input" oninput="AppEngine.filterGames()" placeholder="Cerca saga o genere..." class="w-full pl-10 pr-4 py-2 rounded-xl bg-surface border border-white/5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-sky-500">
+            <input type="text" id="games-search-input" oninput="AppEngine.filterGames()" placeholder="Cerca saga o genere..." class="w-full pl-10 pr-4 py-2.5 rounded-xl bg-surface border border-white/5 text-xs md:text-sm text-white placeholder-slate-500 focus:outline-none focus:border-sky-500">
           </div>
           <div class="flex space-x-2 overflow-x-auto pb-1 no-scrollbar" id="games-genre-chips"></div>
-          <div id="games-gallery-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+          <div id="games-gallery-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6"></div>
         </section>
 
         <!-- SOTTO-SCHERMATA: HUB DELLA SAGA (Senza tasto indietro interno) -->
         <section id="subview-series-hub" class="space-y-4 hidden app-screen">
           <div class="pb-2 border-b border-white/5">
-            <h2 class="text-sm font-black text-white uppercase tracking-wider" id="hub-serie-title">Titolo Saga</h2>
-            <div class="flex space-x-1.5 mt-0.5">
-              <span class="text-[9px] text-sky-400 font-bold uppercase" id="hub-serie-genre">Avventura</span>
-              <span class="badge badge-xs badge-neutral text-[8px] font-bold uppercase" id="hub-serie-rules">Rules 2</span>
+            <h2 class="text-base md:text-xl font-black text-white uppercase tracking-wider" id="hub-serie-title">Titolo Saga</h2>
+            <div class="flex space-x-2 mt-1">
+              <span class="text-[10px] md:text-xs text-sky-400 font-bold uppercase" id="hub-serie-genre">Avventura</span>
+              <span class="badge badge-xs md:badge-sm badge-neutral text-[9px] font-bold uppercase" id="hub-serie-rules">Rules 2</span>
             </div>
           </div>
 
-          <div class="-mx-3 md:mx-0 h-48 md:h-64 relative overflow-hidden bg-surface">
+          <div class="-mx-3.5 md:mx-0 h-48 md:h-72 rounded-none md:rounded-2xl relative overflow-hidden bg-surface">
             <img id="hub-serie-img" src="" class="w-full h-full object-cover" alt="">
             <div class="absolute inset-0 bg-gradient-to-t from-[#090D16] via-transparent to-transparent"></div>
           </div>
 
           <div class="space-y-3">
-            <p id="hub-serie-desc" class="text-xs text-slate-300 leading-relaxed"></p>
-            <div id="hub-serie-quote" class="text-xs italic text-slate-400 border-l-2 border-amber-500/70 pl-3 py-1"></div>
+            <p id="hub-serie-desc" class="text-xs md:text-sm text-slate-300 leading-relaxed"></p>
+            <div id="hub-serie-quote" class="text-xs md:text-sm italic text-slate-400 border-l-2 border-amber-500/70 pl-3 py-1"></div>
 
-            <div id="hub-hero-box" class="hidden p-3 rounded-2xl bg-surface border border-sky-500/20 flex items-center justify-between text-xs">
+            <div id="hub-hero-box" class="hidden p-3 rounded-2xl bg-surface border border-sky-500/20 flex items-center justify-between text-xs md:text-sm">
               <div>
-                <div class="text-[9px] text-slate-400 uppercase font-bold">Eroe Attivo</div>
+                <div class="text-[9px] md:text-[10px] text-slate-400 uppercase font-bold">Eroe Attivo</div>
                 <div class="font-black text-white" id="hub-hero-name">Veterano</div>
               </div>
               <span class="badge badge-sm badge-info font-bold text-[9px]" id="hub-hero-progress">Completati: 0</span>
             </div>
 
             <div class="space-y-2 pt-2">
-              <div class="text-xs font-bold text-slate-400 uppercase tracking-wider">Capitoli Narrativi</div>
+              <div class="text-xs md:text-sm font-bold text-slate-400 uppercase tracking-wider">Capitoli Narrativi</div>
               <div id="hub-episodes-list" class="space-y-2"></div>
             </div>
           </div>
         </section>
 
         <!-- SOTTO-SCHERMATA: GAMEPLAY VISUAL NOVEL (Senza tasto indietro interno) -->
-        <section id="view-gameplay" class="space-y-3 hidden app-screen -mx-3 md:mx-auto">
+        <section id="view-gameplay" class="space-y-4 hidden app-screen -mx-3.5 md:mx-auto max-w-3xl">
           <!-- Scheda Eroe & Barra PV -->
-          <div class="px-3 md:px-0 flex items-center justify-between">
+          <div class="px-3.5 md:px-0 flex items-center justify-between">
             <div>
-              <div class="text-xs font-black text-white leading-none" id="gameplay-hero-name">Eroe</div>
-              <div class="text-[9px] text-slate-400 mt-0.5" id="gameplay-hero-class">Avventuriero</div>
+              <div class="text-sm font-black text-white leading-none" id="gameplay-hero-name">Eroe</div>
+              <div class="text-[10px] text-slate-400 mt-0.5" id="gameplay-hero-class">Avventuriero</div>
             </div>
-            <div class="w-36 space-y-1">
-              <div class="flex justify-between text-[9px] font-mono text-slate-300">
+            <div class="w-40 space-y-1">
+              <div class="flex justify-between text-[10px] font-mono text-slate-300">
                 <span>PV</span> <span id="gameplay-pv-label">25/25</span>
               </div>
-              <progress id="gameplay-pv-bar" class="progress progress-error w-full h-2" value="25" max="25"></progress>
+              <progress id="gameplay-pv-bar" class="progress progress-error w-full h-2.5" value="25" max="25"></progress>
             </div>
           </div>
 
           <!-- Immagine Snodo con Citazione Sovrimpressa -->
-          <div class="w-full aspect-square relative bg-surface overflow-hidden">
+          <div class="w-full aspect-square rounded-none md:rounded-2xl relative bg-surface overflow-hidden shadow-2xl">
             <img id="gameplay-node-img" src="" class="w-full h-full object-cover" alt="">
             <span id="gameplay-node-badge" class="badge badge-sm badge-info absolute top-3 left-3 text-[9px] font-black uppercase">SNODO</span>
-            <div id="gameplay-node-quote" class="absolute bottom-0 inset-x-0 h-[12%] min-h-[44px] bg-black/85 backdrop-blur-md border-t border-white/10 px-4 flex items-center justify-center text-center text-[11px] italic text-amber-200/90 leading-tight"></div>
+            <div id="gameplay-node-quote" class="absolute bottom-0 inset-x-0 h-[14%] min-h-[48px] bg-black/85 backdrop-blur-md border-t border-white/10 px-4 flex items-center justify-center text-center text-xs italic text-amber-200/90 leading-tight"></div>
           </div>
 
           <!-- Testo e Bivio delle Scelte -->
-          <div class="px-3 md:px-0 space-y-3">
-            <div class="bg-surface/80 p-4 rounded-2xl border border-white/5 space-y-1.5">
-              <h3 id="gameplay-node-title" class="text-xs font-black text-white uppercase tracking-wider"></h3>
-              <p id="gameplay-node-text" class="text-xs text-slate-200 leading-relaxed"></p>
+          <div class="px-3.5 md:px-0 space-y-3">
+            <div class="bg-surface/80 p-4 md:p-6 rounded-2xl border border-white/5 space-y-2 shadow-lg">
+              <h3 id="gameplay-node-title" class="text-xs md:text-sm font-black text-white uppercase tracking-wider"></h3>
+              <p id="gameplay-node-text" class="text-xs md:text-sm text-slate-200 leading-relaxed"></p>
             </div>
             <div id="gameplay-choices-container"></div>
           </div>
@@ -316,30 +322,30 @@
         <section id="view-shop" class="space-y-4 hidden app-screen">
           <div class="relative w-full">
             <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
-            <input type="text" id="shop-search-input" oninput="AppEngine.filterShop()" placeholder="Cerca nello shop..." class="w-full pl-10 pr-4 py-2 rounded-xl bg-surface border border-white/5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-sky-500">
+            <input type="text" id="shop-search-input" oninput="AppEngine.filterShop()" placeholder="Cerca nello shop..." class="w-full pl-10 pr-4 py-2.5 rounded-xl bg-surface border border-white/5 text-xs md:text-sm text-white placeholder-slate-500 focus:outline-none focus:border-sky-500">
           </div>
           <div class="flex space-x-2 overflow-x-auto pb-1 no-scrollbar" id="shop-category-chips"></div>
-          <div id="shop-products-grid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3"></div>
+          <div id="shop-products-grid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-5"></div>
         </section>
 
         <!-- SOTTO-SCHERMATA: DETTAGLIO ARTICOLO SHOP (Senza tasto indietro interno) -->
-        <section id="subview-shop-detail" class="space-y-4 hidden app-screen">
+        <section id="subview-shop-detail" class="space-y-4 hidden app-screen max-w-2xl mx-auto">
           <div class="pb-2 border-b border-white/5">
-            <span id="detail-shop-cat" class="text-[9px] font-bold text-sky-400 uppercase">Reparto</span>
-            <h2 class="text-sm font-black text-white line-clamp-1" id="detail-shop-title">Nome Articolo</h2>
+            <span id="detail-shop-cat" class="text-[10px] font-bold text-sky-400 uppercase">Reparto</span>
+            <h2 class="text-sm md:text-base font-black text-white line-clamp-1" id="detail-shop-title">Nome Articolo</h2>
           </div>
 
-          <div class="-mx-3 md:mx-0 h-56 relative bg-surface overflow-hidden">
+          <div class="-mx-3.5 md:mx-0 h-64 md:h-80 rounded-none md:rounded-2xl relative bg-surface overflow-hidden">
             <img id="detail-shop-img" src="" class="w-full h-full object-cover" alt="">
             <span id="detail-shop-stock" class="badge badge-sm badge-success absolute top-3 right-3 font-bold">Disponibile</span>
           </div>
 
           <div class="space-y-4">
-            <p id="detail-shop-desc" class="text-xs text-slate-300 leading-relaxed"></p>
-            <div class="p-3.5 rounded-2xl bg-surface border border-white/5 flex items-center justify-between">
+            <p id="detail-shop-desc" class="text-xs md:text-sm text-slate-300 leading-relaxed"></p>
+            <div class="p-4 rounded-2xl bg-surface border border-white/5 flex items-center justify-between">
               <div>
                 <div class="text-[9px] text-slate-400 uppercase font-bold">Prezzo</div>
-                <div class="text-base font-black text-amber-400 text-glow-amber tabular-nums" id="detail-shop-price">0 🪙</div>
+                <div class="text-lg font-black text-amber-400 text-glow-amber tabular-nums" id="detail-shop-price">0 🪙</div>
               </div>
               <button id="detail-shop-action-btn" class="btn btn-primary btn-sm px-6 font-bold shadow-lg shadow-sky-600/30">Acquista</button>
             </div>
@@ -352,88 +358,102 @@
         <section id="view-recipes" class="space-y-4 hidden app-screen">
           <div class="relative w-full">
             <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
-            <input type="text" id="recipes-search-input" oninput="AppEngine.filterRecipes()" placeholder="Cerca cocktail o piatti..." class="w-full pl-10 pr-4 py-2 rounded-xl bg-surface border border-white/5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-sky-500">
+            <input type="text" id="recipes-search-input" oninput="AppEngine.filterRecipes()" placeholder="Cerca cocktail o piatti..." class="w-full pl-10 pr-4 py-2.5 rounded-xl bg-surface border border-white/5 text-xs md:text-sm text-white placeholder-slate-500 focus:outline-none focus:border-sky-500">
           </div>
           <div class="flex space-x-2 overflow-x-auto pb-1 no-scrollbar" id="recipes-category-chips"></div>
-          <div id="recipes-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3"></div>
+          <div id="recipes-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-5"></div>
         </section>
 
         <!-- SOTTO-SCHERMATA: DETTAGLIO RICETTA (Senza tasto indietro interno) -->
-        <section id="subview-recipe-detail" class="space-y-4 hidden app-screen">
+        <section id="subview-recipe-detail" class="space-y-4 hidden app-screen max-w-2xl mx-auto">
           <div class="pb-2 border-b border-white/5">
-            <span id="detail-recipe-cat" class="text-[9px] font-bold text-sky-400 uppercase">Categoria</span>
-            <h2 class="text-sm font-black text-white" id="detail-recipe-title">Piatto</h2>
+            <span id="detail-recipe-cat" class="text-[10px] font-bold text-sky-400 uppercase">Categoria</span>
+            <h2 class="text-sm md:text-base font-black text-white" id="detail-recipe-title">Piatto</h2>
           </div>
 
-          <div class="-mx-3 md:mx-0 h-52 relative bg-surface overflow-hidden">
+          <div class="-mx-3.5 md:mx-0 h-56 md:h-72 rounded-none md:rounded-2xl relative bg-surface overflow-hidden">
             <img id="detail-recipe-img" src="" class="w-full h-full object-cover" alt="">
           </div>
 
           <div class="space-y-3">
-            <div id="detail-recipe-meta" class="text-[10px] text-slate-400 font-mono"></div>
-            <div class="bg-surface p-3 rounded-2xl border border-white/5 space-y-1.5">
-              <div class="text-[9px] font-bold text-amber-400 uppercase tracking-wider">Parametri RPG & Gusto</div>
+            <div id="detail-recipe-meta" class="text-[11px] text-slate-400 font-mono"></div>
+            <div class="bg-surface p-4 rounded-2xl border border-white/5 space-y-2">
+              <div class="text-[10px] font-bold text-amber-400 uppercase tracking-wider">Parametri RPG & Gusto</div>
               <div class="grid grid-cols-3 gap-2 text-center text-xs" id="detail-recipe-rpg"></div>
             </div>
             <div class="space-y-1">
               <div class="text-[10px] font-bold text-slate-400 uppercase">Ingredienti</div>
-              <p id="detail-recipe-ingredients" class="text-xs text-slate-300 leading-relaxed bg-surface/50 p-3 rounded-xl border border-white/5"></p>
+              <p id="detail-recipe-ingredients" class="text-xs md:text-sm text-slate-300 leading-relaxed bg-surface/50 p-3 rounded-xl border border-white/5"></p>
             </div>
             <div class="space-y-1">
               <div class="text-[10px] font-bold text-slate-400 uppercase">Preparazione</div>
-              <p id="detail-recipe-prep" class="text-xs text-slate-300 leading-relaxed bg-surface/50 p-3 rounded-xl border border-white/5"></p>
+              <p id="detail-recipe-prep" class="text-xs md:text-sm text-slate-300 leading-relaxed bg-surface/50 p-3 rounded-xl border border-white/5"></p>
             </div>
           </div>
         </section>
 
         <!-- ================================================================= -->
-        <!-- SCHERMATA: PROFILO & CAVEAU -->
+        <!-- SCHERMATA: PROFILO & CAVEAU & PRICE TABLE -->
         <!-- ================================================================= -->
-        <section id="view-profile" class="space-y-4 hidden app-screen">
-          <!-- Scheda Profilo: include sia il Saldo Megoin sia i Punti Fedeltà -->
-          <div class="rounded-3xl p-5 bg-gradient-to-tr from-slate-900 via-indigo-950 to-slate-900 border border-white/10 shadow-xl flex items-center justify-between">
-            <div class="flex items-center space-x-3">
-              <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-sky-500 to-indigo-600 flex items-center justify-center font-black text-lg text-white" id="profile-card-avatar">F</div>
+        <section id="view-profile" class="space-y-6 hidden app-screen">
+          <!-- Scheda Profilo con Saldo Megoin e Punti Fedeltà integrati -->
+          <div class="rounded-3xl p-6 bg-gradient-to-tr from-slate-900 via-indigo-950 to-slate-900 border border-white/10 shadow-xl flex items-center justify-between">
+            <div class="flex items-center space-x-4">
+              <div class="w-14 h-14 rounded-2xl bg-gradient-to-tr from-sky-500 to-indigo-600 flex items-center justify-center font-black text-xl text-white shadow-lg" id="profile-card-avatar">F</div>
               <div>
-                <h3 class="text-sm font-black text-white" id="profile-card-name">Nome Utente</h3>
-                <span class="text-[10px] text-slate-400 font-mono" id="profile-card-username">@username</span>
-                <div class="mt-0.5 flex space-x-1.5">
-                  <span class="badge badge-xs badge-info font-bold text-[8px] uppercase" id="profile-card-plan">FREE</span>
-                  <span class="text-[9px] text-slate-500 font-mono" id="profile-card-id">ID: ---</span>
+                <h3 class="text-base md:text-lg font-black text-white" id="profile-card-name">Nome Utente</h3>
+                <span class="text-xs text-slate-400 font-mono" id="profile-card-username">@username</span>
+                <div class="mt-1 flex space-x-2">
+                  <span class="badge badge-sm badge-info font-bold text-[9px] uppercase" id="profile-card-plan">PIANO FREE</span>
+                  <span class="text-[10px] text-slate-500 font-mono self-center" id="profile-card-id">ID: ---</span>
                 </div>
               </div>
             </div>
             <div class="text-right space-y-1">
               <div>
-                <div class="text-[8px] text-slate-400 uppercase font-bold">Saldo Megoin</div>
-                <div class="text-sm font-black text-amber-300 text-glow-amber tabular-nums" id="profile-card-megoin">0 🪙</div>
+                <div class="text-[9px] text-slate-400 uppercase font-bold">Saldo Megoin</div>
+                <div class="text-base md:text-lg font-black text-amber-300 text-glow-amber tabular-nums" id="profile-card-megoin">0 🪙</div>
               </div>
               <div>
-                <div class="text-[8px] text-slate-400 uppercase font-bold">Punti Fedeltà</div>
-                <div class="text-sm font-black text-emerald-400 tabular-nums" id="profile-card-points">0 Pt</div>
+                <div class="text-[9px] text-slate-400 uppercase font-bold">Punti Fedeltà</div>
+                <div class="text-base md:text-lg font-black text-emerald-400 tabular-nums" id="profile-card-points">0 Pt</div>
               </div>
+            </div>
+          </div>
+
+          <!-- PRICE TABLE IN PROFILO: Bronze - Silver - Gold + Free Standalone -->
+          <div class="space-y-3">
+            <div class="flex justify-between items-center">
+              <h3 class="text-xs md:text-sm font-bold uppercase tracking-wider text-slate-300 flex items-center space-x-1.5">
+                <i data-lucide="crown" class="w-4 h-4 text-amber-400"></i>
+                <span>Livelli di Affiliazione Syndicate</span>
+              </h3>
+              <span class="text-[10px] md:text-xs text-sky-400">Confronta e scegli il tuo rango</span>
+            </div>
+            <div id="profile-plans-container" class="space-y-3">
+              <!-- Renderizzato dinamicamente da app.js -->
             </div>
           </div>
 
           <!-- Sezione Caveau con ID Ancorato per Salto Diretto dal 4° KPI Home -->
-          <div id="profile-vault-container-card" class="bg-surface/70 p-4 rounded-2xl border border-white/5 space-y-2">
-            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center space-x-1.5">
-              <i data-lucide="download" class="w-3.5 h-3.5 text-emerald-400"></i>
+          <div id="profile-vault-container-card" class="bg-surface/70 p-5 rounded-2xl border border-white/5 space-y-3">
+            <h3 class="text-xs md:text-sm font-bold uppercase tracking-wider text-slate-300 flex items-center space-x-1.5">
+              <i data-lucide="download" class="w-4 h-4 text-emerald-400"></i>
               <span>Caveau Digitale (I tuoi Download)</span>
             </h3>
-            <div id="profile-vault-container" class="space-y-2 text-xs"></div>
+            <div id="profile-vault-container" class="space-y-2 text-xs md:text-sm"></div>
           </div>
 
           <!-- Ultime Transazioni -->
-          <div class="bg-surface/70 p-4 rounded-2xl border border-white/5 space-y-2">
+          <div class="bg-surface/70 p-5 rounded-2xl border border-white/5 space-y-3">
             <div class="flex justify-between items-center">
-              <h3 class="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center space-x-1.5">
-                <i data-lucide="receipt" class="w-3.5 h-3.5 text-sky-400"></i>
+              <h3 class="text-xs md:text-sm font-bold uppercase tracking-wider text-slate-300 flex items-center space-x-1.5">
+                <i data-lucide="receipt" class="w-4 h-4 text-sky-400"></i>
                 <span>Ultime Transazioni</span>
               </h3>
               <button onclick="AppEngine.syncTransactions(true)" class="btn btn-ghost btn-xs text-sky-400">Aggiorna</button>
             </div>
-            <div id="profile-transactions-container" class="space-y-1.5 text-xs divide-y divide-white/5"></div>
+            <div id="profile-transactions-container" class="space-y-2 text-xs md:text-sm divide-y divide-white/5"></div>
           </div>
         </section>
 
@@ -441,7 +461,7 @@
     </main>
 
     <!-- 4. FOOTER MOBILE STICKY FISSO A TUTTA LARGHEZZA (pb-6 per la barra di iOS) -->
-    <footer class="md:hidden flex-none z-30 glass-footer flex justify-around items-center pt-2 pb-6 px-1">
+    <footer class="md:hidden flex-none z-30 glass-footer flex justify-around items-center pt-2.5 pb-6 px-1">
       <button onclick="AppRouter.navigate('home')" class="nav-tab flex flex-col items-center py-1 px-3 text-sky-400" data-tab="home">
         <i data-lucide="home" class="w-4 h-4"></i>
         <span class="text-[9px] font-bold uppercase mt-0.5">Home</span>
@@ -477,14 +497,26 @@
     </div>
   </dialog>
 
+  <!-- MODALE DETTAGLI PIANO -->
   <dialog id="modal-plan-upgrade" class="modal modal-bottom sm:modal-middle">
-    <div class="modal-box bg-surface border border-amber-500/30 p-5 text-center space-y-3 max-w-sm">
-      <div class="text-3xl">👑</div>
-      <h3 class="text-base font-black text-white" id="upgrade-modal-title">Abbonamento Syndicate</h3>
+    <div class="modal-box bg-surface border border-sky-500/30 p-5 text-left space-y-3.5 max-w-md">
+      <div class="flex items-center justify-between pb-2 border-b border-white/10">
+        <div>
+          <span class="text-[9px] font-bold uppercase tracking-wider text-sky-400" id="plan-modal-badge">DETTAGLI ABBONAMENTO</span>
+          <h3 class="text-lg font-black text-white" id="upgrade-modal-title">Nome Piano</h3>
+        </div>
+        <div class="text-right">
+          <div class="text-base font-black text-amber-300" id="plan-modal-price">€ 0,00</div>
+          <span class="text-[9px] text-slate-400" id="plan-modal-period">/mese</span>
+        </div>
+      </div>
       <p class="text-xs text-slate-300 leading-relaxed" id="upgrade-modal-desc"></p>
+      
+      <div class="p-3 rounded-xl bg-black/40 border border-white/5 space-y-1.5 text-xs" id="plan-modal-perks-list"></div>
+
       <div class="pt-2 flex flex-col gap-2">
-        <button id="upgrade-modal-action-btn" class="btn btn-primary btn-sm w-full font-bold">Attiva Piano</button>
-        <button onclick="document.getElementById('modal-plan-upgrade').close()" class="btn btn-sm btn-ghost w-full text-xs">Annulla</button>
+        <button id="upgrade-modal-action-btn" class="btn btn-primary btn-sm w-full font-bold shadow-lg shadow-sky-600/30">Attiva Piano con PayPal</button>
+        <button onclick="document.getElementById('modal-plan-upgrade').close()" class="btn btn-sm btn-ghost w-full text-xs text-slate-400">Chiudi</button>
       </div>
     </div>
   </dialog>
