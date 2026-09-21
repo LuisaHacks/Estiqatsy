@@ -40,18 +40,19 @@ const Rules2Wizard = {
       this.state.isVeteran = isVeteran;
       this.state.step = 1;
 
-      // Deduplicazione rigida O(N) delle entità caricate da foglio
+      // Deduplicazione entità caricate da foglio
       this.state.classes = deduplicateEntities(wizData.classes || wizData.classi || []);
       this.state.abilities = deduplicateEntities(wizData.abilities || wizData.abilita || []);
 
-      // Carica ESCLUSIVAMENTE gli equipaggiamenti RPG di gioco (non lo shop e-commerce in Megoin)
-      this.state.shopCatalog = deduplicateEntities(
-        wizData.shopItems ||
-        wizData.equipaggiamenti ||
-        wizData.oggetti ||
-        (AppState.games.catalog.find(s => s.gameKey === gameKey)?.equipaggiamenti) ||
-        []
-      );
+      // Risoluzione super-resiliente del catalogo merci RPG (esclude merchandising)
+      const rawShop = wizData.shopItems || 
+                      wizData.shopCatalog || 
+                      wizData.equipaggiamenti || 
+                      wizData.oggetti || 
+                      wizData.items || 
+                      (AppState.games.catalog.find(s => s.gameKey === gameKey)?.equipaggiamenti) || 
+                      [];
+      this.state.shopCatalog = deduplicateEntities(rawShop);
 
       this.state.chosenAbilities = [];
       this.state.boughtItems = [];
@@ -62,6 +63,7 @@ const Rules2Wizard = {
         this.state.chosenClass = {
           id: savedHero.classeId || "CLS_0001_S1_E0",
           nome: savedHero.classe || savedHero.nomeEroe,
+          sottocategoria: savedHero.schieramentoPolitico || "Destra",
           schieramento: savedHero.schieramentoPolitico || "Destra",
           pv: savedHero.pvMax || 25,
           oro: savedHero.oro || 40,
@@ -79,13 +81,14 @@ const Rules2Wizard = {
         const firstClass = this.state.classes[0] || null;
         this.state.chosenClass = firstClass;
         this.state.remainingPx = 100;
-        this.state.startingGold = firstClass ? (firstClass.oro || 40) : 40;
-        this.state.currentGold = firstClass ? (firstClass.oro || 40) : 40;
+        this.state.startingGold = firstClass ? (cleanNumber(firstClass.oro, 40)) : 40;
+        this.state.currentGold = this.state.startingGold;
 
         this.showStep(1);
         this.renderStep1();
       }
 
+      this.initKeyboardShield();
       AppRouter.navigate("view-wizard");
     } catch (err) {
       console.error("[Rules2Wizard] Errore di caricamento dati wizard:", err);
@@ -94,7 +97,7 @@ const Rules2Wizard = {
   },
 
   // --------------------------------------------------------------------------
-  // 2. PASSO 1: I TAROCCHI DEL SALMASTRO (COVER-FLOW 3D & SPOTLIGHT A 360°)
+  // 2. PASSO 1: I TAROCCHI DEL SALMASTRO (COVER-FLOW 3D & FACE-ANCHORING)
   // --------------------------------------------------------------------------
   renderStep1: function() {
     const stage = document.getElementById("wizard-classes-stage");
@@ -117,13 +120,14 @@ const Rules2Wizard = {
       const fmt = v => (v >= 0 ? "+" + v : String(v));
 
       const cleanQuote = (cls.citazione || "A Viareggio non ci sono eroi: chi non colpisce per primo finisce a fondo.").replace(/^["'“”]+|["'“”]+$/g, "");
+      const startingGear = cls.equipLoot || (cls.armaIniziale ? cls.armaIniziale.nome : "Pugni nudi");
 
       return `
         <div id="coverflow-card-${idx}" onclick="Rules2Wizard.coverflowSelectIndex(${idx})" class="coverflow-card bg-[#0d131f] border border-white/15 overflow-hidden flex flex-col justify-between shadow-2xl">
           
-          <!-- Inquadratura Cinema con Banner Citazione Fisso 72px -->
-          <div class="relative w-full h-40 sm:h-48 bg-slate-950 overflow-hidden flex-none">
-            <img src="${cls.mediaUrl}" class="w-full h-full object-cover object-center" alt="${cls.nome}">
+          <!-- Inquadratura con Face-Anchoring in Alto (object-position top center) -->
+          <div class="card-media-box relative w-full bg-slate-950 overflow-hidden flex-none">
+            <img src="${cls.mediaUrl}" class="w-full h-full object-cover object-top" alt="${cls.nome}">
             
             <span class="badge badge-xs ${isDestra ? 'badge-info' : 'badge-error'} font-black uppercase text-[8px] absolute top-2.5 left-2.5 shadow-md">
               ${(cls.sottocategoria || cls.schieramento || 'Destra').toUpperCase()} (+1 Danno)
@@ -134,15 +138,15 @@ const Rules2Wizard = {
               <span class="badge badge-xs bg-black/75 backdrop-blur-md text-amber-300 font-mono font-bold text-[8.5px]">🟡 ${cls.oro}</span>
             </div>
 
-            <!-- Banner diegetico senza troncamenti forzati -->
+            <!-- Banner citazione diegetico a dissolvenza morbida -->
             <div class="watermark-cover-banner">
-              <span class="text-[9.5px] text-slate-200 italic leading-tight line-clamp-2 pr-2">“${cleanQuote}”</span>
-              <span class="text-[8px] text-amber-400 font-bold uppercase shrink-0">${cls.autoreCitazione || 'Darsena'}</span>
+              <span class="text-[9px] text-slate-200 italic leading-snug line-clamp-2 pr-1">“${cleanQuote}”</span>
+              <span class="text-[8px] font-bold text-amber-400 uppercase tracking-wider text-right mt-0.5">${cls.autoreCitazione || 'Darsena'}</span>
             </div>
           </div>
 
-          <!-- Dettagli della Carta (Nascosti su quelle laterali per pulizia grafica) -->
-          <div id="coverflow-details-${idx}" class="p-3.5 space-y-2 flex-1 flex flex-col justify-between transition-opacity duration-300">
+          <!-- Corpo Carta (Nascosto nelle carte laterali per pulizia grafica) -->
+          <div id="coverflow-details-${idx}" class="card-body-box p-3 space-y-1.5 flex-1 flex flex-col justify-between transition-opacity duration-300">
             <div>
               <div class="flex items-center space-x-2">
                 <span class="text-xl">${cls.emoji || '🥋'}</span>
@@ -150,19 +154,20 @@ const Rules2Wizard = {
               </div>
 
               <!-- Trittico Modificatori D20 -->
-              <div class="grid grid-cols-3 gap-1 py-1 px-2 rounded-xl bg-black/45 border border-white/5 text-center font-mono text-[9px] mt-1.5">
+              <div class="grid grid-cols-3 gap-1 py-1 px-1.5 rounded-xl bg-black/45 border border-white/5 text-center font-mono text-[8.5px] mt-1">
                 <div>🥊 FOR <b>${cls.forza || 10}</b> <span class="text-slate-400">(${fmt(forMod)})</span></div>
                 <div>🤸 DES <b>${cls.destrezza || 10}</b> <span class="text-slate-400">(${fmt(desMod)})</span></div>
                 <div>🧠 INT <b>${cls.intelligenza || 10}</b> <span class="text-slate-400">(${fmt(intMod)})</span></div>
               </div>
 
-              <p class="text-[10px] text-slate-300 leading-relaxed mt-2 line-clamp-4">${cls.testo || cls.descrizione || ''}</p>
+              <!-- Descrizione snella senza troncamenti forzati a metà parola -->
+              <p class="text-[10px] text-slate-300 leading-snug mt-1.5 line-clamp-3">${cls.testo || cls.descrizione || ''}</p>
             </div>
 
-            <!-- Dotazione & Status Scelta -->
-            <div class="pt-2 border-t border-white/5 flex items-center justify-between text-[10px]">
-              <span class="text-slate-400 truncate max-w-[140px]">🎒 ${cls.armaIniziale ? cls.armaIniziale.nome : (cls.equipLoot || 'Pugni nudi')}</span>
-              <button class="btn btn-xs btn-primary font-bold px-3 shadow" id="coverflow-action-btn-${idx}">
+            <!-- Footer Dotazione & Status Scelta -->
+            <div class="pt-1.5 border-t border-white/5 flex items-center justify-between text-[9.5px]">
+              <span class="text-slate-400 truncate max-w-[130px]" title="${startingGear}">🎒 <b>${startingGear}</b></span>
+              <button class="btn btn-xs btn-primary font-bold px-2.5 shadow" id="coverflow-action-btn-${idx}">
                 Seleziona
               </button>
             </div>
@@ -206,7 +211,7 @@ const Rules2Wizard = {
       const isCenter = (offset === 0);
       const isDestra = (cls.sottocategoria || cls.schieramento || "Destra").toLowerCase() === "destra";
 
-      // PULIZIA VISIVA: i testi e i modificatori compaiono solo sulla carta in primo piano
+      // Le informazioni appaiono nitide solo sulla carta selezionata al centro
       if (detailsBox) {
         detailsBox.style.opacity = isCenter ? "1" : "0";
         detailsBox.style.pointerEvents = isCenter ? "auto" : "none";
@@ -214,22 +219,22 @@ const Rules2Wizard = {
 
       const translateX = offset * spacing;
       const rotateY = offset * (isDesktop ? -20 : -15);
-      const scale = isCenter ? (isDesktop ? 1.08 : 1.05) : Math.max(0.75, 0.90 - absOffset * 0.08);
+      const scale = isCenter ? (isDesktop ? 1.06 : 1.03) : Math.max(0.75, 0.90 - absOffset * 0.08);
       const zIndex = 30 - absOffset * 5;
       const opacity = isCenter ? 1 : Math.max(0.20, 0.45 - absOffset * 0.10);
 
-      el.style.transform = `translateX(${translateX}px) translateZ(${isCenter ? 50 : 0}px) rotateY(${rotateY}deg) scale(${scale})`;
+      el.style.transform = `translateX(${translateX}px) translateZ(${isCenter ? 40 : 0}px) rotateY(${rotateY}deg) scale(${scale})`;
       el.style.zIndex = zIndex;
       el.style.opacity = opacity;
 
-      // Glow perimetrale completo a 360°
+      // Alone perimetrale luminoso a 360°
       el.classList.toggle("glow-destra", isCenter && isDestra);
       el.classList.toggle("glow-sinistra", isCenter && !isDestra);
 
       if (btn) {
         if (isCenter) {
           btn.textContent = "✓ In Uso";
-          btn.className = "btn btn-xs btn-success font-black px-3 shadow";
+          btn.className = "btn btn-xs btn-success font-black px-2.5 shadow";
         } else {
           btn.textContent = "Scegli";
           btn.className = "btn btn-xs btn-outline border-white/20 text-slate-400 font-bold px-2";
@@ -238,8 +243,8 @@ const Rules2Wizard = {
     });
 
     this.state.chosenClass = classes[activeIdx];
-    this.state.startingGold = classes[activeIdx] ? (classes[activeIdx].oro || 40) : 40;
-    this.state.currentGold = classes[activeIdx] ? (classes[activeIdx].oro || 40) : 40;
+    this.state.startingGold = classes[activeIdx] ? (cleanNumber(classes[activeIdx].oro, 40)) : 40;
+    this.state.currentGold = this.state.startingGold;
 
     const dotsBox = document.getElementById("wizard-coverflow-dots");
     if (dotsBox) {
@@ -289,7 +294,7 @@ const Rules2Wizard = {
     stage.addEventListener("touchend", e => {
       touchEndX = e.changedTouches[0].screenX;
       const diff = touchStartX - touchEndX;
-      if (Math.abs(diff) > 40) {
+      if (Math.abs(diff) > 35) {
         if (diff > 0) Rules2Wizard.coverflowNext();
         else Rules2Wizard.coverflowPrev();
       }
@@ -319,7 +324,7 @@ const Rules2Wizard = {
   },
 
   // --------------------------------------------------------------------------
-  // 3. PASSO 2: TALENTI CLANDESTINI (INSPECTOR MODALE UNIVERSALE AL TOCCO)
+  // 3. PASSO 2: TALENTI CLANDESTINI (MODALE POLIMORFICA UNIVERSALE)
   // --------------------------------------------------------------------------
   renderStep2: function() {
     const grid = document.getElementById("wizard-abilities-grid");
@@ -335,14 +340,13 @@ const Rules2Wizard = {
       const isCompatible = req.includes("tutti") || req.includes(userFaction);
 
       return `
-        <!-- Il tocco apre l'Inspector con la modale universale polimorfica -->
-        <div onclick="Rules2Wizard.inspectAbilityDetail('${abl.id}')" class="p-3 rounded-xl border ${isSelected ? 'border-sky-400 bg-sky-500/15 shadow-md ring-1 ring-sky-400/40' : (isCompatible ? 'border-white/10 bg-surface/70 cursor-pointer hover:bg-surface active:scale-[0.99]' : 'border-white/5 bg-black/40 opacity-40 cursor-not-allowed')} flex items-center justify-between transition-all">
+        <div onclick="Rules2Wizard.inspectAbilityDetail('${abl.id}')" class="p-2.5 rounded-xl border ${isSelected ? 'border-sky-400 bg-sky-500/15 shadow-md ring-1 ring-sky-400/40' : (isCompatible ? 'border-white/10 bg-surface/70 cursor-pointer hover:bg-surface active:scale-[0.99]' : 'border-white/5 bg-black/40 opacity-40 cursor-not-allowed')} flex items-center justify-between transition-all">
           <div class="overflow-hidden pr-2">
             <div class="flex items-center space-x-2">
               <span class="text-base">${abl.emoji || '⚡'}</span>
               <span class="text-xs font-black text-white truncate">${abl.nome}</span>
             </div>
-            <div class="text-[9.5px] text-slate-300 line-clamp-2 mt-1 leading-snug">${abl.testo || abl.descrizione || abl.effettoCodificato || ''}</div>
+            <div class="text-[9px] text-slate-300 line-clamp-2 mt-0.5 leading-snug">${abl.testo || abl.descrizione || abl.effettoCodificato || ''}</div>
           </div>
           <div class="flex items-center space-x-1 shrink-0">
             <span class="badge badge-xs ${isSelected ? 'badge-primary' : (isCompatible ? 'badge-ghost border-white/20' : 'badge-neutral')} font-black text-[8px] py-1.5 px-2">
@@ -354,7 +358,6 @@ const Rules2Wizard = {
     }).join("");
   },
 
-  // Sfrutta la modale polimorfica universale (#modal-universal-detail)
   inspectAbilityDetail: function(ablId) {
     const abl = this.state.abilities.find(a => a.id === ablId);
     if (!abl) return;
@@ -370,9 +373,8 @@ const Rules2Wizard = {
     s("uni-detail-badge", `ABILITÀ • ${(req.includes("destra") ? "Destra" : (req.includes("sinistra") ? "Sinistra" : "Comune")).toUpperCase()}`);
     s("uni-detail-metrics-label", "EFFETTO TECNICO APPRENDIMENTO");
     s("uni-detail-metrics-value", abl.effettoCodificato || "Nessun modificatore passivo");
-    s("uni-detail-lore", abl.testo || abl.descrizione || "Nessuna nota d'archivio.");
+    s("uni-detail-lore", abl.testo || abl.descrizione || "Nessuna nota d'archivio disponibile.");
 
-    // Immagine/Media (se presente)
     const mediaContainer = document.getElementById("uni-detail-media-container");
     if (mediaContainer) {
       if (abl.mediaUrl && abl.mediaUrl !== "—" && abl.mediaUrl.startsWith("http")) {
@@ -383,7 +385,6 @@ const Rules2Wizard = {
       }
     }
 
-    // Bottone di Attivazione / Rimozione contestuale
     const btn = document.getElementById("uni-detail-action-btn");
     if (btn) {
       if (!isCompatible) {
@@ -435,7 +436,7 @@ const Rules2Wizard = {
   },
 
   // --------------------------------------------------------------------------
-  // 4. PASSO 3: MERCATO NERO DI CICCIO (SOLO MERCI RPG, NO CORSI/GADGET)
+  // 4. PASSO 3: MERCATO NERO DI CICCIO (CATALOGO RESILIENTE & FIX SOFFOCOTTO)
   // --------------------------------------------------------------------------
   _classifyItem: function(item) {
     if (!item) return "STRUMENTI";
@@ -443,10 +444,10 @@ const Rules2Wizard = {
     const sub = String(item.sottocategoria || "").toUpperCase();
     const name = String(item.nome || "").toLowerCase();
 
-    if (cat.includes("ARMA")) return "ARMI";
-    if (cat.includes("VEICOLO")) return "VEICOLI";
+    if (cat.includes("ARMA") || sub.includes("MISCHIA") || sub.includes("DISTANZA")) return "ARMI";
+    if (cat.includes("VEICOLO") || sub.includes("TERRA") || sub.includes("MARE") || sub.includes("ARIA")) return "VEICOLI";
     if (cat.includes("TALISMAN")) return "TALISMANI";
-    if (cat.includes("CURA") || name.includes("cecina") || name.includes("trabaccolara") || name.includes("fritto") || name.includes("ponce") || name.includes("focaccia")) return "CURE";
+    if (cat.includes("CURA") || cat.includes("CIBO") || sub.includes("CIBO") || sub.includes("INFERMERIA") || sub.includes("SESSO") || name.includes("cecina") || name.includes("trabaccolara") || name.includes("fritto") || name.includes("ponce") || name.includes("focaccia")) return "CURE";
     if (cat.includes("DROGA") || cat.includes("INGREDIENTE") || sub.includes("THC") || sub.includes("STIMOLANTE") || sub.includes("ALLUCINOGENO") || sub.includes("TRANQUILLANTE") || sub.includes("OPPIACEO")) return "DROGHE";
     return "STRUMENTI";
   },
@@ -454,11 +455,12 @@ const Rules2Wizard = {
   filterShop: function(category) {
     this.state.shopCategory = category;
 
+    // Aggiornamento stile chips di categoria
     const chipsBox = document.getElementById("wizard-shop-category-chips");
     if (chipsBox) {
       chipsBox.querySelectorAll("button").forEach(btn => {
         const isAct = btn.textContent.toUpperCase().includes(category.toUpperCase());
-        btn.className = `badge badge-sm ${isAct ? 'badge-info font-black shadow' : 'badge-ghost'} font-bold cursor-pointer transition-all`;
+        btn.className = `rpg-category-chip badge ${isAct ? 'badge-info font-black shadow' : 'badge-ghost'} font-bold cursor-pointer transition-all`;
       });
     }
 
@@ -468,10 +470,12 @@ const Rules2Wizard = {
     const container = document.getElementById("wizard-shop-grid");
     if (!container) return;
 
+    // Filtra esclusivamente gli articoli di pertinenza
     const filtered = (this.state.shopCatalog || []).filter(it => this._classifyItem(it).toUpperCase() === category.toUpperCase());
 
     if (filtered.length === 0) {
       container.innerHTML = `<div class="col-span-full py-8 text-center text-slate-400 text-xs">Nessun articolo per il reparto <b>${category}</b> all'Emporio.</div>`;
+      this.updateBackpackSummary();
       return;
     }
 
@@ -480,17 +484,17 @@ const Rules2Wizard = {
       const canAfford = (this.state.currentGold >= price);
 
       return `
-        <div class="bg-surface/80 p-2.5 rounded-xl border border-white/5 flex flex-col justify-between space-y-2 text-xs shadow-md">
+        <div class="bg-surface/80 p-2 rounded-xl border border-white/5 flex flex-col justify-between space-y-1.5 text-xs shadow-md">
           <div>
             <div class="flex items-center justify-between">
               <span class="text-sm">${it.emoji || '📦'}</span>
               <span class="font-mono text-[9px] text-amber-300 font-bold">${price} 🟡</span>
             </div>
-            <div class="font-bold text-white line-clamp-1 mt-1">${it.nome}</div>
-            <div class="text-[9.5px] text-slate-300 line-clamp-2 mt-0.5 leading-tight">${it.testo || it.descrizione || ''}</div>
+            <div class="font-bold text-white line-clamp-1 mt-0.5">${it.nome}</div>
+            <div class="text-[9px] text-slate-300 line-clamp-2 mt-0.5 leading-tight">${it.testo || it.descrizione || ''}</div>
           </div>
           <button onclick="Rules2Wizard.buyItem('${it.id}', ${price})" class="btn btn-xs ${canAfford ? 'btn-primary' : 'btn-outline border-white/10 text-slate-500 cursor-not-allowed'} font-bold text-[9px] w-full" ${!canAfford ? 'disabled' : ''}>
-            ${canAfford ? 'Acquista' : 'Oro Insufficiente'}
+            ${canAfford ? 'Acquista' : 'Oro Insuff.'}
           </button>
         </div>
       `;
@@ -508,7 +512,7 @@ const Rules2Wizard = {
     const item = (this.state.shopCatalog || []).find(i => i.id === itemId);
     if (!item) return;
 
-    // Regola anti-exploit: un solo veicolo consentito
+    // Regola anti-exploit: 1 solo veicolo consentito nello zaino
     if (this._classifyItem(item) === "VEICOLI") {
       const alreadyHasVehicle = this.state.boughtItems.some(x => this._classifyItem(x) === "VEICOLI");
       if (alreadyHasVehicle) {
@@ -531,17 +535,21 @@ const Rules2Wizard = {
     this.filterShop(this.state.shopCategory);
   },
 
+  // FIX SOFFOCOTTO: conteggia e mostra la dotazione iniziale della classe
   updateBackpackSummary: function() {
     const countEl = document.getElementById("wizard-shop-backpack-count");
-    if (countEl) {
-      const initCount = this.state.chosenClass ? 1 : 0;
-      const total = initCount + this.state.boughtItems.length;
-      countEl.textContent = `${total} oggetti`;
-    }
+    if (!countEl) return;
+
+    const cls = this.state.chosenClass;
+    const startingItem = cls ? (cls.equipLoot || (cls.armaIniziale ? cls.armaIniziale.nome : null)) : null;
+    const hasStarting = (startingItem && startingItem !== "—" && startingItem !== "-");
+    const total = (hasStarting ? 1 : 0) + this.state.boughtItems.length;
+
+    countEl.innerHTML = `${total} oggetti ${hasStarting ? `<span class="text-slate-400 text-[10px]">(${startingItem})</span>` : ''}`;
   },
 
   // --------------------------------------------------------------------------
-  // 5. PASSO 4: BATTESIMO DELL'EROE & RIEPILOGO FINALE
+  // 5. PASSO 4: BATTESIMO DELL'EROE & GESTIONE TASTIERA IOS
   // --------------------------------------------------------------------------
   renderStep4: function() {
     const cls = this.state.chosenClass;
@@ -561,9 +569,9 @@ const Rules2Wizard = {
     });
     s("wizard-recap-abilities", abls.length > 0 ? abls.join(", ") : "Nessun talento sbloccato");
 
-    const initGear = cls.armaIniziale ? cls.armaIniziale.nome : (cls.equipLoot || "Pugni nudi");
+    const startingItem = cls.equipLoot || (cls.armaIniziale ? cls.armaIniziale.nome : "Pugni nudi");
     const bought = this.state.boughtItems.map(i => i.nome);
-    const fullInv = [initGear, ...bought];
+    const fullInv = [startingItem, ...bought].filter(Boolean);
     s("wizard-recap-inventory", fullInv.join(", "));
 
     const nameInput = document.getElementById("wizard-name-input");
@@ -572,6 +580,19 @@ const Rules2Wizard = {
         ? this.state.heroName 
         : (AppState.user ? AppState.user.nome : "Avventuriero");
     }
+  },
+
+  // Auto-scroll per evitare che la tastiera mobile copra il pulsante di conferma
+  initKeyboardShield: function() {
+    const input = document.getElementById("wizard-name-input");
+    if (!input || input._shieldAttached) return;
+    input._shieldAttached = true;
+
+    input.addEventListener("focus", () => {
+      setTimeout(() => {
+        input.scrollIntoView({ behavior: "smooth", block: "center" });
+      }, 250);
+    });
   },
 
   useTelegramName: function() {
@@ -595,7 +616,7 @@ const Rules2Wizard = {
       heroName: heroName
     };
 
-    // Passaggio di consegne all'Engine di gioco Rules 2 per avviare la sessione
+    // Passaggio di consegne al runtime di gioco Rules 2
     const engine = EngineRegistry.get("Rules2");
     if (engine && typeof engine.executeStartGame === "function") {
       engine.executeStartGame(payload);
@@ -642,8 +663,7 @@ const Rules2Wizard = {
 };
 
 // ----------------------------------------------------------------------------
-// 7. ALIASING DIRETTO SU WINDOW.GAMEENGINE
-// Mantiene intatta la compatibilità con tutti gli onclick inline di index.html!
+// 7. ALIASING DIRETTO SU WINDOW.GAMEENGINE (COMPATIBILITÀ CON INDEX.HTML)
 // ----------------------------------------------------------------------------
 window.GameEngine = window.GameEngine || {};
 window.GameEngine.coverflowSelectIndex = (idx) => Rules2Wizard.coverflowSelectIndex(idx);
