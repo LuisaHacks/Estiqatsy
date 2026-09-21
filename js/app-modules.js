@@ -1,6 +1,6 @@
 // ============================================================================
 // PROJECT: ESTIQATSY SYNDICATE & RPG PLATFORM
-// FILE: js/app-modules.js
+// FILE: js/app-modules.js (VERSIONE 8.0 - RESILIENT ENGINE & FULL-STAGE SYNC)
 // LAYER 2: MODULI DI PIATTAFORMA AGNOSTICI, PORTALE GIOCHI, SHOP & SAAS
 // NOTE: 100% DISACCOPPIATO DA TAILWIND - TEMPLATE DINAMICI A CLASSI SEMANTICHE
 // ============================================================================
@@ -110,7 +110,7 @@ const AppModules = {
   },
 
   // --------------------------------------------------------------------------
-  // 2. CAROSELLO PROMOZIONALE HOME (100% DATA-DRIVEN)
+  // 2. CAROSELLO PROMOZIONALE HOME (DATA-DRIVEN)
   // --------------------------------------------------------------------------
   _currentPromoSlides: [],
 
@@ -122,7 +122,7 @@ const AppModules = {
 
     const slides = [];
 
-    // Slide 1: Generata dinamicamente dal primo gioco attivo a catalogo
+    // Slide 1: Primo gioco attivo a catalogo
     if (AppState.games.catalog && AppState.games.catalog.length > 0) {
       const topGame = AppState.games.catalog[0];
       slides.push({
@@ -135,7 +135,7 @@ const AppModules = {
       });
     }
 
-    // Slide 2: Generata dal primo articolo in vetrina nello Shop
+    // Slide 2: Primo articolo in vetrina nello Shop
     if (AppState.shop.items && AppState.shop.items.length > 0) {
       const topProduct = AppState.shop.items[0];
       slides.push({
@@ -148,7 +148,7 @@ const AppModules = {
       });
     }
 
-    // Slide 3: Generata dal primo cocktail o ricetta a catalogo
+    // Slide 3: Prima ricetta a catalogo
     if (AppState.recipes.items && AppState.recipes.items.length > 0) {
       const topRecipe = AppState.recipes.items[0];
       slides.push({
@@ -321,38 +321,49 @@ const AppModules = {
     AppRouter.navigate("subview-game-detail");
   },
 
+  // --------------------------------------------------------------------------
+  // AVVIO EPISODIO: RISOLUZIONE ULTRA-RESILIENTE DEL MOTORE DI GIOCO
+  // --------------------------------------------------------------------------
   startEpisode: function(gameKey, epNum, canContinueFree) {
     const saga = AppState.games.catalog.find(s => s.gameKey === gameKey);
     if (!saga) return;
 
-    const ruleEngineKey = saga.regole || "Rules2";
+    // 1. Normalizzazione rigorosa: rimozione di qualsiasi spazio e standardizzazione
+    const rawRule = String(saga.regole || "Rules2").trim();
+    const cleanRuleCode = rawRule.replace(/\s+/g, '');
 
+    // 2. Catena di fallback multipla per azzerare qualsiasi discrepanza su mobile
     let engine = null;
+
     if (typeof window.EngineRegistry !== "undefined" && typeof window.EngineRegistry.get === "function") {
-      engine = window.EngineRegistry.get(ruleEngineKey);
+      engine = window.EngineRegistry.get(cleanRuleCode) || window.EngineRegistry.get(rawRule) || window.EngineRegistry.get("rules2");
     } else if (typeof EngineRegistry !== "undefined" && typeof EngineRegistry.get === "function") {
-      engine = EngineRegistry.get(ruleEngineKey);
+      engine = EngineRegistry.get(cleanRuleCode) || EngineRegistry.get(rawRule) || EngineRegistry.get("rules2");
     }
 
+    // 3. Fallback diretto sull'oggetto globale di Rules2 se il registro non è ancora agganciato
     if (!engine) {
       engine = window.Rules2Engine || (typeof Rules2Engine !== "undefined" ? Rules2Engine : null);
     }
 
     if (!engine) {
-      alert(`⚠️ Motore di gioco "${ruleEngineKey}" non trovato.`);
+      alert(`⚠️ Motore di gioco "${cleanRuleCode}" non trovato. Verifica la connessione e riprova.`);
+      console.error("[startEpisode] Impossibile trovare il motore per:", cleanRuleCode, rawRule);
       return;
     }
 
-    AppState.activeSession.engineKey = ruleEngineKey;
+    AppState.activeSession.engineKey = cleanRuleCode;
     AppState.activeSession.gameKey = gameKey;
     AppState.activeSession.episodio = epNum;
     AppState.activeSession.combatRound = 1;
     AppState.activeSession.combatEnemyId = null;
 
+    // 4. Delegazione alla procedura diegetica del cabinato arcade "INSERT MEGOIN 🪙"
     if (typeof engine.launchSession === "function") {
-      engine.launchSession(gameKey, epNum, canContinueFree, saga.eroeSalvato || null);
+      const savedHeroProfile = saga.eroeSalvato || (saga.episodes && saga.episodes[epNum - 1]?.eroeSalvato) || null;
+      engine.launchSession(gameKey, epNum, canContinueFree, savedHeroProfile);
     } else {
-      console.warn(`[AppModules] L'engine "${ruleEngineKey}" non implementa launchSession().`);
+      console.warn(`[AppModules] L'engine "${cleanRuleCode}" non implementa launchSession().`);
     }
   },
 
@@ -610,7 +621,7 @@ const AppModules = {
   },
 
   // --------------------------------------------------------------------------
-  // 6. PIANI SAAS & ABBONAMENTI (100% DATA-DRIVEN & SEMANTICO)
+  // 6. PIANI SAAS & ABBONAMENTI
   // --------------------------------------------------------------------------
   openPlansCatalogModal: function() {
     this.renderPlansCatalog();
@@ -622,7 +633,6 @@ const AppModules = {
     AppState.billingCycle = cycle;
     const isYearly = (cycle === "yearly");
     
-    // TOGGLE PULITO DEGLI STATI ACTIVE / IDLE SENZA MANIPOLARE CLASSNAME
     const btnM = document.getElementById("billing-toggle-monthly");
     const btnY = document.getElementById("billing-toggle-yearly");
 
