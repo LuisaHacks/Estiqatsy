@@ -1,6 +1,6 @@
 // ============================================================================
 // PROJECT: ESTIQATSY SYNDICATE & RPG PLATFORM
-// FILE: js/app-core.js
+// FILE: js/app-core.js (VERSIONE 9.0 - THREE-FOOTER ROUTING & ENGINE NORMALIZER)
 // LAYER 1: SISTEMA OPERATIVO CLIENT-SIDE, ROUTER SPA, STATO & API ENGINE
 // NOTE: 100% DISACCOPPIATO DA TAILWIND - GESTIONE SEMANTICA CSS (core.css)
 // ============================================================================
@@ -134,21 +134,22 @@ function setupTelegramBackButton(targetScreenId) {
 }
 
 // ----------------------------------------------------------------------------
-// 4. REGISTRO DEI MOTORI DI GIOCO (ENGINE REGISTRY)
+// 4. REGISTRO DEI MOTORI DI GIOCO (ENGINE REGISTRY - RESILIENTE AD OGNI SPAZIO)
 // ----------------------------------------------------------------------------
 const EngineRegistry = {
   _engines: {},
 
   register: function(ruleKey, engineInstance) {
     if (!ruleKey || !engineInstance) return;
-    const cleanKey = String(ruleKey).trim().toLowerCase();
+    // Normalizzazione forzata: lowercase e rimozione di qualsiasi spazio
+    const cleanKey = String(ruleKey).trim().toLowerCase().replace(/\s+/g, '');
     this._engines[cleanKey] = engineInstance;
-    console.log(`[EngineRegistry] Motore registrato: ${ruleKey}`);
+    console.log(`[EngineRegistry] Motore registrato con successo: ${cleanKey}`);
   },
 
   get: function(ruleKey) {
     if (!ruleKey) return this._engines["rules2"] || null;
-    const cleanKey = String(ruleKey).trim().toLowerCase();
+    const cleanKey = String(ruleKey).trim().toLowerCase().replace(/\s+/g, '');
     return this._engines[cleanKey] || this._engines["rules2"] || null;
   }
 };
@@ -156,7 +157,7 @@ const EngineRegistry = {
 window.EngineRegistry = EngineRegistry;
 
 // ----------------------------------------------------------------------------
-// 5. ROUTER SPA (APPROUTER) - 100% CLASSI SEMANTICHE
+// 5. ROUTER SPA (APPROUTER) - CONTROLLO ATOMICO DEI 3 FOOTER
 // ----------------------------------------------------------------------------
 const AppRouter = {
   navigate: function(screenName) {
@@ -213,29 +214,38 @@ const AppRouter = {
       if (el) el.classList.toggle("hidden", id !== targetId);
     });
 
-    // Switch Header & Footer
+    // Controllo atomico Header & Switch a Tre Footer
     const isGameplay = (targetId === "view-gameplay");
     const isWizard = (targetId === "view-wizard");
 
     const appHeader = document.getElementById("main-app-header");
     const gameHeader = document.getElementById("main-game-header");
+
     const appFooter = document.getElementById("main-app-footer");
+    const wizardFooter = document.getElementById("main-wizard-footer");
     const gameFooter = document.getElementById("main-game-cockpit-footer");
 
+    // 1. Gestione Header
     if (isGameplay) {
       if (appHeader) appHeader.classList.add("hidden");
       if (gameHeader) gameHeader.classList.remove("hidden");
-      if (appFooter) appFooter.classList.add("hidden");
-      if (gameFooter) gameFooter.classList.remove("hidden");
-    } else if (isWizard) {
-      if (appHeader) appHeader.classList.remove("hidden");
-      if (gameHeader) gameHeader.classList.add("hidden");
-      if (appFooter) appFooter.classList.add("hidden");
-      if (gameFooter) gameFooter.classList.add("hidden");
     } else {
       if (appHeader) appHeader.classList.remove("hidden");
       if (gameHeader) gameHeader.classList.add("hidden");
+    }
+
+    // 2. Gestione Esclusiva a Tre Footer (Mai sovrapposizioni)
+    if (isGameplay) {
+      if (appFooter) appFooter.classList.add("hidden");
+      if (wizardFooter) wizardFooter.classList.add("hidden");
+      if (gameFooter) gameFooter.classList.remove("hidden");
+    } else if (isWizard) {
+      if (appFooter) appFooter.classList.add("hidden");
+      if (wizardFooter) wizardFooter.classList.remove("hidden");
+      if (gameFooter) gameFooter.classList.add("hidden");
+    } else {
       if (appFooter) appFooter.classList.remove("hidden");
+      if (wizardFooter) wizardFooter.classList.add("hidden");
       if (gameFooter) gameFooter.classList.add("hidden");
     }
 
@@ -247,7 +257,7 @@ const AppRouter = {
     document.body.dataset.activeScreen = targetId;
     document.body.dataset.activeTab = AppState.activeTab;
 
-    // GESTIONE DEGLI STATI ATTIVI SENZA CLASSI TAILWIND (PURA CLASSE .active)
+    // Toggle classi attive di navigazione
     document.querySelectorAll(".nav-tab").forEach(btn => {
       const isCurrent = (btn.dataset.tab === AppState.activeTab);
       btn.classList.toggle("active", isCurrent);
@@ -269,10 +279,9 @@ const AppRouter = {
 let _isApiInProgress = false;
 
 async function apiCall(action, extraParams = {}) {
-  // Evita chiamate sovrapposte concorrenti per azioni transazionali critiche
   const isCritical = ["shop_buy", "currency_exchange", "game_start", "game_action"].includes(action);
   if (isCritical && _isApiInProgress) {
-    console.warn(`[apiCall] Richiesta "${action}" bloccata: un'altra transazione è in corso.`);
+    console.warn(`[apiCall] Richiesta "${action}" bloccata: transazione già in corso.`);
     throw new Error("Transazione in corso. Attendi un istante...");
   }
 
@@ -294,6 +303,7 @@ async function apiCall(action, extraParams = {}) {
     }
     const result = await response.json();
     if (!result.success && result.error) {
+      // Propagazione dell'errore server originale (es. SESSION_EXPIRED)
       throw new Error(result.error);
     }
     return result.data;
