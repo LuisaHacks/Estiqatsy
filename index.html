@@ -18,31 +18,31 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.4/howler.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
 
-  <!-- FOGLIO DI STILE DEDICATO RULES2 & PIATTAFORMA -->
-  <link rel="stylesheet" href="css/rules2.css?v=5">
+  <!-- IL FOGLIO DI STILE SEPARATO -->
+  <link rel="stylesheet" href="css/rules2.css?v=6">
 </head>
 
-<body class="h-screen w-screen flex flex-col antialiased select-none overflow-hidden bg-[#090D16]">
+<body class="rpg-app-body">
 
   <!-- 1. LOADER D'AVVIO -->
-  <div id="app-loading" class="fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#090D16] p-6 text-center transition-opacity duration-300">
-    <div class="relative mb-4">
-      <div class="w-14 h-14 border-4 border-sky-500/20 border-t-sky-400 rounded-full animate-spin"></div>
-      <div class="absolute inset-0 flex items-center justify-center text-xl font-black">⚓</div>
+  <div id="app-loading" class="app-loader-screen">
+    <div class="loader-spinner-box">
+      <div class="loader-spinner"></div>
+      <div class="loader-icon">⚓</div>
     </div>
-    <h2 class="text-sm font-black tracking-widest text-white uppercase mb-1">Estiqatsy Syndicate</h2>
-    <p class="text-xs text-slate-400 animate-pulse" id="loading-status">Sincronizzazione fascicoli e archivi...</p>
-    <div id="loading-error-box" class="hidden mt-4 p-3 bg-rose-950/80 border border-rose-600 rounded-xl text-xs text-rose-200 max-w-sm text-left font-mono"></div>
-    <button id="loading-retry-btn" onclick="location.reload()" class="hidden mt-4 btn btn-sm btn-primary">Riprova</button>
+    <h2 class="loader-title">Estiqatsy Syndicate</h2>
+    <p class="loader-status" id="loading-status">Sincronizzazione fascicoli e archivi...</p>
+    <div id="loading-error-box" class="loader-error-box hidden"></div>
+    <button id="loading-retry-btn" onclick="location.reload()" class="btn btn-sm btn-primary hidden mt-4">Riprova</button>
   </div>
 
-  <!-- 2.A TOP BAR GENERALE (PIATTAFORMA) -->
-  <header id="main-app-header" class="flex-none z-30 universal-top-bar px-4 flex items-center justify-between relative">
-    <div class="w-16 flex items-center text-[10px] text-slate-500 font-mono"></div>
-    <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
-      <span class="text-xs font-black tracking-[0.25em] text-white/90 uppercase">⚓ ESTIQATSY</span>
+  <!-- 2.A TOP BAR PIATTAFORMA -->
+  <header id="main-app-header" class="universal-top-bar">
+    <div class="top-bar-placeholder"></div>
+    <div class="top-bar-title-box">
+      <span class="top-bar-brand">⚓ ESTIQATSY</span>
     </div>
-    <div class="w-16 flex justify-end items-center">
+    <div class="top-bar-actions">
       <button id="audio-toggle-btn-mob" onclick="SoundEngine.toggleMute()" class="btn btn-xs btn-circle btn-ghost text-sky-400 md:hidden" title="Audio">
         <i data-lucide="volume-2" class="w-4 h-4"></i>
       </button>
@@ -50,16 +50,16 @@
   </header>
 
   <!-- 2.B TOP BAR DEL COCKPIT DI GIOCO -->
-  <header id="main-game-header" class="hidden flex-none z-30 universal-top-bar px-4 flex items-center justify-between">
-    <button onclick="GameEngine.leaveGameToHub()" class="btn btn-xs btn-ghost text-slate-300 flex items-center space-x-1 pl-0">
+  <header id="main-game-header" class="universal-top-bar hidden">
+    <button onclick="GameEngine.leaveGameToHub()" class="btn btn-xs btn-ghost text-slate-300">
       <i data-lucide="chevron-left" class="w-4 h-4"></i>
-      <span class="text-[10px] font-bold uppercase tracking-wider">Giochi</span>
+      <span class="btn-back-text">Giochi</span>
     </button>
-    <div class="text-center">
-      <div class="text-[9px] font-black text-amber-400 uppercase tracking-widest" id="game-header-series">GIOCO</div>
-      <div class="text-xs font-black text-white truncate max-w-[200px]" id="game-header-episode">Episodio 1</div>
+    <div class="game-header-titles">
+      <div class="game-header-tag" id="game-header-series">GIOCO</div>
+      <div class="game-header-sub" id="game-header-episode">Episodio 1</div>
     </div>
-    <div class="flex items-center space-x-1">
+    <div class="game-header-actions">
       <button onclick="SoundEngine.toggleMute()" class="btn btn-xs btn-circle btn-ghost text-slate-400">
         <i data-lucide="volume-2" class="w-3.5 h-3.5"></i>
       </button>
@@ -69,169 +69,160 @@
     </div>
   </header>
 
-  <!-- 3. STRUTTURA PRINCIPALE: SIDEBAR DESKTOP + MAIN AREA -->
-  <div class="flex-1 flex flex-col md:flex-row min-h-0 overflow-hidden relative">
+  <!-- 3. STRUTTURA PRINCIPALE -->
+  <div class="app-layout-container">
 
-    <!-- SIDEBAR DESKTOP & TABLET WIDESCREEN -->
-    <aside id="desktop-sidebar" class="hidden md:flex flex-col w-72 lg:w-80 bg-[#0d131f] border-r border-white/5 h-full p-4 space-y-4 flex-none z-20">
-      <div class="bg-surface/90 p-3.5 rounded-2xl border border-white/10 shadow-xl space-y-3">
+    <!-- SIDEBAR DESKTOP WIDESCREEN -->
+    <aside id="desktop-sidebar" class="desktop-sidebar">
+      <div class="user-card-desk">
         <div class="flex items-center space-x-3">
-          <div id="user-avatar-desk" class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-sky-600 via-indigo-600 to-slate-900 ring-2 ring-sky-400/40 flex items-center justify-center font-black text-xl text-white shadow-lg flex-shrink-0 overflow-hidden">
-            U
-          </div>
+          <div id="user-avatar-desk" class="user-avatar-box">U</div>
           <div class="min-w-0 flex-1">
-            <div class="text-[9px] font-bold text-slate-400 tracking-[0.18em] uppercase">AGENTE SYNDICATE</div>
-            <div id="user-name-desk" class="text-sm font-black text-white truncate leading-tight mt-0.5">Avventuriero</div>
+            <div class="badge-role">AGENTE SYNDICATE</div>
+            <div id="user-name-desk" class="user-name-label">Avventuriero</div>
             <div class="mt-1">
-              <button onclick="AppModules.openPlansCatalogModal()" class="inline-flex items-center space-x-1.5 px-2.5 py-0.5 rounded-full bg-sky-500/15 hover:bg-sky-500/25 border border-sky-400/30 text-[9px] font-black text-sky-300 uppercase tracking-wider transition-all cursor-pointer shadow-sm">
-                <span>👑</span> <span id="user-plan-desk">PIANO BASE</span> <span class="text-sky-300/50 font-mono">›</span>
+              <button onclick="AppModules.openPlansCatalogModal()" class="plan-pill-btn">
+                <span>👑</span> <span id="user-plan-desk">PIANO BASE</span> <span class="arrow">›</span>
               </button>
             </div>
           </div>
         </div>
 
-        <div class="grid grid-cols-2 gap-2 pt-2.5 border-t border-white/10">
-          <div class="bg-black/40 p-2 rounded-xl text-center border border-white/5">
-            <div class="text-[8.5px] text-slate-400 font-bold uppercase tracking-wider">Megoin</div>
-            <div class="text-sm font-black text-amber-400 text-glow-amber tabular-nums mt-0.5" id="user-megoin-desk">0 🪙</div>
+        <div class="wallet-desk-grid">
+          <div class="wallet-desk-item">
+            <div class="wallet-label">Megoin</div>
+            <div class="wallet-value text-amber-400 text-glow-amber" id="user-megoin-desk">0 🪙</div>
           </div>
-          <div class="bg-black/40 p-2 rounded-xl text-center border border-white/5">
-            <div class="text-[8.5px] text-slate-400 font-bold uppercase tracking-wider">Fedeltà</div>
-            <div class="text-sm font-black text-emerald-400 tabular-nums mt-0.5" id="user-points-desk">0 Pt</div>
+          <div class="wallet-desk-item">
+            <div class="wallet-label">Fedeltà</div>
+            <div class="wallet-value text-emerald-400" id="user-points-desk">0 Pt</div>
           </div>
         </div>
       </div>
 
-      <nav class="flex-1 space-y-1.5" id="desktop-nav-menu">
-        <button id="desk-nav-home" onclick="AppRouter.navigate('home')" class="desk-nav-btn w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl text-xs font-bold text-sky-400 bg-white/5" data-tab="home">
+      <nav class="desktop-nav-menu" id="desktop-nav-menu">
+        <button id="desk-nav-home" onclick="AppRouter.navigate('home')" class="desk-nav-btn active" data-tab="home">
           <i data-lucide="home" class="w-4 h-4"></i> <span>Dashboard Home</span>
         </button>
-        <button id="desk-nav-games" data-module="games" onclick="AppRouter.navigate('games')" class="desk-nav-btn w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold text-slate-300 hover:bg-white/5" data-tab="games">
+        <button id="desk-nav-games" data-module="games" onclick="AppRouter.navigate('games')" class="desk-nav-btn" data-tab="games">
           <div class="flex items-center space-x-3">
             <i data-lucide="gamepad-2" class="w-4 h-4 text-sky-400"></i>
             <span>Giochi Noir RPG</span>
           </div>
-          <span class="badge badge-xs badge-primary font-bold text-[8px] py-1 px-1.5">PLAY</span>
+          <span class="badge badge-xs badge-primary font-bold text-[8px]">PLAY</span>
         </button>
-        <button id="desk-nav-shop" data-module="shop" onclick="AppRouter.navigate('shop')" class="desk-nav-btn w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl text-xs font-bold text-slate-300 hover:bg-white/5" data-tab="shop">
+        <button id="desk-nav-shop" data-module="shop" onclick="AppRouter.navigate('shop')" class="desk-nav-btn" data-tab="shop">
           <i data-lucide="shopping-bag" class="w-4 h-4"></i> <span>Shop</span>
         </button>
-        <button id="desk-nav-recipes" data-module="recipes" onclick="AppRouter.navigate('recipes')" class="desk-nav-btn w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl text-xs font-bold text-slate-300 hover:bg-white/5" data-tab="recipes">
+        <button id="desk-nav-recipes" data-module="recipes" onclick="AppRouter.navigate('recipes')" class="desk-nav-btn" data-tab="recipes">
           <i data-lucide="utensils" class="w-4 h-4"></i> <span>Barlady & Ricette</span>
         </button>
-        <button id="desk-nav-profile" onclick="AppRouter.navigate('profile')" class="desk-nav-btn w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl text-xs font-bold text-slate-300 hover:bg-white/5" data-tab="profile">
+        <button id="desk-nav-profile" onclick="AppRouter.navigate('profile')" class="desk-nav-btn" data-tab="profile">
           <i data-lucide="user" class="w-4 h-4"></i> <span>Profilo & Caveau</span>
         </button>
       </nav>
 
-      <div class="pt-3 border-t border-white/5 flex items-center justify-between">
-        <button onclick="SoundEngine.toggleMute()" class="btn btn-ghost btn-xs text-slate-400 flex items-center space-x-1.5">
+      <div class="desktop-footer-status">
+        <button onclick="SoundEngine.toggleMute()" class="btn btn-ghost btn-xs text-slate-400">
           <i data-lucide="volume-2" class="w-4 h-4"></i>
-          <span id="audio-status-desk" class="badge badge-xs badge-success text-[8px] font-black">ON</span>
+          <span id="audio-status-desk" class="badge badge-xs badge-success">ON</span>
         </button>
-        <span class="text-[10px] text-slate-500 font-mono">v5.0 Console</span>
+        <span class="version-label">v6.0 Semantics</span>
       </div>
     </aside>
 
     <!-- AREA CENTRALE FLUIDA -->
-    <div class="flex-1 flex flex-col h-full min-w-0 overflow-hidden relative">
-      <main class="flex-1 overflow-y-auto overflow-x-hidden relative" id="app-main-scroll">
-        <div class="p-3.5 md:p-6 lg:p-8 max-w-[1500px] mx-auto space-y-5">
+    <div class="app-main-viewport">
+      <main class="app-scroll-area" id="app-main-scroll">
+        <div class="app-content-wrapper">
 
           <!-- VISTA 1: DASHBOARD HOME -->
           <section id="view-home" class="space-y-5 app-screen">
-            <div class="rounded-3xl p-6 md:p-8 bg-gradient-to-br from-slate-900 via-slate-900 to-indigo-950 border border-white/10 shadow-2xl space-y-3.5 relative overflow-hidden">
+            <div class="home-hero-banner">
               <div class="flex items-center space-x-2.5 flex-wrap gap-y-2">
-                <span class="badge badge-sm badge-outline border-sky-400 text-sky-400 font-bold uppercase text-[9px] md:text-[10px]">Piattaforma Ufficiale</span>
+                <span class="badge-tag">Piattaforma Ufficiale</span>
                 <span class="text-xs md:text-sm font-bold text-emerald-400">⭐ <span id="home-rank-points">0</span> Punti Fedeltà</span>
-                <button onclick="AppModules.openPlansCatalogModal()" class="badge badge-sm badge-info font-black uppercase text-[9px] md:text-[10px] py-2 px-3 shadow-md hover:scale-105 active:scale-95 transition-all cursor-pointer flex items-center space-x-1.5">
-                  <span>👑</span> <span id="home-plan-badge">PIANO BASE</span> <span class="text-white/60">›</span>
+                <button onclick="AppModules.openPlansCatalogModal()" class="badge-plan-hero">
+                  <span>👑</span> <span id="home-plan-badge">PIANO BASE</span> <span class="arrow">›</span>
                 </button>
               </div>
 
               <div>
-                <h2 class="text-xl md:text-3xl font-black text-white leading-tight">Darsena Noir, <span id="home-username" class="text-sky-400">Avventuriero</span>.</h2>
-                <p class="text-xs md:text-sm text-slate-300 leading-relaxed max-w-3xl mt-1.5">
-                  Esplora le saghe investigative Rules 2 a colpi di D20, costruisci l'Organigramma del Potere e gestisci le tue risorse nel Syndicate.
-                </p>
+                <h2 class="hero-headline">Darsena Noir, <span id="home-username" class="text-sky-400">Avventuriero</span>.</h2>
+                <p class="hero-lead">Esplora le saghe investigative Rules 2 a colpi di D20, costruisci l'Organigramma del Potere e gestisci le tue risorse nel Syndicate.</p>
               </div>
 
               <div class="pt-2 flex gap-3">
-                <button onclick="AppRouter.navigate('games')" class="btn btn-sm md:btn-md btn-primary text-xs md:text-sm font-bold shadow-lg shadow-sky-600/30">
-                  🎮 Giochi RPG
-                </button>
-                <button onclick="AppRouter.navigate('shop')" class="btn btn-sm md:btn-md btn-outline border-white/20 text-xs md:text-sm font-bold">
-                  🏪 Shop
-                </button>
+                <button onclick="AppRouter.navigate('games')" class="btn btn-sm btn-primary font-bold">🎮 Giochi RPG</button>
+                <button onclick="AppRouter.navigate('shop')" class="btn btn-sm btn-outline border-white/20 font-bold">🏪 Shop</button>
               </div>
             </div>
 
-            <!-- Griglia 4 KPI -->
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
-              <div onclick="AppRouter.navigate('profile')" class="bg-surface/80 hover:bg-surface active:scale-[0.98] transition-all p-3.5 md:p-4 rounded-2xl border border-white/5 cursor-pointer flex justify-between items-start group shadow-md">
+            <div class="kpi-quad-grid">
+              <div onclick="AppRouter.navigate('profile')" class="kpi-card group">
                 <div>
-                  <div class="text-[9px] md:text-[11px] uppercase font-bold text-slate-400 tracking-wider">Megoin</div>
-                  <div class="text-lg md:text-2xl font-black text-amber-300 text-glow-amber tabular-nums mt-1" id="home-megoin-card">0 🪙</div>
+                  <div class="kpi-card-label">Megoin</div>
+                  <div class="kpi-card-value text-amber-300 text-glow-amber" id="home-megoin-card">0 🪙</div>
                 </div>
-                <i data-lucide="chevron-right" class="w-4 h-4 text-slate-500 group-hover:text-amber-400 transition-colors"></i>
+                <i data-lucide="chevron-right" class="kpi-card-icon"></i>
               </div>
 
-              <div onclick="AppRouter.navigate('profile')" class="bg-surface/80 hover:bg-surface active:scale-[0.98] transition-all p-3.5 md:p-4 rounded-2xl border border-white/5 cursor-pointer flex justify-between items-start group shadow-md">
+              <div onclick="AppRouter.navigate('profile')" class="kpi-card group">
                 <div>
-                  <div class="text-[9px] md:text-[11px] uppercase font-bold text-slate-400 tracking-wider">Punti Fedeltà</div>
-                  <div class="text-lg md:text-2xl font-black text-emerald-400 tabular-nums mt-1" id="home-punti-card">0 Pt</div>
+                  <div class="kpi-card-label">Punti Fedeltà</div>
+                  <div class="kpi-card-value text-emerald-400" id="home-punti-card">0 Pt</div>
                 </div>
-                <i data-lucide="chevron-right" class="w-4 h-4 text-slate-500 group-hover:text-emerald-400 transition-colors"></i>
+                <i data-lucide="chevron-right" class="kpi-card-icon"></i>
               </div>
 
-              <div onclick="AppRouter.navigate('games')" class="bg-surface/80 hover:bg-surface active:scale-[0.98] transition-all p-3.5 md:p-4 rounded-2xl border border-white/5 cursor-pointer flex justify-between items-start group shadow-md">
+              <div onclick="AppRouter.navigate('games')" class="kpi-card group">
                 <div>
-                  <div class="text-[9px] md:text-[11px] uppercase font-bold text-slate-400 tracking-wider">Giochi RPG</div>
-                  <div class="text-lg md:text-2xl font-black text-sky-400 tabular-nums mt-1" id="home-games-count">0</div>
+                  <div class="kpi-card-label">Giochi RPG</div>
+                  <div class="kpi-card-value text-sky-400" id="home-games-count">0</div>
                 </div>
-                <i data-lucide="play" class="w-4 h-4 text-slate-500 group-hover:text-sky-400 transition-colors"></i>
+                <i data-lucide="play" class="kpi-card-icon"></i>
               </div>
 
-              <div onclick="AppModules.openVaultSection()" class="bg-surface/80 hover:bg-surface active:scale-[0.98] transition-all p-3.5 md:p-4 rounded-2xl border border-white/5 cursor-pointer flex justify-between items-start group shadow-md">
+              <div onclick="AppModules.openVaultSection()" class="kpi-card group">
                 <div>
-                  <div class="text-[9px] md:text-[11px] uppercase font-bold text-slate-400 tracking-wider">Download Caveau</div>
-                  <div class="text-lg md:text-2xl font-black text-purple-400 tabular-nums mt-1" id="home-purchases-count">0</div>
+                  <div class="kpi-card-label">Download Caveau</div>
+                  <div class="kpi-card-value text-purple-400" id="home-purchases-count">0</div>
                 </div>
-                <i data-lucide="chevron-right" class="w-4 h-4 text-slate-500 group-hover:text-purple-400 transition-colors"></i>
+                <i data-lucide="chevron-right" class="kpi-card-icon"></i>
               </div>
             </div>
 
-            <!-- Carosello Promozionale Dinamico -->
+            <!-- Carosello Home Dinamico -->
             <div class="space-y-2.5">
               <div class="flex items-center justify-between">
-                <span class="text-xs md:text-sm font-bold uppercase tracking-wider text-slate-400">In Evidenza nel Syndicate</span>
+                <span class="section-kicker">In Evidenza nel Syndicate</span>
                 <div class="flex space-x-1.5" id="carousel-dots-container"></div>
               </div>
-              <div class="relative overflow-hidden rounded-2xl bg-surface border border-white/5 shadow-2xl" id="carousel-outer-wrapper">
-                <div class="flex transition-transform duration-500 ease-out" id="carousel-track"></div>
+              <div class="carousel-outer-wrapper" id="carousel-outer-wrapper">
+                <div class="carousel-track" id="carousel-track"></div>
               </div>
             </div>
           </section>
 
-          <!-- VISTA 2: CATALOGO GIOCHI NOIR RPG -->
+          <!-- VISTA 2: CATALOGO GIOCHI -->
           <section id="view-hub" class="space-y-5 hidden app-screen max-w-5xl mx-auto">
-            <div class="flex items-center justify-between pb-2 border-b border-white/10">
+            <div class="page-title-row">
               <div>
-                <span class="text-[10px] font-bold uppercase tracking-widest text-sky-400">CATALOGO SAGHE</span>
-                <h2 class="text-lg md:text-2xl font-black text-white">Giochi Noir RPG</h2>
+                <span class="sub-header-tag">CATALOGO SAGHE</span>
+                <h2 class="page-headline">Giochi Noir RPG</h2>
               </div>
               <span class="text-xs text-slate-400 font-mono" id="games-total-counter">Caricamento...</span>
             </div>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="games-catalog-container"></div>
           </section>
 
-          <!-- DETTAGLIO GIOCO & LISTA EPISODI -->
+          <!-- DETTAGLIO GIOCO & CAPITOLI -->
           <section id="subview-game-detail" class="space-y-4 hidden app-screen max-w-3xl mx-auto">
             <div class="cinema-frame-rigid shadow-xl">
               <img id="hub-image" src="" alt="Copertina Gioco">
               <div class="watermark-cover-banner">
-                <div class="text-[10px] text-slate-200 italic leading-snug line-clamp-2 w-full" id="hub-quote"></div>
-                <div class="text-[8.5px] font-bold text-amber-400 uppercase tracking-wider text-right w-full mt-0.5" id="hub-author"></div>
+                <div class="quote-text" id="hub-quote"></div>
+                <div class="quote-author" id="hub-author"></div>
               </div>
             </div>
             <div class="space-y-2">
@@ -239,7 +230,7 @@
               <p class="text-xs md:text-sm text-slate-300 leading-relaxed" id="hub-desc"></p>
             </div>
             <div class="space-y-2.5 pt-2">
-              <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Capitoli Ufficiali</div>
+              <div class="section-kicker">Capitoli Ufficiali</div>
               <div id="hub-episodes-container" class="space-y-2"></div>
             </div>
           </section>
@@ -247,44 +238,38 @@
           <!-- =============================================================== -->
           <!-- VISTA 3: WIZARD CREAZIONE EROE (CAROSELLO 3D CIRCOLARE)        -->
           <!-- =============================================================== -->
-          <section id="view-wizard" class="space-y-3 hidden app-screen max-w-5xl mx-auto w-full">
+          <section id="view-wizard" class="wizard-container hidden app-screen max-w-5xl mx-auto">
             
-            <!-- Breadcrumb Navigation Bar -->
-            <div class="flex items-center justify-between px-3 py-1.5 rounded-xl bg-black/60 border border-white/10 text-[10px] sm:text-xs font-mono shadow-md">
-              <span id="wiz-step-ind-1" class="font-black text-sky-400">1. Archetipo</span>
-              <span class="text-slate-600">›</span>
-              <span id="wiz-step-ind-2" class="text-slate-500">2. Talenti</span>
-              <span class="text-slate-600">›</span>
-              <span id="wiz-step-ind-3" class="text-slate-500">3. Emporio</span>
-              <span class="text-slate-600">›</span>
-              <span id="wiz-step-ind-4" class="text-slate-500">4. Battesimo</span>
+            <div class="wizard-stepper-bar">
+              <span id="wiz-step-ind-1" class="step-active">1. Archetipo</span>
+              <span class="step-sep">›</span>
+              <span id="wiz-step-ind-2" class="step-idle">2. Talenti</span>
+              <span class="step-sep">›</span>
+              <span id="wiz-step-ind-3" class="step-idle">3. Emporio</span>
+              <span class="step-sep">›</span>
+              <span id="wiz-step-ind-4" class="step-idle">4. Battesimo</span>
             </div>
 
-            <!-- PASSO 1: I TAROCCHI DEL SALMASTRO (LOOP CIRCOLARE 3D) -->
+            <!-- PASSO 1: CAROSELLO 3D CIRCOLARE CONTINUO -->
             <div id="wizard-step-class" class="space-y-2">
-              <div class="flex items-center justify-between pb-1 border-b border-white/5">
+              <div class="step-header-row">
                 <div>
-                  <span class="text-[9px] font-bold uppercase text-amber-400 tracking-wider">Passo 1 di 4</span>
-                  <h3 class="text-xs sm:text-sm font-black text-white leading-none">Scegli la tua Classe Costiera</h3>
+                  <span class="step-tag">Passo 1 di 4</span>
+                  <h3 class="step-headline">Scegli la tua Classe Costiera</h3>
                 </div>
-                <span class="badge badge-xs badge-info font-mono font-bold text-[8.5px]">Episodio 0</span>
+                <span class="badge badge-xs badge-info font-mono font-bold">Episodio 0</span>
               </div>
               
-              <!-- Palcoscenico 3D Cover Flow Continuo -->
-              <div class="relative py-2 px-2">
-                <button onclick="GameEngine.coverflowPrev()" class="hidden sm:flex absolute left-2 top-1/2 -translate-y-1/2 z-30 btn btn-circle btn-sm bg-black/85 border border-white/20 text-white hover:bg-sky-500 hover:border-sky-400 transition-all shadow-2xl">
-                  ❮
-                </button>
-                <button onclick="GameEngine.coverflowNext()" class="hidden sm:flex absolute right-2 top-1/2 -translate-y-1/2 z-30 btn btn-circle btn-sm bg-black/85 border border-white/20 text-white hover:bg-sky-500 hover:border-sky-400 transition-all shadow-2xl">
-                  ❯
-                </button>
-
+              <!-- Palcoscenico 3D Cover Flow -->
+              <div class="coverflow-stage-outer">
+                <button onclick="GameEngine.coverflowPrev()" class="coverflow-arrow-btn left-2">❮</button>
+                <button onclick="GameEngine.coverflowNext()" class="coverflow-arrow-btn right-2">❯</button>
                 <div class="coverflow-stage-wrapper" id="wizard-classes-stage"></div>
-                <div class="flex justify-center items-center space-x-2 mt-3" id="wizard-coverflow-dots"></div>
+                <div class="coverflow-dots" id="wizard-coverflow-dots"></div>
               </div>
               
-              <div class="pt-1">
-                <button id="wizard-step1-confirm-btn" onclick="GameEngine.wizardConfirmStep1()" class="btn btn-sm sm:btn-md btn-primary w-full font-bold text-xs sm:text-sm tracking-wider uppercase shadow-xl shadow-sky-600/30">
+              <div class="pt-2">
+                <button id="wizard-step1-confirm-btn" onclick="GameEngine.wizardConfirmStep1()" class="btn btn-sm sm:btn-md btn-primary w-full font-bold uppercase shadow-xl shadow-sky-600/30">
                   ➡️ Conferma Archetipo (Passo 2/4)
                 </button>
               </div>
@@ -292,22 +277,19 @@
 
             <!-- PASSO 2: TALENTI CLANDESTINI -->
             <div id="wizard-step-abilities" class="space-y-2.5 hidden">
-              <div class="flex items-center justify-between pb-1 border-b border-white/5">
+              <div class="step-header-row">
                 <div>
-                  <span class="text-[9px] font-bold uppercase text-amber-400 tracking-wider">Passo 2 di 4</span>
-                  <h3 class="text-xs sm:text-sm font-black text-white leading-none">Apprendi Abilità & Talenti</h3>
+                  <span class="step-tag">Passo 2 di 4</span>
+                  <h3 class="step-headline">Apprendi Abilità & Talenti</h3>
                 </div>
-                <span class="badge badge-xs badge-info font-mono font-bold text-[9px]" id="wizard-px-budget">✨ 100 PX Disponibili</span>
+                <span class="badge badge-xs badge-info font-mono" id="wizard-px-budget">✨ 100 PX Disponibili</span>
               </div>
-              <p class="text-[11px] text-slate-300 leading-snug">
-                Tocca un talento per aprirne la <b>Scheda Dettagliata</b> con le proprietà belliche decodificate:
-              </p>
-              
-              <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 max-h-[50dvh] overflow-y-auto pr-1" id="wizard-abilities-grid"></div>
+              <p class="text-[11px] text-slate-300">Tocca un talento per aprirne la Scheda Dettagliata con le proprietà belliche decodificate:</p>
+              <div class="abilities-scroll-grid" id="wizard-abilities-grid"></div>
               
               <div class="flex gap-2 pt-2">
-                <button onclick="GameEngine.wizardPrevStep(1)" class="btn btn-xs sm:btn-sm btn-ghost text-xs">🔙 Modifica Classe</button>
-                <button onclick="GameEngine.wizardConfirmStep2()" class="btn btn-xs sm:btn-sm btn-primary flex-1 font-bold text-xs shadow-lg shadow-sky-600/30">
+                <button onclick="GameEngine.wizardPrevStep(1)" class="btn btn-xs sm:btn-sm btn-ghost">🔙 Modifica Classe</button>
+                <button onclick="GameEngine.wizardConfirmStep2()" class="btn btn-xs sm:btn-sm btn-primary flex-1 font-bold">
                   ➡️ Vai all'Emporio di Ciccio (Passo 3/4)
                 </button>
               </div>
@@ -315,21 +297,571 @@
 
             <!-- PASSO 3: MERCATO NERO DI CICCIO (MERCI RPG) -->
             <div id="wizard-step-shop" class="space-y-2.5 hidden">
-              <div class="flex items-center justify-between pb-1 border-b border-white/5">
+              <div class="step-header-row">
                 <div>
-                  <span class="text-[9px] font-bold uppercase text-amber-400 tracking-wider">Passo 3 di 4</span>
-                  <h3 class="text-xs sm:text-sm font-black text-white leading-none">Fai Rifornimento da Ciccio</h3>
+                  <span class="step-tag">Passo 3 di 4</span>
+                  <h3 class="step-headline">Fai Rifornimento da Ciccio</h3>
                 </div>
                 <div class="flex items-center space-x-2">
-                  <span class="badge badge-xs bg-black/70 border border-amber-400/40 text-amber-300 font-mono font-bold text-[9px]" id="wizard-shop-gold-display">💰 40 🟡</span>
-                  <button onclick="GameEngine.openCambioModal()" class="btn btn-xs btn-warning font-black text-[8.5px] shadow-sm">💱 Cambio 🪙</button>
+                  <span class="badge badge-xs bg-black/70 border border-amber-400/40 text-amber-300 font-mono font-bold" id="wizard-shop-gold-display">💰 40 🟡</span>
+                  <button onclick="GameEngine.openCambioModal()" class="btn btn-xs btn-warning font-black text-[8.5px]">💱 Cambio 🪙</button>
                 </div>
               </div>
 
-              <!-- Chips Reparti Pulite -->
-              <div class="flex space-x-1.5 overflow-x-auto no-scrollbar pb-1 text-[10px]" id="wizard-shop-category-chips">
-                <button onclick="GameEngine.filterWizardShop('ARMI')" class="rpg-category-chip badge badge-info font-bold cursor-pointer">🗡️ Armi</button>
-                <button onclick="GameEngine.filterWizardShop('VEICOLI')" class="rpg-category-chip badge badge-ghost font-bold cursor-pointer">🛴 Veicoli</button>
-                <button onclick="GameEngine.filterWizardShop('STRUMENTI')" class="rpg-category-chip badge badge-ghost font-bold cursor-pointer">🔧 Strumenti</button>
-                <button onclick="GameEngine.filterWizardShop('CURE')" class="rpg-category-chip badge badge-ghost font-bold cursor-pointer">🍱 Cure</button>
-                <button onclick="GameEngine.filterWizardShop('DROGHE')" class="rpg-category-chip badge
+              <!-- Chips Reparti -->
+              <div class="chips-scroll-bar" id="wizard-shop-category-chips">
+                <button onclick="GameEngine.filterWizardShop('ARMI')" class="rpg-category-chip badge badge-info">🗡️ Armi</button>
+                <button onclick="GameEngine.filterWizardShop('VEICOLI')" class="rpg-category-chip badge badge-ghost">🛴 Veicoli</button>
+                <button onclick="GameEngine.filterWizardShop('STRUMENTI')" class="rpg-category-chip badge badge-ghost">🔧 Strumenti</button>
+                <button onclick="GameEngine.filterWizardShop('CURE')" class="rpg-category-chip badge badge-ghost">🍱 Cure</button>
+                <button onclick="GameEngine.filterWizardShop('DROGHE')" class="rpg-category-chip badge badge-ghost">💊 Droghe</button>
+                <button onclick="GameEngine.filterWizardShop('TALISMANI')" class="rpg-category-chip badge badge-ghost">📿 Talismani</button>
+              </div>
+
+              <div class="shop-cards-grid" id="wizard-shop-grid"></div>
+
+              <div class="backpack-summary-bar" id="wizard-shop-backpack-summary">
+                <span class="text-slate-300 text-[11px]">🎒 Zaino di Partenza: <b id="wizard-shop-backpack-count" class="text-white">0 oggetti</b></span>
+                <button onclick="GameEngine.resetWizardShop()" class="btn btn-xs btn-ghost text-rose-400 text-[10px]">🔄 Ripristina Oro</button>
+              </div>
+
+              <div class="flex gap-2 pt-2">
+                <button onclick="GameEngine.wizardPrevStep(2)" class="btn btn-xs sm:btn-sm btn-ghost">🔙 Modifica Abilità</button>
+                <button onclick="GameEngine.wizardNextStep(4)" class="btn btn-xs sm:btn-sm btn-primary flex-1 font-bold">
+                  ➡️ Nome Eroe & Start (Passo 4/4)
+                </button>
+              </div>
+            </div>
+
+            <!-- PASSO 4: BATTESIMO DELL'EROE -->
+            <div id="wizard-step-name" class="space-y-2.5 hidden pb-6">
+              <div class="step-header-row">
+                <div>
+                  <span class="step-tag">Passo 4 di 4</span>
+                  <h3 class="step-headline">Battesimo dell'Antieroe</h3>
+                </div>
+                <span class="text-xs font-black text-amber-400 font-mono" id="wizard-class-recap">Classe</span>
+              </div>
+
+              <div class="recap-card-box" id="wizard-final-recap-box">
+                <div class="flex items-center justify-between border-b border-white/5 pb-2">
+                  <div class="flex items-center space-x-2.5">
+                    <span class="text-2xl" id="wizard-recap-avatar">🥋</span>
+                    <div>
+                      <div class="font-black text-white text-sm" id="wizard-recap-classname">Archetipo</div>
+                      <div class="text-[9px] text-sky-400 font-bold uppercase tracking-wider" id="wizard-recap-faction">Destra (+1 Danno)</div>
+                    </div>
+                  </div>
+                  <div class="text-right font-mono">
+                    <div class="text-rose-400 font-bold text-xs" id="wizard-recap-pv">❤️ 25 PV</div>
+                    <div class="text-amber-300 text-[11px]" id="wizard-recap-gold">🟡 40 Oro</div>
+                  </div>
+                </div>
+
+                <div class="space-y-1.5 text-[11px] text-slate-300 recap-collapsible">
+                  <div>⚡ <b>Talenti:</b> <span id="wizard-recap-abilities" class="text-slate-400 italic">Nessuno</span></div>
+                  <div>🎒 <b>Dotazione:</b> <span id="wizard-recap-inventory" class="text-slate-400 italic">Caricamento...</span></div>
+                </div>
+
+                <div class="pt-2 border-t border-white/5 space-y-1.5">
+                  <label class="text-[9.5px] font-bold text-slate-400 uppercase tracking-wider block">Nome dell'Eroe nel Syndicate</label>
+                  <input type="text" id="wizard-name-input" class="input input-sm input-bordered w-full text-xs text-white bg-black/50" placeholder="Es. Falco della Darsena" enterkeyhint="done">
+                  <button onclick="GameEngine.wizardUseTelegramName()" class="btn btn-xs btn-outline border-white/20 w-full text-[10px] mt-1">Usa il tuo nome Telegram</button>
+                </div>
+              </div>
+
+              <div class="flex gap-2 pt-2">
+                <button onclick="GameEngine.wizardPrevStep(3)" class="btn btn-xs sm:btn-sm btn-ghost">🔙 Modifica Emporio</button>
+                <button id="wizard-finalize-btn" onclick="GameEngine.wizardFinalizeHero()" class="btn btn-sm sm:btn-md btn-primary flex-1 font-black uppercase">
+                  🚀 ENTRA IN GIOCO ORA
+                </button>
+              </div>
+            </div>
+          </section>
+
+          <!-- =============================================================== -->
+          <!-- VISTA 4: COCKPIT GAMEPLAY (HUD A DOPPIA RIGA OTTIMIZZATO)      -->
+          <!-- =============================================================== -->
+          <section id="view-gameplay" class="gameplay-container hidden app-screen max-w-3xl mx-auto">
+            
+            <!-- HUD ERGONOMICO A DUE RIGHE (NESSUN TESTO INCOLLATO) -->
+            <div class="hud-cockpit">
+              
+              <!-- Riga 1: Identità, Avatar Classe da Media URL e Oro -->
+              <div class="hud-row-identity">
+                <div class="flex items-center space-x-2.5 min-w-0">
+                  <div class="hud-avatar-box">
+                    <img id="kpi-hero-avatar-img" src="" class="hud-avatar-img hidden" alt="Avatar">
+                    <span id="kpi-hero-avatar-fallback" class="hud-avatar-fallback">🥋</span>
+                  </div>
+                  <div class="min-w-0">
+                    <div class="hud-hero-name" id="kpi-hero-name">Eroe</div>
+                  </div>
+                </div>
+                <div class="hud-gold-display">
+                  <span>🟡</span> <span id="kpi-hero-gold">40</span> <span class="gold-suffix">Oro</span>
+                </div>
+              </div>
+
+              <!-- Riga 2: Barra Salute (< 45% larghezza) e Trittico D20 Leggibile -->
+              <div class="hud-row-vitals">
+                <div class="hud-vitals-box">
+                  <span class="heart-icon">❤️</span>
+                  <div class="progress-bar-container">
+                    <progress id="kpi-hero-pv-bar" class="progress progress-error w-full h-2 rounded-full" value="25" max="25"></progress>
+                  </div>
+                  <span id="kpi-hero-pv-text" class="hud-pv-number">25/25</span>
+                </div>
+
+                <div class="hud-d20-trio">
+                  <span class="d20-chip" title="Forza">🥊 <b id="kpi-mod-for">+0</b></span>
+                  <span class="d20-chip" title="Destrezza">🤸 <b id="kpi-mod-des">+0</b></span>
+                  <span class="d20-chip" title="Intelligenza">🧠 <b id="kpi-mod-int">+0</b></span>
+                </div>
+              </div>
+
+            </div>
+
+            <!-- Inquadratura Cinema con Banner Citazione Fisso -->
+            <div class="cinema-frame-rigid shadow-xl border border-white/5 relative">
+              <img id="scene-image" src="" alt="Scena di Gioco">
+              <span id="scene-type-badge" class="badge badge-xs badge-info scene-badge">SNODO</span>
+              <div id="floating-damage-box" class="floating-damage-layer"></div>
+
+              <div class="watermark-cover-banner" id="scene-watermark-banner">
+                <div class="quote-text" id="scene-quote"></div>
+                <div class="quote-author" id="scene-author"></div>
+              </div>
+            </div>
+
+            <!-- Scatola Narrativa Flessibile -->
+            <div class="narrative-box-flexible no-scrollbar shadow-inner">
+              <div class="narrative-title" id="scene-title">Titolo Snodo</div>
+              <p class="narrative-prose" id="scene-text">Caricamento narrazione...</p>
+            </div>
+
+            <!-- Area Azioni Tattiche Ancorata in Basso -->
+            <div id="scene-actions-container" class="scene-actions-area"></div>
+          </section>
+
+          <!-- VISTA 5: SHOP -->
+          <section id="view-shop" class="space-y-4 hidden app-screen">
+            <div class="search-bar-box">
+              <i data-lucide="search" class="search-icon"></i>
+              <input type="text" id="shop-search-input" oninput="AppModules.filterShop()" placeholder="Cerca nello Shop..." class="search-input">
+            </div>
+            <div class="chips-scroll-bar" id="shop-category-chips"></div>
+            <div id="shop-products-grid" class="shop-grid"></div>
+          </section>
+
+          <!-- DETTAGLIO SHOP -->
+          <section id="subview-shop-detail" class="space-y-4 hidden app-screen max-w-2xl mx-auto">
+            <div class="detail-header-border">
+              <span id="detail-shop-cat" class="detail-cat-tag">Reparto</span>
+              <h2 class="detail-title" id="detail-shop-title">Nome Articolo</h2>
+            </div>
+            <div class="detail-media-box">
+              <img id="detail-shop-img" src="" class="w-full h-full object-cover" alt="">
+              <span id="detail-shop-stock" class="badge badge-sm badge-success stock-badge">Disponibile</span>
+            </div>
+            <div class="space-y-4">
+              <p id="detail-shop-desc" class="detail-prose"></p>
+              <div class="detail-price-box">
+                <div>
+                  <div class="price-label">Prezzo</div>
+                  <div class="price-value text-amber-400 text-glow-amber" id="detail-shop-price">0 🪙</div>
+                </div>
+                <button id="detail-shop-action-btn" class="btn btn-primary btn-sm px-6 font-bold">Acquista</button>
+              </div>
+            </div>
+          </section>
+
+          <!-- VISTA 6: RICETTE -->
+          <section id="view-recipes" class="space-y-4 hidden app-screen">
+            <div class="search-bar-box">
+              <i data-lucide="search" class="search-icon"></i>
+              <input type="text" id="recipes-search-input" oninput="AppModules.filterRecipes()" placeholder="Cerca cocktail o piatti..." class="search-input">
+            </div>
+            <div class="chips-scroll-bar" id="recipes-category-chips"></div>
+            <div id="recipes-grid" class="recipes-grid"></div>
+          </section>
+
+          <!-- DETTAGLIO RICETTA -->
+          <section id="subview-recipe-detail" class="space-y-4 hidden app-screen max-w-2xl mx-auto">
+            <div class="detail-header-border">
+              <span id="detail-recipe-cat" class="detail-cat-tag">Categoria</span>
+              <h2 class="detail-title" id="detail-recipe-title">Piatto</h2>
+            </div>
+            <div class="detail-media-box">
+              <img id="detail-recipe-img" src="" class="w-full h-full object-cover" alt="">
+            </div>
+            <div class="space-y-3">
+              <div id="detail-recipe-meta" class="recipe-meta-text"></div>
+              <div class="recipe-rpg-card">
+                <div class="rpg-kicker">Parametri RPG & Gusto</div>
+                <div class="grid grid-cols-3 gap-2" id="detail-recipe-rpg"></div>
+              </div>
+              <div class="space-y-1">
+                <div class="section-kicker">Ingredienti</div>
+                <p id="detail-recipe-ingredients" class="recipe-content-box"></p>
+              </div>
+              <div class="space-y-1">
+                <div class="section-kicker">Preparazione</div>
+                <p id="detail-recipe-prep" class="recipe-content-box"></p>
+              </div>
+            </div>
+          </section>
+
+          <!-- VISTA 7: PROFILO UTENTE -->
+          <section id="view-profile" class="space-y-5 hidden app-screen">
+            <div class="profile-header-card">
+              <div class="flex items-center space-x-4">
+                <div class="profile-avatar-box" id="profile-card-avatar">U</div>
+                <div>
+                  <h3 class="profile-name" id="profile-card-name">Nome Utente</h3>
+                  <span class="profile-handle" id="profile-card-username">@username</span>
+                  <div class="mt-1 flex space-x-2">
+                    <span class="badge badge-sm badge-info font-bold text-[9px] uppercase" id="profile-card-plan">PIANO BASE</span>
+                    <span class="profile-id-text" id="profile-card-id">ID: ---</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="text-right space-y-1">
+                <div>
+                  <div class="kpi-card-label">Saldo Megoin</div>
+                  <div class="text-base md:text-lg font-black text-amber-300 text-glow-amber tabular-nums" id="profile-card-megoin">0 🪙</div>
+                </div>
+                <div>
+                  <div class="kpi-card-label">Punti Fedeltà</div>
+                  <div class="text-base md:text-lg font-black text-emerald-400 tabular-nums" id="profile-card-points">0 Pt</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+              <button onclick="AppModules.openPlansCatalogModal()" class="action-card-plan group">
+                <div class="flex items-center space-x-2.5">
+                  <span class="text-xl">👑</span>
+                  <div class="text-left">
+                    <div class="action-card-title group-hover:text-sky-400" id="profile-action-plan-name">Piano: BASE</div>
+                    <div class="action-card-sub">Dettagli / Upgrade ›</div>
+                  </div>
+                </div>
+                <span class="badge badge-xs badge-info font-black text-[8px]">INFO</span>
+              </button>
+
+              <button onclick="AppModules.openVaultSection()" class="action-card-vault group">
+                <div class="flex items-center space-x-2.5">
+                  <span class="text-xl">📥</span>
+                  <div class="text-left">
+                    <div class="action-card-title group-hover:text-purple-400">I Miei Download</div>
+                    <div class="action-card-sub">Caveau Digitale ›</div>
+                  </div>
+                </div>
+                <span class="badge badge-xs badge-secondary font-black text-[8px]" id="profile-action-vault-count">0</span>
+              </button>
+            </div>
+
+            <div id="profile-vault-container-card" class="vault-container-card">
+              <h3 class="section-headline-flex">
+                <i data-lucide="download" class="w-4 h-4 text-emerald-400"></i>
+                <span>File & Prodotti Digitali Riscattati</span>
+              </h3>
+              <div id="profile-vault-container" class="space-y-2"></div>
+            </div>
+
+            <div class="transactions-container-card">
+              <div class="flex justify-between items-center">
+                <h3 class="section-headline-flex">
+                  <i data-lucide="receipt" class="w-4 h-4 text-sky-400"></i>
+                  <span>Ultime Transazioni</span>
+                </h3>
+                <button onclick="AppModules.syncTransactions(true)" class="btn btn-ghost btn-xs text-sky-400">Aggiorna</button>
+              </div>
+              <div id="profile-transactions-container" class="divide-y divide-white/5 space-y-2"></div>
+            </div>
+          </section>
+
+        </div>
+      </main>
+
+      <!-- 4.A FOOTER PIATTAFORMA -->
+      <footer id="main-app-footer" class="main-app-footer md:hidden">
+        <button id="mob-nav-home" onclick="AppRouter.navigate('home')" class="nav-tab active" data-tab="home">
+          <i data-lucide="home" class="w-4 h-4"></i>
+          <span class="nav-tab-label">Home</span>
+        </button>
+        <button id="mob-nav-games" data-module="games" onclick="AppRouter.navigate('games')" class="nav-tab relative" data-tab="games">
+          <i data-lucide="gamepad-2" class="w-4 h-4 text-sky-400"></i>
+          <span class="nav-tab-label text-sky-400">Giochi</span>
+          <span class="nav-tab-dot"></span>
+        </button>
+        <button id="mob-nav-shop" data-module="shop" onclick="AppRouter.navigate('shop')" class="nav-tab" data-tab="shop">
+          <i data-lucide="shopping-bag" class="w-4 h-4"></i>
+          <span class="nav-tab-label">Shop</span>
+        </button>
+        <button id="mob-nav-recipes" data-module="recipes" onclick="AppRouter.navigate('recipes')" class="nav-tab" data-tab="recipes">
+          <i data-lucide="utensils" class="w-4 h-4"></i>
+          <span class="nav-tab-label">Ricette</span>
+        </button>
+        <button id="mob-nav-profile" onclick="AppRouter.navigate('profile')" class="nav-tab" data-tab="profile">
+          <i data-lucide="user" class="w-4 h-4"></i>
+          <span class="nav-tab-label">Profilo</span>
+        </button>
+      </footer>
+
+      <!-- 4.B FOOTER GAME COCKPIT RULES2 -->
+      <footer id="main-game-cockpit-footer" class="cockpit-footer hidden">
+        <button onclick="GameEngine.openBackpackDrawer()" class="cockpit-btn text-slate-300 hover:text-sky-400">
+          <i data-lucide="backpack" class="w-4 h-4"></i>
+          <span class="cockpit-btn-label">Zaino</span>
+        </button>
+        <button onclick="GameEngine.openEmporioDrawer()" class="cockpit-btn text-slate-300 hover:text-amber-400">
+          <i data-lucide="shopping-bag" class="w-4 h-4"></i>
+          <span class="cockpit-btn-label">Emporio</span>
+        </button>
+        <button onclick="GameEngine.openCambioModal()" class="cockpit-btn text-amber-400 hover:text-amber-300">
+          <i data-lucide="coins" class="w-4 h-4 text-glow-amber"></i>
+          <span class="cockpit-btn-label font-black">Cambio 🪙</span>
+        </button>
+        <button onclick="GameEngine.openSquadDrawer()" class="cockpit-btn text-slate-300 hover:text-indigo-400">
+          <i data-lucide="users" class="w-4 h-4"></i>
+          <span class="cockpit-btn-label">Squadra</span>
+        </button>
+        <button onclick="GameEngine.openDossierDrawer()" class="cockpit-btn text-slate-300 hover:text-emerald-400">
+          <i data-lucide="folder-search" class="w-4 h-4"></i>
+          <span class="cockpit-btn-label">Dossier</span>
+        </button>
+      </footer>
+
+    </div>
+  </div>
+
+  <!-- ======================================================================= -->
+  <!-- 5. CASSETTI & MODALI UNIFICATE (CENTRATURE E SCHEDE FORENSI)            -->
+  <!-- ======================================================================= -->
+
+  <!-- SCHEDA DETTAGLIATA UNIVERSALE -->
+  <dialog id="modal-universal-detail" class="modal modal-middle modal-dossier">
+    <div class="modal-box dossier-box">
+      <button onclick="document.getElementById('modal-universal-detail').close()" class="modal-close-btn">✕</button>
+
+      <div class="dossier-header">
+        <span class="dossier-icon" id="uni-detail-icon">📦</span>
+        <div class="min-w-0">
+          <h3 class="dossier-title" id="uni-detail-title">Nome Scheda</h3>
+          <span class="badge badge-xs badge-info font-black uppercase text-[8px]" id="uni-detail-badge">TIPO / FAZIONE</span>
+        </div>
+      </div>
+      
+      <div id="uni-detail-media-container" class="hidden cinema-frame-rigid shadow-md">
+        <img id="uni-detail-img" src="" alt="">
+        <div class="watermark-cover-banner" id="uni-detail-quote-banner">
+          <div class="quote-text" id="uni-detail-quote"></div>
+          <div class="quote-author" id="uni-detail-author"></div>
+        </div>
+      </div>
+
+      <div id="uni-detail-metrics-box" class="dossier-metrics-box">
+        <div class="metrics-label" id="uni-detail-metrics-label">PROPRIETÀ TECNICHE</div>
+        <div class="metrics-value" id="uni-detail-metrics-value">Nessuna proprietà</div>
+      </div>
+
+      <div class="space-y-1">
+        <div class="section-kicker">FASCICOLO INVESTIGATIVO</div>
+        <p class="dossier-lore-prose" id="uni-detail-lore"></p>
+      </div>
+
+      <div class="pt-2">
+        <button id="uni-detail-action-btn" class="btn btn-primary btn-sm w-full font-bold shadow-lg shadow-sky-600/30">
+          Azione
+        </button>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- DADO D20 SUSPENSE -->
+  <dialog id="modal-dice-suspense" class="modal modal-middle">
+    <div class="modal-box dice-modal-box">
+      <div class="dice-wrapper">
+        <div id="dice-visual-cube" class="dice-cube dice-rolling">🎲</div>
+      </div>
+      <div>
+        <h4 class="dice-title" id="dice-roll-title">Lancio D20 in corso...</h4>
+        <div class="dice-result" id="dice-roll-result">--</div>
+        <p class="dice-desc" id="dice-roll-desc">Il fato decide il tuo destino...</p>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- DRAWER ZAINO -->
+  <dialog id="drawer-backpack" class="modal modal-bottom sm:modal-middle">
+    <div class="modal-box drawer-standard-box">
+      <div class="drawer-header-row">
+        <div class="flex items-center space-x-2">
+          <span class="text-base">🎒</span>
+          <h3 class="drawer-title">Zaino dell'Eroe</h3>
+        </div>
+        <button onclick="document.getElementById('drawer-backpack').close()" class="btn btn-xs btn-circle btn-ghost">✕</button>
+      </div>
+      <div class="chips-scroll-bar" id="backpack-tabs">
+        <button onclick="GameEngine.filterBackpack('ALL')" class="rpg-category-chip badge badge-info">Tutti</button>
+        <button onclick="GameEngine.filterBackpack('ARMI')" class="rpg-category-chip badge badge-ghost">Armi</button>
+        <button onclick="GameEngine.filterBackpack('VEICOLI')" class="rpg-category-chip badge badge-ghost">Veicoli</button>
+        <button onclick="GameEngine.filterBackpack('CURE')" class="rpg-category-chip badge badge-ghost">Cure</button>
+        <button onclick="GameEngine.filterBackpack('DROGHE')" class="rpg-category-chip badge badge-ghost">Droghe</button>
+        <button onclick="GameEngine.filterBackpack('TALISMANI')" class="rpg-category-chip badge badge-ghost">Talismani</button>
+        <button onclick="GameEngine.filterBackpack('STRUMENTI')" class="rpg-category-chip badge badge-ghost">Strumenti</button>
+      </div>
+      <div class="drawer-items-scroll-box" id="backpack-slots-container"></div>
+    </div>
+  </dialog>
+
+  <!-- DRAWER EMPORIO DI CICCIO -->
+  <dialog id="drawer-emporio" class="modal modal-bottom sm:modal-middle">
+    <div class="modal-box emporio-drawer-box">
+      <div class="drawer-header-row">
+        <div class="flex items-center space-x-2">
+          <span class="text-base">🏪</span>
+          <h3 class="drawer-title">Emporio di Ciccio & CO.</h3>
+        </div>
+        <button onclick="document.getElementById('drawer-emporio').close()" class="btn btn-xs btn-circle btn-ghost">✕</button>
+      </div>
+      <div class="emporio-gold-bar">
+        <span>💰 Borsello: <b class="text-amber-400" id="emporio-gold-display">0 🟡</b></span>
+        <button onclick="GameEngine.openCambioModal()" class="btn btn-xs btn-warning font-black text-[9px]">💱 Banco Cambio</button>
+      </div>
+      <div class="flex space-x-1.5 pt-1">
+        <button id="emporio-tab-buy" onclick="GameEngine.setEmporioMode('buy')" class="flex-1 btn btn-xs btn-primary font-bold">Acquista Merci RPG</button>
+        <button id="emporio-tab-sell" onclick="GameEngine.setEmporioMode('sell')" class="flex-1 btn btn-xs btn-ghost text-slate-400 font-bold">Vendi a Ciccio (25%)</button>
+      </div>
+      <div class="emporio-items-scroll-grid" id="emporio-items-container"></div>
+    </div>
+  </dialog>
+
+  <!-- MODALE BANCO DI CAMBIO -->
+  <dialog id="modal-banco-cambio" class="modal modal-middle">
+    <div class="modal-box modal-cambio-box">
+      <button onclick="document.getElementById('modal-banco-cambio').close()" class="modal-close-btn">✕</button>
+      <span class="text-3xl">💱</span>
+      <h3 class="text-sm font-black text-white">Banco di Cambio del Molo</h3>
+      <p class="text-[10px] text-slate-300">Converti gettoni Megoin in monete d'oro sonanti direttamente sul server:</p>
+      <div class="cambio-balance-box">
+        Tuo Saldo: <b id="cambio-megoin-balance">0</b> Megoin 🪙
+      </div>
+      <div class="space-y-1.5 pt-1">
+        <button onclick="GameEngine.convertMegoinToGold(1, 100)" class="btn btn-sm btn-primary w-full font-bold text-xs shadow-md">
+          Converti 1 🪙 ➔ +100 🟡 Oro
+        </button>
+        <button onclick="GameEngine.convertMegoinToGold(2, 200)" class="btn btn-sm btn-outline border-amber-400/50 text-amber-300 w-full font-bold text-xs">
+          Converti 2 🪙 ➔ +200 🟡 Oro
+        </button>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- DRAWER SQUADRA -->
+  <dialog id="drawer-squad" class="modal modal-bottom sm:modal-middle">
+    <div class="modal-box drawer-standard-box">
+      <div class="drawer-header-row">
+        <div class="flex items-center space-x-2">
+          <span class="text-base">👥</span>
+          <h3 class="drawer-title">Compagni & Zombi al Seguito</h3>
+        </div>
+        <button onclick="document.getElementById('drawer-squad').close()" class="btn btn-xs btn-circle btn-ghost">✕</button>
+      </div>
+      <div class="drawer-subtitle">I compagni vivi e gli zombi assorbono una quota proporzionale del danno nemico inflitto al gruppo.</div>
+      <div id="squad-list-container" class="space-y-2 text-xs"></div>
+    </div>
+  </dialog>
+
+  <!-- DRAWER DOSSIER -->
+  <dialog id="drawer-dossier" class="modal modal-bottom sm:modal-middle">
+    <div class="modal-box drawer-standard-box">
+      <div class="drawer-header-row">
+        <div class="flex items-center space-x-2">
+          <span class="text-base">📂</span>
+          <h3 class="drawer-title">Organigramma Inchiesta</h3>
+        </div>
+        <button onclick="document.getElementById('drawer-dossier').close()" class="btn btn-xs btn-circle btn-ghost">✕</button>
+      </div>
+      <div class="drawer-subtitle">Le <b>Prove d'Inchiesta</b> assegnano <b class="text-emerald-400">+1 INT permanente</b>; i <b>Sospetti e gli Indizi</b> conferiscono <b class="text-amber-300">+1 INT situazionale</b>.</div>
+      <div id="dossier-list-container" class="space-y-2 text-xs"></div>
+    </div>
+  </dialog>
+
+  <!-- MODALE ABBANDONO -->
+  <dialog id="modal-abandon" class="modal modal-middle">
+    <div class="modal-box abandon-modal-box">
+      <span class="text-2xl">⚠️</span>
+      <h3 class="text-xs font-black text-white">Confermi l'Uscita?</h3>
+      <p class="text-[10px] text-slate-300">La partita attiva verrà conclusa e registrata nel foglio dei record.</p>
+      <div class="space-y-1.5 pt-1">
+        <button onclick="GameEngine.confirmAbandon()" class="btn btn-sm btn-error w-full font-bold text-xs">Sì, Abbandona</button>
+        <button onclick="document.getElementById('modal-abandon').close()" class="btn btn-sm btn-ghost w-full text-xs">Continua a Giocare</button>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- MODALE COMPARATORE PIANI SAAS -->
+  <dialog id="modal-plans-catalog" class="modal modal-bottom sm:modal-middle">
+    <div class="modal-box plans-catalog-box">
+      <button onclick="document.getElementById('modal-plans-catalog').close()" class="modal-close-btn">✕</button>
+      <div>
+        <span class="sub-header-tag">AFFILIAZIONE SYNDICATE</span>
+        <h3 class="page-headline">Scegli il Tuo Piano</h3>
+      </div>
+      <div class="billing-toggle-box">
+        <button id="billing-toggle-monthly" onclick="AppModules.setBillingCycle('monthly')" class="billing-btn active">Mensile</button>
+        <button id="billing-toggle-yearly" onclick="AppModules.setBillingCycle('yearly')" class="billing-btn idle">
+          <span>Annuale</span> <span class="badge badge-xs badge-warning font-black text-[8px]">-20%</span>
+        </button>
+      </div>
+      <div id="plans-catalog-cards-container" class="space-y-3"></div>
+    </div>
+  </dialog>
+
+  <!-- MODALE DETTAGLIO PIANO -->
+  <dialog id="modal-plan-upgrade" class="modal modal-middle">
+    <div class="modal-box plan-detail-box">
+      <button onclick="document.getElementById('modal-plan-upgrade').close()" class="modal-close-btn">✕</button>
+      <div class="plan-detail-header">
+        <div>
+          <span class="sub-header-tag" id="plan-modal-badge">SCHEDA PIANO</span>
+          <h3 class="plan-detail-title" id="upgrade-modal-title">Nome Piano</h3>
+        </div>
+        <div class="text-right">
+          <div class="plan-detail-price" id="plan-modal-price">€ 0,00</div>
+          <span class="plan-detail-period" id="plan-modal-period">/mese</span>
+        </div>
+      </div>
+      <p class="detail-prose" id="upgrade-modal-desc"></p>
+      <div class="plan-perks-box" id="plan-modal-perks-list"></div>
+      <div class="pt-2">
+        <button id="upgrade-modal-action-btn" class="btn btn-primary btn-sm w-full font-bold shadow-lg shadow-sky-600/30">Attiva Piano con PayPal</button>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- MODALE CONFERMA ACQUISTO SHOP -->
+  <dialog id="modal-fulfillment" class="modal modal-middle">
+    <div class="modal-box fulfillment-modal-box">
+      <button onclick="document.getElementById('modal-fulfillment').close()" class="modal-close-btn">✕</button>
+      <div class="text-3xl">🎉</div>
+      <h3 class="text-base font-black text-white">Acquisto Confermato!</h3>
+      <p class="text-xs text-slate-300" id="fulfillment-summary"></p>
+      <div id="fulfillment-download-box" class="space-y-2 pt-1"></div>
+    </div>
+  </dialog>
+
+  <!-- MOTORE AUDIO -->
+  <script src="audio.js?v=6"></script>
+
+  <!-- ARCHITETTURA MODULARE ESTIQATSY CON CACHE BUSTER -->
+  <script src="js/app-core.js?v=6"></script>
+  <script src="js/app-modules.js?v=6"></script>
+  <script src="js/rules2-wizard.js?v=6"></script>
+  <script src="js/rules2-engine.js?v=6"></script>
+</body>
+</html>
