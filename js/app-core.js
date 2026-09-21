@@ -53,6 +53,7 @@ const AppState = {
     partitaId: null,
     hero: null,          // Stato completo dell'eroe (PV, Oro, Inventario, ecc.)
     currentNode: null,   // Nodo narrativo corrente
+    shopCatalog: [],     // Equipaggiamenti dell'avventura per l'Emporio in-game
     engineState: null    // Dati specifici del motore attivo (es. coverflow, wizard step)
   }
 };
@@ -105,7 +106,6 @@ function setupTelegramBackButton(targetScreenId) {
       } else if (targetScreenId === "subview-game-detail") {
         AppRouter.navigate("games");
       } else if (targetScreenId === "view-wizard") {
-        // Se siamo nel wizard, chiediamo conferma o torniamo al dettaglio serie
         AppRouter.navigate("subview-game-detail");
       } else if (targetScreenId === "view-gameplay") {
         // In pieno gioco, l'indietro nativo apre la modale di abbandono protetta
@@ -206,19 +206,29 @@ const AppRouter = {
       if (el) el.classList.toggle("hidden", id !== targetId);
     });
 
-    // Gestione Switch Header e Footer (Cockpit Gioco vs Shell Generale)
+    // Gestione Rigorosa Switch Header e Footer
     const isGameplay = (targetId === "view-gameplay");
+    const isWizard = (targetId === "view-wizard");
+
     const appHeader = document.getElementById("main-app-header");
     const gameHeader = document.getElementById("main-game-header");
     const appFooter = document.getElementById("main-app-footer");
     const gameFooter = document.getElementById("main-game-cockpit-footer");
 
     if (isGameplay) {
+      // 1. IN GIOCO: Attiva il Cockpit Header e il Cockpit Footer (Zaino, Emporio, ecc.)
       if (appHeader) appHeader.classList.add("hidden");
       if (gameHeader) gameHeader.classList.remove("hidden");
       if (appFooter) appFooter.classList.add("hidden");
       if (gameFooter) gameFooter.classList.remove("hidden");
+    } else if (isWizard) {
+      // 2. NEL WIZARD: Header pulito, MA NESSUN FOOTER (100% altezza schermo libera!)
+      if (appHeader) appHeader.classList.remove("hidden");
+      if (gameHeader) gameHeader.classList.add("hidden");
+      if (appFooter) appFooter.classList.add("hidden");
+      if (gameFooter) gameFooter.classList.add("hidden");
     } else {
+      // 3. PIATTAFORMA: Header normale e Footer dell'app (Home, Bottega, Ricette, Profilo)
       if (appHeader) appHeader.classList.remove("hidden");
       if (gameHeader) gameHeader.classList.add("hidden");
       if (appFooter) appFooter.classList.remove("hidden");
@@ -295,7 +305,6 @@ const Wallet = {
     AppState.user.saldoMegoin = num;
     AppState.user.megoin = num;
 
-    // Sincronizza i contatori visivi nel DOM se presenti
     ["home-megoin-card", "user-megoin-desk", "profile-card-megoin", "cambio-megoin-balance"].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.textContent = (id === "cambio-megoin-balance") ? num : `${num} 🪙`;
@@ -318,7 +327,6 @@ const Wallet = {
       AppState.activeSession.hero.oro = num;
     }
 
-    // Sincronizza i display dell'oro
     const kpiGold = document.getElementById("kpi-hero-gold");
     if (kpiGold) kpiGold.textContent = num;
     const empGold = document.getElementById("emporio-gold-display");
@@ -359,7 +367,6 @@ function cleanNumber(v, defaultVal = 0) {
 window.addEventListener("DOMContentLoaded", () => {
   if (window.lucide) lucide.createIcons();
 
-  // Se AppModules è pronto, avvia l'infrastruttura
   if (typeof AppModules !== "undefined" && typeof AppModules.init === "function") {
     AppModules.init();
   } else {
