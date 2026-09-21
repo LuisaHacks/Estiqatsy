@@ -1,40 +1,39 @@
 // ============================================================================
 // PROJECT: ESTIQATSY SYNDICATE & RPG PLATFORM
-// FILE: js/rules2.js (VERSIONE 6.0 UNIFICATA: WIZARD + ENGINE + HUD 2 RIGHE)
-// LAYER 3: LOGICA NARRATIVA, CREAZIONE EROE, COMBATTIMENTO D20 & CASSETTI RPG
+// FILE: js/rules2.js (VERSIONE 7.0 - TAB-DRIVEN STORE, GAS SECURITY & TELEGRAM UI)
+// LAYER 3: ENGINE RULES2, CLIENT CACHE, COCKPIT & CASSETTI TATTICI
 // ============================================================================
 
 // ----------------------------------------------------------------------------
-// 1. COSTANTI E UTILITY CONDIVISE RULES2
+// 1. DATA ACCESS LAYER: CLASSIFICAZIONE DINAMICA DALLE COLONNE DEL FOGLIO
 // ----------------------------------------------------------------------------
-const RULES2_CATEGORY_MAP = {
-  "ARMA": "ARMI",         "ARMI": "ARMI",
-  "VEICOLO": "VEICOLI",   "VEICOLI": "VEICOLI",
-  "STRUMENTO": "STRUMENTI","STRUMENTI": "STRUMENTI",
-  "INFORMAZIONE": "INFORMAZIONI", "INFORMAZIONI": "INFORMAZIONI",
-  "TALISMANO": "TALISMANI","TALISMANI": "TALISMANI",
-  "DROGA": "DROGHE",       "DROGHE": "DROGHE",
-  "INGREDIENTE": "DROGHE", "INGREDIENTI": "DROGHE",
-  "CURA": "CURE",          "CURE": "CURE"
+const RULES2_SHOP_CATEGORIES = {
+  "ARMI": { key: "ARMI", label: "Armi", emoji: "🗡️" },
+  "VEICOLI": { key: "VEICOLI", label: "Veicoli", emoji: "🛴" },
+  "STRUMENTI": { key: "STRUMENTI", label: "Strumenti", emoji: "🔧" },
+  "INFORMAZIONI": { key: "INFORMAZIONI", label: "Dossier & Prove", emoji: "📁" },
+  "TALISMANI": { key: "TALISMANI", label: "Talismani", emoji: "📿" },
+  "DROGHE": { key: "DROGHE", label: "Droghe & Reagenti", emoji: "💊" },
+  "CURE": { key: "CURE", label: "Cure", emoji: "🍱" }
 };
 
-function getNormalizedCategory(item) {
+// Classificazione agnostica 1:1 con la funzione Rules2_ClassifyItem di UXGameRules2.gs
+function Rules2_ClassifyEntity(item) {
   if (!item) return "STRUMENTI";
-  const raw = String(item.categoria || "").trim().toUpperCase();
-  if (RULES2_CATEGORY_MAP[raw]) return RULES2_CATEGORY_MAP[raw];
+  const cat = String(item.categoria || "").toUpperCase().trim();
+  const sub = String(item.sottocategoria || "").toUpperCase().trim();
 
-  const name = String(item.nome || item || "").toLowerCase();
-  if (name.includes("coltello") || name.includes("machete") || name.includes("lama") || name.includes("serramanico") || name.includes("fiocina") || name.includes("tubo") || name.includes("gomena") || name.includes("chiodatrice") || name.includes("mazzetta")) return "ARMI";
-  if (name.includes("scooter") || name.includes("zodiac") || name.includes("bici") || name.includes("panda") || name.includes("apecar") || name.includes("ciao") || name.includes("canoa") || name.includes("barchino")) return "VEICOLI";
-  if (name.includes("ponce") || name.includes("fritto") || name.includes("cecina") || name.includes("focaccia") || name.includes("cee") || name.includes("garze") || name.includes("soffocotto")) return "CURE";
-  if (name.includes("danpei") || name.includes("marmolina") || name.includes("spada") || name.includes("rivotril") || name.includes("valium") || name.includes("gnugna") || name.includes("thc") || name.includes("bogotà")) return "DROGHE";
-  if (name.includes("dossier") || name.includes("bolla") || name.includes("fattura") || name.includes("schema") || name.includes("registro") || name.includes("pizzino") || name.includes("foto")) return "INFORMAZIONI";
-  if (name.includes("bitta") || name.includes("zanna") || name.includes("corno") || name.includes("talismano") || name.includes("feticcio")) return "TALISMANI";
-
+  if (cat.includes("ARMA")) return "ARMI";
+  if (cat.includes("VEICOLO")) return "VEICOLI";
+  if (cat.includes("INFORMAZION") || sub.includes("PROV") || sub.includes("DOSSIER") || sub.includes("INDIZI") || sub.includes("SOSPETT")) return "INFORMAZIONI";
+  if (cat.includes("TALISMAN") || sub.includes("VOODOO") || sub.includes("STATUS")) return "TALISMANI";
+  if (cat.includes("DROGA") || cat.includes("INGREDIENTE")) return "DROGHE";
+  if (cat.includes("CURA") || sub.includes("CIBO") || sub.includes("INFERMERIA") || sub.includes("SESSO")) return "CURE";
   return "STRUMENTI";
 }
 
-function formatHumanEffect(rawEffect, faction = "") {
+// Parser dinamico dei tag atomici dalla colonna Requisito_Bypass (senza dizionari hardcoded)
+function Rules2_FormatHumanEffect(rawEffect, faction = "") {
   if (!rawEffect || rawEffect === "—" || rawEffect === "-") return "Nessuna proprietà speciale.";
   const tags = String(rawEffect).split(/[,|]/);
   const out = [];
@@ -43,24 +42,17 @@ function formatHumanEffect(rawEffect, faction = "") {
     const tag = t.trim();
     if (!tag || tag === "—") continue;
 
-    if (tag === "TASTO:ZOMBI_ABILITA") out.push("🧟 <b>Necromanzia Arcana:</b> Costa 1 PV per rianimare un nemico caduto come Zombi con Danno x2.");
-    else if (tag === "TASTO:ZOMBI_DROGA") out.push("🧟 <b>Risveglio Chimico:</b> Consuma 1 dose di droga idonea per rianimare uno Zombi.");
-    else if (tag === "CLASSE:Destra") out.push("⚖️ <b>Orientamento Destra:</b> +1 Danno fisso vs fazioni Mazzu e Ideologi.");
-    else if (tag === "CLASSE:Sinistra") out.push("⚖️ <b>Orientamento Sinistra:</b> +1 Danno fisso vs fazioni Camorristi e Burocrati.");
-    else if (tag === "CLASSE:Tutti") out.push("⚖️ <b>Tratto Comune:</b> Accessibile a tutti gli schieramenti.");
-    else if (tag === "PASSIVO:STAT_FORTUNA_1") out.push("🍀 <b>Buona Sorte:</b> +1 costante a tutti i Tiri Salvezza D20 ed Eventi.");
-    else if (tag === "VULN:Mischia") out.push("💥 <b>Vulnerabile alla Mischia:</b> Subisce +2 danni da colpi ravvicinati.");
-    else if (tag === "VULN:Distanza") out.push("🏹 <b>Vulnerabile a Distanza:</b> Subisce +2 danni da proiettili o petardi.");
-    else if (tag.startsWith("PASSIVO:STAT_FOR_")) out.push(`🥊 <b>Forza Rinforzata:</b> +${tag.replace("PASSIVO:STAT_FOR_", "")} permanente.`);
-    else if (tag.startsWith("PASSIVO:STAT_DES_")) out.push(`🤸 <b>Destrezza Agile:</b> +${tag.replace("PASSIVO:STAT_DES_", "")} permanente.`);
-    else if (tag.startsWith("PASSIVO:STAT_INT_")) out.push(`🧠 <b>Intuito Fine:</b> +${tag.replace("PASSIVO:STAT_INT_", "")} permanente.`);
-    else if (tag.startsWith("PASSIVO:INT_VS_")) out.push(`📂 <b>Dossier Mirato:</b> +1 INT situazionale contro la fazione ${tag.replace("PASSIVO:INT_VS_", "")}.`);
-    else if (tag === "PASSIVO:PROVE" || tag === "PASSIVO:DOSSIER") out.push("📁 <b>Organigramma del Potere:</b> +1 INT permanente nell'inchiesta.");
-    else if (tag.startsWith("SINTESI:")) out.push(`⚗️ <b>Laboratorio Clandestino:</b> Sintetizza sostanze pure (${tag.replace("SINTESI:", "")}).`);
-    else if (tag === "PASSIVO:OGGETTO_EQP_0026_S1_E0") out.push("🛡️ <b>Scudo Ricatto:</b> Riduce di 2 punti tutti i danni fisici subiti.");
-    else if (tag === "PASSIVO:OGGETTO_EQP_0017_S1_E0") out.push("🧰 <b>Scasso Industriale:</b> Sfonda porte e varchi sbarrati al 100%.");
-    else if (tag === "PASSIVO:OGGETTO_EQP_0020_S1_E0") out.push("📟 <b>Hacker Demaniale:</b> Bypassa cancelli elettronici al 100%.");
-    else if (tag === "PASSIVO:OGGETTO_EQP_0022_S1_E0") out.push("📡 <b>Schermatura Radio:</b> Blocca le chiamate di rinforzo al 100%.");
+    if (tag === "TASTO:ZOMBI_ABILITA") out.push("🧟 <b>Necromanzia:</b> Costa 1 PV per rianimare un nemico caduto come Zombi (Danno x2).");
+    else if (tag === "TASTO:ZOMBI_DROGA") out.push("🧟 <b>Risveglio Chimico:</b> Usa 1 dose di droga idonea per rianimare uno Zombi.");
+    else if (tag === "CLASSE:Destra") out.push("⚖️ <b>Orientamento Destra:</b> +1 Danno fisso vs Mazzu e Ideologi.");
+    else if (tag === "CLASSE:Sinistra") out.push("⚖️ <b>Orientamento Sinistra:</b> +1 Danno fisso vs Camorristi e Burocrati.");
+    else if (tag === "PASSIVO:STAT_FORTUNA_1") out.push("🍀 <b>Buona Sorte:</b> +1 a tutti i tiri D20 ed Eventi.");
+    else if (tag.startsWith("PASSIVO:INT_VS_")) out.push(`📂 <b>Dossier Mirato:</b> +1 INT contro la fazione ${tag.replace("PASSIVO:INT_VS_", "")}.`);
+    else if (tag === "PASSIVO:PROVE" || tag === "PASSIVO:DOSSIER") out.push("📁 <b>Organigramma del Potere:</b> +1 INT permanente sull'inchiesta.");
+    else if (tag.startsWith("SINTESI:")) out.push(`⚗️ <b>Laboratorio Clandestino:</b> Sintetizza sostanze (${tag.replace("SINTESI:", "")}).`);
+    else if (tag.startsWith("PASSIVO:INGREDIENTE_")) out.push(`🧪 <b>Materia Prima:</b> Reagente per laboratori chimici.`);
+    else if (tag.startsWith("PASSIVO:OGGETTO_")) out.push(`🧰 <b>Strumento Speciale:</b> Sblocca varchi o bypassa controlli correlati.`);
+    else if (tag.startsWith("VULN:")) out.push(`💥 <b>Vulnerabilità:</b> Subisce +2 danni da colpi a ${tag.replace("VULN:", "")}.`);
     else out.push(`⚡ <b>Proprietà:</b> ${tag.replace(/_/g, " ")}`);
   }
 
@@ -68,7 +60,70 @@ function formatHumanEffect(rawEffect, faction = "") {
 }
 
 // ----------------------------------------------------------------------------
-// 2. MODULO WIZARD: CREAZIONE PERSONAGGIO (3D COVERFLOW & EMPOIRIO)
+// 2. DIALOGHI NATIVI TELEGRAM (ALERT & CONFERME DI SPESA / SESSIONE)
+// ----------------------------------------------------------------------------
+function tgConfirm(message, onConfirm, onCancel = null) {
+  if (window.Telegram?.WebApp?.showConfirm) {
+    window.Telegram.WebApp.showConfirm(message, (ok) => {
+      if (ok && onConfirm) onConfirm();
+      else if (!ok && onCancel) onCancel();
+    });
+  } else {
+    if (confirm(message)) {
+      if (onConfirm) onConfirm();
+    } else if (onCancel) {
+      onCancel();
+    }
+  }
+}
+
+function tgAlert(message) {
+  if (window.Telegram?.WebApp?.showAlert) {
+    window.Telegram.WebApp.showAlert(message);
+  } else {
+    alert(message);
+  }
+}
+
+// ----------------------------------------------------------------------------
+// 3. STORE CLIENT-SIDE (CACHE STATICA UNA-TANTUM PER RISPARMIARE DATI E RAM)
+// ----------------------------------------------------------------------------
+const Rules2Store = {
+  _cache: {},
+
+  getCacheKey: function(gameKey) {
+    return `rules2_store_${gameKey}`;
+  },
+
+  loadCachedWizardData: function(gameKey) {
+    if (this._cache[gameKey]) return this._cache[gameKey];
+    try {
+      const stored = localStorage.getItem(this.getCacheKey(gameKey));
+      if (stored) {
+        this._cache[gameKey] = JSON.parse(stored);
+        return this._cache[gameKey];
+      }
+    } catch (e) {}
+    return null;
+  },
+
+  setCachedWizardData: function(gameKey, data) {
+    this._cache[gameKey] = data;
+    try {
+      localStorage.setItem(this.getCacheKey(gameKey), JSON.stringify(data));
+    } catch (e) {}
+  },
+
+  clearCache: function(gameKey) {
+    delete this._cache[gameKey];
+    try {
+      localStorage.removeItem(this.getCacheKey(gameKey));
+    } catch (e) {}
+  }
+};
+
+// ----------------------------------------------------------------------------
+// 4. WIZARD CREAZIONE PERSONAGGIO (DATA-DRIVEN & ZERO-SCROLL)
 // ----------------------------------------------------------------------------
 const Rules2Wizard = {
   state: {
@@ -95,12 +150,17 @@ const Rules2Wizard = {
     try {
       if (typeof SoundEngine !== "undefined") SoundEngine.playBgm("wizard");
 
-      const wizData = await apiCall("game_wizard_data", { gameKey: gameKey });
-
       this.state.gameKey = gameKey;
       this.state.episodio = epNum;
       this.state.isVeteran = isVeteran;
       this.state.step = 1;
+
+      // 1. Lettura Dati con Cache Una-Tantum
+      let wizData = Rules2Store.loadCachedWizardData(gameKey);
+      if (!wizData) {
+        wizData = await apiCall("game_wizard_data", { gameKey: gameKey });
+        if (wizData) Rules2Store.setCachedWizardData(gameKey, wizData);
+      }
 
       this.state.classes = deduplicateEntities(wizData.classes || wizData.classi || []);
       this.state.abilities = deduplicateEntities(wizData.abilities || wizData.abilita || []);
@@ -143,7 +203,7 @@ const Rules2Wizard = {
       AppRouter.navigate("view-wizard");
     } catch (err) {
       console.error("[Rules2Wizard] Errore apertura wizard:", err);
-      alert("Errore caricamento wizard: " + err.message);
+      tgAlert("Errore caricamento setup: " + err.message);
     }
   },
 
@@ -161,13 +221,9 @@ const Rules2Wizard = {
       const ind = document.getElementById(s.ind);
       if (el) el.classList.toggle("hidden", s.num !== stepNum);
       if (ind) {
-        if (s.num === stepNum) {
-          ind.className = "step-active";
-        } else if (s.num < stepNum) {
-          ind.className = "step-completed";
-        } else {
-          ind.className = "step-idle";
-        }
+        if (s.num === stepNum) ind.className = "step-active";
+        else if (s.num < stepNum) ind.className = "step-completed";
+        else ind.className = "step-idle";
       }
     });
 
@@ -182,7 +238,7 @@ const Rules2Wizard = {
 
     const classes = this.state.classes || [];
     if (classes.length === 0) {
-      stage.innerHTML = `<div class="empty-state-card">Nessuna classe disponibile.</div>`;
+      stage.innerHTML = `<div class="empty-state-card">Nessun archetipo di classe disponibile nel foglio.</div>`;
       return;
     }
 
@@ -195,16 +251,17 @@ const Rules2Wizard = {
       const intMod = Math.floor(((cleanNumber(cls.intelligenza, 10)) - 10) / 2);
       const fmt = v => (v >= 0 ? "+" + v : String(v));
 
-      const cleanQuote = String(cls.citazione || "A Viareggio non ci sono eroi: chi non colpisce per primo finisce a fondo.").replace(/^["'“”]+|["'“”]+$/g, "");
-      const startingGear = cls.equipLoot || (cls.armaIniziale ? cls.armaIniziale.nome : "Pugni nudi");
+      const cleanQuote = String(cls.citazione || "A Viareggio se non hai il ferro giusto duri poco.").replace(/^["'“”]+|["'“”]+$/g, "");
+      const startingGear = cls.equipLoot || "Pugni nudi";
 
       return `
         <div id="coverflow-card-${idx}" onclick="Rules2Wizard.coverflowSelectIndex(${idx})" class="coverflow-card">
           <div class="coverflow-media-frame">
             <img src="${cls.mediaUrl}" class="coverflow-img" alt="${cls.nome}">
             
+            <!-- BADGE ASCIUTTO SENZA (+1 DANNO) -->
             <span class="badge badge-xs ${isDestra ? 'badge-info' : 'badge-error'} coverflow-badge-faction">
-              ${pol.toUpperCase()} (+1 Danno)
+              ${pol.toUpperCase()}
             </span>
 
             <div class="coverflow-kpi-pill">
@@ -219,12 +276,12 @@ const Rules2Wizard = {
           </div>
 
           <div id="coverflow-details-${idx}" class="coverflow-details-box">
-            <div class="space-y-2">
+            <div class="space-y-1">
               <div class="flex items-center space-x-2">
-                <span class="text-2xl">${cls.emoji || '🥋'}</span>
+                <span class="text-xl">${cls.emoji || '🥋'}</span>
                 <div>
                   <h4 class="coverflow-title">${cls.nome}</h4>
-                  <div class="coverflow-sub">${isDestra ? 'Baluardo Costiero di Destra' : 'Militanza Popolare di Sinistra'}</div>
+                  <div class="coverflow-sub">${isDestra ? 'Baluardo di Destra' : 'Militanza di Sinistra'}</div>
                 </div>
               </div>
 
@@ -234,7 +291,7 @@ const Rules2Wizard = {
                 <div>🧠 INT <b>${cls.intelligenza || 10}</b> <span class="stat-mod">(${fmt(intMod)})</span></div>
               </div>
 
-              <p class="coverflow-lore no-scrollbar">
+              <p class="coverflow-lore">
                 ${cls.testo || cls.descrizione || ''}
               </p>
             </div>
@@ -313,7 +370,7 @@ const Rules2Wizard = {
       el.classList.toggle("glow-sinistra", isCenter && !isDestra);
 
       if (btn) {
-        btn.textContent = isCenter ? "✓ In Uso" : "Scegli";
+        btn.textContent = isCenter ? "✓ Scelto" : "Scegli";
         btn.className = isCenter ? "btn btn-xs sm:btn-sm btn-success font-black px-3" : "btn btn-xs btn-outline border-white/20 text-slate-400 font-bold";
       }
     });
@@ -329,7 +386,9 @@ const Rules2Wizard = {
       });
     }
 
-    if (tg && tg.HapticFeedback) tg.HapticFeedback.selectionChanged();
+    if (window.Telegram?.WebApp?.HapticFeedback) {
+      Telegram.WebApp.HapticFeedback.selectionChanged();
+    }
   },
 
   coverflowSelectIndex: function(idx) {
@@ -379,7 +438,7 @@ const Rules2Wizard = {
 
   confirmStep1: function() {
     if (!this.state.chosenClass) {
-      alert("Seleziona prima un archetipo!");
+      tgAlert("Seleziona prima una classe!");
       return;
     }
     this.renderStep2();
@@ -436,7 +495,7 @@ const Rules2Wizard = {
     s("uni-detail-title", abl.nome);
     s("uni-detail-badge", `ABILITÀ • ${(req.includes("destra") ? "Destra" : (req.includes("sinistra") ? "Sinistra" : "Comune")).toUpperCase()}`);
     s("uni-detail-metrics-label", "EFFETTO BELLICO DECODIFICATO");
-    h("uni-detail-metrics-value", formatHumanEffect(abl.requisitiCodificati || abl.effettoCodificato, userFaction));
+    h("uni-detail-metrics-value", Rules2_FormatHumanEffect(abl.requisitiCodificati || abl.effettoCodificato, userFaction));
     s("uni-detail-lore", abl.descrizione || abl.testo || "Nessuna nota d'archivio.");
 
     const mediaContainer = document.getElementById("uni-detail-media-container");
@@ -452,18 +511,18 @@ const Rules2Wizard = {
     const btn = document.getElementById("uni-detail-action-btn");
     if (btn) {
       if (!isCompatible) {
-        btn.textContent = `🔒 Riservato alle classi di ${userFaction === "destra" ? "Sinistra" : "Destra"}`;
+        btn.textContent = `🔒 Riservato a ${userFaction === "destra" ? "Sinistra" : "Destra"}`;
         btn.className = "btn btn-sm btn-outline border-white/10 text-slate-500 cursor-not-allowed w-full";
         btn.onclick = null;
       } else if (isSelected) {
-        btn.textContent = "Rimuovi Talento (+100 PX)";
+        btn.textContent = "Rimuovi (+100 PX)";
         btn.className = "btn btn-sm btn-error font-bold w-full";
         btn.onclick = () => {
           Rules2Wizard.toggleAbility(abl.id);
           document.getElementById("modal-universal-detail")?.close();
         };
       } else {
-        btn.textContent = "Attiva Talento (-100 PX)";
+        btn.textContent = "Attiva (-100 PX)";
         btn.className = "btn btn-sm btn-primary font-bold shadow-lg shadow-sky-600/30 w-full";
         btn.onclick = () => {
           Rules2Wizard.toggleAbility(abl.id);
@@ -485,7 +544,7 @@ const Rules2Wizard = {
         this.state.chosenAbilities.push(ablId);
         this.state.remainingPx -= 100;
       } else {
-        alert("Punti Esperienza insufficienti!");
+        tgAlert("Punti Esperienza insufficienti!");
         return;
       }
     }
@@ -515,8 +574,9 @@ const Rules2Wizard = {
     const container = document.getElementById("wizard-shop-grid");
     if (!container) return;
 
+    // Filtro 100% data-driven dalle colonne Categoria/Sottocategoria
     const filtered = (this.state.shopCatalog || []).filter(item => {
-      return getNormalizedCategory(item) === targetCategory.toUpperCase();
+      return Rules2_ClassifyEntity(item) === targetCategory.toUpperCase();
     });
 
     if (filtered.length === 0) {
@@ -560,14 +620,14 @@ const Rules2Wizard = {
 
     const price = Math.abs(cleanNumber(it.costoOro || it.costo, 15));
     const canAfford = (this.state.currentGold >= price);
-    const category = getNormalizedCategory(it);
+    const category = Rules2_ClassifyEntity(it);
 
     const s = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
     const h = (id, val) => { const el = document.getElementById(id); if (el) el.innerHTML = val; };
 
     s("uni-detail-icon", it.emoji || "📦");
     s("uni-detail-title", it.nome);
-    s("uni-detail-badge", `EMPORIO • ${category} • ${it.sottocategoria || 'GENERALE'}`);
+    s("uni-detail-badge", `EMPORIO • ${category}`);
     s("uni-detail-metrics-label", "PARAMETRI & STATISTICHE");
 
     const bonuses = [];
@@ -578,7 +638,7 @@ const Rules2Wizard = {
     if (it.intelligenza) bonuses.push(`🧠 Intelligenza: <b>+${it.intelligenza}</b>`);
     bonuses.push(`💰 Prezzo: <b class="text-amber-300">${price} 🟡</b>`);
 
-    h("uni-detail-metrics-value", bonuses.join(" • ") + "<br>" + formatHumanEffect(it.requisitiCodificati || it.effettoCodificato, ""));
+    h("uni-detail-metrics-value", bonuses.join(" • ") + "<br>" + Rules2_FormatHumanEffect(it.requisitiCodificati || it.effettoCodificato, ""));
     s("uni-detail-lore", it.descrizione || it.testo || "Nessuna nota d'archivio.");
 
     const mediaContainer = document.getElementById("uni-detail-media-container");
@@ -593,7 +653,7 @@ const Rules2Wizard = {
 
     const btn = document.getElementById("uni-detail-action-btn");
     if (btn) {
-      btn.textContent = canAfford ? `Acquista da Ciccio (${price} 🟡)` : `Oro Insufficiente (${price} 🟡)`;
+      btn.textContent = canAfford ? `Compra (${price} 🟡)` : `${price} 🟡 (Mancante)`;
       btn.className = `btn btn-sm ${canAfford ? 'btn-primary font-bold shadow-lg shadow-sky-600/30' : 'btn-outline border-white/10 text-slate-500 cursor-not-allowed'} w-full`;
       btn.onclick = canAfford ? () => {
         Rules2Wizard.buyItem(it.id, price);
@@ -606,17 +666,17 @@ const Rules2Wizard = {
 
   buyItem: function(itemId, price) {
     if (this.state.currentGold < price) {
-      alert("Monete d'oro insufficienti!");
+      tgAlert("Monete d'oro insufficienti!");
       return;
     }
 
     const item = (this.state.shopCatalog || []).find(i => i.id === itemId);
     if (!item) return;
 
-    if (getNormalizedCategory(item) === "VEICOLI") {
-      const alreadyHasVehicle = this.state.boughtItems.some(x => getNormalizedCategory(x) === "VEICOLI");
+    if (Rules2_ClassifyEntity(item) === "VEICOLI") {
+      const alreadyHasVehicle = this.state.boughtItems.some(x => Rules2_ClassifyEntity(x) === "VEICOLI");
       if (alreadyHasVehicle) {
-        alert("Puoi possedere un solo Veicolo nello zaino!");
+        tgAlert("Puoi possedere un solo Veicolo nello zaino!");
         return;
       }
     }
@@ -651,10 +711,12 @@ const Rules2Wizard = {
     if (!cls) return;
 
     const s = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
-    s("wizard-class-recap", `${cls.nome} (${cls.sottocategoria || 'Destra'})`);
+    const pol = String(cls.sottocategoria || 'Destra').toUpperCase();
+
+    s("wizard-class-recap", `${cls.nome} (${pol})`);
     s("wizard-recap-avatar", cls.emoji || "🥋");
     s("wizard-recap-classname", cls.nome);
-    s("wizard-recap-faction", `${String(cls.sottocategoria || 'Destra').toUpperCase()} (+1 Danno)`);
+    s("wizard-recap-faction", pol);
     s("wizard-recap-pv", `❤️ ${cls.pv || 25} PV`);
     s("wizard-recap-gold", `🟡 ${this.state.currentGold} Oro`);
 
@@ -692,13 +754,20 @@ const Rules2Wizard = {
     if (input && AppState.user) input.value = AppState.user.nome;
   },
 
+  // Finalizzazione: Convalida Megoin prima della chiamata a GAS
   finalizeHero: function() {
     const input = document.getElementById("wizard-name-input");
     const defaultName = this.state.isVeteran ? this.state.heroName : (AppState.user?.nome || "Avventuriero");
     const heroName = (input && input.value.trim()) ? input.value.trim() : defaultName;
-
-    // Salvataggio dell'Avatar Media URL nello stato per il passaggio trasparente all'Engine
     const heroAvatarUrl = this.state.chosenClass?.mediaUrl || "";
+
+    const userBalance = Wallet.getMegoin();
+    const isFree = this.state.isVeteran;
+
+    if (!isFree && userBalance < 1) {
+      tgAlert("⚠️ Saldo Megoin insufficiente (1 🪙 richiesto). Ricarica il tuo borsello dal Profilo!");
+      return;
+    }
 
     const payload = {
       gameKey: this.state.gameKey,
@@ -710,11 +779,13 @@ const Rules2Wizard = {
       avatarUrl: heroAvatarUrl
     };
 
-    if (typeof Rules2Engine !== "undefined" && typeof Rules2Engine.executeStartGame === "function") {
+    const confirmMsg = isFree
+      ? `Continui come Eroe Veterano "${heroName}" (Gratis). Confermi?`
+      : `L'avvio della partita consumerà 1 Megoin (Tuo saldo: ${userBalance} 🪙). Confermi?`;
+
+    tgConfirm(confirmMsg, () => {
       Rules2Engine.executeStartGame(payload, heroAvatarUrl);
-    } else {
-      alert("Errore: motore di gioco Rules2 non caricato.");
-    }
+    });
   },
 
   nextStep: function(stepNum) {
@@ -731,14 +802,33 @@ const Rules2Wizard = {
 };
 
 // ----------------------------------------------------------------------------
-// 3. MODULO ENGINE: GAMEPLAY, HUD A 2 RIGHE & CASSETTI RPG
+// 5. MODULO ENGINE: COCKPIT GAMEPLAY, HUD A DUE RIGHE & I 5 CASSETTI
 // ----------------------------------------------------------------------------
 const Rules2Engine = {
 
+  // Controllo Partita Attiva prima dell'accesso (ispirato a Modulo_Games.gs ask_new_game)
   launchSession: function(gameKey, epNum, canContinueFree, savedHero) {
+    const saga = (AppState.games.catalog || []).find(g => g.gameKey === gameKey);
+    
+    if (saga && saga.hasActiveGame && saga.activePartitaId) {
+      tgConfirm(
+        `⚠️ Hai già una partita attiva (ID: ${saga.activePartitaId}) per questa saga.\n\nVuoi riprendere la partita in corso o avviarne una nuova sovrascrivendola?`,
+        () => {
+          // Sovrascrittura: avvia nuovo setup
+          Rules2Wizard.open(gameKey, epNum, canContinueFree, savedHero);
+        },
+        () => {
+          // Ripresa partita
+          this.advanceToNode(saga.activeNode || ("SND_0001_S1_E" + epNum));
+        }
+      );
+      return;
+    }
+
     Rules2Wizard.open(gameKey, epNum, canContinueFree, savedHero);
   },
 
+  // Avvio Sessione Server-Authoritative protetto da lock
   executeStartGame: async function(payloadParams, avatarUrl = "") {
     try {
       if (typeof SoundEngine !== "undefined") {
@@ -760,7 +850,7 @@ const Rules2Engine = {
         AppState.activeSession.episodio = payloadParams.episodio;
         AppState.activeSession.partitaId = res.partitaId;
 
-        // Trasmissione garantita dell'Avatar da Media URL
+        // Trascrizione sicura dell'Avatar dell'archetipo
         AppState.activeSession.hero = {
           ...res.statoEroe,
           mediaUrl: avatarUrl || res.statoEroe?.mediaUrl || ""
@@ -788,11 +878,10 @@ const Rules2Engine = {
       }
     } catch (err) {
       console.error("[Rules2Engine] Errore avvio partita:", err);
-      alert("Impossibile avviare la sessione di gioco: " + err.message);
+      tgAlert("Impossibile avviare la sessione: " + err.message);
     }
   },
 
-  // RENDERING COCKPIT & SCENE (HUD A DUE RIGHE + AVATAR RITRATTO)
   renderNode: function(node, hero) {
     if (node) AppState.activeSession.currentNode = node;
     if (hero) {
@@ -810,7 +899,7 @@ const Rules2Engine = {
     s("game-header-series", (saga ? saga.serie : "AVVENTURA NOIR").toUpperCase());
     s("game-header-episode", `Episodio ${AppState.activeSession.episodio}`);
 
-    // GESTIONE AVATAR RITRATTO DA MEDIA URL (PARAMETRO 1)
+    // GESTIONE AVATAR RITRATTO DA MEDIA URL
     if (currentHero) {
       const avatarImg = document.getElementById("kpi-hero-avatar-img");
       const avatarFallback = document.getElementById("kpi-hero-avatar-fallback");
@@ -827,11 +916,9 @@ const Rules2Engine = {
         }
       }
 
-      // Riga 1: Identità e Oro
       s("kpi-hero-name", currentHero.nomeEroe || "Avventuriero");
       s("kpi-hero-gold", currentHero.oro || 0);
 
-      // Riga 2: Barra Salute (<45%) e Trittico D20 (>55%)
       s("kpi-hero-pv-text", `${currentHero.pv || 0}/${currentHero.pvMax || 25}`);
       const pvBar = document.getElementById("kpi-hero-pv-bar");
       if (pvBar) {
@@ -846,7 +933,6 @@ const Rules2Engine = {
       }
     }
 
-    // Inquadratura cinema & citazione diegetica
     const img = document.getElementById("scene-image");
     if (img) {
       img.src = currentNode.mediaUrl || "https://image.pollinations.ai/prompt/noir-docks-night-cinematic?width=800&height=450&nologo=true";
@@ -867,7 +953,6 @@ const Rules2Engine = {
       if (wBanner) wBanner.classList.add("hidden");
     }
 
-    // Azioni Tattiche di Scena
     const actBox = document.getElementById("scene-actions-container");
     if (!actBox) return;
 
@@ -885,7 +970,7 @@ const Rules2Engine = {
       const curRound = AppState.activeSession.combatRound || 1;
 
       let bribeHtml = "";
-      if (currentNode.corruption && currentNode.corruption.canCorrupt && currentNode.corruption.validDrugs.length > 0) {
+      if (currentNode.corruption?.canCorrupt && currentNode.corruption.validDrugs?.length > 0) {
         bribeHtml = currentNode.corruption.validDrugs.map(d => `
           <button onclick="Rules2Engine.combatBribe('${d.nome.replace(/'/g, "\\'")}')" class="btn btn-sm btn-block btn-warning font-bold">
             💊 Cedi ${d.nome} ${d.costoDosi === 0 ? '(0 dosi)' : ''}
@@ -896,7 +981,7 @@ const Rules2Engine = {
       actBox.innerHTML = `
         <div class="combat-actions-grid">
           <button onclick="Rules2Engine.combatAction('attack_round')" class="btn btn-sm btn-error font-black btn-combat-attack">
-            ⚔️ Attacca • Round ${curRound}
+            ⚔️ Attacca • R${curRound}
           </button>
           <button onclick="Rules2Engine.combatAction('flee')" class="btn btn-sm btn-outline border-white/20 btn-combat-flee">
             🏃 Fuggi
@@ -905,7 +990,7 @@ const Rules2Engine = {
         ${bribeHtml}
         <div class="pt-0.5">
           <button onclick="Rules2Engine.inspectCurrentEnemyDetail()" class="btn btn-xs btn-block btn-ghost btn-inspect-enemy">
-            🔍 Fascicolo Tattico Nemico (Debolezze & Stat)
+            🔍 Fascicolo Nemico
           </button>
         </div>
       `;
@@ -925,7 +1010,7 @@ const Rules2Engine = {
             <div class="text-[10px] font-bold text-emerald-300">🛡️ Vantaggio Tattico: possiedi ${bypassTool}!</div>
           </div>
           <button onclick="Rules2Engine.advanceToNode('${currentNode.destSuccesso}')" class="btn btn-sm btn-block btn-success font-black h-11">
-            ⚡ Oltrepassa Senza Danni (${bypassTool})
+            ⚡ Bypassa (${bypassTool})
           </button>
         `;
       } else {
@@ -935,7 +1020,7 @@ const Rules2Engine = {
               🎲 Prova ${statReq} (CD ${cdVal})
             </button>
             <button onclick="Rules2Engine.advanceToNode('${currentNode.destFallback || currentNode.destFallimento}')" class="btn btn-sm btn-outline border-white/20 h-11">
-              🏃 Arretra / Evita
+              🏃 Evita
             </button>
           </div>
         `;
@@ -962,7 +1047,7 @@ const Rules2Engine = {
       return;
     }
 
-    // CASO 4: BIVIO NARRATIVO
+    // CASO 4: BIVIO NARRATIVO STANDARD
     const rawChoices = currentNode.choices || currentNode.parsedBivio || [];
     const choices = rawChoices.map(c => ({
       testo: c.testo || c.text || c.nome || "Avanza",
@@ -991,7 +1076,7 @@ const Rules2Engine = {
     } else {
       actBox.innerHTML = `
         <button onclick="Rules2Engine.leaveGameToHub()" class="btn btn-sm btn-block btn-outline border-white/20 font-bold h-11">
-          🏁 Capitolo Concluso ➔ Torna ai Giochi
+          🏁 Torna ai Giochi
         </button>
       `;
     }
@@ -1008,12 +1093,12 @@ const Rules2Engine = {
         nodeId: targetId,
         partitaId: AppState.activeSession.partitaId
       });
-      if (res && res.nodo) {
+      if (res?.nodo) {
         this.renderNode(res.nodo, res.statoEroe);
       }
     } catch (e) {
       console.error("[Rules2Engine] Errore advanceToNode:", e);
-      alert("Errore nell'avanzamento allo snodo: " + e.message);
+      tgAlert("Errore nell'avanzamento allo snodo: " + e.message);
     }
   },
 
@@ -1126,7 +1211,7 @@ const Rules2Engine = {
             if (window.confetti) confetti({ particleCount: 75, spread: 60 });
 
             const hero = AppState.activeSession.hero;
-            const hasNecroAbl = (hero && hero.abilita && hero.abilita.includes("Necromanzia") && hero.pv > 1);
+            const hasNecroAbl = (hero?.abilita?.includes("Necromanzia") && hero.pv > 1);
             AppState.activeSession.engineState.pendingVictory = res.nextView;
 
             if (hasNecroAbl && !res.victoryData?.chainInfected) {
@@ -1153,7 +1238,7 @@ const Rules2Engine = {
     } catch (e) {
       if (diceModal) diceModal.close();
       console.error("[Rules2Engine] Errore combatAction:", e);
-      alert("Errore durante l'azione di combattimento: " + e.message);
+      tgAlert("Errore durante l'azione: " + e.message);
     }
   },
 
@@ -1170,7 +1255,7 @@ const Rules2Engine = {
             🧟 Rianima (1 PV)
           </button>
           <button onclick="Rules2Engine.skipNecromancy()" class="btn btn-sm btn-outline border-white/20 text-slate-300">
-            Avanza oltre ▶️
+            Prosegui ▶️
           </button>
         </div>
       </div>
@@ -1186,7 +1271,7 @@ const Rules2Engine = {
         gameKey: AppState.activeSession.gameKey,
         episodio: AppState.activeSession.episodio
       });
-      if (res && res.success) {
+      if (res?.success) {
         if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("zombie");
         this.showFloatingDamage("🧟 Risorto!", false, false);
         if (AppState.activeSession.engineState?.pendingVictory) {
@@ -1195,7 +1280,7 @@ const Rules2Engine = {
         }
       }
     } catch (e) {
-      alert("Rianimazione fallita: " + e.message);
+      tgAlert("Rianimazione fallita: " + e.message);
       this.skipNecromancy();
     }
   },
@@ -1217,13 +1302,13 @@ const Rules2Engine = {
         gameKey: AppState.activeSession.gameKey,
         episodio: AppState.activeSession.episodio
       });
-      if (res && res.success) {
+      if (res?.success) {
         if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("bribe");
         this.showFloatingDamage("🟡 Corrotto!", false, false);
         this.renderNode(res.nextView.nodo, res.nextView.statoEroe);
       }
     } catch (e) {
-      alert("Corruzione non riuscita: " + e.message);
+      tgAlert("Corruzione non riuscita: " + e.message);
     }
   },
 
@@ -1239,7 +1324,7 @@ const Rules2Engine = {
 
   submitQuizAnswer: function(selectedOpz) {
     const node = AppState.activeSession.currentNode;
-    if (!node || !node.quiz) return;
+    if (!node?.quiz) return;
     const isCorrect = (selectedOpz.trim().toLowerCase() === node.quiz.rispostaCorretta?.trim().toLowerCase());
     if (isCorrect) {
       this.showFloatingDamage("✅ Risposta Esatta!", false, false);
@@ -1251,10 +1336,8 @@ const Rules2Engine = {
   },
 
   // --------------------------------------------------------------------------
-  // 4. DEEP INSPECTION UNIVERSALE & I 5 CASSETTI DEL COCKPIT
+  // 6. DEEP INSPECTION UNIVERSALE & I 5 CASSETTI COCKPIT
   // --------------------------------------------------------------------------
-
-  // Ispezione Nemico (Senza consumare il turno)
   inspectCurrentEnemyDetail: function() {
     const enemy = AppState.activeSession.currentNode;
     if (!enemy) return;
@@ -1281,7 +1364,6 @@ const Rules2Engine = {
     });
   },
 
-  // Scheda Dossier Universale Centrata con Tasto "X" Unico
   inspectEntityDetail: function(it) {
     if (!it) return;
 
@@ -1302,7 +1384,7 @@ const Rules2Engine = {
     if (it.difficolta) bonuses.push(`🎯 Sfida: <b>${it.statRichiesta || 'FORZA'} (CD ${it.difficolta})</b>`);
     if (it.costoOro) bonuses.push(`💰 Prezzo: <b class="text-amber-300">${it.costoOro} 🟡</b>`);
 
-    let humanProps = formatHumanEffect(it.requisitiCodificati || it.effettoCodificato || it.debolezze || "");
+    let humanProps = Rules2_FormatHumanEffect(it.requisitiCodificati || it.effettoCodificato || it.debolezze || "");
     h("uni-detail-metrics-value", bonuses.join(" • ") + (humanProps ? "<br>" + humanProps : ""));
 
     let cleanLore = (it.descrizione || it.testo || "Nessun fascicolo allegato.").replace(/\s*\([A-Z]{3,4}_\d{4}_S\d+_E\d+\)/gi, "");
@@ -1325,7 +1407,7 @@ const Rules2Engine = {
         btn.className = "btn btn-primary btn-sm w-full font-bold";
         btn.onclick = () => document.getElementById("modal-universal-detail")?.close();
       } else if (it.isFromBackpack) {
-        const cat = getNormalizedCategory(it);
+        const cat = Rules2_ClassifyEntity(it);
         const isArma = cat === "ARMI";
         const isVeicolo = cat === "VEICOLI";
         const isConsumabile = (cat === "CURE" || cat === "DROGHE");
@@ -1366,7 +1448,7 @@ const Rules2Engine = {
     document.getElementById("modal-universal-detail")?.showModal();
   },
 
-  // 1. SCHEDA EROE (CON BANCO CAMBIO INTEGRATO)
+  // 1. CASSETTO SCHEDA EROE (CON BANCO CAMBIO INTEGRATO)
   openHeroSheetDrawer: function() {
     const h = AppState.activeSession.hero;
     if (!h) return;
@@ -1377,7 +1459,6 @@ const Rules2Engine = {
     s("sheet-hero-class", `${h.classe || "Avventuriero"} (${h.schieramentoPolitico || "Destra"})`);
     s("sheet-hero-gold", `${h.oro || 0} 🟡`);
 
-    // Avatar nella scheda
     const sheetAvatarImg = document.getElementById("sheet-hero-avatar-img");
     const sheetAvatarFallback = document.getElementById("sheet-hero-avatar-fallback");
     if (sheetAvatarImg && sheetAvatarFallback) {
@@ -1391,7 +1472,6 @@ const Rules2Engine = {
       }
     }
 
-    // Statistiche pure e modificatori D20
     const stats = h.stats || { FORZA: 10, DESTREZZA: 10, INTELLIGENZA: 10 };
     const mods = h.modificatori || { FORZA: 0, DESTREZZA: 0, INTELLIGENZA: 0 };
 
@@ -1417,7 +1497,7 @@ const Rules2Engine = {
     document.getElementById("drawer-hero-sheet")?.showModal();
   },
 
-  // 2. ZAINO DELL'EROE
+  // 2. CASSETTO ZAINO DELL'EROE
   openBackpackDrawer: function() {
     this.filterBackpack(AppState.activeSession.engineState?.backpackFilter || "ALL");
     document.getElementById("drawer-backpack")?.showModal();
@@ -1430,7 +1510,7 @@ const Rules2Engine = {
     const found = catalog.find(x => String(x.nome || "").trim().toLowerCase() === clean || String(x.id || "").trim().toLowerCase() === clean);
     if (found) return found;
 
-    return { nome: itemName, categoria: getNormalizedCategory(itemName) };
+    return { nome: itemName, categoria: Rules2_ClassifyEntity({ nome: itemName }) };
   },
 
   filterBackpack: function(cat) {
@@ -1459,7 +1539,7 @@ const Rules2Engine = {
     if (cat && cat !== "ALL") {
       inv = inv.filter(itemName => {
         const ent = this._findEntityData(itemName);
-        return getNormalizedCategory(ent) === cat;
+        return Rules2_ClassifyEntity(ent) === cat;
       });
       if (inv.length === 0) {
         c.innerHTML = `<div class="empty-state-card">Nessun articolo per il reparto <b>${cat}</b> nello zaino.</div>`;
@@ -1471,7 +1551,7 @@ const Rules2Engine = {
       const isArma = (h.armaAttiva && it.toLowerCase() === h.armaAttiva.toLowerCase());
       const isVeicolo = (h.veicoloAttivo && it.toLowerCase() === h.veicoloAttivo.toLowerCase());
       const ent = this._findEntityData(it);
-      const category = getNormalizedCategory(ent);
+      const category = Rules2_ClassifyEntity(ent);
 
       return `
         <div class="backpack-slot-card">
@@ -1499,14 +1579,14 @@ const Rules2Engine = {
         gameKey: AppState.activeSession.gameKey,
         episodio: AppState.activeSession.episodio
       });
-      if (res && res.success) {
+      if (res?.success) {
         if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("click");
         AppState.activeSession.hero = { ...AppState.activeSession.hero, ...res.statoEroe };
         this.renderNode(AppState.activeSession.currentNode, AppState.activeSession.hero);
         this.filterBackpack(AppState.activeSession.engineState.backpackFilter);
       }
     } catch (e) {
-      alert("Impossibile equipaggiare: " + e.message);
+      tgAlert("Impossibile equipaggiare: " + e.message);
     }
   },
 
@@ -1519,18 +1599,18 @@ const Rules2Engine = {
         gameKey: AppState.activeSession.gameKey,
         episodio: AppState.activeSession.episodio
       });
-      if (res && res.success) {
+      if (res?.success) {
         if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("drug");
         AppState.activeSession.hero = { ...AppState.activeSession.hero, ...res.statoEroe };
         this.renderNode(AppState.activeSession.currentNode, AppState.activeSession.hero);
         this.filterBackpack(AppState.activeSession.engineState.backpackFilter);
       }
     } catch (e) {
-      alert("Impossibile usare l'oggetto: " + e.message);
+      tgAlert("Impossibile usare l'oggetto: " + e.message);
     }
   },
 
-  // 3. EMPORIO DI CICCIO (COMPRA / VENDI AL 25%)
+  // 3. CASSETTO EMPORIO DI CICCIO (COMPRA / VENDI AL 25%)
   openEmporioDrawer: function() {
     const h = AppState.activeSession.hero;
     const goldDisp = document.getElementById("emporio-gold-display");
@@ -1552,7 +1632,7 @@ const Rules2Engine = {
     if (btnSell) btnSell.className = `flex-1 btn btn-xs ${mode === 'sell' ? 'btn-primary' : 'btn-ghost text-slate-400'} font-bold`;
 
     if (mode === "sell") {
-      const inv = (h && h.inventario) ? h.inventario : [];
+      const inv = h?.inventario || [];
       if (inv.length === 0) {
         container.innerHTML = `<div class="empty-state-card col-span-full">Nessuna refurtiva nello zaino.</div>`;
         return;
@@ -1610,16 +1690,16 @@ const Rules2Engine = {
   buyFromEmporio: async function(itemId, goldCost) {
     const hero = AppState.activeSession.hero;
     if (!hero || hero.oro < goldCost) {
-      alert("Monete d'oro insufficienti!");
+      tgAlert("Monete d'oro insufficienti!");
       return;
     }
     const item = (AppState.activeSession.shopCatalog || []).find(i => i.id === itemId);
     if (!item) return;
 
-    if (getNormalizedCategory(item) === "VEICOLI") {
-      const hasVehicle = (hero.inventario || []).some(x => getNormalizedCategory(this._findEntityData(x)) === "VEICOLI");
+    if (Rules2_ClassifyEntity(item) === "VEICOLI") {
+      const hasVehicle = (hero.inventario || []).some(x => Rules2_ClassifyEntity(this._findEntityData(x)) === "VEICOLI");
       if (hasVehicle) {
-        alert("Puoi possedere un solo Veicolo nello zaino!");
+        tgAlert("Puoi possedere un solo Veicolo nello zaino!");
         return;
       }
     }
@@ -1633,7 +1713,7 @@ const Rules2Engine = {
         episodio: AppState.activeSession.episodio
       });
 
-      if (res && res.statoEroe) {
+      if (res?.statoEroe) {
         AppState.activeSession.hero = { ...AppState.activeSession.hero, ...res.statoEroe };
         Wallet.setGold(res.statoEroe.oro);
       } else {
@@ -1646,7 +1726,7 @@ const Rules2Engine = {
       this.openEmporioDrawer();
       this.renderNode(AppState.activeSession.currentNode, AppState.activeSession.hero);
     } catch (e) {
-      alert("Errore nell'acquisto: " + e.message);
+      tgAlert("Errore nell'acquisto: " + e.message);
     }
   },
 
@@ -1659,7 +1739,7 @@ const Rules2Engine = {
         episodio: AppState.activeSession.episodio
       });
 
-      if (res && res.statoEroe) {
+      if (res?.statoEroe) {
         AppState.activeSession.hero = { ...AppState.activeSession.hero, ...res.statoEroe };
         Wallet.setGold(res.statoEroe.oro);
       } else {
@@ -1678,7 +1758,7 @@ const Rules2Engine = {
       this.openEmporioDrawer();
       this.renderNode(AppState.activeSession.currentNode, AppState.activeSession.hero);
     } catch (e) {
-      alert("Errore nella vendita: " + e.message);
+      tgAlert("Errore nella vendita: " + e.message);
     }
   },
 
@@ -1692,7 +1772,7 @@ const Rules2Engine = {
   convertMegoinToGold: async function(megoinCost, goldEarned) {
     const currentMegoin = Wallet.getMegoin();
     if (currentMegoin < megoinCost) {
-      alert("Saldo Megoin insufficiente!");
+      tgAlert("Saldo Megoin insufficiente!");
       return;
     }
 
@@ -1703,7 +1783,7 @@ const Rules2Engine = {
         gameKey: AppState.activeSession.gameKey || "game1"
       });
 
-      if (res && res.success) {
+      if (res?.success) {
         if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("cash_register");
         if (window.confetti) confetti({ particleCount: 60, spread: 50 });
 
@@ -1726,15 +1806,15 @@ const Rules2Engine = {
           AppModules.renderProfile(AppState.user);
         }
 
-        alert(`✅ Convertiti con successo ${megoinCost} 🪙 in +${goldEarned} 🟡 Oro!`);
+        tgAlert(`✅ Convertiti ${megoinCost} 🪙 in +${goldEarned} 🟡 Oro!`);
         document.getElementById("modal-banco-cambio")?.close();
       }
     } catch (e) {
-      alert("Errore nel banco di cambio: " + e.message);
+      tgAlert("Errore nel banco di cambio: " + e.message);
     }
   },
 
-  // 4. SQUADRA & ZOMBI
+  // 4. CASSETTO SQUADRA & ZOMBI
   openSquadDrawer: function() {
     const c = document.getElementById("squad-list-container");
     const h = AppState.activeSession.hero;
@@ -1764,7 +1844,7 @@ const Rules2Engine = {
     document.getElementById("drawer-squad")?.showModal();
   },
 
-  // 5. DOSSIER & ORGANIGRAMMA DEL POTERE
+  // 5. CASSETTO DOSSIER & ORGANIGRAMMA DEL POTERE
   openDossierDrawer: function() {
     const c = document.getElementById("dossier-list-container");
     const h = AppState.activeSession.hero;
@@ -1773,7 +1853,7 @@ const Rules2Engine = {
     const inv = h.inventario || [];
     const infoItems = inv.filter(it => {
       const ent = this._findEntityData(it);
-      return getNormalizedCategory(ent) === "INFORMAZIONI";
+      return Rules2_ClassifyEntity(ent) === "INFORMAZIONI";
     });
 
     if (infoItems.length === 0) {
@@ -1820,7 +1900,7 @@ const Rules2Engine = {
 };
 
 // ----------------------------------------------------------------------------
-// 5. ESPOSIZIONE GLOBALE & BINDING ONCLICK PER INDEX.HTML
+// 7. ESPOSIZIONE GLOBALE SU WINDOW & BINDING ONCLICK PER INDEX.HTML
 // ----------------------------------------------------------------------------
 window.Rules2Wizard = Rules2Wizard;
 window.Rules2Engine = Rules2Engine;
@@ -1829,9 +1909,8 @@ if (typeof window.EngineRegistry !== "undefined" && typeof window.EngineRegistry
   window.EngineRegistry.register("Rules2", Rules2Engine);
 }
 
-// Interfaccia unificata per gli handler onclick in index.html
+// Handler retrocompatibili per i tag onclick di index.html
 window.GameEngine = {
-  // Wizard
   coverflowPrev: () => Rules2Wizard.coverflowPrev(),
   coverflowNext: () => Rules2Wizard.coverflowNext(),
   wizardConfirmStep1: () => Rules2Wizard.confirmStep1(),
@@ -1843,26 +1922,22 @@ window.GameEngine = {
   wizardUseTelegramName: () => Rules2Wizard.useTelegramName(),
   wizardFinalizeHero: () => Rules2Wizard.finalizeHero(),
 
-  // Cockpit 5 Sezioni
   openHeroSheetDrawer: () => Rules2Engine.openHeroSheetDrawer(),
   openBackpackDrawer: () => Rules2Engine.openBackpackDrawer(),
   openEmporioDrawer: () => Rules2Engine.openEmporioDrawer(),
   openSquadDrawer: () => Rules2Engine.openSquadDrawer(),
   openDossierDrawer: () => Rules2Engine.openDossierDrawer(),
 
-  // Emporio & Cambio
   setEmporioMode: (m) => Rules2Engine.setEmporioMode(m),
   buyFromEmporio: (id, p) => Rules2Engine.buyFromEmporio(id, p),
   sellToEmporio: (it, g) => Rules2Engine.sellToEmporio(it, g),
   openCambioModal: () => Rules2Engine.openCambioModal(),
   convertMegoinToGold: (m, g) => Rules2Engine.convertMegoinToGold(m, g),
 
-  // Zaino & Azioni
   filterBackpack: (c) => Rules2Engine.filterBackpack(c),
   useBackpackItem: (it) => Rules2Engine.useBackpackItem(it),
   equipItem: (it, t) => Rules2Engine.equipItem(it, t),
 
-  // Gameplay
   combatAction: (act) => Rules2Engine.combatAction(act),
   combatBribe: (d) => Rules2Engine.combatBribe(d),
   executeResurrectZombie: (id) => Rules2Engine.executeResurrectZombie(id),
