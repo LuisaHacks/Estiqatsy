@@ -1,6 +1,6 @@
 /* ============================================================================
    PROJECT: ESTIQATSY SYNDICATE & RPG PLATFORM
-   FILE: css/rules2.css (VERSIONE 10.0 - BORDERLESS NODES & DIEGETIC 3D CARDS)
+   FILE: css/rules2.css (VERSIONE 10.0 - PERFORMANCE OPTIMIZED & CLEAN SPECIFICITY)
    LAYER: ENGINE RULES2, WIZARD FULL-STAGE, COCKPIT & CASSETTI TATTICI
    ============================================================================ */
 
@@ -16,7 +16,7 @@
 .game-header-tag {
   font-size: 8.5px;
   font-weight: 900;
-  color: var(--tg-amber);
+  color: var(--tg-amber, #F59E0B);
   text-transform: uppercase;
   letter-spacing: 0.15em;
   line-height: 1;
@@ -50,21 +50,21 @@
   gap: 0.25rem;
 }
 
-/* Footer Cockpit Sticky a 5 Tasti di Navigazione Permanente */
+/* Footer Cockpit Sticky (5 Tasti Navigazione Permanente) */
 .cockpit-footer {
   flex: none;
   z-index: 40;
   width: 100%;
-  background: rgba(13, 19, 31, 0.98);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
-  border-top: 1px solid var(--tg-border-light);
+  background: rgba(13, 19, 31, 0.96);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-top: 1px solid var(--tg-border-light, rgba(255, 255, 255, 0.08));
   display: flex;
   justify-content: space-around;
   align-items: center;
   padding-top: 0.35rem;
-  padding-bottom: max(var(--safe-bottom), 0.75rem);
-  height: calc(56px + max(var(--safe-bottom), 0px));
+  padding-bottom: max(var(--safe-bottom, 0px), 0.75rem);
+  height: calc(56px + max(var(--safe-bottom, 0px), 0px));
 }
 .cockpit-btn {
   display: flex;
@@ -111,7 +111,7 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: center center !important;
+  object-position: center center;
 }
 
 .scene-badge {
@@ -153,7 +153,7 @@
 .quote-author {
   font-size: 10px;
   font-weight: 800;
-  color: var(--tg-amber);
+  color: var(--tg-amber, #F59E0B);
   text-transform: uppercase;
   letter-spacing: 0.08em;
   text-align: right;
@@ -174,7 +174,7 @@
 .floating-damage {
   font-weight: 900;
   font-size: 1.5rem;
-  color: var(--tg-sky);
+  color: var(--tg-sky, #38BDF8);
   animation: floatDamage 1.2s ease-out forwards;
 }
 @keyframes floatDamage {
@@ -194,26 +194,26 @@
 }
 
 /* ----------------------------------------------------------------------------
-   3. WIZARD: SINGLE-ROW HEADER & SCROLL DI SICUREZZA PER SCHERMI COMPATTI
+   3. WIZARD: SINGLE-ROW HEADER & SCROLL VIEWPORT STABILE
    ---------------------------------------------------------------------------- */
 body[data-active-screen="view-wizard"] .app-scroll-area {
-  overflow-y: auto !important;
+  overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior-y: contain;
 }
 body[data-active-screen="view-wizard"] .app-content-wrapper {
   min-height: 100%;
-  height: auto !important;
-  padding: 0.25rem 0.65rem 0.85rem 0.65rem !important;
-  display: flex !important;
-  flex-direction: column !important;
+  height: auto;
+  padding: 0.25rem 0.65rem 0.85rem 0.65rem;
+  display: flex;
+  flex-direction: column;
 }
 body[data-active-screen="view-wizard"] .main-app-footer,
 body[data-active-screen="view-wizard"] .cockpit-footer {
-  display: none !important;
+  display: none;
 }
 body[data-active-screen="view-wizard"] #main-wizard-footer {
-  display: flex !important;
+  display: flex;
 }
 
 .wizard-stage-container {
@@ -233,7 +233,6 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
   gap: 0.25rem;
 }
 
-/* Single-Row Header Compatto Ancorato in Alto */
 .wizard-single-header {
   flex: none;
   min-height: 38px;
@@ -241,7 +240,7 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
   align-items: center;
   justify-content: space-between;
   padding: 0.15rem 0.25rem 0.25rem 0.25rem;
-  border-bottom: 1px solid var(--tg-border);
+  border-bottom: 1px solid var(--tg-border, rgba(255, 255, 255, 0.08));
   gap: 0.35rem;
 }
 
@@ -254,7 +253,7 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
 }
 
 .wizard-step-badge {
-  background: var(--tg-amber);
+  background: var(--tg-amber, #F59E0B);
   color: #090D16;
   font-size: 9.5px;
   font-weight: 900;
@@ -287,7 +286,7 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
   display: inline-flex;
   align-items: center;
   background: rgba(0, 0, 0, 0.65);
-  border: 1px solid var(--tg-border-light);
+  border: 1px solid var(--tg-border-light, rgba(255, 255, 255, 0.12));
   border-radius: 9999px;
   padding: 2px;
   gap: 2px;
@@ -298,7 +297,7 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
   border-radius: 9999px;
   font-size: 9.5px;
   font-weight: 800;
-  color: var(--tg-text-muted);
+  color: var(--tg-text-muted, #94A3B8);
   background: transparent;
   border: none;
   cursor: pointer;
@@ -312,7 +311,7 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
   color: #FFFFFF;
 }
 .toggle-pill-btn.active {
-  background: var(--tg-sky);
+  background: var(--tg-sky, #38BDF8);
   color: #090D16;
   font-weight: 900;
   box-shadow: 0 0 10px rgba(56, 189, 248, 0.4);
@@ -338,63 +337,65 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
   align-items: center;
   justify-content: center;
   overflow: visible;
-  /* DISTANZA SIMMETRICA: 24px netti sopra e 24px netti sotto verso i pallini */
-  padding: 24px 0.5rem 0 0.5rem !important;
+  /* DISTANZA SIMMETRICA: 24px sopra verso header, 24px sotto verso dots */
+  padding: 24px 0.5rem 0 0.5rem;
 }
 
-/* Wrapper 3D Adattivo Tri-Device */
 .coverflow-stage-wrapper {
   position: relative;
   width: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
-  perspective: 1300px;
+  perspective: 1200px;
   perspective-origin: center center;
   user-select: none;
   touch-action: pan-y;
   height: clamp(480px, 66dvh, 555px);
 }
 
-/* Scheda Archetipo Collezionabile: ALONE BIANCO MORBIDO A 3 STADI */
-.coverflow-card {
+/* Scheda Archetipo Collezionabile: 3D Hardware Accelerated */
+.coverflow-stage-wrapper .coverflow-card {
   position: absolute;
   border-radius: 1.25rem;
   background: #0D131F;
-  border: 2px solid rgba(255, 255, 255, 0.2) !important;
+  border: 2px solid rgba(255, 255, 255, 0.18);
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  transition: transform 0.45s cubic-bezier(0.2, 0.8, 0.2, 1),
-              opacity 0.4s ease,
-              box-shadow 0.4s ease,
-              border-color 0.4s ease;
-  will-change: transform, opacity, box-shadow;
-  transform-style: preserve-3d;
   cursor: pointer;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  transform: translateZ(0);
+  transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1),
+              opacity 0.35s ease,
+              box-shadow 0.35s ease;
+  will-change: transform, opacity;
 
-  /* Dimensioni fisse Mobile (+10% in altezza per 9 righe narrative) */
   width: clamp(285px, 82vw, 335px);
   height: clamp(475px, 65dvh, 545px);
 
-  /* Alone Perimetrale Bianco Etereo Morbido (Raggio 12px) */
-  box-shadow: 0 0 5px 1px rgba(255, 255, 255, 0.22),
-              0 0 10px 2px rgba(255, 255, 255, 0.1),
-              0 0 16px 3px rgba(255, 255, 255, 0.04) !important;
+  /* Alone Perimetrale Morbido Etereo */
+  box-shadow: 0 0 6px 1px rgba(255, 255, 255, 0.2),
+              0 0 14px 2px rgba(255, 255, 255, 0.08);
 }
 
-/* TABLET TUNING (640px - 1024px) */
+.coverflow-stage-wrapper .coverflow-card.glow-active {
+  box-shadow: 0 0 8px 1px rgba(255, 255, 255, 0.28),
+              0 0 16px 3px rgba(255, 255, 255, 0.12),
+              0 0 24px 4px rgba(255, 255, 255, 0.04);
+}
+
+/* Responsive Tablet & Desktop tuning */
 @media (min-width: 640px) and (max-width: 1023px) {
   .coverflow-stage-wrapper {
     height: clamp(530px, 67dvh, 610px);
   }
-  .coverflow-card {
+  .coverflow-stage-wrapper .coverflow-card {
     width: 345px;
     height: clamp(520px, 65dvh, 595px);
   }
 }
-
-/* DESKTOP WIDESCREEN TUNING (>= 1024px: Pillarboxed Cabinato 820px) */
 @media (min-width: 1024px) {
   .wizard-stage-container {
     max-width: 820px;
@@ -403,101 +404,85 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
   .coverflow-stage-wrapper {
     height: clamp(570px, 70dvh, 640px);
   }
-  .coverflow-card {
+  .coverflow-stage-wrapper .coverflow-card {
     width: 365px;
     height: clamp(550px, 68dvh, 625px);
   }
 }
 
-/* 1. AREA SUPERIORE IMMAGINE (+30% ALTEZZA, FOCALIZZATA 1:1 AL CENTRO) */
+/* Media Frame (Immagine 1:1 Ingrandita e Centrata) */
 .coverflow-media-frame {
   position: relative;
   width: 100%;
-  height: clamp(230px, 32dvh, 265px) !important; /* +30% esatto */
+  height: clamp(230px, 32dvh, 265px);
   background: #090D16;
   flex-shrink: 0;
   overflow: hidden;
 }
 @media (min-width: 640px) {
   .coverflow-media-frame {
-    height: clamp(250px, 34dvh, 285px) !important;
+    height: clamp(250px, 34dvh, 285px);
   }
 }
 .coverflow-img {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: center center !important;
+  object-position: center center;
 }
 
-/* TOP-LEFT: EMOJI + NOME IN SOVRIMPRESSIONE (SENZA FONDINO, CON OMBRA TESTO) */
-.coverflow-title-overlay,
-.coverflow-card .coverflow-details-box > div:first-child > .flex {
-  position: absolute !important;
-  top: 0.65rem !important;
-  left: 0.75rem !important;
-  z-index: 15 !important;
-  display: flex !important;
-  align-items: center !important;
-  gap: 0.35rem !important;
-  background: transparent !important;
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
-  padding: 0 !important;
-  border: none !important;
-  box-shadow: none !important;
-  max-width: calc(100% - 110px) !important;
-  height: auto !important;
+/* Titolo Overlay in alto a sinistra (Puro, Senza Fondino, Con Ombra Morbida) */
+.coverflow-title-overlay {
+  position: absolute;
+  top: 0.65rem;
+  left: 0.75rem;
+  z-index: 15;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: transparent;
+  max-width: calc(100% - 110px);
 }
 .coverflow-title {
-  font-size: 1.05rem !important;
-  font-weight: 900 !important;
-  color: #FFFFFF !important;
+  font-size: 1.05rem;
+  font-weight: 900;
+  color: #FFFFFF;
   line-height: 1.15;
   margin: 0;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.95), 0 0 12px rgba(0, 0, 0, 0.8) !important;
-}
-.coverflow-sub {
-  display: none !important; /* Sottotitolo rimosso */
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.95), 0 0 10px rgba(0, 0, 0, 0.85);
 }
 
-/* TOP-RIGHT: BADGE POLITICO CON MICRO-GLOW COLORATO DEDICATO */
+/* Badge Politico con Micro-Glow in alto a destra */
 .coverflow-card .coverflow-badge-faction {
-  position: absolute !important;
-  top: 0.65rem !important;
-  right: 0.75rem !important;
-  bottom: auto !important;
-  left: auto !important;
-  z-index: 15 !important;
-  font-size: 10.5px !important;
-  font-weight: 900 !important;
-  letter-spacing: 0.06em !important;
-  padding: 0.22rem 0.55rem !important;
-  border-radius: 9999px !important;
-  line-height: 1 !important;
-  border: none !important;
+  position: absolute;
+  top: 0.65rem;
+  right: 0.75rem;
+  z-index: 15;
+  font-size: 10.5px;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  padding: 0.22rem 0.55rem;
+  border-radius: 9999px;
+  line-height: 1;
+  border: none;
 }
-
 .coverflow-card .coverflow-badge-faction.badge-info,
-.coverflow-card .coverflow-badge-faction[data-faction="destra"],
 .badge-faction-destra {
-  background: #38BDF8 !important;
-  color: #090D16 !important;
-  box-shadow: 0 0 8px 1px rgba(56, 189, 248, 0.7) !important;
+  background: #38BDF8;
+  color: #090D16;
+  box-shadow: 0 0 8px 1px rgba(56, 189, 248, 0.7);
 }
-
 .coverflow-card .coverflow-badge-faction.badge-error,
-.coverflow-card .coverflow-badge-faction[data-faction="sinistra"],
 .badge-faction-sinistra {
-  background: #F43F5E !important;
-  color: #FFFFFF !important;
-  box-shadow: 0 0 8px 1px rgba(244, 63, 94, 0.7) !important;
+  background: #F43F5E;
+  color: #FFFFFF;
+  box-shadow: 0 0 8px 1px rgba(244, 63, 94, 0.7);
 }
 
-/* 2. AREA INFERIORE DATI & LORE NARRATIVO INTEGRALE */
+/* Area Lore & Dati */
 .coverflow-details-box {
   padding: 0.55rem 0.85rem 0.65rem 0.85rem;
   flex: 1 1 auto;
@@ -507,16 +492,16 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
   background: #0D131F;
 }
 
-/* B. Trittico Caratteristiche: Griglia a 3 Colonne Nette */
+/* Trittico Caratteristiche: Flessibile e non tranciato da accessibilità font */
 .coverflow-stats-row {
-  height: 38px;
+  min-height: 2.4rem;
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0.35rem;
-  padding: 0 0.35rem;
+  padding: 0.25rem 0.35rem;
   border-radius: 0.65rem;
   background: rgba(0, 0, 0, 0.55);
-  border: 1px solid var(--tg-border);
+  border: 1px solid var(--tg-border, rgba(255, 255, 255, 0.08));
   align-items: center;
   font-size: 10.5px;
   margin: 0.15rem 0 0.35rem 0;
@@ -533,19 +518,19 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
 }
 .stat-mod { 
   font-size: 10px;
-  color: var(--tg-text-muted); 
+  color: var(--tg-text-muted, #94A3B8); 
 }
 
-/* C. TESTO NARRATIVO (+25% FONT, ALLINEATO A SINISTRA, NO TAGLI) */
+/* Testo Narrativo Lore (9 Righe Non Tranciate, Scrollable) */
 .coverflow-lore {
-  display: block !important;
-  text-align: left !important;
-  font-size: clamp(12px, 1.45vh, 13px) !important;
+  display: block;
+  text-align: left;
+  font-size: clamp(12px, 1.45vh, 13px);
   color: #CBD5E1;
   line-height: 1.5;
   margin: 0.1rem 0;
   word-break: break-word;
-  min-height: 140px;
+  min-height: 135px;
   max-height: 175px;
   overflow-y: auto;
   scrollbar-width: none;
@@ -556,27 +541,24 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
 }
 @media (min-width: 640px) {
   .coverflow-lore {
-    min-height: 155px;
+    min-height: 150px;
     max-height: 190px;
-    font-size: 13.5px !important;
-    line-height: 1.55;
+    font-size: 13.5px;
   }
 }
 @media (min-width: 1024px) {
   .coverflow-lore {
-    min-height: 170px;
+    min-height: 165px;
     max-height: 210px;
-    font-size: 14px !important;
-    line-height: 1.6;
+    font-size: 14px;
   }
 }
 
-/* D. Piede Scheda: DOTAZIONE A SINISTRA, BADGE PV E ORO IN BASSO A DESTRA */
+/* Piede Scheda Flessibile: Dotazione a sinistra, Pills a destra */
 .coverflow-footer-row {
-  height: 38px;
-  min-height: 38px;
+  min-height: 2.4rem;
   padding-top: 0.35rem;
-  border-top: 1px solid var(--tg-border);
+  border-top: 1px solid var(--tg-border, rgba(255, 255, 255, 0.08));
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -591,48 +573,35 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.coverflow-gear-label b { color: var(--tg-amber); }
+.coverflow-gear-label b { color: var(--tg-amber, #F59E0B); }
 
-.coverflow-footer-row button,
-.coverflow-card button[id^="coverflow-action-btn"] {
-  display: none !important;
-}
-
-/* KPI Pills (PV e Oro) nel Footer */
 .coverflow-kpi-pill {
-  position: absolute !important;
-  bottom: 0.65rem !important;
-  right: 0.75rem !important;
-  top: auto !important;
-  left: auto !important;
-  z-index: 15 !important;
-  display: flex !important;
-  gap: 0.3rem !important;
-  align-items: center !important;
+  display: flex;
+  gap: 0.3rem;
+  align-items: center;
+  flex-shrink: 0;
 }
 .pill-pv, .pill-gold {
   background: rgba(9, 13, 22, 0.85);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
   font-family: monospace;
   font-size: 10px;
   font-weight: 800;
   padding: 0.22rem 0.5rem;
   border-radius: 9999px;
-  border: 1px solid var(--tg-border-light);
+  border: 1px solid var(--tg-border-light, rgba(255, 255, 255, 0.12));
   line-height: 1;
 }
 .pill-pv { color: #FDA4AF; }
 .pill-gold { color: #FDE047; }
 
-/* PALLINI DI SCORRIMENTO (DOTS): 24px DALLA CARTA E 12px DAL FOOTER */
+/* Pallini di Scorrimento (Dots): Esattamente 24px dalla carta e 12px dal footer */
 .coverflow-dots {
   display: flex;
   justify-content: center;
   align-items: center;
   gap: 0.4rem;
-  margin-top: 24px !important;
-  margin-bottom: 12px !important; /* Esattamente 12px dal footer sticky */
+  margin-top: 24px;
+  margin-bottom: 12px;
   flex-shrink: 0;
 }
 .coverflow-dot {
@@ -641,11 +610,11 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
   border-radius: 9999px;
   background: rgba(255, 255, 255, 0.2);
   cursor: pointer;
-  transition: all 0.25s ease;
+  transition: all 0.2s ease;
 }
 .coverflow-dot.active {
   width: 1.1rem;
-  background: var(--tg-sky);
+  background: var(--tg-sky, #38BDF8);
 }
 
 .coverflow-arrow-btn {
@@ -658,7 +627,7 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
   height: 2.25rem;
   border-radius: 9999px;
   background: rgba(0, 0, 0, 0.75);
-  border: 1px solid var(--tg-border-light);
+  border: 1px solid var(--tg-border-light, rgba(255, 255, 255, 0.12));
   color: #FFFFFF;
   align-items: center;
   justify-content: center;
@@ -669,13 +638,13 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
   .coverflow-arrow-btn { display: flex; }
 }
 .coverflow-arrow-btn:hover {
-  background: var(--tg-sky);
+  background: var(--tg-sky, #38BDF8);
   color: #090D16;
-  border-color: var(--tg-sky);
+  border-color: var(--tg-sky, #38BDF8);
 }
 
 /* ----------------------------------------------------------------------------
-   5. ADATTAMENTO AUTOMATICO CON MENU FILTRI (EMPORIO, ZAINO, CATEGORIE)
+   5. MENU FILTRI E VISTE LISTA / GRIGLIA
    ---------------------------------------------------------------------------- */
 .chips-scroll-bar {
   flex: none;
@@ -691,7 +660,6 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
   display: none;
 }
 
-/* Riduzione automatica dello stage quando è presente la barra dei filtri */
 .wizard-step-panel .chips-scroll-bar + .wizard-content-fill .coverflow-stage-wrapper {
   height: clamp(430px, 58dvh, 495px);
 }
@@ -736,8 +704,8 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
 }
 
 .class-list-card {
-  background: var(--tg-surface);
-  border: 1px solid var(--tg-border);
+  background: var(--tg-surface, #111827);
+  border: 1px solid var(--tg-border, rgba(255, 255, 255, 0.08));
   border-radius: 0.95rem;
   padding: 0.65rem 0.8rem;
   display: flex;
@@ -748,10 +716,10 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
   transition: all 0.15s ease;
 }
 .class-list-card:hover {
-  background: var(--tg-surface-hover);
+  background: var(--tg-surface-hover, #1F2937);
 }
 .class-list-card.selected {
-  border-color: var(--tg-sky);
+  border-color: var(--tg-sky, #38BDF8);
   background: rgba(56, 189, 248, 0.12);
   box-shadow: 0 0 15px rgba(56, 189, 248, 0.25);
 }
@@ -762,13 +730,12 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
   background: #090D16;
   overflow: hidden;
   flex-shrink: 0;
-  border: 1px solid var(--tg-border);
+  border: 1px solid var(--tg-border, rgba(255, 255, 255, 0.08));
 }
 .class-list-thumb img {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: center center;
 }
 .class-list-info {
   flex: 1 1 0%;
@@ -784,15 +751,15 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
 }
 .class-list-sub {
   font-size: 9.5px;
-  color: var(--tg-text-muted);
+  color: var(--tg-text-muted, #94A3B8);
   margin-top: 0.1rem;
 }
 
 .wizard-ability-card {
   padding: 0.75rem 0.85rem;
   border-radius: 0.95rem;
-  border: 1px solid var(--tg-border);
-  background: var(--tg-surface);
+  border: 1px solid var(--tg-border, rgba(255, 255, 255, 0.08));
+  background: var(--tg-surface, #111827);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -800,9 +767,9 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
   cursor: pointer;
   transition: all 0.15s ease;
 }
-.wizard-ability-card:hover { background: var(--tg-surface-hover); }
+.wizard-ability-card:hover { background: var(--tg-surface-hover, #1F2937); }
 .wizard-ability-card.selected {
-  border-color: var(--tg-sky);
+  border-color: var(--tg-sky, #38BDF8);
   background: rgba(56, 189, 248, 0.12);
   box-shadow: 0 0 15px rgba(56, 189, 248, 0.25);
 }
@@ -828,16 +795,16 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
 }
 
 .wizard-shop-card {
-  background: var(--tg-surface);
+  background: var(--tg-surface, #111827);
   border-radius: 0.95rem;
-  border: 1px solid var(--tg-border);
+  border: 1px solid var(--tg-border, rgba(255, 255, 255, 0.08));
   padding: 0.65rem 0.75rem;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   gap: 0.45rem;
 }
-.wizard-shop-card:hover { background: var(--tg-surface-hover); }
+.wizard-shop-card:hover { background: var(--tg-surface-hover, #1F2937); }
 .shop-card-clickable {
   cursor: pointer;
   display: flex;
@@ -864,7 +831,7 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.wizard-shop-card:hover .shop-card-title { color: var(--tg-sky); }
+.wizard-shop-card:hover .shop-card-title { color: var(--tg-sky, #38BDF8); }
 .shop-card-desc {
   font-size: 10.5px;
   color: #CBD5E1;
@@ -879,26 +846,26 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.35rem;
   padding-top: 0.35rem;
-  border-top: 1px solid var(--tg-border);
+  border-top: 1px solid var(--tg-border, rgba(255, 255, 255, 0.08));
 }
 
 /* ----------------------------------------------------------------------------
-   6. FOOTER WIZARD STICKY (PULSANTI A 1-2 PAROLE & ANCORAGGIO)
+   6. FOOTER WIZARD STICKY
    ---------------------------------------------------------------------------- */
 .wizard-sticky-footer {
   flex: none;
   z-index: 40;
   width: 100%;
-  background: rgba(9, 13, 22, 0.98);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
-  border-top: 1px solid var(--tg-border-light);
+  background: rgba(9, 13, 22, 0.96);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-top: 1px solid var(--tg-border-light, rgba(255, 255, 255, 0.12));
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 0.45rem 0.85rem;
-  padding-bottom: max(var(--safe-bottom), 0.65rem);
-  height: calc(56px + max(var(--safe-bottom), 0px));
+  padding-bottom: max(var(--safe-bottom, 0px), 0.65rem);
+  height: calc(56px + max(var(--safe-bottom, 0px), 0px));
 }
 
 .wizard-footer-step-controls {
@@ -921,7 +888,7 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
 }
 
 /* ----------------------------------------------------------------------------
-   7. MODALE ARCADE DIEGETICA "INSERT MEGOIN 🪙" (PULSANTI 50/50 COMPATTI)
+   7. MODALE ARCADE DIEGETICA "INSERT MEGOIN 🪙" (GRIGLIA 50/50 COMPATTA)
    ---------------------------------------------------------------------------- */
 .arcade-coin-modal-box {
   background: linear-gradient(180deg, #0F172A 0%, #090D16 100%);
@@ -962,7 +929,7 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
   font-size: 9px;
   font-weight: 900;
   letter-spacing: 0.2em;
-  color: var(--tg-amber);
+  color: var(--tg-amber, #F59E0B);
   text-transform: uppercase;
 }
 
@@ -986,7 +953,7 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
   padding: 0.45rem 0.75rem;
   border-radius: 0.65rem;
   background: rgba(0, 0, 0, 0.6);
-  border: 1px solid var(--tg-border);
+  border: 1px solid var(--tg-border, rgba(255, 255, 255, 0.08));
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -995,11 +962,10 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
   color: #FFFFFF;
 }
 
-/* Griglia 50/50 Affiancata di Egual Misura per Nuova / Riprendi */
 .arcade-actions-50-50 {
-  display: grid !important;
-  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-  gap: 0.5rem !important;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
   width: 100%;
 }
 
@@ -1015,7 +981,7 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
 
 .hud-cockpit {
   background: rgba(17, 24, 39, 0.95);
-  border: 1px solid var(--tg-border-light);
+  border: 1px solid var(--tg-border-light, rgba(255, 255, 255, 0.12));
   border-radius: 0.95rem;
   padding: 0.5rem 0.75rem;
   display: flex;
@@ -1035,7 +1001,7 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
   height: 2.1rem;
   border-radius: 0.6rem;
   background: #0F172A;
-  border: 1.5px solid var(--tg-sky);
+  border: 1.5px solid var(--tg-sky, #38BDF8);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1047,7 +1013,6 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: center center;
 }
 .hud-avatar-fallback { font-size: 1.15rem; }
 .hud-hero-name {
@@ -1068,7 +1033,7 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
   color: #FDE047;
   flex-shrink: 0;
 }
-.gold-suffix { font-size: 9.5px; color: var(--tg-text-muted); }
+.gold-suffix { font-size: 9.5px; color: var(--tg-text-muted, #94A3B8); }
 
 .hud-row-vitals {
   display: flex;
@@ -1076,7 +1041,7 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
   justify-content: space-between;
   gap: 0.65rem;
   padding-top: 0.3rem;
-  border-top: 1px solid var(--tg-border);
+  border-top: 1px solid var(--tg-border, rgba(255, 255, 255, 0.08));
 }
 .hud-vitals-box {
   display: flex;
@@ -1107,7 +1072,7 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
   padding: 0.15rem 0.35rem;
   border-radius: 0.45rem;
   background: rgba(0, 0, 0, 0.6);
-  border: 1px solid var(--tg-border);
+  border: 1px solid var(--tg-border, rgba(255, 255, 255, 0.08));
   font-size: 9.5px;
   font-family: monospace;
   white-space: nowrap;
@@ -1141,7 +1106,7 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
   margin: 0;
 }
 
-/* Plancia Scelte Posizionata Sotto il Testo Narrativo */
+/* Plancia Scelte Posizionata Sotto il Testo */
 .scene-actions-area {
   flex: none;
   display: flex;
@@ -1150,7 +1115,6 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
   min-height: 48px;
 }
 
-/* Griglia Azioni di Gioco Simmetriche (Pulsanti a 1-2 Parole) */
 .combat-actions-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1158,23 +1122,23 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
   align-items: stretch;
 }
 .combat-actions-grid .btn {
-  min-height: 2.75rem !important;
-  height: 100% !important;
+  min-height: 2.75rem;
+  height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
   line-height: 1.25;
   padding: 0.35rem 0.5rem;
-  font-size: 0.82rem !important;
-  font-weight: 900 !important;
-  text-transform: uppercase !important;
+  font-size: 0.82rem;
+  font-weight: 900;
+  text-transform: uppercase;
 }
 
 .btn-inspect-enemy {
-  border: 1px solid var(--tg-border) !important;
-  color: #CBD5E1 !important;
-  font-size: 10px !important;
-  font-weight: 700 !important;
+  border: 1px solid var(--tg-border, rgba(255, 255, 255, 0.08));
+  color: #CBD5E1;
+  font-size: 10px;
+  font-weight: 700;
 }
 .tactical-advantage-box {
   padding: 0.55rem;
@@ -1187,7 +1151,7 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
   padding: 0.65rem;
   border-radius: 0.85rem;
   background: rgba(0, 0, 0, 0.6);
-  border: 1px solid var(--tg-border);
+  border: 1px solid var(--tg-border, rgba(255, 255, 255, 0.08));
   display: flex;
   flex-direction: column;
   gap: 0.45rem;
@@ -1217,26 +1181,27 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
 }
 
 /* ----------------------------------------------------------------------------
-   9. MODALE UNIVERSALE (SCROLL FLUIDO & TESTO NON TRANCIATO)
+   9. MODALE UNIVERSALE (SCROLL FLUIDO & ISPEZIONE ENTITÀ)
    ---------------------------------------------------------------------------- */
 dialog.modal.modal-middle,
 dialog.modal:not(.modal-bottom) {
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  position: fixed !important;
-  inset: 0 !important;
-  background: rgba(9, 13, 22, 0.85) !important;
-  backdrop-filter: blur(8px) !important;
-  padding: 1rem !important;
-  z-index: 60 !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: fixed;
+  inset: 0;
+  background: rgba(9, 13, 22, 0.85);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  padding: 1rem;
+  z-index: 60;
 }
 dialog.modal:not([open]) {
   display: none !important;
 }
 
 .modal-dossier .dossier-box {
-  background: var(--tg-sec-bg);
+  background: var(--tg-sec-bg, #0F172A);
   border: 1px solid rgba(56, 189, 248, 0.4);
   padding: 1.15rem 1.15rem 1.35rem 1.15rem;
   border-radius: 1.25rem;
@@ -1259,7 +1224,7 @@ dialog.modal:not([open]) {
   align-items: center;
   gap: 0.75rem;
   padding-bottom: 0.45rem;
-  border-bottom: 1px solid var(--tg-border);
+  border-bottom: 1px solid var(--tg-border, rgba(255, 255, 255, 0.08));
   padding-right: 2.75rem;
 }
 .dossier-icon { font-size: 1.65rem; flex-shrink: 0; }
@@ -1281,7 +1246,7 @@ dialog.modal:not([open]) {
   padding: 0.6rem 0.8rem;
   border-radius: 0.75rem;
   background: rgba(0, 0, 0, 0.55);
-  border: 1px solid var(--tg-border);
+  border: 1px solid var(--tg-border, rgba(255, 255, 255, 0.08));
   display: flex;
   flex-direction: column;
   gap: 0.2rem;
@@ -1289,7 +1254,7 @@ dialog.modal:not([open]) {
 .metrics-label {
   font-size: 9px;
   font-weight: 800;
-  color: var(--tg-amber);
+  color: var(--tg-amber, #F59E0B);
   text-transform: uppercase;
   letter-spacing: 0.08em;
 }
@@ -1346,7 +1311,7 @@ dialog.modal:not([open]) {
   font-weight: 900;
   text-transform: uppercase;
   letter-spacing: 0.1em;
-  color: var(--tg-sky);
+  color: var(--tg-sky, #38BDF8);
   margin: 0;
 }
 .dice-result {
@@ -1358,7 +1323,7 @@ dialog.modal:not([open]) {
 }
 .dice-desc {
   font-size: 9.5px;
-  color: var(--tg-text-muted);
+  color: var(--tg-text-muted, #94A3B8);
   margin: 0.2rem 0 0 0;
 }
 
@@ -1366,8 +1331,8 @@ dialog.modal:not([open]) {
    10. I 5 CASSETTI COCKPIT (SCHEDA, ZAINO, EMPORIO, SQUADRA, DOSSIER)
    ---------------------------------------------------------------------------- */
 .drawer-standard-box {
-  background: var(--tg-sec-bg);
-  border: 1px solid var(--tg-border-light);
+  background: var(--tg-sec-bg, #0F172A);
+  border: 1px solid var(--tg-border-light, rgba(255, 255, 255, 0.12));
   padding: 1.15rem 1.25rem 1.65rem 1.25rem;
   border-radius: 1.25rem;
   display: flex;
@@ -1381,7 +1346,7 @@ dialog.modal:not([open]) {
   align-items: center;
   justify-content: space-between;
   padding-bottom: 0.4rem;
-  border-bottom: 1px solid var(--tg-border);
+  border-bottom: 1px solid var(--tg-border, rgba(255, 255, 255, 0.08));
 }
 .drawer-title {
   font-size: 0.82rem;
@@ -1393,7 +1358,7 @@ dialog.modal:not([open]) {
 }
 .drawer-subtitle {
   font-size: 10.5px;
-  color: var(--tg-text-muted);
+  color: var(--tg-text-muted, #94A3B8);
   line-height: 1.45;
 }
 
@@ -1402,14 +1367,14 @@ dialog.modal:not([open]) {
   padding: 0.75rem 0.85rem;
   border-radius: 0.85rem;
   background: rgba(0, 0, 0, 0.4);
-  border: 1px solid var(--tg-border);
+  border: 1px solid var(--tg-border, rgba(255, 255, 255, 0.08));
 }
 .hero-sheet-avatar-box {
   width: 2.6rem;
   height: 2.6rem;
   border-radius: 0.7rem;
   background: #0F172A;
-  border: 1.5px solid var(--tg-sky);
+  border: 1.5px solid var(--tg-sky, #38BDF8);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1425,7 +1390,7 @@ dialog.modal:not([open]) {
 .hero-sheet-class-badge {
   font-size: 9.5px;
   font-weight: 800;
-  color: var(--tg-sky);
+  color: var(--tg-sky, #38BDF8);
   text-transform: uppercase;
   margin-top: 0.1rem;
 }
@@ -1433,7 +1398,7 @@ dialog.modal:not([open]) {
   padding: 0.65rem 0.85rem;
   border-radius: 0.75rem;
   background: rgba(0, 0, 0, 0.55);
-  border: 1px solid var(--tg-border);
+  border: 1px solid var(--tg-border, rgba(255, 255, 255, 0.08));
 }
 .hero-sheet-stats-grid {
   display: grid;
@@ -1444,7 +1409,7 @@ dialog.modal:not([open]) {
   padding: 0.55rem 0.45rem;
   border-radius: 0.75rem;
   background: rgba(0, 0, 0, 0.4);
-  border: 1px solid var(--tg-border);
+  border: 1px solid var(--tg-border, rgba(255, 255, 255, 0.08));
   text-align: center;
   display: flex;
   flex-direction: column;
@@ -1452,16 +1417,16 @@ dialog.modal:not([open]) {
   gap: 0.15rem;
 }
 .stat-icon { font-size: 1rem; }
-.stat-label { font-size: 9px; font-weight: 800; color: var(--tg-text-muted); text-transform: uppercase; }
-.stat-val { font-size: 0.88rem; font-weight: 900; font-family: monospace; color: var(--tg-sky); }
+.stat-label { font-size: 9px; font-weight: 800; color: var(--tg-text-muted, #94A3B8); text-transform: uppercase; }
+.stat-val { font-size: 0.88rem; font-weight: 900; font-family: monospace; color: var(--tg-sky, #38BDF8); }
 .stat-pure { font-size: 8.5px; font-family: monospace; color: #64748B; }
 
 /* 2. Zaino */
 .backpack-slot-card {
   padding: 0.65rem 0.8rem;
   border-radius: 0.75rem;
-  background: var(--tg-surface);
-  border: 1px solid var(--tg-border);
+  background: var(--tg-surface, #111827);
+  border: 1px solid var(--tg-border, rgba(255, 255, 255, 0.08));
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -1480,13 +1445,13 @@ dialog.modal:not([open]) {
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.slot-tag { font-size: 9px; color: var(--tg-text-muted); margin-top: 0.1rem; }
-.slot-tag.active-gear { color: var(--tg-emerald); font-weight: 800; }
+.slot-tag { font-size: 9px; color: var(--tg-text-muted, #94A3B8); margin-top: 0.1rem; }
+.slot-tag.active-gear { color: var(--tg-emerald, #10B981); font-weight: 800; }
 
 /* 3. Emporio Ciccio */
 .emporio-drawer-box {
-  background: var(--tg-sec-bg);
-  border: 1px solid var(--tg-border-light);
+  background: var(--tg-sec-bg, #0F172A);
+  border: 1px solid var(--tg-border-light, rgba(255, 255, 255, 0.12));
   padding: 1.15rem 1.25rem 1.65rem 1.25rem;
   border-radius: 1.25rem;
   display: flex;
@@ -1519,9 +1484,9 @@ dialog.modal:not([open]) {
   .emporio-items-scroll-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 }
 .emporio-item-card {
-  background: var(--tg-surface);
+  background: var(--tg-surface, #111827);
   border-radius: 0.85rem;
-  border: 1px solid var(--tg-border);
+  border: 1px solid var(--tg-border, rgba(255, 255, 255, 0.08));
   padding: 0.65rem 0.75rem;
   display: flex;
   flex-direction: column;
@@ -1567,13 +1532,13 @@ dialog.modal:not([open]) {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.35rem;
   padding-top: 0.35rem;
-  border-top: 1px solid var(--tg-border);
+  border-top: 1px solid var(--tg-border, rgba(255, 255, 255, 0.08));
 }
 .emporio-sell-row {
   padding: 0.6rem 0.75rem;
   border-radius: 0.65rem;
-  background: var(--tg-surface);
-  border: 1px solid var(--tg-border);
+  background: var(--tg-surface, #111827);
+  border: 1px solid var(--tg-border, rgba(255, 255, 255, 0.08));
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -1584,8 +1549,8 @@ dialog.modal:not([open]) {
 .squad-member-card {
   padding: 0.7rem 0.85rem;
   border-radius: 0.75rem;
-  background: var(--tg-surface);
-  border: 1px solid var(--tg-border);
+  background: var(--tg-surface, #111827);
+  border: 1px solid var(--tg-border, rgba(255, 255, 255, 0.08));
   font-size: 0.78rem;
   font-weight: 700;
   display: flex;
@@ -1593,13 +1558,13 @@ dialog.modal:not([open]) {
   justify-content: space-between;
 }
 .squad-member-card.zombie { border-color: rgba(244, 63, 94, 0.35); }
-.badge-human { font-size: 9.5px; font-weight: 800; color: var(--tg-emerald); }
-.badge-zombie { font-size: 9.5px; font-weight: 800; color: var(--tg-rose); }
+.badge-human { font-size: 9.5px; font-weight: 800; color: var(--tg-emerald, #10B981); }
+.badge-zombie { font-size: 9.5px; font-weight: 800; color: var(--tg-rose, #F43F5E); }
 
 .dossier-evidence-card {
   padding: 0.7rem 0.85rem;
   border-radius: 0.75rem;
-  background: var(--tg-surface);
+  background: var(--tg-surface, #111827);
   border: 1px solid rgba(56, 189, 248, 0.3);
   display: flex;
   flex-direction: column;
@@ -1607,7 +1572,7 @@ dialog.modal:not([open]) {
   cursor: pointer;
   transition: background 0.15s ease;
 }
-.dossier-evidence-card:hover { background: var(--tg-surface-hover); }
+.dossier-evidence-card:hover { background: var(--tg-surface-hover, #1F2937); }
 .evidence-header {
   display: flex;
   align-items: center;
@@ -1616,7 +1581,7 @@ dialog.modal:not([open]) {
 .evidence-name {
   font-size: 0.78rem;
   font-weight: 800;
-  color: var(--tg-sky);
+  color: var(--tg-sky, #38BDF8);
 }
 .evidence-desc {
   font-size: 10.5px;
@@ -1626,8 +1591,8 @@ dialog.modal:not([open]) {
 
 /* Modali Secondarie (Banco Cambio & Abbandono) */
 .modal-cambio-box, .abandon-modal-box {
-  background: var(--tg-sec-bg);
-  border: 1px solid var(--tg-border-light);
+  background: var(--tg-sec-bg, #0F172A);
+  border: 1px solid var(--tg-border-light, rgba(255, 255, 255, 0.12));
   padding: 1.25rem 1.35rem 1.5rem 1.35rem;
   border-radius: 1.25rem;
   text-align: center;
