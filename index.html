@@ -868,6 +868,60 @@
     </div>
   </dialog>
 
+  
+  
+  <!-- MODALE JUKEBOX RADIO NOIR -->
+  <dialog id="modal-audio-jukebox" class="modal modal-middle">
+    <div class="modal-box jukebox-modal-box">
+      <button onclick="SoundEngine.closeJukeboxModal()" class="modal-close-btn">✕</button>
+
+      <!-- Testata Ricevitore -->
+      <div class="jukebox-header">
+        <div class="flex items-center space-x-2">
+          <span class="text-xl">📻</span>
+          <div>
+            <h3 class="jukebox-brand">Radio Darsena Syndicate</h3>
+            <span class="jukebox-tag">Frequenze Salmastre • Incompetech Noir</span>
+          </div>
+        </div>
+        <button id="jukebox-btn-mute" onclick="SoundEngine.toggleMute()" class="btn btn-xs btn-success font-bold">
+          🔊 Audio (ON)
+        </button>
+      </div>
+
+      <!-- Display Ricevitore -->
+      <div class="jukebox-display-screen">
+        <div class="flex items-center justify-between">
+          <span class="badge badge-xs badge-info font-black" id="jukebox-current-tag">HUB / NOIR</span>
+          <div class="jukebox-eq-bars" id="jukebox-eq-bars">
+            <span></span><span></span><span></span><span></span><span></span>
+          </div>
+        </div>
+        <div class="mt-2">
+          <h4 class="jukebox-track-title" id="jukebox-current-title">Hard Boiled</h4>
+          <div class="jukebox-track-sub">
+            <span id="jukebox-current-artist">Kevin MacLeod</span> • <span id="jukebox-current-mood" class="text-amber-300">Tromba Noir & Pioggia</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Controlli Riproduzione -->
+      <div class="jukebox-controls-row">
+        <button onclick="SoundEngine.playPrevTrack()" class="btn btn-sm btn-circle btn-ghost text-slate-200" title="Precedente">⏮</button>
+        <button id="jukebox-btn-play" onclick="SoundEngine.togglePlayPause()" class="btn btn-sm btn-primary font-bold flex-1">⏸ Pausa</button>
+        <button onclick="SoundEngine.playNextTrack()" class="btn btn-sm btn-circle btn-ghost text-slate-200" title="Successivo">⏭</button>
+        <button id="jukebox-btn-shuffle" onclick="SoundEngine.toggleShuffle()" class="btn btn-sm btn-circle btn-ghost" title="Shuffle">🔀</button>
+      </div>
+
+      <!-- Playlist Selezionabile -->
+      <div class="space-y-1">
+        <span class="section-kicker">Archivio Frequenze Noir</span>
+        <div class="jukebox-playlist-scroll" id="jukebox-playlist-items"></div>
+      </div>
+
+    </div>
+  </dialog>
+  
   <!-- MODALE ABBANDONO -->
   <dialog id="modal-abandon" class="modal modal-middle">
     <div class="modal-box abandon-modal-box">
