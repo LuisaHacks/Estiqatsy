@@ -43,7 +43,7 @@
     .no-scrollbar::-webkit-scrollbar { display: none; }
     .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
-    /* TESTATE & FOOTER NATIVI TELEGRAM */
+    /* TESTATE E FOOTER NATIVI TELEGRAM */
     .universal-top-bar {
       padding-top: var(--tg-safe-area-inset-top, env(safe-area-inset-top, 0px));
       height: calc(var(--tg-safe-area-inset-top, env(safe-area-inset-top, 0px)) + 50px);
@@ -61,52 +61,45 @@
       backdrop-filter: blur(24px);
       border-top: 1px solid rgba(255, 255, 255, 0.10);
       padding-bottom: max(env(safe-area-inset-bottom, 12px), 12px);
+      height: calc(56px + max(env(safe-area-inset-bottom, 0px), 0px));
     }
 
-    /* INQUADRATURA 3:2 AD ALTA DEFINIZIONE (ABBANDONATO IL 16:9 BASSO) */
+    /* INQUADRATURA 3:2 AD ALTA DEFINIZIONE CON FACE-ANCHORING */
     .cinema-frame-rigid {
       position: relative;
       width: 100%;
-      height: 210px;
+      height: clamp(170px, 26dvh, 230px);
       overflow: hidden;
       background: #0d131f;
       border-top-left-radius: 14px;
       border-top-right-radius: 14px;
     }
-    @media (min-width: 768px) { .cinema-frame-rigid { height: 230px; } }
-    @media (min-width: 1024px) { .cinema-frame-rigid { height: 250px; } }
-    
     .cinema-frame-rigid img {
       width: 100%;
       height: 100%;
       object-fit: cover;
-      object-position: center 25%;
+      object-position: top center !important; /* Centra viso e sguardo dell'eroe */
     }
 
-    /* BANNER CITAZIONE DIEGETICO A SPAZIO FISSO: 72px CALCOLATI */
+    /* BANNER CITAZIONE DIEGETICO SNELLO (NON MANGIA PIÙ IL 40% DELL'IMMAGINE) */
     .watermark-cover-banner {
       position: absolute;
       bottom: 0;
       left: 0;
       right: 0;
-      height: 72px;
-      min-height: 72px;
-      max-height: 72px;
-      background: linear-gradient(180deg, rgba(9, 13, 22, 0.15) 0%, rgba(9, 13, 22, 0.92) 35%, #090D16 100%);
-      backdrop-filter: blur(8px);
-      border-top: 1px solid rgba(255, 255, 255, 0.14);
+      background: linear-gradient(180deg, transparent 0%, rgba(9, 13, 22, 0.88) 35%, #090D16 100%);
+      padding: 4px 10px 5px 10px;
       display: flex;
       flex-direction: column;
       justify-content: center;
-      padding: 6px 10px;
       z-index: 10;
     }
 
     /* SCATOLA NARRATIVA FLESSIBILE PER IL GAMEPLAY */
     .narrative-box-flexible {
       flex: 1 1 auto;
-      min-height: 130px;
-      max-height: 280px;
+      min-height: 110px;
+      max-height: 240px;
       background: rgba(17, 24, 39, 0.75);
       border: 1px solid rgba(255, 255, 255, 0.08);
       border-radius: 0.85rem;
@@ -116,38 +109,37 @@
       line-height: 1.55;
     }
 
-    /* PALCOSCENICO 3D COVER-FLOW (I TAROCCHI DEL SALMASTRO) */
+    /* PALCOSCENICO 3D COVER-FLOW PROPORZIONATO AL VIEWPORT (ZERO SCROLL) */
     .coverflow-stage-wrapper {
       position: relative;
       width: 100%;
-      height: 510px;
+      height: clamp(340px, 50dvh, 460px);
       display: flex;
       align-items: center;
       justify-content: center;
-      perspective: 1300px;
+      perspective: 1200px;
       overflow: hidden;
       touch-action: pan-y;
       user-select: none;
     }
-    @media (min-width: 768px) { .coverflow-stage-wrapper { height: 550px; } }
-    @media (min-width: 1024px) { .coverflow-stage-wrapper { height: 580px; } }
 
     .coverflow-card {
       position: absolute;
-      width: 315px;
-      height: 490px;
-      transition: transform 0.45s cubic-bezier(0.2, 0.8, 0.2, 1), 
-                  opacity 0.45s ease, 
-                  box-shadow 0.45s ease;
+      width: clamp(270px, 78vw, 330px);
+      height: clamp(330px, 48dvh, 440px);
+      transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1), 
+                  opacity 0.4s ease, 
+                  box-shadow 0.4s ease;
       will-change: transform, opacity;
       transform-style: preserve-3d;
       border-radius: 1rem;
       border: 2px solid rgba(255, 255, 255, 0.12);
       cursor: pointer;
       background: #0d131f;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
     }
-    @media (min-width: 768px) { .coverflow-card { width: 340px; height: 530px; } }
-    @media (min-width: 1024px) { .coverflow-card { width: 365px; height: 560px; } }
 
     /* BORDO PERIMETRALE A 360° E GLOW NEON */
     .glow-destra {
@@ -159,7 +151,7 @@
       border: 2px solid #f43f5e !important;
     }
 
-    /* EFFETTI VISIVI */
+    /* EFFETTI TESTO E COMBATTIMENTO */
     .text-glow-amber { text-shadow: 0 0 12px rgba(245, 158, 11, 0.5); }
     .text-glow-rose { text-shadow: 0 0 12px rgba(244, 63, 94, 0.6); }
 
@@ -180,6 +172,35 @@
     .floating-damage {
       animation: floatUpFade 1.2s ease-out forwards;
     }
+
+    /* GESTIONE DINAMICA FOOTER: WIZARD VS COCKPIT DI GIOCO */
+    /* Nel WIZARD: nessuno dei due footer deve rubare spazio */
+    body:has(#view-wizard:not(.hidden)) #main-app-footer,
+    body:has(#view-wizard:not(.hidden)) #main-game-cockpit-footer {
+      display: none !important;
+    }
+
+    /* Nel GAMEPLAY: il footer dell'app viene nascosto, quello del gioco RESTA ATTIVO */
+    body:has(#view-gameplay:not(.hidden)) #main-app-footer {
+      display: none !important;
+    }
+
+    /* MICRO-ARCHITETTURA CHIPS CATEGORIE (ZERO SOVRAPPOSIZIONI O DEFORMAZIONI) */
+    .rpg-category-chip {
+      display: inline-flex !important;
+      align-items: center !important;
+      white-space: nowrap !important;
+      flex: 0 0 auto !important;
+      height: 28px !important;
+      padding: 0 10px !important;
+      font-size: 11px !important;
+      line-height: normal !important;
+    }
+
+    /* PROTEZIONE TASTIERA IOS (PASSO 4 WIZARD) */
+    #wizard-step-name:focus-within .recap-collapsible {
+      display: none !important;
+    }
   </style>
 </head>
 
@@ -197,7 +218,7 @@
     <button id="loading-retry-btn" onclick="location.reload()" class="hidden mt-4 btn btn-sm btn-primary">Riprova</button>
   </div>
 
-  <!-- 2.A TOP BAR GENERALE -->
+  <!-- 2.A TOP BAR GENERALE (PIATTAFORMA) -->
   <header id="main-app-header" class="flex-none z-30 universal-top-bar px-4 flex items-center justify-between relative">
     <div class="w-16 flex items-center text-[10px] text-slate-500 font-mono"></div>
     <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
@@ -239,7 +260,6 @@
       <!-- Card Profilo Desktop con Avatar Iniziale Standardizzato -->
       <div class="bg-surface/90 p-3.5 rounded-2xl border border-white/10 shadow-xl space-y-3">
         <div class="flex items-center space-x-3">
-          <!-- AVATAR INIZIALE UNIFICATO -->
           <div id="user-avatar-desk" class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-sky-600 via-indigo-600 to-slate-900 ring-2 ring-sky-400/40 flex items-center justify-center font-black text-xl text-white shadow-lg flex-shrink-0">
             F
           </div>
@@ -247,7 +267,7 @@
             <div class="text-[9px] font-bold text-slate-400 tracking-[0.18em] uppercase">AGENTE SYNDICATE</div>
             <div id="user-name-desk" class="text-sm font-black text-white truncate leading-tight mt-0.5">Avventuriero</div>
             <div class="mt-1">
-              <button onclick="AppEngine.openPlansCatalogModal()" class="inline-flex items-center space-x-1.5 px-2.5 py-0.5 rounded-full bg-sky-500/15 hover:bg-sky-500/25 border border-sky-400/30 text-[9px] font-black text-sky-300 uppercase tracking-wider transition-all cursor-pointer shadow-sm">
+              <button onclick="AppModules.openPlansCatalogModal()" class="inline-flex items-center space-x-1.5 px-2.5 py-0.5 rounded-full bg-sky-500/15 hover:bg-sky-500/25 border border-sky-400/30 text-[9px] font-black text-sky-300 uppercase tracking-wider transition-all cursor-pointer shadow-sm">
                 <span>👑</span> <span id="user-plan-desk">PIANO FREE</span> <span class="text-sky-300/50 font-mono">›</span>
               </button>
             </div>
@@ -294,24 +314,24 @@
           <i data-lucide="volume-2" class="w-4 h-4"></i>
           <span id="audio-status-desk" class="badge badge-xs badge-success text-[8px] font-black">ON</span>
         </button>
-        <span class="text-[10px] text-slate-500 font-mono">v4.8 Widescreen</span>
+        <span class="text-[10px] text-slate-500 font-mono">v4.9 Modular</span>
       </div>
     </aside>
 
-    <!-- AREA CENTRALE FLUIDA (SENZA BLOCCHI STRETTI MAX-W-2XL) -->
+    <!-- AREA CENTRALE FLUIDA -->
     <div class="flex-1 flex flex-col h-full min-w-0 overflow-hidden relative">
       <main class="flex-1 overflow-y-auto overflow-x-hidden relative" id="app-main-scroll">
-        <div class="p-3.5 md:p-6 lg:p-8 max-w-[1500px] mx-auto space-y-6">
+        <div class="p-3.5 md:p-6 lg:p-8 max-w-[1500px] mx-auto space-y-5">
 
           <!-- =============================================================== -->
           <!-- VISTA 1: DASHBOARD HOME                                         -->
           <!-- =============================================================== -->
-          <section id="view-home" class="space-y-6 app-screen">
+          <section id="view-home" class="space-y-5 app-screen">
             <div class="rounded-3xl p-6 md:p-8 bg-gradient-to-br from-slate-900 via-slate-900 to-indigo-950 border border-white/10 shadow-2xl space-y-3.5 relative overflow-hidden">
               <div class="flex items-center space-x-2.5 flex-wrap gap-y-2">
                 <span class="badge badge-sm badge-outline border-sky-400 text-sky-400 font-bold uppercase text-[9px] md:text-[10px]">Piattaforma Ufficiale</span>
                 <span class="text-xs md:text-sm font-bold text-emerald-400">⭐ <span id="home-rank-points">0</span> Punti Fedeltà</span>
-                <button onclick="AppEngine.openPlansCatalogModal()" class="badge badge-sm badge-info font-black uppercase text-[9px] md:text-[10px] py-2 px-3 shadow-md hover:scale-105 active:scale-95 transition-all cursor-pointer flex items-center space-x-1.5">
+                <button onclick="AppModules.openPlansCatalogModal()" class="badge badge-sm badge-info font-black uppercase text-[9px] md:text-[10px] py-2 px-3 shadow-md hover:scale-105 active:scale-95 transition-all cursor-pointer flex items-center space-x-1.5">
                   <span>👑</span> <span id="home-plan-badge">PIANO FREE</span> <span class="text-white/60">›</span>
                 </button>
               </div>
@@ -359,7 +379,7 @@
                 <i data-lucide="play" class="w-4 h-4 text-slate-500 group-hover:text-sky-400 transition-colors"></i>
               </div>
 
-              <div onclick="AppEngine.openVaultSection()" class="bg-surface/80 hover:bg-surface active:scale-[0.98] transition-all p-3.5 md:p-4 rounded-2xl border border-white/5 cursor-pointer flex justify-between items-start group shadow-md">
+              <div onclick="AppModules.openVaultSection()" class="bg-surface/80 hover:bg-surface active:scale-[0.98] transition-all p-3.5 md:p-4 rounded-2xl border border-white/5 cursor-pointer flex justify-between items-start group shadow-md">
                 <div>
                   <div class="text-[9px] md:text-[11px] uppercase font-bold text-slate-400 tracking-wider">Download Caveau</div>
                   <div class="text-lg md:text-2xl font-black text-purple-400 tabular-nums mt-1" id="home-purchases-count">0</div>
@@ -383,7 +403,7 @@
           <!-- =============================================================== -->
           <!-- VISTA 2: CATALOGO GIOCHI NOIR RPG                               -->
           <!-- =============================================================== -->
-          <section id="view-hub" class="space-y-6 hidden app-screen max-w-5xl mx-auto">
+          <section id="view-hub" class="space-y-5 hidden app-screen max-w-5xl mx-auto">
             <div class="flex items-center justify-between pb-2 border-b border-white/10">
               <div>
                 <span class="text-[10px] font-bold uppercase tracking-widest text-sky-400">CATALOGO SAGHE</span>
@@ -398,7 +418,6 @@
           <section id="subview-game-detail" class="space-y-4 hidden app-screen max-w-3xl mx-auto">
             <div class="cinema-frame-rigid shadow-xl">
               <img id="hub-image" src="" alt="Copertina Gioco">
-              <!-- Banner fisso 72px a due livelli verticali -->
               <div class="watermark-cover-banner">
                 <div class="text-[10px] text-slate-200 italic leading-snug line-clamp-2 w-full" id="hub-quote"></div>
                 <div class="text-[8.5px] font-bold text-amber-400 uppercase tracking-wider text-right w-full mt-0.5" id="hub-author"></div>
@@ -415,12 +434,12 @@
           </section>
 
           <!-- =============================================================== -->
-          <!-- VISTA 3: WIZARD A 4 PASSI (PROPORZIONATO & COVER-FLOW 360°)     -->
+          <!-- VISTA 3: WIZARD CREAZIONE EROE (OTTIMIZZATO ZERO-SCROLL)        -->
           <!-- =============================================================== -->
-          <section id="view-wizard" class="space-y-4 hidden app-screen max-w-5xl mx-auto pb-20 sm:pb-6">
+          <section id="view-wizard" class="space-y-3 hidden app-screen max-w-5xl mx-auto w-full">
             
-            <!-- Breadcrumb Navigation Bar a 4 Passi (Protetto contro collisioni) -->
-            <div class="mt-1 sm:mt-0 flex items-center justify-between px-3.5 py-2.5 rounded-xl bg-black/60 border border-white/10 text-[10.5px] sm:text-xs font-mono shadow-md">
+            <!-- Breadcrumb Navigation Bar a 4 Passi (Compatta) -->
+            <div class="flex items-center justify-between px-3 py-1.5 rounded-xl bg-black/60 border border-white/10 text-[10px] sm:text-xs font-mono shadow-md">
               <span id="wiz-step-ind-1" class="font-black text-sky-400">1. Archetipo</span>
               <span class="text-slate-600">›</span>
               <span id="wiz-step-ind-2" class="text-slate-500">2. Talenti</span>
@@ -430,22 +449,18 @@
               <span id="wiz-step-ind-4" class="text-slate-500">4. Battesimo</span>
             </div>
 
-            <!-- PASSO 1: I TAROCCHI DEL SALMASTRO (COVER-FLOW CON BORDO A 360°) -->
-            <div id="wizard-step-class" class="space-y-3">
+            <!-- PASSO 1: I TAROCCHI DEL SALMASTRO (COVER-FLOW CON FACE ANCHORING) -->
+            <div id="wizard-step-class" class="space-y-2">
               <div class="flex items-center justify-between pb-1 border-b border-white/5">
                 <div>
-                  <span class="text-[10px] font-bold uppercase text-amber-400 tracking-wider">Passo 1 di 4</span>
-                  <h3 class="text-sm md:text-base font-black text-white">Scegli la tua Classe Costiera</h3>
+                  <span class="text-[9px] font-bold uppercase text-amber-400 tracking-wider">Passo 1 di 4</span>
+                  <h3 class="text-xs sm:text-sm font-black text-white leading-none">Scegli la tua Classe Costiera</h3>
                 </div>
-                <span class="badge badge-sm badge-info font-mono font-bold text-[9px]">Episodio 0</span>
+                <span class="badge badge-xs badge-info font-mono font-bold text-[8.5px]">Episodio 0</span>
               </div>
-              <p class="text-xs text-slate-300 leading-relaxed">
-                Trascina o usa le frecce per sfogliare i tarocchi: <b class="text-sky-300">Destra</b> (+1 Danno vs Mazzu/Ideologi) o <b class="text-rose-300">Sinistra</b> (+1 Danno vs Camorristi/Burocrati).
-              </p>
               
               <!-- Palcoscenico 3D Cover Flow -->
-              <div class="relative py-2">
-                <!-- Frecce Laterali Desktop/Tablet -->
+              <div class="relative py-1">
                 <button onclick="GameEngine.coverflowPrev()" class="hidden sm:flex absolute left-4 top-1/2 -translate-y-1/2 z-30 btn btn-circle btn-sm bg-black/80 border border-white/20 text-white hover:bg-sky-500 hover:border-sky-400 transition-all shadow-2xl">
                   ❮
                 </button>
@@ -453,126 +468,120 @@
                   ❯
                 </button>
 
-                <!-- Stage 3D Container -->
                 <div class="coverflow-stage-wrapper" id="wizard-classes-stage"></div>
-
-                <!-- Indicatori a Pallini -->
-                <div class="flex justify-center items-center space-x-2 mt-3" id="wizard-coverflow-dots"></div>
+                <div class="flex justify-center items-center space-x-2 mt-2" id="wizard-coverflow-dots"></div>
               </div>
               
-              <div class="pt-2">
-                <button id="wizard-step1-confirm-btn" onclick="GameEngine.wizardConfirmStep1()" class="btn btn-md btn-primary w-full font-bold text-xs sm:text-sm tracking-wider uppercase shadow-xl shadow-sky-600/30">
-                  ➡️ Conferma Archetipo e Procedi ai Talenti (Passo 2/4)
+              <div class="pt-1">
+                <button id="wizard-step1-confirm-btn" onclick="GameEngine.wizardConfirmStep1()" class="btn btn-sm sm:btn-md btn-primary w-full font-bold text-xs sm:text-sm tracking-wider uppercase shadow-xl shadow-sky-600/30">
+                  ➡️ Conferma Archetipo (Passo 2/4)
                 </button>
               </div>
             </div>
 
-            <!-- PASSO 2: TALENTI CLANDESTINI (ISPIRATI ALLO STESSO LINGUAGGIO VISIVO) -->
-            <div id="wizard-step-abilities" class="space-y-3 hidden">
+            <!-- PASSO 2: TALENTI CLANDESTINI -->
+            <div id="wizard-step-abilities" class="space-y-2.5 hidden">
               <div class="flex items-center justify-between pb-1 border-b border-white/5">
                 <div>
-                  <span class="text-[10px] font-bold uppercase text-amber-400 tracking-wider">Passo 2 di 4</span>
-                  <h3 class="text-sm md:text-base font-black text-white">Apprendi Abilità & Talenti</h3>
+                  <span class="text-[9px] font-bold uppercase text-amber-400 tracking-wider">Passo 2 di 4</span>
+                  <h3 class="text-xs sm:text-sm font-black text-white leading-none">Apprendi Abilità & Talenti</h3>
                 </div>
-                <span class="badge badge-sm badge-info font-mono font-bold text-[10px]" id="wizard-px-budget">✨ 100 PX Disponibili</span>
+                <span class="badge badge-xs badge-info font-mono font-bold text-[9px]" id="wizard-px-budget">✨ 100 PX Disponibili</span>
               </div>
-              <p class="text-xs text-slate-300 leading-relaxed">
+              <p class="text-[11px] text-slate-300 leading-snug">
                 Tocca un talento per aprirne la <b>Scheda Dettagliata</b> con le proprietà belliche decodificate:
               </p>
               
-              <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3" id="wizard-abilities-grid"></div>
+              <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 max-h-[50dvh] overflow-y-auto pr-1" id="wizard-abilities-grid"></div>
               
-              <div class="flex gap-2 pt-3">
-                <button onclick="GameEngine.wizardPrevStep(1)" class="btn btn-sm sm:btn-md btn-ghost text-xs">🔙 Modifica Classe</button>
-                <button onclick="GameEngine.wizardConfirmStep2()" class="btn btn-sm sm:btn-md btn-primary flex-1 font-bold text-xs sm:text-sm shadow-lg shadow-sky-600/30">
+              <div class="flex gap-2 pt-2">
+                <button onclick="GameEngine.wizardPrevStep(1)" class="btn btn-xs sm:btn-sm btn-ghost text-xs">🔙 Modifica Classe</button>
+                <button onclick="GameEngine.wizardConfirmStep2()" class="btn btn-xs sm:btn-sm btn-primary flex-1 font-bold text-xs shadow-lg shadow-sky-600/30">
                   ➡️ Vai all'Emporio di Ciccio (Passo 3/4)
                 </button>
               </div>
             </div>
 
-            <!-- PASSO 3: MERCATO NERO DI CICCIO (SOLO MERCI RPG REALI) -->
-            <div id="wizard-step-shop" class="space-y-3 hidden">
+            <!-- PASSO 3: MERCATO NERO DI CICCIO (MERCI RPG) -->
+            <div id="wizard-step-shop" class="space-y-2.5 hidden">
               <div class="flex items-center justify-between pb-1 border-b border-white/5">
                 <div>
-                  <span class="text-[10px] font-bold uppercase text-amber-400 tracking-wider">Passo 3 di 4</span>
-                  <h3 class="text-sm md:text-base font-black text-white">Fai Rifornimento da Ciccio</h3>
+                  <span class="text-[9px] font-bold uppercase text-amber-400 tracking-wider">Passo 3 di 4</span>
+                  <h3 class="text-xs sm:text-sm font-black text-white leading-none">Fai Rifornimento da Ciccio</h3>
                 </div>
                 <div class="flex items-center space-x-2">
-                  <span class="badge badge-sm bg-black/70 border border-amber-400/40 text-amber-300 font-mono font-bold text-[10px]" id="wizard-shop-gold-display">💰 40 🟡</span>
-                  <button onclick="GameEngine.openCambioModal()" class="btn btn-xs btn-warning font-black text-[9px] shadow-sm">💱 Cambio 🪙</button>
+                  <span class="badge badge-xs bg-black/70 border border-amber-400/40 text-amber-300 font-mono font-bold text-[9px]" id="wizard-shop-gold-display">💰 40 🟡</span>
+                  <button onclick="GameEngine.openCambioModal()" class="btn btn-xs btn-warning font-black text-[8.5px] shadow-sm">💱 Cambio 🪙</button>
                 </div>
               </div>
-              <p class="text-xs text-slate-300 leading-relaxed">
-                Spendi il tuo oro iniziale per acquistare arnesi da scasso, armi o sostanze prima di scendere nella mota:
-              </p>
 
-              <!-- Chips Reparti -->
+              <!-- Chips Reparti Pulite con Momentum Scroll -->
               <div class="flex space-x-1.5 overflow-x-auto no-scrollbar pb-1 text-[10px]" id="wizard-shop-category-chips">
-                <button onclick="GameEngine.filterWizardShop('ARMI')" class="badge badge-sm badge-info font-bold cursor-pointer">🗡️ Armi</button>
-                <button onclick="GameEngine.filterWizardShop('VEICOLI')" class="badge badge-sm badge-ghost font-bold cursor-pointer">🛴 Veicoli</button>
-                <button onclick="GameEngine.filterWizardShop('STRUMENTI')" class="badge badge-sm badge-ghost font-bold cursor-pointer">🔧 Strumenti</button>
-                <button onclick="GameEngine.filterWizardShop('CURE')" class="badge badge-sm badge-ghost font-bold cursor-pointer">🍱 Cure</button>
-                <button onclick="GameEngine.filterWizardShop('DROGHE')" class="badge badge-sm badge-ghost font-bold cursor-pointer">💊 Droghe</button>
-                <button onclick="GameEngine.filterWizardShop('TALISMANI')" class="badge badge-sm badge-ghost font-bold cursor-pointer">📿 Talismani</button>
+                <button onclick="GameEngine.filterWizardShop('ARMI')" class="rpg-category-chip badge badge-info font-bold cursor-pointer">🗡️ Armi</button>
+                <button onclick="GameEngine.filterWizardShop('VEICOLI')" class="rpg-category-chip badge badge-ghost font-bold cursor-pointer">🛴 Veicoli</button>
+                <button onclick="GameEngine.filterWizardShop('STRUMENTI')" class="rpg-category-chip badge badge-ghost font-bold cursor-pointer">🔧 Strumenti</button>
+                <button onclick="GameEngine.filterWizardShop('CURE')" class="rpg-category-chip badge badge-ghost font-bold cursor-pointer">🍱 Cure</button>
+                <button onclick="GameEngine.filterWizardShop('DROGHE')" class="rpg-category-chip badge badge-ghost font-bold cursor-pointer">💊 Droghe</button>
+                <button onclick="GameEngine.filterWizardShop('TALISMANI')" class="rpg-category-chip badge badge-ghost font-bold cursor-pointer">📿 Talismani</button>
               </div>
 
-              <!-- Griglia Articoli -->
-              <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 max-h-80 overflow-y-auto pr-1" id="wizard-shop-grid"></div>
+              <!-- Griglia Articoli Emporio -->
+              <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2.5 max-h-[46dvh] overflow-y-auto pr-1" id="wizard-shop-grid"></div>
 
               <!-- Sommario Dotazione Zaino -->
-              <div id="wizard-shop-backpack-summary" class="p-3 rounded-xl bg-black/60 border border-white/5 text-xs flex items-center justify-between shadow-inner">
-                <span class="text-slate-300">🎒 Zaino di Partenza: <b id="wizard-shop-backpack-count" class="text-white">0 oggetti</b></span>
+              <div id="wizard-shop-backpack-summary" class="p-2.5 rounded-xl bg-black/60 border border-white/5 text-xs flex items-center justify-between shadow-inner">
+                <span class="text-slate-300 text-[11px]">🎒 Zaino di Partenza: <b id="wizard-shop-backpack-count" class="text-white">0 oggetti</b></span>
                 <button onclick="GameEngine.resetWizardShop()" class="btn btn-xs btn-ghost text-rose-400 text-[10px]">🔄 Ripristina Oro</button>
               </div>
 
-              <div class="flex gap-2 pt-3">
-                <button onclick="GameEngine.wizardPrevStep(2)" class="btn btn-sm sm:btn-md btn-ghost text-xs">🔙 Modifica Abilità</button>
-                <button onclick="GameEngine.wizardNextStep(4)" class="btn btn-sm sm:btn-md btn-primary flex-1 font-bold text-xs sm:text-sm shadow-lg shadow-sky-600/30">
+              <div class="flex gap-2 pt-2">
+                <button onclick="GameEngine.wizardPrevStep(2)" class="btn btn-xs sm:btn-sm btn-ghost text-xs">🔙 Modifica Abilità</button>
+                <button onclick="GameEngine.wizardNextStep(4)" class="btn btn-xs sm:btn-sm btn-primary flex-1 font-bold text-xs shadow-lg shadow-sky-600/30">
                   ➡️ Nome Eroe & Start (Passo 4/4)
                 </button>
               </div>
             </div>
 
-            <!-- PASSO 4: BATTESIMO DELL'EROE (PROTETTO CONTRO TASTIERA IOS) -->
-            <div id="wizard-step-name" class="space-y-3 hidden pb-36 sm:pb-6">
+            <!-- PASSO 4: BATTESIMO DELL'EROE (KEYBOARD FOCUS SHIELD) -->
+            <div id="wizard-step-name" class="space-y-2.5 hidden pb-6">
               <div class="flex items-center justify-between pb-1 border-b border-white/5">
                 <div>
-                  <span class="text-[10px] font-bold uppercase text-amber-400 tracking-wider">Passo 4 di 4</span>
-                  <h3 class="text-sm md:text-base font-black text-white">Battesimo dell'Antieroe</h3>
+                  <span class="text-[9px] font-bold uppercase text-amber-400 tracking-wider">Passo 4 di 4</span>
+                  <h3 class="text-xs sm:text-sm font-black text-white leading-none">Battesimo dell'Antieroe</h3>
                 </div>
                 <span class="text-xs font-black text-amber-400 font-mono" id="wizard-class-recap">Classe</span>
               </div>
 
               <!-- Card Riepilogo Profilo -->
-              <div class="bg-surface p-4 sm:p-5 rounded-2xl border border-white/10 shadow-2xl space-y-3.5 text-xs" id="wizard-final-recap-box">
-                <div class="flex items-center justify-between border-b border-white/5 pb-2.5">
-                  <div class="flex items-center space-x-3">
-                    <span class="text-3xl" id="wizard-recap-avatar">🥋</span>
+              <div class="bg-surface p-3.5 sm:p-4 rounded-2xl border border-white/10 shadow-xl space-y-2.5 text-xs wizard-compact-on-focus" id="wizard-final-recap-box">
+                <div class="flex items-center justify-between border-b border-white/5 pb-2">
+                  <div class="flex items-center space-x-2.5">
+                    <span class="text-2xl" id="wizard-recap-avatar">🥋</span>
                     <div>
-                      <div class="font-black text-white text-base" id="wizard-recap-classname">Archetipo</div>
-                      <div class="text-[9.5px] text-sky-400 font-bold uppercase tracking-wider" id="wizard-recap-faction">Destra (+1 Danno)</div>
+                      <div class="font-black text-white text-sm" id="wizard-recap-classname">Archetipo</div>
+                      <div class="text-[9px] text-sky-400 font-bold uppercase tracking-wider" id="wizard-recap-faction">Destra (+1 Danno)</div>
                     </div>
                   </div>
                   <div class="text-right font-mono">
-                    <div class="text-rose-400 font-bold text-sm" id="wizard-recap-pv">❤️ 25 PV</div>
-                    <div class="text-amber-300 text-xs" id="wizard-recap-gold">🟡 40 Oro</div>
+                    <div class="text-rose-400 font-bold text-xs" id="wizard-recap-pv">❤️ 25 PV</div>
+                    <div class="text-amber-300 text-[11px]" id="wizard-recap-gold">🟡 40 Oro</div>
                   </div>
                 </div>
 
-                <div class="space-y-2 text-[11.5px] text-slate-300">
-                  <div>⚡ <b>Talenti Appresi:</b> <span id="wizard-recap-abilities" class="text-slate-400 italic">Nessuno</span></div>
-                  <div>🎒 <b>Dotazione di Partenza:</b> <span id="wizard-recap-inventory" class="text-slate-400 italic">Caricamento...</span></div>
+                <div class="space-y-1.5 text-[11px] text-slate-300 recap-collapsible">
+                  <div>⚡ <b>Talenti:</b> <span id="wizard-recap-abilities" class="text-slate-400 italic">Nessuno</span></div>
+                  <div>🎒 <b>Dotazione:</b> <span id="wizard-recap-inventory" class="text-slate-400 italic">Caricamento...</span></div>
                 </div>
 
-                <div class="pt-2.5 border-t border-white/5 space-y-1.5">
-                  <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Nome dell'Eroe nel Syndicate</label>
-                  <input type="text" id="wizard-name-input" class="input input-sm sm:input-md input-bordered w-full text-xs sm:text-sm text-white bg-black/50 focus:border-sky-500" placeholder="Es. Falco della Darsena" enterkeyhint="done">
-                  <button onclick="GameEngine.wizardUseTelegramName()" class="btn btn-xs btn-outline border-white/20 w-full text-[10.5px] mt-1.5">Usa il tuo nome Telegram</button>
+                <div class="pt-2 border-t border-white/5 space-y-1.5">
+                  <label class="text-[9.5px] font-bold text-slate-400 uppercase tracking-wider block">Nome dell'Eroe nel Syndicate</label>
+                  <input type="text" id="wizard-name-input" class="input input-sm input-bordered w-full text-xs text-white bg-black/50 focus:border-sky-500" placeholder="Es. Falco della Darsena" enterkeyhint="done">
+                  <button onclick="GameEngine.wizardUseTelegramName()" class="btn btn-xs btn-outline border-white/20 w-full text-[10px] mt-1">Usa il tuo nome Telegram</button>
                 </div>
               </div>
 
-              <div class="flex gap-2 pt-3">
-                <button onclick="GameEngine.wizardPrevStep(3)" class="btn btn-sm sm:btn-md btn-ghost text-xs">🔙 Modifica Emporio</button>
+              <div class="flex gap-2 pt-2">
+                <button onclick="GameEngine.wizardPrevStep(3)" class="btn btn-xs sm:btn-sm btn-ghost text-xs">🔙 Modifica Emporio</button>
                 <button id="wizard-finalize-btn" onclick="GameEngine.wizardFinalizeHero()" class="btn btn-sm sm:btn-md btn-primary flex-1 font-black shadow-xl shadow-sky-600/40 text-xs sm:text-sm tracking-wider uppercase">
                   🚀 ENTRA IN GIOCO ORA
                 </button>
@@ -583,62 +592,61 @@
           <!-- =============================================================== -->
           <!-- VISTA 4: SCENA DI GIOCO & COCKPIT NARRATIVO                     -->
           <!-- =============================================================== -->
-          <section id="view-gameplay" class="flex flex-col justify-between space-y-2.5 hidden app-screen max-w-3xl mx-auto w-full relative">
+          <section id="view-gameplay" class="flex flex-col justify-between space-y-2.5 hidden app-screen max-w-3xl mx-auto w-full relative pb-2">
             
             <!-- HUD Compatto Eroe -->
-            <div class="flex-none bg-surface/90 px-3.5 py-2 rounded-xl border border-white/10 shadow-md flex items-center justify-between text-xs h-12">
+            <div class="flex-none bg-surface/90 px-3.5 py-2 rounded-xl border border-white/10 shadow-md flex items-center justify-between text-xs h-11">
               <div class="flex items-center space-x-2.5">
                 <span class="text-xl" id="kpi-hero-avatar">🥋</span>
                 <div>
-                  <div class="font-black text-white leading-none truncate max-w-[100px] sm:max-w-[140px]" id="kpi-hero-name">Eroe</div>
-                  <div class="text-[9.5px] font-mono text-amber-300 mt-0.5"><span id="kpi-hero-gold">40</span> 🟡</div>
+                  <div class="font-black text-white leading-none truncate max-w-[95px] sm:max-w-[140px]" id="kpi-hero-name">Eroe</div>
+                  <div class="text-[9px] font-mono text-amber-300 mt-0.5"><span id="kpi-hero-gold">40</span> 🟡</div>
                 </div>
               </div>
 
               <!-- Barra PV -->
               <div class="w-28 sm:w-36 space-y-0.5">
-                <div class="flex justify-between text-[9px] font-mono text-slate-300">
+                <div class="flex justify-between text-[8.5px] font-mono text-slate-300">
                   <span>SALUTE</span> <span id="kpi-hero-pv-text" class="font-bold">25/25</span>
                 </div>
                 <progress id="kpi-hero-pv-bar" class="progress progress-error w-full h-1.5" value="25" max="25"></progress>
               </div>
 
               <!-- Modificatori D20 -->
-              <div class="flex space-x-1 font-mono text-[9px]">
+              <div class="flex space-x-1 font-mono text-[8.5px]">
                 <span class="bg-black/50 px-1.5 py-0.5 rounded border border-white/5" title="Forza">🥊 <b id="kpi-mod-for">+0</b></span>
                 <span class="bg-black/50 px-1.5 py-0.5 rounded border border-white/5" title="Destrezza">🤸 <b id="kpi-mod-des">+0</b></span>
                 <span class="bg-black/50 px-1.5 py-0.5 rounded border border-white/5" title="Intelligenza">🧠 <b id="kpi-mod-int">+0</b></span>
               </div>
             </div>
 
-            <!-- Inquadratura Cinema con Banner Citazione Fisso 72px -->
+            <!-- Inquadratura Cinema con Banner Citazione Fisso -->
             <div class="flex-none cinema-frame-rigid shadow-xl border border-white/5 relative">
               <img id="scene-image" src="" alt="Scena di Gioco">
               <span id="scene-type-badge" class="badge badge-xs badge-info absolute top-2.5 left-2.5 text-[8px] font-black uppercase shadow">SNODO</span>
               <div id="floating-damage-box" class="absolute inset-0 pointer-events-none z-20 flex items-center justify-center"></div>
 
-              <!-- BANNER DIEGETICO A SPAZIO FISSO: non si restringe mai -->
               <div class="watermark-cover-banner" id="scene-watermark-banner">
-                <div class="text-[10px] text-slate-200 italic leading-snug line-clamp-2 w-full" id="scene-quote"></div>
-                <div class="text-[8.5px] font-bold text-amber-400 uppercase tracking-wider text-right w-full mt-0.5" id="scene-author"></div>
+                <div class="text-[9.5px] text-slate-200 italic leading-snug line-clamp-2 w-full" id="scene-quote"></div>
+                <div class="text-[8px] font-bold text-amber-400 uppercase tracking-wider text-right w-full mt-0.5" id="scene-author"></div>
               </div>
             </div>
 
-            <!-- SCATOLA NARRATIVA FLESSIBILE (Zero Scroll Forzato) -->
+            <!-- Scatola Narrativa Flessibile -->
             <div class="narrative-box-flexible no-scrollbar shadow-inner space-y-1">
-              <div class="font-black text-white uppercase text-[10.5px] tracking-wider" id="scene-title">Titolo Snodo</div>
-              <p class="text-slate-200" id="scene-text">Caricamento narrazione...</p>
+              <div class="font-black text-white uppercase text-[10px] tracking-wider" id="scene-title">Titolo Snodo</div>
+              <p class="text-slate-200 text-[11.5px]" id="scene-text">Caricamento narrazione...</p>
             </div>
 
             <!-- Area Azioni Tattiche Ancorata in Basso -->
-            <div id="scene-actions-container" class="flex-none space-y-1.5 pt-0.5 min-h-[48px]"></div>
+            <div id="scene-actions-container" class="flex-none space-y-1.5 pt-0.5 min-h-[44px]"></div>
           </section>
 
           <!-- VISTA 5: BOTTEGA (E-COMMERCE REALE) -->
           <section id="view-shop" class="space-y-4 hidden app-screen">
             <div class="relative w-full">
               <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
-              <input type="text" id="shop-search-input" oninput="AppEngine.filterShop()" placeholder="Cerca nella bottega..." class="w-full pl-10 pr-4 py-2.5 rounded-xl bg-surface border border-white/5 text-xs md:text-sm text-white placeholder-slate-500 focus:outline-none focus:border-sky-500">
+              <input type="text" id="shop-search-input" oninput="AppModules.filterShop()" placeholder="Cerca nella bottega..." class="w-full pl-10 pr-4 py-2.5 rounded-xl bg-surface border border-white/5 text-xs md:text-sm text-white placeholder-slate-500 focus:outline-none focus:border-sky-500">
             </div>
             <div class="flex space-x-2 overflow-x-auto pb-1 no-scrollbar" id="shop-category-chips"></div>
             <div id="shop-products-grid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4"></div>
@@ -670,7 +678,7 @@
           <section id="view-recipes" class="space-y-4 hidden app-screen">
             <div class="relative w-full">
               <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
-              <input type="text" id="recipes-search-input" oninput="AppEngine.filterRecipes()" placeholder="Cerca cocktail o piatti..." class="w-full pl-10 pr-4 py-2.5 rounded-xl bg-surface border border-white/5 text-xs md:text-sm text-white placeholder-slate-500 focus:outline-none focus:border-sky-500">
+              <input type="text" id="recipes-search-input" oninput="AppModules.filterRecipes()" placeholder="Cerca cocktail o piatti..." class="w-full pl-10 pr-4 py-2.5 rounded-xl bg-surface border border-white/5 text-xs md:text-sm text-white placeholder-slate-500 focus:outline-none focus:border-sky-500">
             </div>
             <div class="flex space-x-2 overflow-x-auto pb-1 no-scrollbar" id="recipes-category-chips"></div>
             <div id="recipes-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4"></div>
@@ -703,10 +711,9 @@
           </section>
 
           <!-- VISTA 7: PROFILO UTENTE -->
-          <section id="view-profile" class="space-y-6 hidden app-screen">
+          <section id="view-profile" class="space-y-5 hidden app-screen">
             <div class="rounded-3xl p-6 bg-gradient-to-tr from-slate-900 via-indigo-950 to-slate-900 border border-white/10 shadow-xl flex items-center justify-between">
               <div class="flex items-center space-x-4">
-                <!-- AVATAR INIZIALE PROFILO -->
                 <div class="w-14 h-14 rounded-2xl bg-gradient-to-tr from-sky-600 via-indigo-600 to-slate-900 ring-2 ring-sky-400/40 flex items-center justify-center font-black text-2xl text-white shadow-lg" id="profile-card-avatar">F</div>
                 <div>
                   <h3 class="text-base md:text-lg font-black text-white" id="profile-card-name">Nome Utente</h3>
@@ -731,7 +738,7 @@
             </div>
 
             <div class="grid grid-cols-2 gap-3">
-              <button onclick="AppEngine.openPlansCatalogModal()" class="p-3.5 rounded-2xl bg-surface/90 hover:bg-surface border border-sky-500/30 flex items-center justify-between group active:scale-[0.98] transition-all shadow-md">
+              <button onclick="AppModules.openPlansCatalogModal()" class="p-3.5 rounded-2xl bg-surface/90 hover:bg-surface border border-sky-500/30 flex items-center justify-between group active:scale-[0.98] transition-all shadow-md">
                 <div class="flex items-center space-x-2.5">
                   <span class="text-xl">👑</span>
                   <div class="text-left">
@@ -742,7 +749,7 @@
                 <span class="badge badge-xs badge-info font-black text-[8px]">INFO</span>
               </button>
 
-              <button onclick="AppEngine.openVaultSection()" class="p-3.5 rounded-2xl bg-surface/90 hover:bg-surface border border-purple-500/30 flex items-center justify-between group active:scale-[0.98] transition-all shadow-md">
+              <button onclick="AppModules.openVaultSection()" class="p-3.5 rounded-2xl bg-surface/90 hover:bg-surface border border-purple-500/30 flex items-center justify-between group active:scale-[0.98] transition-all shadow-md">
                 <div class="flex items-center space-x-2.5">
                   <span class="text-xl">📥</span>
                   <div class="text-left">
@@ -768,7 +775,7 @@
                   <i data-lucide="receipt" class="w-4 h-4 text-sky-400"></i>
                   <span>Ultime Transazioni</span>
                 </h3>
-                <button onclick="AppEngine.syncTransactions(true)" class="btn btn-ghost btn-xs text-sky-400">Aggiorna</button>
+                <button onclick="AppModules.syncTransactions(true)" class="btn btn-ghost btn-xs text-sky-400">Aggiorna</button>
               </div>
               <div id="profile-transactions-container" class="space-y-2 text-xs md:text-sm divide-y divide-white/5"></div>
             </div>
@@ -777,8 +784,8 @@
         </div>
       </main>
 
-      <!-- 4.A FOOTER MOBILE: APP -->
-      <footer id="main-app-footer" class="md:hidden flex-none z-30 glass-footer flex justify-around items-center pt-2.5 pb-6 px-1">
+      <!-- 4.A FOOTER MOBILE: PIATTAFORMA (HOME, BOTTEGA, RICETTE, PROFILO) -->
+      <footer id="main-app-footer" class="md:hidden flex-none z-30 glass-footer flex justify-around items-center pt-2 pb-5 px-1">
         <button id="mob-nav-home" onclick="AppRouter.navigate('home')" class="nav-tab flex flex-col items-center py-1 px-3 text-sky-400" data-tab="home">
           <i data-lucide="home" class="w-4 h-4"></i>
           <span class="text-[9px] font-bold uppercase mt-0.5">Home</span>
@@ -802,8 +809,8 @@
         </button>
       </footer>
 
-      <!-- 4.B FOOTER MOBILE: COCKPIT DI GIOCO -->
-      <footer id="main-game-cockpit-footer" class="hidden flex-none cockpit-footer flex justify-around items-center pt-2 px-3 z-30">
+      <!-- 4.B FOOTER MOBILE: COCKPIT DI GIOCO (ATTIVO DURANTE IL GAMEPLAY) -->
+      <footer id="main-game-cockpit-footer" class="hidden flex-none cockpit-footer flex justify-around items-center pt-1.5 px-3 z-30">
         <button onclick="GameEngine.openBackpackDrawer()" class="flex flex-col items-center text-slate-300 hover:text-sky-400 active:scale-95 transition-all">
           <i data-lucide="backpack" class="w-4 h-4"></i>
           <span class="text-[8px] font-bold uppercase mt-0.5">Zaino</span>
@@ -834,10 +841,8 @@
   <!-- ======================================================================= -->
 
   <!-- LA SCHEDA DETTAGLIATA UNIVERSALE POLIMORFICA -->
-  <!-- Utilizzata per Abilità, Oggetti, Armi, Nemici, Alleati e Prove -->
   <dialog id="modal-universal-detail" class="modal modal-bottom sm:modal-middle">
     <div class="modal-box bg-[#0d131f] border border-sky-500/50 p-5 space-y-4 max-w-lg shadow-2xl text-left">
-      <!-- 1. Header con icona e badge tipo/fazione -->
       <div class="flex items-center justify-between pb-2 border-b border-white/10">
         <div class="flex items-center space-x-3">
           <span class="text-3xl" id="uni-detail-icon">📦</span>
@@ -849,7 +854,6 @@
         <button onclick="document.getElementById('modal-universal-detail').close()" class="btn btn-xs btn-circle btn-ghost text-slate-400">✕</button>
       </div>
       
-      <!-- 2. Frame Visivo 3:2 con Banner Citazione Fisso 72px (se presente) -->
       <div id="uni-detail-media-container" class="hidden cinema-frame-rigid shadow-md">
         <img id="uni-detail-img" src="" alt="">
         <div class="watermark-cover-banner" id="uni-detail-quote-banner">
@@ -858,19 +862,16 @@
         </div>
       </div>
 
-      <!-- 3. Metriche Chiave & Modificatori D20 -->
       <div id="uni-detail-metrics-box" class="p-3 rounded-xl bg-black/60 border border-white/5 space-y-1">
         <div class="text-[9px] font-bold text-amber-400 uppercase tracking-wider" id="uni-detail-metrics-label">PROPRIETÀ TECNICHE</div>
         <div class="font-mono text-white text-xs font-bold" id="uni-detail-metrics-value">Nessuna proprietà</div>
       </div>
 
-      <!-- 4. Narrazione & Lore Integrale -->
       <div class="space-y-1">
         <div class="text-[9.5px] font-bold text-slate-400 uppercase tracking-wider">FASCICOLO INVESTIGATIVO</div>
         <p class="text-slate-300 leading-relaxed text-xs max-h-48 overflow-y-auto pr-1" id="uni-detail-lore"></p>
       </div>
 
-      <!-- 5. Tasto Azione Contestuale -->
       <div class="pt-2 flex flex-col gap-2">
         <button id="uni-detail-action-btn" class="btn btn-primary btn-sm w-full font-bold shadow-lg shadow-sky-600/30">
           Azione
@@ -904,14 +905,14 @@
         </div>
         <button onclick="document.getElementById('drawer-backpack').close()" class="btn btn-xs btn-circle btn-ghost">✕</button>
       </div>
-      <div class="flex space-x-1 overflow-x-auto no-scrollbar pb-1 text-[10px]" id="backpack-tabs">
-        <button onclick="GameEngine.filterBackpack('ALL')" class="badge badge-sm badge-info font-bold cursor-pointer">Tutti</button>
-        <button onclick="GameEngine.filterBackpack('ARMI')" class="badge badge-sm badge-ghost font-bold cursor-pointer">Armi</button>
-        <button onclick="GameEngine.filterBackpack('VEICOLI')" class="badge badge-sm badge-ghost font-bold cursor-pointer">Veicoli</button>
-        <button onclick="GameEngine.filterBackpack('CURE')" class="badge badge-sm badge-ghost font-bold cursor-pointer">Cure</button>
-        <button onclick="GameEngine.filterBackpack('DROGHE')" class="badge badge-sm badge-ghost font-bold cursor-pointer">Droghe</button>
-        <button onclick="GameEngine.filterBackpack('TALISMANI')" class="badge badge-sm badge-ghost font-bold cursor-pointer">Talismani</button>
-        <button onclick="GameEngine.filterBackpack('STRUMENTI')" class="badge badge-sm badge-ghost font-bold cursor-pointer">Strumenti</button>
+      <div class="flex space-x-1.5 overflow-x-auto no-scrollbar pb-1 text-[10px]" id="backpack-tabs">
+        <button onclick="GameEngine.filterBackpack('ALL')" class="rpg-category-chip badge badge-info font-bold cursor-pointer">Tutti</button>
+        <button onclick="GameEngine.filterBackpack('ARMI')" class="rpg-category-chip badge badge-ghost font-bold cursor-pointer">Armi</button>
+        <button onclick="GameEngine.filterBackpack('VEICOLI')" class="rpg-category-chip badge badge-ghost font-bold cursor-pointer">Veicoli</button>
+        <button onclick="GameEngine.filterBackpack('CURE')" class="rpg-category-chip badge badge-ghost font-bold cursor-pointer">Cure</button>
+        <button onclick="GameEngine.filterBackpack('DROGHE')" class="rpg-category-chip badge badge-ghost font-bold cursor-pointer">Droghe</button>
+        <button onclick="GameEngine.filterBackpack('TALISMANI')" class="rpg-category-chip badge badge-ghost font-bold cursor-pointer">Talismani</button>
+        <button onclick="GameEngine.filterBackpack('STRUMENTI')" class="rpg-category-chip badge badge-ghost font-bold cursor-pointer">Strumenti</button>
       </div>
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-64 overflow-y-auto" id="backpack-slots-container"></div>
     </div>
@@ -1014,8 +1015,8 @@
         <button onclick="document.getElementById('modal-plans-catalog').close()" class="btn btn-sm btn-circle btn-ghost text-slate-400">✕</button>
       </div>
       <div class="flex items-center justify-center p-1 rounded-xl bg-black/40 border border-white/5 max-w-xs mx-auto">
-        <button id="billing-toggle-monthly" onclick="AppEngine.setBillingCycle('monthly')" class="flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition-all bg-sky-500 text-white shadow-md">Mensile</button>
-        <button id="billing-toggle-yearly" onclick="AppEngine.setBillingCycle('yearly')" class="flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition-all text-slate-400 flex items-center justify-center space-x-1">
+        <button id="billing-toggle-monthly" onclick="AppModules.setBillingCycle('monthly')" class="flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition-all bg-sky-500 text-white shadow-md">Mensile</button>
+        <button id="billing-toggle-yearly" onclick="AppModules.setBillingCycle('yearly')" class="flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition-all text-slate-400 flex items-center justify-center space-x-1">
           <span>Annuale</span> <span class="badge badge-xs badge-warning font-black text-[8px] py-1 px-1.5">-20%</span>
         </button>
       </div>
