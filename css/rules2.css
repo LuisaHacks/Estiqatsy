@@ -1,6 +1,6 @@
 /* ============================================================================
    PROJECT: ESTIQATSY SYNDICATE & RPG PLATFORM
-   FILE: css/rules2.css (VERSIONE 8.4 - 9-LINE LORE, SOFT GLOW & TRI-DEVICE FIT)
+   FILE: css/rules2.css (VERSIONE 8.5 - FULL LORE UNCLIPPED, +10% HEIGHT & SOFT GLOW)
    LAYER: ENGINE RULES2, WIZARD FULL-STAGE, COCKPIT & CASSETTI TATTICI
    ============================================================================ */
 
@@ -129,36 +129,36 @@
   bottom: 0;
   left: 0;
   right: 0;
-  background: linear-gradient(180deg, transparent 0%, rgba(9, 13, 22, 0.78) 32%, rgba(9, 13, 22, 0.98) 100%);
-  padding: 0.5rem 0.75rem 0.45rem 0.75rem;
+  background: linear-gradient(180deg, transparent 0%, rgba(9, 13, 22, 0.75) 28%, rgba(9, 13, 22, 0.98) 100%);
+  padding: 0.45rem 0.75rem 0.4rem 0.75rem;
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
   text-align: right;
   z-index: 10;
-  min-height: 72px;
+  min-height: 70px;
 }
 .quote-text {
   font-size: 9.5px;
   color: #F1F5F9;
   font-style: italic;
-  line-height: 1.38;
+  line-height: 1.35;
   text-align: right;
   display: -webkit-box;
-  -webkit-line-clamp: 4; /* Spazio garantito per 4 righe in sovrimpressione */
+  -webkit-line-clamp: 4; /* Accoglie fino a 4 righe in sovrimpressione */
   -webkit-box-orient: vertical;
   overflow: hidden;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.85);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
 }
 .quote-author {
-  font-size: 8.5px;
+  font-size: 8px;
   font-weight: 800;
   color: var(--tg-amber);
   text-transform: uppercase;
   letter-spacing: 0.08em;
   text-align: right;
-  margin-top: 0.2rem;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+  margin-top: 0.15rem;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9);
 }
 
 /* Layer Danni Fluttuanti & Dado D20 */
@@ -330,7 +330,7 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
 }
 
 /* ----------------------------------------------------------------------------
-   4. PALCOSCENICO CILINDRICO 3D (CARTA +10%, 9-RIGHE LORE & GLOW MORBIDO -20%)
+   4. PALCOSCENICO CILINDRICO 3D (CARTA +10%, TESTO COMPLETO & GLOW MORBIDO)
    ---------------------------------------------------------------------------- */
 .coverflow-stage-outer {
   position: relative;
@@ -342,8 +342,8 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
   align-items: center;
   justify-content: center;
   overflow: visible;
-  /* FOSSATO DI RISPETTO RIGOROSO (-20% ALONE = 12px Glow + 8px Buio = 20px) */
-  padding: 20px 0.75rem;
+  /* FOSSATO DI RISPETTO RIGOROSO: 18px (12px alone neon + 6px buio profondo) */
+  padding: 16px 0.75rem;
 }
 
 /* Wrapper 3D Adattivo per Device */
@@ -357,11 +357,11 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
   perspective-origin: center center;
   user-select: none;
   touch-action: pan-y;
-  /* Mobile Default */
-  height: clamp(450px, 62dvh, 525px);
+  /* Mobile Default Aumentato del 10% */
+  height: clamp(480px, 66dvh, 560px);
 }
 
-/* Scheda Archetipo Calibrata con Altezza Aumentata del 10% */
+/* Scheda Archetipo ad Altezza Invariante (+10% rispetto a prima) */
 .coverflow-card {
   position: absolute;
   border-radius: 1.25rem;
@@ -378,19 +378,19 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
   transform-style: preserve-3d;
   cursor: pointer;
 
-  /* Mobile: +10% in altezza per dare spazio alle 9 righe */
-  width: clamp(275px, 80vw, 325px);
-  height: clamp(445px, 60dvh, 515px);
+  /* Mobile (+10% esatto per dare spazio all'intero testo) */
+  width: clamp(280px, 82vw, 335px);
+  height: clamp(475px, 65dvh, 545px);
 }
 
 /* TABLET TUNING (640px - 1024px) */
 @media (min-width: 640px) and (max-width: 1023px) {
   .coverflow-stage-wrapper {
-    height: clamp(520px, 65dvh, 600px);
+    height: clamp(540px, 68dvh, 620px);
   }
   .coverflow-card {
-    width: 335px;
-    height: clamp(500px, 63dvh, 580px);
+    width: 345px;
+    height: clamp(525px, 66dvh, 605px);
   }
 }
 
@@ -400,38 +400,38 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
     max-width: 780px;
   }
   .coverflow-stage-wrapper {
-    height: clamp(550px, 68dvh, 630px);
+    height: clamp(570px, 70dvh, 650px);
   }
   .coverflow-card {
-    width: 355px;
-    height: clamp(530px, 65dvh, 610px);
+    width: 365px;
+    height: clamp(550px, 68dvh, 630px);
   }
 }
 
 /* ALONE NEON MORBIDO AMBIENTALE (Spazio Ridotto del 20%, 3 Strati Diffusi) */
 .glow-destra {
   border-color: var(--tg-sky) !important;
-  box-shadow: 0 0 6px 1px rgba(56, 189, 248, 0.5),
-              0 0 14px 2px rgba(56, 189, 248, 0.25),
-              0 0 20px 3px rgba(56, 189, 248, 0.1) !important;
+  box-shadow: 0 0 6px 1px rgba(56, 189, 248, 0.45),
+              0 0 12px 2px rgba(56, 189, 248, 0.22),
+              0 0 18px 3px rgba(56, 189, 248, 0.1) !important;
 }
 .glow-sinistra {
   border-color: var(--tg-rose) !important;
-  box-shadow: 0 0 6px 1px rgba(244, 63, 94, 0.55),
-              0 0 14px 2px rgba(244, 63, 94, 0.25),
-              0 0 20px 3px rgba(244, 63, 94, 0.1) !important;
+  box-shadow: 0 0 6px 1px rgba(244, 63, 94, 0.5),
+              0 0 12px 2px rgba(244, 63, 94, 0.22),
+              0 0 18px 3px rgba(244, 63, 94, 0.1) !important;
 }
 .glow-gold {
   border-color: var(--tg-amber) !important;
-  box-shadow: 0 0 6px 1px rgba(245, 158, 11, 0.5),
-              0 0 14px 2px rgba(245, 158, 11, 0.25),
-              0 0 20px 3px rgba(245, 158, 11, 0.1) !important;
+  box-shadow: 0 0 6px 1px rgba(245, 158, 11, 0.45),
+              0 0 12px 2px rgba(245, 158, 11, 0.22),
+              0 0 18px 3px rgba(245, 158, 11, 0.1) !important;
 }
 .glow-purple {
   border-color: var(--tg-purple) !important;
-  box-shadow: 0 0 6px 1px rgba(168, 85, 247, 0.5),
-              0 0 14px 2px rgba(168, 85, 247, 0.25),
-              0 0 20px 3px rgba(168, 85, 247, 0.1) !important;
+  box-shadow: 0 0 6px 1px rgba(168, 85, 247, 0.45),
+              0 0 12px 2px rgba(168, 85, 247, 0.22),
+              0 0 18px 3px rgba(168, 85, 247, 0.1) !important;
 }
 
 /* 1. AREA SUPERIORE IMMAGINE (Focalizzata al Centro Rigido 1:1) */
@@ -452,7 +452,7 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  /* Centro verticale e orizzontale fisso per immagini quadrate */
+  /* Centro verticale e orizzontale fisso per immagini quadrate di partenza */
   object-position: center center !important;
 }
 
@@ -490,7 +490,7 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
 .pill-pv { color: #FDA4AF; }
 .pill-gold { color: #FDE047; }
 
-/* 2. AREA INFERIORE DATI & LORE NARRATIVO A 9 RIGHE */
+/* 2. AREA INFERIORE DATI & LORE NARRATIVO INTEGRALE */
 .coverflow-details-box {
   padding: 0.55rem 0.85rem 0.65rem 0.85rem;
   flex: 1 1 auto;
@@ -545,37 +545,37 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
 }
 .stat-mod { color: var(--tg-text-muted); }
 
-/* C. TESTO NARRATIVO: CAPIENZA 9 RIGHE, ALLINEATO A SINISTRA, NO CLIP SUPERIORE */
+/* C. TESTO NARRATIVO INTEGRALE: PARTE DALL'INIZIO, NON TAGLIA NIENTE */
 .coverflow-lore {
-  /* Altezza fissa calibrata per 9 righe piene */
-  height: 132px;
-  min-height: 132px;
-  max-height: 132px;
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 9; /* Garantisce esattamente 9 righe di testo narrativo */
-  overflow: hidden;
-  text-align: left; /* Allineato a sinistra come richiesto */
+  display: block !important;
+  text-align: left !important;
   font-size: 10px;
   color: #CBD5E1;
   line-height: 1.45;
   margin: 0.15rem 0;
   word-break: break-word;
+  /* Capienza maggiorata: mostra comodamente fino a 9-10 righe complete */
+  min-height: 140px;
+  max-height: 160px;
+  overflow-y: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.coverflow-lore::-webkit-scrollbar {
+  display: none;
 }
 @media (min-width: 640px) {
   .coverflow-lore {
-    height: 144px;
-    min-height: 144px;
-    max-height: 144px;
+    min-height: 150px;
+    max-height: 175px;
     font-size: 10.5px;
     line-height: 1.5;
   }
 }
 @media (min-width: 1024px) {
   .coverflow-lore {
-    height: 156px;
-    min-height: 156px;
-    max-height: 156px;
+    min-height: 165px;
+    max-height: 190px;
     font-size: 11px;
     line-height: 1.55;
   }
@@ -1092,6 +1092,7 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
   min-height: 44px;
 }
 
+/* Griglia Azioni di Gioco Simmetriche */
 .combat-actions-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
