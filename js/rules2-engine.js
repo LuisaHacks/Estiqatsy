@@ -619,54 +619,86 @@ const Rules2Engine = {
     }
   },
 
-  buyFromEmporio: function(itemId, goldCost) {
+  buyFromEmporio: async function(itemId, goldCost) {
     const hero = AppState.activeSession.hero;
-    if (!hero) return;
-    if (hero.oro < goldCost) {
+    if (!hero || hero.oro < goldCost) {
       alert("Monete d'oro insufficienti!");
       return;
     }
-
-    const shopItems = AppState.activeSession.shopCatalog || [];
-    const item = shopItems.find(i => i.id === itemId);
+    const item = (AppState.activeSession.shopCatalog || []).find(i => i.id === itemId);
     if (!item) return;
 
     if (getNormalizedCategory(item) === "VEICOLI") {
-      const hasVehicle = (hero.inventario || []).some(x => {
-        const ent = this._findEntityData(x);
-        return getNormalizedCategory(ent) === "VEICOLI";
-      });
+      const hasVehicle = (hero.inventario || []).some(x => getNormalizedCategory(this._findEntityData(x)) === "VEICOLI");
       if (hasVehicle) {
         alert("Puoi possedere un solo Veicolo nello zaino!");
         return;
       }
     }
 
-    hero.oro -= goldCost;
-    hero.inventario.push(item.nome);
-    Wallet.setGold(hero.oro);
+    try {
+      // Salva l'acquisto sul backend Google Apps Script
+      const res = await apiCall("game_action", {
+        subAction: "buy_item",
+        itemId: itemId,
+        cost: goldCost,
+        gameKey: AppState.activeSession.gameKey,
+        episodio: AppState.activeSession.episodio
+      });
 
-    if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("cash_register");
-    this.openEmporioDrawer();
-    this.renderNode(AppState.activeSession.currentNode, hero);
-  },
-
-  sellToEmporio: function(itemName) {
-    const hero = AppState.activeSession.hero;
-    if (!hero) return;
-    const idx = (hero.inventario || []).indexOf(itemName);
-    if (idx !== -1) {
-      hero.inventario.splice(idx, 1);
-      hero.oro += 10;
-      if (hero.armaAttiva === itemName) hero.armaAttiva = "";
-      if (hero.veicoloAttivo === itemName) hero.veicoloAttivo = "";
-      Wallet.setGold(hero.oro);
+      if (res && res.statoEroe) {
+        AppState.activeSession.hero = res.statoEroe;
+        Wallet.setGold(res.statoEroe.oro);
+      } else {
+        hero.oro -= goldCost;
+        hero.inventario.push(item.nome);
+        Wallet.setGold(hero.oro);
+      }
 
       if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("cash_register");
       this.openEmporioDrawer();
-      this.renderNode(AppState.activeSession.currentNode, hero);
+      this.renderNode(AppState.activeSession.currentNode, AppState.activeSession.hero);
+    } catch (e) {
+      alert("Errore nell'acquisto: " + e.message);
     }
   },
+
+  sellToEmporio: async function(itemName) {
+    const hero = AppState.activeSession.hero;
+    if (!hero) return;
+    const ent = this._findEntityData(itemName);
+    // Calcola il 25% reale del listino d'acquisto dal foglio
+    const buyPrice = Math.abs(cleanNumber(ent?.costoOro || ent?.costo, 10));
+    const sellPrice = Math.max(1, Math.ceil(buyPrice * 0.25));
+
+    try {
+      const res = await apiCall("game_action", {
+        subAction: "sell_item",
+        itemName: itemName,
+        earnedGold: sellPrice,
+        gameKey: AppState.activeSession.gameKey,
+        episodio: AppState.activeSession.episodio
+      });
+
+      if (res && res.statoEroe) {
+        AppState.activeSession.hero = res.statoEroe;
+        Wallet.setGold(res.statoEroe.oro);
+      } else {
+        const idx = (hero.inventario || []).indexOf(itemName);
+        if (idx !== -1) hero.inventario.splice(idx, 1);
+        hero.oro += sellPrice;
+        if (hero.armaAttiva === itemName) hero.armaAttiva = "";
+        if (hero.veicoloAttivo === itemName) hero.veicoloAttivo = "";
+        Wallet.setGold(hero.oro);
+      }
+
+      if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("cash_register");
+      this.openEmporioDrawer();
+      this.renderNode(AppState.activeSession.currentNode, AppState.activeSession.hero);
+    } catch (e) {
+      alert("Errore nella vendita: " + e.message);
+    }
+  },,
 
   // C. BANCO DI CAMBIO VALUTA (MEGOIN ➔ ORO)
   openCambioModal: function() {
