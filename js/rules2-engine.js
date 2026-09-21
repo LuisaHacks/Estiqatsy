@@ -19,7 +19,18 @@ const RULES2_CATEGORY_MAP = {
 function getNormalizedCategory(item) {
   if (!item) return "STRUMENTI";
   const raw = String(item.categoria || "").trim().toUpperCase();
-  return RULES2_CATEGORY_MAP[raw] || "STRUMENTI";
+  if (RULES2_CATEGORY_MAP[raw]) return RULES2_CATEGORY_MAP[raw];
+
+  // Riconoscimento euristico di sicurezza per loot raccolto sul campo
+  const name = String(item.nome || item || "").toLowerCase();
+  if (name.includes("coltello") || name.includes("machete") || name.includes("lama") || name.includes("serramanico") || name.includes("fiocina") || name.includes("tubo") || name.includes("gomena") || name.includes("chiodatrice") || name.includes("mazzetta")) return "ARMI";
+  if (name.includes("scooter") || name.includes("zodiac") || name.includes("bici") || name.includes("panda") || name.includes("apecar") || name.includes("ciao") || name.includes("canoa") || name.includes("barchino")) return "VEICOLI";
+  if (name.includes("ponce") || name.includes("fritto") || name.includes("cecina") || name.includes("focaccia") || name.includes("cee") || name.includes("garze") || name.includes("soffocotto")) return "CURE";
+  if (name.includes("danpei") || name.includes("marmolina") || name.includes("spada") || name.includes("rivotril") || name.includes("valium") || name.includes("gnugna") || name.includes("thc") || name.includes("bogotà")) return "DROGHE";
+  if (name.includes("dossier") || name.includes("bolla") || name.includes("fattura") || name.includes("schema") || name.includes("registro") || name.includes("pizzino") || name.includes("foto")) return "INFORMAZIONI";
+  if (name.includes("bitta") || name.includes("zanna") || name.includes("corno") || name.includes("talismano") || name.includes("feticcio")) return "TALISMANI";
+
+  return "STRUMENTI";
 }
 
 const Rules2Engine = {
@@ -27,10 +38,12 @@ const Rules2Engine = {
   // 1. LIFECYCLE HOOKS: AVVIO SESSIONE & COMUNICAZIONE WIZARD
   // --------------------------------------------------------------------------
   launchSession: function(gameKey, epNum, canContinueFree, savedHero) {
-    if (typeof Rules2Wizard !== "undefined") {
-      Rules2Wizard.open(gameKey, epNum, canContinueFree, savedHero);
+    const wizard = (typeof Rules2Wizard !== "undefined") ? Rules2Wizard : (window.Rules2Wizard || null);
+    if (wizard && typeof wizard.open === "function") {
+      wizard.open(gameKey, epNum, canContinueFree, savedHero);
     } else {
-      console.error("[Rules2Engine] Modulo rules2-wizard.js non trovato.");
+      console.error("[Rules2Engine] Modulo rules2-wizard.js non trovato o non inizializzato.");
+      alert("Errore: interfaccia di creazione personaggio non disponibile.");
     }
   },
 
@@ -43,13 +56,15 @@ const Rules2Engine = {
 
       const res = await apiCall("game_start", payloadParams);
       if (res && res.success) {
-        // Eredita tutti gli oggetti di gioco (Emporio + Oggetti del campo) per il riconoscimento nello zaino
-        const wizardCatalog = (typeof Rules2Wizard !== "undefined" && Rules2Wizard.state.shopCatalog)
-          ? Rules2Wizard.state.shopCatalog
+        // Eredita tutti gli oggetti dell'Emporio di Ciccio per il matching nello zaino
+        const wizardCatalog = (typeof Rules2Wizard !== "undefined" && (Rules2Wizard.state.shopCatalog || Rules2Wizard.state.emporioCatalog))
+          ? (Rules2Wizard.state.shopCatalog || Rules2Wizard.state.emporioCatalog)
           : [];
+
         const allGameItems = deduplicateEntities([
-          ...(res.shopItems || []),
+          ...(res.emporioItems || []),
           ...(res.equipaggiamenti || []),
+          ...(res.shopItems || []),
           ...(res.oggetti || []),
           ...wizardCatalog
         ]);
@@ -144,7 +159,7 @@ const Rules2Engine = {
 
     const isCombat = (currentNode.tipo === "NEMICO" || (currentNode.id && currentNode.id.includes("NEM_")));
 
-    // CASO 1: COMBATTIMENTO
+    // CASO 1: COMBATTIMENTO D20
     if (isCombat) {
       if (typeof SoundEngine !== "undefined") SoundEngine.playBgm("combat");
 
@@ -188,21 +203,27 @@ const Rules2Engine = {
       return;
     }
 
-    // CASO 3: BIVIO NARRATIVO STANDARD (SND_*)
-    if (currentNode.choices && currentNode.choices.length > 0) {
-      if (currentNode.choices.length === 2) {
+    // CASO 3: BIVIO NARRATIVO STANDARD (Supporta choices o parsedBivio, testo o text)
+    const rawChoices = currentNode.choices || currentNode.parsedBivio || [];
+    const choices = rawChoices.map(c => ({
+      testo: c.testo || c.text || c.nome || "Avanza",
+      target: c.target || c.id || c.nodo || ""
+    })).filter(c => c.target !== "");
+
+    if (choices.length > 0) {
+      if (choices.length === 2) {
         actBox.innerHTML = `
           <div class="grid grid-cols-2 gap-2">
-            <button onclick="Rules2Engine.advanceToNode('${currentNode.choices[0].target}')" class="btn btn-sm btn-primary text-xs font-bold truncate shadow-md">
-              ${currentNode.choices[0].testo}
+            <button onclick="Rules2Engine.advanceToNode('${choices[0].target}')" class="btn btn-sm btn-primary text-xs font-bold truncate shadow-md">
+              ${choices[0].testo}
             </button>
-            <button onclick="Rules2Engine.advanceToNode('${currentNode.choices[1].target}')" class="btn btn-sm btn-primary text-xs font-bold truncate shadow-md">
-              ${currentNode.choices[1].testo}
+            <button onclick="Rules2Engine.advanceToNode('${choices[1].target}')" class="btn btn-sm btn-primary text-xs font-bold truncate shadow-md">
+              ${choices[1].testo}
             </button>
           </div>
         `;
       } else {
-        actBox.innerHTML = currentNode.choices.map(c => `
+        actBox.innerHTML = choices.map(c => `
           <button onclick="Rules2Engine.advanceToNode('${c.target}')" class="btn btn-sm btn-block btn-primary text-xs font-bold mb-1.5 truncate shadow-md">
             ${c.testo}
           </button>
@@ -425,7 +446,11 @@ const Rules2Engine = {
     if (!itemName) return null;
     const catalog = AppState.activeSession.shopCatalog || [];
     const clean = String(itemName).trim().toLowerCase();
-    return catalog.find(x => String(x.nome || "").trim().toLowerCase() === clean || String(x.id || "").trim().toLowerCase() === clean) || null;
+    const found = catalog.find(x => String(x.nome || "").trim().toLowerCase() === clean || String(x.id || "").trim().toLowerCase() === clean);
+    if (found) return found;
+
+    // Fallback sintetico per oggetti generati o loot
+    return { nome: itemName, categoria: getNormalizedCategory(itemName) };
   },
 
   filterBackpack: function(cat) {
@@ -451,7 +476,6 @@ const Rules2Engine = {
       return;
     }
 
-    // Filtro pulito: usa la categoria normalizzata del foglio Google
     if (cat && cat !== "ALL") {
       inv = inv.filter(itemName => {
         const ent = this._findEntityData(itemName);
@@ -553,7 +577,7 @@ const Rules2Engine = {
     }
   },
 
-  // B. CASSETTO EMPORIO DI CICCIO (COMPRA DAL FOGLIO & VENDI AL 25%)
+  // B. CASSETTO EMPORIO DI CICCIO (COMPRA DAL TAB DI GIOCO & VENDI AL 25%)
   openEmporioDrawer: function() {
     const h = AppState.activeSession.hero;
     const goldDisp = document.getElementById("emporio-gold-display");
@@ -580,24 +604,30 @@ const Rules2Engine = {
         container.innerHTML = `<div class="col-span-full py-8 text-center text-slate-500 text-xs">Nessuna refurtiva nello zaino.</div>`;
         return;
       }
-      container.innerHTML = inv.map(it => `
-        <div class="p-2.5 bg-surface rounded-xl border border-white/5 flex items-center justify-between text-xs">
-          <span class="font-bold text-white truncate pr-2">${it}</span>
-          <button onclick="Rules2Engine.sellToEmporio('${it.replace(/'/g, "\\'")}')" class="btn btn-xs btn-warning font-bold text-[9px] shrink-0">
-            Vendi (+10 🟡)
-          </button>
-        </div>
-      `).join("");
-    } else {
-      const shopItems = AppState.activeSession.shopCatalog || [];
+      container.innerHTML = inv.map(it => {
+        const ent = this._findEntityData(it);
+        const buyPrice = Math.abs(cleanNumber(ent?.costoOro || ent?.costo, 10));
+        const sellPrice = Math.max(1, Math.ceil(buyPrice * 0.25));
 
-      if (shopItems.length === 0) {
-        container.innerHTML = `<div class="col-span-full py-6 text-center text-slate-500 text-xs">Nessun articolo per l'avventura disponibile.</div>`;
+        return `
+          <div class="p-2.5 bg-surface rounded-xl border border-white/5 flex items-center justify-between text-xs">
+            <span class="font-bold text-white truncate pr-2">${it}</span>
+            <button onclick="Rules2Engine.sellToEmporio('${it.replace(/'/g, "\\'")}', ${sellPrice})" class="btn btn-xs btn-warning font-bold text-[9px] shrink-0">
+              Vendi (+${sellPrice} 🟡)
+            </button>
+          </div>
+        `;
+      }).join("");
+    } else {
+      const emporioItems = AppState.activeSession.shopCatalog || [];
+
+      if (emporioItems.length === 0) {
+        container.innerHTML = `<div class="col-span-full py-6 text-center text-slate-500 text-xs">Nessun equipaggiamento disponibile sui banchi di Ciccio.</div>`;
         return;
       }
 
-      container.innerHTML = shopItems.slice(0, 16).map(item => {
-        const price = Math.abs(cleanNumber(item.costoOro || item.costo, 15));
+      container.innerHTML = emporioItems.map(item => {
+        const price = Math.abs(cleanNumber(item.costoOro || item.costo, 10));
         const canAfford = (h && h.oro >= price);
 
         return `
@@ -637,9 +667,8 @@ const Rules2Engine = {
     }
 
     try {
-      // Salva l'acquisto sul backend Google Apps Script
       const res = await apiCall("game_action", {
-        subAction: "buy_item",
+        subAction: "buy_emporio",
         itemId: itemId,
         cost: goldCost,
         gameKey: AppState.activeSession.gameKey,
@@ -663,19 +692,11 @@ const Rules2Engine = {
     }
   },
 
-  sellToEmporio: async function(itemName) {
-    const hero = AppState.activeSession.hero;
-    if (!hero) return;
-    const ent = this._findEntityData(itemName);
-    // Calcola il 25% reale del listino d'acquisto dal foglio
-    const buyPrice = Math.abs(cleanNumber(ent?.costoOro || ent?.costo, 10));
-    const sellPrice = Math.max(1, Math.ceil(buyPrice * 0.25));
-
+  sellToEmporio: async function(itemName, fallbackGain) {
     try {
       const res = await apiCall("game_action", {
-        subAction: "sell_item",
+        subAction: "sell_emporio",
         itemName: itemName,
-        earnedGold: sellPrice,
         gameKey: AppState.activeSession.gameKey,
         episodio: AppState.activeSession.episodio
       });
@@ -684,12 +705,15 @@ const Rules2Engine = {
         AppState.activeSession.hero = res.statoEroe;
         Wallet.setGold(res.statoEroe.oro);
       } else {
-        const idx = (hero.inventario || []).indexOf(itemName);
-        if (idx !== -1) hero.inventario.splice(idx, 1);
-        hero.oro += sellPrice;
-        if (hero.armaAttiva === itemName) hero.armaAttiva = "";
-        if (hero.veicoloAttivo === itemName) hero.veicoloAttivo = "";
-        Wallet.setGold(hero.oro);
+        const hero = AppState.activeSession.hero;
+        if (hero) {
+          const idx = (hero.inventario || []).indexOf(itemName);
+          if (idx !== -1) hero.inventario.splice(idx, 1);
+          hero.oro += (fallbackGain || 10);
+          if (hero.armaAttiva === itemName) hero.armaAttiva = "";
+          if (hero.veicoloAttivo === itemName) hero.veicoloAttivo = "";
+          Wallet.setGold(hero.oro);
+        }
       }
 
       if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("cash_register");
@@ -698,7 +722,7 @@ const Rules2Engine = {
     } catch (e) {
       alert("Errore nella vendita: " + e.message);
     }
-  },,
+  },
 
   // C. BANCO DI CAMBIO VALUTA (MEGOIN ➔ ORO)
   openCambioModal: function() {
@@ -840,12 +864,18 @@ const Rules2Engine = {
   }
 };
 
-// Auto-registrazione nel Registry di Piattaforma
-if (typeof EngineRegistry !== "undefined") {
+// ============================================================================
+// ESPOSIZIONE GLOBALE SU WINDOW & REGISTRAZIONE NEL REGISTRY
+// ============================================================================
+window.Rules2Engine = Rules2Engine;
+
+if (typeof window.EngineRegistry !== "undefined" && typeof window.EngineRegistry.register === "function") {
+  window.EngineRegistry.register("Rules2", Rules2Engine);
+} else if (typeof EngineRegistry !== "undefined" && typeof EngineRegistry.register === "function") {
   EngineRegistry.register("Rules2", Rules2Engine);
 }
 
-// Aliasing per mantenere intatti gli handler onclick di index.html
+// Aliasing retrocompatibile su window.GameEngine per gli onclick in index.html
 window.GameEngine = window.GameEngine || {};
 window.GameEngine.leaveGameToHub = () => Rules2Engine.leaveGameToHub();
 window.GameEngine.openAbandonModal = () => Rules2Engine.openAbandonModal();
@@ -857,7 +887,7 @@ window.GameEngine.equipItem = (it, t) => Rules2Engine.equipItem(it, t);
 window.GameEngine.openEmporioDrawer = () => Rules2Engine.openEmporioDrawer();
 window.GameEngine.setEmporioMode = (m) => Rules2Engine.setEmporioMode(m);
 window.GameEngine.buyFromEmporio = (id, p) => Rules2Engine.buyFromEmporio(id, p);
-window.GameEngine.sellToEmporio = (it) => Rules2Engine.sellToEmporio(it);
+window.GameEngine.sellToEmporio = (it, g) => Rules2Engine.sellToEmporio(it, g);
 window.GameEngine.openCambioModal = () => Rules2Engine.openCambioModal();
 window.GameEngine.convertMegoinToGold = (m, g) => Rules2Engine.convertMegoinToGold(m, g);
 window.GameEngine.openSquadDrawer = () => Rules2Engine.openSquadDrawer();
