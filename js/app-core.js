@@ -25,36 +25,38 @@ const AppConfig = {
 // Separazione netta tra account Syndicate (Megoin) e sessione RPG attiva (Oro)
 // ----------------------------------------------------------------------------
 const AppState = {
-  // Dati utente & Account
+  // Dati utente & Account Piattaforma
   user: null,
   allowedModules: { home: true, shop: true, games: true, recipes: true, profile: true },
   plans: [],
   billingCycle: "monthly",
   activeTab: "home",
 
-  // Moduli di Piattaforma (SaaS / E-commerce / Ricette)
+  // Moduli di Piattaforma (SaaS / E-commerce Megoin / Ricette)
   shop: { items: [], categories: [], activeCategory: "tutti", searchQuery: "" },
   recipes: { items: [], categories: [], activeCategory: "tutti", searchQuery: "" },
   carousel: { timer: null, index: 0, count: 0, isPaused: false },
   vault: [],
 
-  // Catalogo Globale Giochi (Gestito a livello di modulo)
+  // Catalogo Globale Saghe di Gioco
   games: {
     catalog: [],
     activeGameKey: null,
     activeEpisode: 1
   },
 
-  // Sessione di Gioco Runtime (Disaccoppiata e agnostica rispetto alle regole)
+  // Sessione di Gioco Runtime Attiva
   activeSession: {
-    engineKey: null,     // es. "Rules2", "Rules1", "Trivia"
+    engineKey: null,      // es. "Rules2", "Rules1"
     gameKey: null,
     episodio: 1,
     partitaId: null,
-    hero: null,          // Stato completo dell'eroe (PV, Oro, Inventario, ecc.)
-    currentNode: null,   // Nodo narrativo corrente
-    shopCatalog: [],     // Equipaggiamenti dell'avventura per l'Emporio in-game
-    engineState: null    // Dati specifici del motore attivo (es. coverflow, wizard step)
+    hero: null,           // { nomeEroe, classe, mediaUrl (Avatar), pv, pvMax, oro, px, stats, ... }
+    combatRound: 1,       // Contatore round duello attivo
+    combatEnemyId: null,  // ID del nemico attualmente ingaggiato
+    currentNode: null,    // Nodo narrativo o duello corrente
+    shopCatalog: [],      // Merci dell'Emporio di Ciccio RPG (EQP/OBJ)
+    engineState: null     // Dati specifici del motore
   }
 };
 
@@ -72,11 +74,11 @@ if (tg) {
     tg.setHeaderColor(AppConfig.THEME.HEADER_COLOR);
     tg.setBackgroundColor(AppConfig.THEME.BG_COLOR);
   } catch (e) {
-    console.warn("Inizializzazione Telegram WebApp completata parzialmente:", e);
+    console.warn("[app-core] Inizializzazione Telegram WebApp completata parzialmente:", e);
   }
 }
 
-// Gestione dinamica del pulsante 'Indietro' nativo di Telegram
+// Gestione del pulsante 'Indietro' nativo di Telegram
 let telegramBackButtonHandler = null;
 
 function setupTelegramBackButton(targetScreenId) {
@@ -108,7 +110,6 @@ function setupTelegramBackButton(targetScreenId) {
       } else if (targetScreenId === "view-wizard") {
         AppRouter.navigate("subview-game-detail");
       } else if (targetScreenId === "view-gameplay") {
-        // In pieno gioco, l'indietro nativo apre la modale di abbandono protetta
         const currentEngine = EngineRegistry.get(AppState.activeSession.engineKey);
         if (currentEngine && typeof currentEngine.openAbandonModal === "function") {
           currentEngine.openAbandonModal();
@@ -127,7 +128,6 @@ function setupTelegramBackButton(targetScreenId) {
 
 // ----------------------------------------------------------------------------
 // 4. REGISTRO DEI MOTORI DI GIOCO (ENGINE REGISTRY)
-// Specchio frontend di registerRuleEngine() presente in Modulo_Games.gs
 // ----------------------------------------------------------------------------
 const EngineRegistry = {
   _engines: {},
@@ -146,16 +146,17 @@ const EngineRegistry = {
   }
 };
 
+// Esposizione globale per garantire l'accesso tra file separati
+window.EngineRegistry = EngineRegistry;
+
 // ----------------------------------------------------------------------------
 // 5. ROUTER SPA (APPROUTER)
-// Gestione della navigazione virtuale, layout responsive e switch header/footer
 // ----------------------------------------------------------------------------
 const AppRouter = {
   navigate: function(screenName) {
     if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("click");
     if (tg && tg.HapticFeedback) tg.HapticFeedback.selectionChanged();
 
-    // Normalizzazione ID vista
     let targetId = screenName;
     if (targetId === "games" || targetId === "view-games") {
       targetId = "view-hub";
@@ -166,7 +167,7 @@ const AppRouter = {
       targetId = "view-" + screenName;
     }
 
-    // Controllo permessi SaaS (Hard-Locking moduli)
+    // Controllo permessi SaaS (Hard-Locking)
     const baseModule = targetId.replace("view-", "").replace("subview-", "").split("-")[0];
     if (AppState.allowedModules && AppState.allowedModules[baseModule] === false) {
       this.navigate("home");
@@ -176,7 +177,6 @@ const AppRouter = {
       return;
     }
 
-    // Reset scroll & filtri per viste principali
     const scrollContainer = document.getElementById("app-main-scroll");
     if (scrollContainer) scrollContainer.scrollTop = 0;
 
@@ -194,7 +194,6 @@ const AppRouter = {
       AppModules.renderRecipes();
     }
 
-    // Transizione Viste: Mostra solo lo schermo selezionato
     const allScreens = [
       "view-home", "view-shop", "view-recipes", "view-profile",
       "subview-shop-detail", "subview-recipe-detail",
@@ -206,7 +205,7 @@ const AppRouter = {
       if (el) el.classList.toggle("hidden", id !== targetId);
     });
 
-    // Gestione Rigorosa Switch Header e Footer
+    // Switch Header & Footer
     const isGameplay = (targetId === "view-gameplay");
     const isWizard = (targetId === "view-wizard");
 
@@ -216,26 +215,22 @@ const AppRouter = {
     const gameFooter = document.getElementById("main-game-cockpit-footer");
 
     if (isGameplay) {
-      // 1. IN GIOCO: Attiva il Cockpit Header e il Cockpit Footer (Zaino, Emporio, ecc.)
       if (appHeader) appHeader.classList.add("hidden");
       if (gameHeader) gameHeader.classList.remove("hidden");
       if (appFooter) appFooter.classList.add("hidden");
       if (gameFooter) gameFooter.classList.remove("hidden");
     } else if (isWizard) {
-      // 2. NEL WIZARD: Header pulito, MA NESSUN FOOTER (100% altezza schermo libera!)
       if (appHeader) appHeader.classList.remove("hidden");
       if (gameHeader) gameHeader.classList.add("hidden");
       if (appFooter) appFooter.classList.add("hidden");
       if (gameFooter) gameFooter.classList.add("hidden");
     } else {
-      // 3. PIATTAFORMA: Header normale e Footer dell'app (Home, Bottega, Ricette, Profilo)
       if (appHeader) appHeader.classList.remove("hidden");
       if (gameHeader) gameHeader.classList.add("hidden");
       if (appFooter) appFooter.classList.remove("hidden");
       if (gameFooter) gameFooter.classList.add("hidden");
     }
 
-    // Sincronizzazione indicatori di navigazione (Mobile & Desktop Sidebar)
     const activeTabKey = targetId.replace("view-", "").replace("subview-", "").split("-")[0];
     AppState.activeTab = (activeTabKey === "hub") ? "games" : activeTabKey;
 
@@ -252,7 +247,6 @@ const AppRouter = {
       btn.classList.toggle("text-slate-300", !isCurrent);
     });
 
-    // Aggiornamento tasto 'Indietro' Telegram e icone Lucide
     setupTelegramBackButton(targetId);
     setTimeout(() => { if (window.lucide) lucide.createIcons(); }, 20);
   }
@@ -260,7 +254,6 @@ const AppRouter = {
 
 // ----------------------------------------------------------------------------
 // 6. COMUNICAZIONE API BACKEND (APICALL)
-// Autenticazione HMAC con Telegram initData e gestione degli errori
 // ----------------------------------------------------------------------------
 async function apiCall(action, extraParams = {}) {
   const initData = (tg && tg.initData) ? tg.initData : "";
@@ -290,10 +283,9 @@ async function apiCall(action, extraParams = {}) {
 
 // ----------------------------------------------------------------------------
 // 7. GESTIONE CENTRALIZZATA VALUTE (WALLET)
-// Evita discrepanze tra i Megoin del profilo e l'Oro del gioco
 // ----------------------------------------------------------------------------
 const Wallet = {
-  // Megoin Account (SaaS / Piattaforma / Ingressi Gioco)
+  // Megoin Account (SaaS / E-commerce Piattaforma / Ingressi Gioco)
   getMegoin: function() {
     if (!AppState.user) return 0;
     return (AppState.user.saldoMegoin !== undefined) ? AppState.user.saldoMegoin : (AppState.user.megoin || 0);
@@ -315,7 +307,7 @@ const Wallet = {
     this.setMegoin(this.getMegoin() + amount);
   },
 
-  // Oro dell'Eroe (In-Game Session)
+  // Oro di Gioco dell'Eroe (In-Game Session)
   getGold: function() {
     if (!AppState.activeSession || !AppState.activeSession.hero) return 0;
     return parseInt(AppState.activeSession.hero.oro, 10) || 0;
@@ -357,12 +349,23 @@ function deduplicateEntities(list) {
 
 function cleanNumber(v, defaultVal = 0) {
   if (v === null || v === undefined || v === "" || v === "—" || v === "-") return defaultVal;
-  const n = Number(v);
+  const n = Number(String(v).replace(",", "."));
   return isNaN(n) ? defaultVal : n;
 }
 
 // ----------------------------------------------------------------------------
-// 9. BOOTSTRAP DELL'APPLICAZIONE ALL'AVVIO
+// 9. ESPOSIZIONE GLOBALE SU WINDOW
+// ----------------------------------------------------------------------------
+window.AppConfig = AppConfig;
+window.AppState = AppState;
+window.AppRouter = AppRouter;
+window.Wallet = Wallet;
+window.apiCall = apiCall;
+window.deduplicateEntities = deduplicateEntities;
+window.cleanNumber = cleanNumber;
+
+// ----------------------------------------------------------------------------
+// 10. BOOTSTRAP DELL'APPLICAZIONE ALL'AVVIO
 // ----------------------------------------------------------------------------
 window.addEventListener("DOMContentLoaded", () => {
   if (window.lucide) lucide.createIcons();
