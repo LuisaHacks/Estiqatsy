@@ -64,76 +64,76 @@
       height: calc(56px + max(env(safe-area-inset-bottom, 0px), 0px));
     }
 
-    /* INQUADRATURA 3:2 AD ALTA DEFINIZIONE CON FACE-ANCHORING */
+    /* INQUADRATURA 3:2 CINEMATOGRAFICA */
     .cinema-frame-rigid {
       position: relative;
       width: 100%;
-      height: clamp(170px, 26dvh, 230px);
+      height: clamp(175px, 27dvh, 235px);
       overflow: hidden;
       background: #0d131f;
-      border-top-left-radius: 14px;
-      border-top-right-radius: 14px;
+      border-top-left-radius: 16px;
+      border-top-right-radius: 16px;
     }
     .cinema-frame-rigid img {
       width: 100%;
       height: 100%;
       object-fit: cover;
-      object-position: top center !important; /* Centra viso e sguardo dell'eroe */
+      object-position: top center !important;
     }
 
-    /* BANNER CITAZIONE DIEGETICO SNELLO (NON MANGIA PIÙ IL 40% DELL'IMMAGINE) */
+    /* BANNER CITAZIONE DIEGETICO */
     .watermark-cover-banner {
       position: absolute;
       bottom: 0;
       left: 0;
       right: 0;
       background: linear-gradient(180deg, transparent 0%, rgba(9, 13, 22, 0.88) 35%, #090D16 100%);
-      padding: 4px 10px 5px 10px;
+      padding: 6px 12px 6px 12px;
       display: flex;
       flex-direction: column;
       justify-content: center;
       z-index: 10;
     }
 
-    /* SCATOLA NARRATIVA FLESSIBILE PER IL GAMEPLAY */
+    /* SCATOLA NARRATIVA FLESSIBILE */
     .narrative-box-flexible {
       flex: 1 1 auto;
       min-height: 110px;
       max-height: 240px;
       background: rgba(17, 24, 39, 0.75);
       border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 0.85rem;
-      padding: 0.75rem 0.95rem;
+      border-radius: 1rem;
+      padding: 0.85rem 1rem;
       overflow-y: auto;
       font-size: 12px;
       line-height: 1.55;
     }
 
-    /* PALCOSCENICO 3D COVER-FLOW PROPORZIONATO AL VIEWPORT (ZERO SCROLL) */
+    /* PALCOSCENICO 3D CIRCOLARE CONTINUO (PADDING PER ALONE NON TAGLIATO) */
     .coverflow-stage-wrapper {
       position: relative;
       width: 100%;
-      height: clamp(340px, 50dvh, 460px);
+      height: clamp(370px, 53dvh, 480px);
       display: flex;
       align-items: center;
       justify-content: center;
       perspective: 1200px;
-      overflow: hidden;
+      overflow: visible; /* Lascia sfumare l'alone senza tagliarlo */
       touch-action: pan-y;
       user-select: none;
+      padding: 16px 0;
     }
 
     .coverflow-card {
       position: absolute;
-      width: clamp(270px, 78vw, 330px);
-      height: clamp(330px, 48dvh, 440px);
+      width: clamp(280px, 80vw, 340px);
+      height: clamp(350px, 50dvh, 460px);
       transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1), 
                   opacity 0.4s ease, 
                   box-shadow 0.4s ease;
       will-change: transform, opacity;
       transform-style: preserve-3d;
-      border-radius: 1rem;
-      border: 2px solid rgba(255, 255, 255, 0.12);
+      border-radius: 1.25rem;
       cursor: pointer;
       background: #0d131f;
       display: flex;
@@ -141,17 +141,16 @@
       overflow: hidden;
     }
 
-    /* BORDO PERIMETRALE A 360° E GLOW NEON */
+    /* ALONE NEON A 360° COMPLETO */
     .glow-destra {
-      box-shadow: 0 0 35px -4px rgba(56, 189, 248, 0.65), 0 0 15px rgba(56, 189, 248, 0.4);
-      border: 2px solid #38bdf8 !important;
+      box-shadow: 0 0 35px 2px rgba(56, 189, 248, 0.65), 0 0 15px rgba(56, 189, 248, 0.4);
+      border-color: #38bdf8 !important;
     }
     .glow-sinistra {
-      box-shadow: 0 0 35px -4px rgba(244, 63, 94, 0.7), 0 0 15px rgba(244, 63, 94, 0.45);
-      border: 2px solid #f43f5e !important;
+      box-shadow: 0 0 35px 2px rgba(244, 63, 94, 0.7), 0 0 15px rgba(244, 63, 94, 0.45);
+      border-color: #f43f5e !important;
     }
 
-    /* EFFETTI TESTO E COMBATTIMENTO */
     .text-glow-amber { text-shadow: 0 0 12px rgba(245, 158, 11, 0.5); }
     .text-glow-rose { text-shadow: 0 0 12px rgba(244, 63, 94, 0.6); }
 
@@ -173,19 +172,15 @@
       animation: floatUpFade 1.2s ease-out forwards;
     }
 
-    /* GESTIONE DINAMICA FOOTER: WIZARD VS COCKPIT DI GIOCO */
-    /* Nel WIZARD: nessuno dei due footer deve rubare spazio */
     body:has(#view-wizard:not(.hidden)) #main-app-footer,
     body:has(#view-wizard:not(.hidden)) #main-game-cockpit-footer {
       display: none !important;
     }
 
-    /* Nel GAMEPLAY: il footer dell'app viene nascosto, quello del gioco RESTA ATTIVO */
     body:has(#view-gameplay:not(.hidden)) #main-app-footer {
       display: none !important;
     }
 
-    /* MICRO-ARCHITETTURA CHIPS CATEGORIE (ZERO SOVRAPPOSIZIONI O DEFORMAZIONI) */
     .rpg-category-chip {
       display: inline-flex !important;
       align-items: center !important;
@@ -194,10 +189,8 @@
       height: 28px !important;
       padding: 0 10px !important;
       font-size: 11px !important;
-      line-height: normal !important;
     }
 
-    /* PROTEZIONE TASTIERA IOS (PASSO 4 WIZARD) */
     #wizard-step-name:focus-within .recap-collapsible {
       display: none !important;
     }
@@ -256,8 +249,6 @@
 
     <!-- SIDEBAR DESKTOP & TABLET WIDESCREEN (>= 768px) -->
     <aside id="desktop-sidebar" class="hidden md:flex flex-col w-72 lg:w-80 bg-[#0d131f] border-r border-white/5 h-full p-4 space-y-4 flex-none z-20">
-      
-      <!-- Card Profilo Desktop con Avatar Iniziale Standardizzato -->
       <div class="bg-surface/90 p-3.5 rounded-2xl border border-white/10 shadow-xl space-y-3">
         <div class="flex items-center space-x-3">
           <div id="user-avatar-desk" class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-sky-600 via-indigo-600 to-slate-900 ring-2 ring-sky-400/40 flex items-center justify-center font-black text-xl text-white shadow-lg flex-shrink-0">
@@ -286,7 +277,6 @@
         </div>
       </div>
 
-      <!-- Menu Navigazione Desktop -->
       <nav class="flex-1 space-y-1.5" id="desktop-nav-menu">
         <button id="desk-nav-home" onclick="AppRouter.navigate('home')" class="desk-nav-btn w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl text-xs font-bold text-sky-400 bg-white/5" data-tab="home">
           <i data-lucide="home" class="w-4 h-4"></i> <span>Dashboard Home</span>
@@ -323,9 +313,7 @@
       <main class="flex-1 overflow-y-auto overflow-x-hidden relative" id="app-main-scroll">
         <div class="p-3.5 md:p-6 lg:p-8 max-w-[1500px] mx-auto space-y-5">
 
-          <!-- =============================================================== -->
-          <!-- VISTA 1: DASHBOARD HOME                                         -->
-          <!-- =============================================================== -->
+          <!-- VISTA 1: DASHBOARD HOME -->
           <section id="view-home" class="space-y-5 app-screen">
             <div class="rounded-3xl p-6 md:p-8 bg-gradient-to-br from-slate-900 via-slate-900 to-indigo-950 border border-white/10 shadow-2xl space-y-3.5 relative overflow-hidden">
               <div class="flex items-center space-x-2.5 flex-wrap gap-y-2">
@@ -353,7 +341,6 @@
               </div>
             </div>
 
-            <!-- Griglia 4 KPI -->
             <div class="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
               <div onclick="AppRouter.navigate('profile')" class="bg-surface/80 hover:bg-surface active:scale-[0.98] transition-all p-3.5 md:p-4 rounded-2xl border border-white/5 cursor-pointer flex justify-between items-start group shadow-md">
                 <div>
@@ -388,7 +375,6 @@
               </div>
             </div>
 
-            <!-- Carosello Promozionale -->
             <div class="space-y-2.5">
               <div class="flex items-center justify-between">
                 <span class="text-xs md:text-sm font-bold uppercase tracking-wider text-slate-400">In Evidenza nel Syndicate</span>
@@ -400,9 +386,7 @@
             </div>
           </section>
 
-          <!-- =============================================================== -->
-          <!-- VISTA 2: CATALOGO GIOCHI NOIR RPG                               -->
-          <!-- =============================================================== -->
+          <!-- VISTA 2: CATALOGO GIOCHI NOIR RPG -->
           <section id="view-hub" class="space-y-5 hidden app-screen max-w-5xl mx-auto">
             <div class="flex items-center justify-between pb-2 border-b border-white/10">
               <div>
@@ -434,11 +418,11 @@
           </section>
 
           <!-- =============================================================== -->
-          <!-- VISTA 3: WIZARD CREAZIONE EROE (OTTIMIZZATO ZERO-SCROLL)        -->
+          <!-- VISTA 3: WIZARD CREAZIONE EROE (3D CIRCOLARE SENZA CLIPPING)   -->
           <!-- =============================================================== -->
           <section id="view-wizard" class="space-y-3 hidden app-screen max-w-5xl mx-auto w-full">
             
-            <!-- Breadcrumb Navigation Bar a 4 Passi (Compatta) -->
+            <!-- Breadcrumb Navigation Bar (4 Passi) -->
             <div class="flex items-center justify-between px-3 py-1.5 rounded-xl bg-black/60 border border-white/10 text-[10px] sm:text-xs font-mono shadow-md">
               <span id="wiz-step-ind-1" class="font-black text-sky-400">1. Archetipo</span>
               <span class="text-slate-600">›</span>
@@ -449,7 +433,7 @@
               <span id="wiz-step-ind-4" class="text-slate-500">4. Battesimo</span>
             </div>
 
-            <!-- PASSO 1: I TAROCCHI DEL SALMASTRO (COVER-FLOW CON FACE ANCHORING) -->
+            <!-- PASSO 1: CAROSELLO 3D AD ANELLO CONTINUO -->
             <div id="wizard-step-class" class="space-y-2">
               <div class="flex items-center justify-between pb-1 border-b border-white/5">
                 <div>
@@ -459,17 +443,17 @@
                 <span class="badge badge-xs badge-info font-mono font-bold text-[8.5px]">Episodio 0</span>
               </div>
               
-              <!-- Palcoscenico 3D Cover Flow -->
-              <div class="relative py-1">
-                <button onclick="GameEngine.coverflowPrev()" class="hidden sm:flex absolute left-4 top-1/2 -translate-y-1/2 z-30 btn btn-circle btn-sm bg-black/80 border border-white/20 text-white hover:bg-sky-500 hover:border-sky-400 transition-all shadow-2xl">
+              <!-- Palcoscenico 3D Cover Flow Continuo -->
+              <div class="relative py-2 px-2">
+                <button onclick="GameEngine.coverflowPrev()" class="hidden sm:flex absolute left-2 top-1/2 -translate-y-1/2 z-30 btn btn-circle btn-sm bg-black/85 border border-white/20 text-white hover:bg-sky-500 hover:border-sky-400 transition-all shadow-2xl">
                   ❮
                 </button>
-                <button onclick="GameEngine.coverflowNext()" class="hidden sm:flex absolute right-4 top-1/2 -translate-y-1/2 z-30 btn btn-circle btn-sm bg-black/80 border border-white/20 text-white hover:bg-sky-500 hover:border-sky-400 transition-all shadow-2xl">
+                <button onclick="GameEngine.coverflowNext()" class="hidden sm:flex absolute right-2 top-1/2 -translate-y-1/2 z-30 btn btn-circle btn-sm bg-black/85 border border-white/20 text-white hover:bg-sky-500 hover:border-sky-400 transition-all shadow-2xl">
                   ❯
                 </button>
 
                 <div class="coverflow-stage-wrapper" id="wizard-classes-stage"></div>
-                <div class="flex justify-center items-center space-x-2 mt-2" id="wizard-coverflow-dots"></div>
+                <div class="flex justify-center items-center space-x-2 mt-3" id="wizard-coverflow-dots"></div>
               </div>
               
               <div class="pt-1">
@@ -515,7 +499,7 @@
                 </div>
               </div>
 
-              <!-- Chips Reparti Pulite con Momentum Scroll -->
+              <!-- Chips Reparti Pulite -->
               <div class="flex space-x-1.5 overflow-x-auto no-scrollbar pb-1 text-[10px]" id="wizard-shop-category-chips">
                 <button onclick="GameEngine.filterWizardShop('ARMI')" class="rpg-category-chip badge badge-info font-bold cursor-pointer">🗡️ Armi</button>
                 <button onclick="GameEngine.filterWizardShop('VEICOLI')" class="rpg-category-chip badge badge-ghost font-bold cursor-pointer">🛴 Veicoli</button>
@@ -525,10 +509,8 @@
                 <button onclick="GameEngine.filterWizardShop('TALISMANI')" class="rpg-category-chip badge badge-ghost font-bold cursor-pointer">📿 Talismani</button>
               </div>
 
-              <!-- Griglia Articoli Emporio -->
               <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2.5 max-h-[46dvh] overflow-y-auto pr-1" id="wizard-shop-grid"></div>
 
-              <!-- Sommario Dotazione Zaino -->
               <div id="wizard-shop-backpack-summary" class="p-2.5 rounded-xl bg-black/60 border border-white/5 text-xs flex items-center justify-between shadow-inner">
                 <span class="text-slate-300 text-[11px]">🎒 Zaino di Partenza: <b id="wizard-shop-backpack-count" class="text-white">0 oggetti</b></span>
                 <button onclick="GameEngine.resetWizardShop()" class="btn btn-xs btn-ghost text-rose-400 text-[10px]">🔄 Ripristina Oro</button>
@@ -542,7 +524,7 @@
               </div>
             </div>
 
-            <!-- PASSO 4: BATTESIMO DELL'EROE (KEYBOARD FOCUS SHIELD) -->
+            <!-- PASSO 4: BATTESIMO DELL'EROE -->
             <div id="wizard-step-name" class="space-y-2.5 hidden pb-6">
               <div class="flex items-center justify-between pb-1 border-b border-white/5">
                 <div>
@@ -552,8 +534,7 @@
                 <span class="text-xs font-black text-amber-400 font-mono" id="wizard-class-recap">Classe</span>
               </div>
 
-              <!-- Card Riepilogo Profilo -->
-              <div class="bg-surface p-3.5 sm:p-4 rounded-2xl border border-white/10 shadow-xl space-y-2.5 text-xs wizard-compact-on-focus" id="wizard-final-recap-box">
+              <div class="bg-surface p-3.5 sm:p-4 rounded-2xl border border-white/10 shadow-xl space-y-2.5 text-xs" id="wizard-final-recap-box">
                 <div class="flex items-center justify-between border-b border-white/5 pb-2">
                   <div class="flex items-center space-x-2.5">
                     <span class="text-2xl" id="wizard-recap-avatar">🥋</span>
@@ -590,34 +571,43 @@
           </section>
 
           <!-- =============================================================== -->
-          <!-- VISTA 4: SCENA DI GIOCO & COCKPIT NARRATIVO                     -->
+          <!-- VISTA 4: COCKPIT GAMEPLAY (HUD A DOPPIA RIGA OTTIMIZZATO)      -->
           <!-- =============================================================== -->
           <section id="view-gameplay" class="flex flex-col justify-between space-y-2.5 hidden app-screen max-w-3xl mx-auto w-full relative pb-2">
             
-            <!-- HUD Compatto Eroe -->
-            <div class="flex-none bg-surface/90 px-3.5 py-2 rounded-xl border border-white/10 shadow-md flex items-center justify-between text-xs h-11">
-              <div class="flex items-center space-x-2.5">
-                <span class="text-xl" id="kpi-hero-avatar">🥋</span>
-                <div>
-                  <div class="font-black text-white leading-none truncate max-w-[95px] sm:max-w-[140px]" id="kpi-hero-name">Eroe</div>
-                  <div class="text-[9px] font-mono text-amber-300 mt-0.5"><span id="kpi-hero-gold">40</span> 🟡</div>
+            <!-- HUD ERGONOMICO A DOPPIA RIGA (NESSUN TESTO SOVRAPPOSTO) -->
+            <div class="flex-none bg-surface/95 px-3.5 py-2.5 rounded-2xl border border-white/10 shadow-lg space-y-2">
+              
+              <!-- Riga 1: Identità, Fazione e Borsello Oro -->
+              <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-2.5 min-w-0">
+                  <span class="text-xl flex-shrink-0" id="kpi-hero-avatar">🥋</span>
+                  <div class="min-w-0 flex items-center space-x-2">
+                    <span class="font-black text-white text-sm tracking-wide truncate max-w-[130px] sm:max-w-[200px]" id="kpi-hero-name">Eroe</span>
+                  </div>
+                </div>
+                <div class="flex items-center space-x-1.5 font-mono text-amber-300 font-black text-xs sm:text-sm">
+                  <span>🟡</span> <span id="kpi-hero-gold">40</span> <span class="text-[10px] text-slate-400 font-normal">Oro</span>
                 </div>
               </div>
 
-              <!-- Barra PV -->
-              <div class="w-28 sm:w-36 space-y-0.5">
-                <div class="flex justify-between text-[8.5px] font-mono text-slate-300">
-                  <span>SALUTE</span> <span id="kpi-hero-pv-text" class="font-bold">25/25</span>
+              <!-- Riga 2: Barra Salute Fluida e Trittico D20 Leggibile -->
+              <div class="flex items-center justify-between pt-1 border-t border-white/5 gap-3">
+                <div class="flex-1 flex items-center space-x-2 min-w-0">
+                  <span class="text-rose-400 font-black text-xs flex-shrink-0">❤️</span>
+                  <div class="flex-1 space-y-0.5">
+                    <progress id="kpi-hero-pv-bar" class="progress progress-error w-full h-2 rounded-full" value="25" max="25"></progress>
+                  </div>
+                  <span id="kpi-hero-pv-text" class="font-mono font-bold text-xs text-white tabular-nums flex-shrink-0">25/25</span>
                 </div>
-                <progress id="kpi-hero-pv-bar" class="progress progress-error w-full h-1.5" value="25" max="25"></progress>
+
+                <div class="flex space-x-1.5 font-mono text-[10px] sm:text-xs flex-shrink-0">
+                  <span class="bg-black/60 px-2 py-0.5 rounded-lg border border-white/10 text-slate-200" title="Forza">🥊 <b id="kpi-mod-for" class="text-white">+0</b></span>
+                  <span class="bg-black/60 px-2 py-0.5 rounded-lg border border-white/10 text-slate-200" title="Destrezza">🤸 <b id="kpi-mod-des" class="text-white">+0</b></span>
+                  <span class="bg-black/60 px-2 py-0.5 rounded-lg border border-white/10 text-slate-200" title="Intelligenza">🧠 <b id="kpi-mod-int" class="text-white">+0</b></span>
+                </div>
               </div>
 
-              <!-- Modificatori D20 -->
-              <div class="flex space-x-1 font-mono text-[8.5px]">
-                <span class="bg-black/50 px-1.5 py-0.5 rounded border border-white/5" title="Forza">🥊 <b id="kpi-mod-for">+0</b></span>
-                <span class="bg-black/50 px-1.5 py-0.5 rounded border border-white/5" title="Destrezza">🤸 <b id="kpi-mod-des">+0</b></span>
-                <span class="bg-black/50 px-1.5 py-0.5 rounded border border-white/5" title="Intelligenza">🧠 <b id="kpi-mod-int">+0</b></span>
-              </div>
             </div>
 
             <!-- Inquadratura Cinema con Banner Citazione Fisso -->
@@ -784,7 +774,7 @@
         </div>
       </main>
 
-      <!-- 4.A FOOTER MOBILE: PIATTAFORMA (HOME, BOTTEGA, RICETTE, PROFILO) -->
+      <!-- 4.A FOOTER MOBILE: PIATTAFORMA -->
       <footer id="main-app-footer" class="md:hidden flex-none z-30 glass-footer flex justify-around items-center pt-2 pb-5 px-1">
         <button id="mob-nav-home" onclick="AppRouter.navigate('home')" class="nav-tab flex flex-col items-center py-1 px-3 text-sky-400" data-tab="home">
           <i data-lucide="home" class="w-4 h-4"></i>
@@ -809,7 +799,7 @@
         </button>
       </footer>
 
-      <!-- 4.B FOOTER MOBILE: COCKPIT DI GIOCO (ATTIVO DURANTE IL GAMEPLAY) -->
+      <!-- 4.B FOOTER MOBILE: COCKPIT DI GIOCO -->
       <footer id="main-game-cockpit-footer" class="hidden flex-none cockpit-footer flex justify-around items-center pt-1.5 px-3 z-30">
         <button onclick="GameEngine.openBackpackDrawer()" class="flex flex-col items-center text-slate-300 hover:text-sky-400 active:scale-95 transition-all">
           <i data-lucide="backpack" class="w-4 h-4"></i>
@@ -837,12 +827,12 @@
   </div>
 
   <!-- ======================================================================= -->
-  <!-- 5. CASSETTI & MODALI UNIFICATE (IL DESIGN SYSTEM UNIVERSALE)            -->
+  <!-- 5. CASSETTI & MODALI UNIFICATE                                          -->
   <!-- ======================================================================= -->
 
-  <!-- LA SCHEDA DETTAGLIATA UNIVERSALE POLIMORFICA -->
+  <!-- SCHEDA DETTAGLIATA UNIVERSALE (DEEP INSPECTION A 360°) -->
   <dialog id="modal-universal-detail" class="modal modal-bottom sm:modal-middle">
-    <div class="modal-box bg-[#0d131f] border border-sky-500/50 p-5 space-y-4 max-w-lg shadow-2xl text-left">
+    <div class="modal-box bg-[#0d131f] border border-sky-500/50 p-5 space-y-3.5 max-w-lg shadow-2xl text-left">
       <div class="flex items-center justify-between pb-2 border-b border-white/10">
         <div class="flex items-center space-x-3">
           <span class="text-3xl" id="uni-detail-icon">📦</span>
@@ -862,9 +852,9 @@
         </div>
       </div>
 
-      <div id="uni-detail-metrics-box" class="p-3 rounded-xl bg-black/60 border border-white/5 space-y-1">
+      <div id="uni-detail-metrics-box" class="p-3 rounded-2xl bg-black/60 border border-white/10 space-y-1">
         <div class="text-[9px] font-bold text-amber-400 uppercase tracking-wider" id="uni-detail-metrics-label">PROPRIETÀ TECNICHE</div>
-        <div class="font-mono text-white text-xs font-bold" id="uni-detail-metrics-value">Nessuna proprietà</div>
+        <div class="font-mono text-white text-xs font-bold leading-relaxed" id="uni-detail-metrics-value">Nessuna proprietà</div>
       </div>
 
       <div class="space-y-1">
@@ -881,7 +871,7 @@
     </div>
   </dialog>
 
-  <!-- DADO D20 SUSPENSE -->
+  <!-- DADO D20 SUSPENSE (NON PIÙ BLOCCATO) -->
   <dialog id="modal-dice-suspense" class="modal modal-middle">
     <div class="modal-box bg-[#0d131f]/95 border border-sky-500/50 p-6 text-center space-y-4 max-w-xs shadow-2xl">
       <div class="relative w-20 h-20 mx-auto flex items-center justify-center">
@@ -1024,7 +1014,7 @@
     </div>
   </dialog>
 
-  <!-- MODALE DETTAGLIO PIANO / CHECKOUT -->
+  <!-- MODALE DETTAGLIO PIANO -->
   <dialog id="modal-plan-upgrade" class="modal modal-bottom sm:modal-middle">
     <div class="modal-box bg-[#0d131f] border border-sky-500/40 p-5 text-left space-y-4 max-w-md shadow-2xl">
       <div class="flex items-center justify-between pb-2 border-b border-white/10">
@@ -1057,13 +1047,13 @@
     </div>
   </dialog>
 
-<!-- MOTORE AUDIO (Va per primo!) -->
-  <script src="audio.js"></script>
+  <!-- MOTORE AUDIO -->
+  <script src="audio.js?v=4"></script>
 
-  <!-- ARCHITETTURA MODULARE ESTIQATSY -->
-  <script src="js/app-core.js?v=2"></script>
-  <script src="js/app-modules.js?v=2"></script>
-  <script src="js/rules2-wizard.js?v=2"></script>
-  <script src="js/rules2-engine.js?v=2"></script>
+  <!-- ARCHITETTURA MODULARE ESTIQATSY CON CACHE BUSTER -->
+  <script src="js/app-core.js?v=4"></script>
+  <script src="js/app-modules.js?v=4"></script>
+  <script src="js/rules2-wizard.js?v=4"></script>
+  <script src="js/rules2-engine.js?v=4"></script>
 </body>
 </html>
