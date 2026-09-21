@@ -2,6 +2,7 @@
 // PROJECT: ESTIQATSY SYNDICATE & RPG PLATFORM
 // FILE: js/app-modules.js
 // LAYER 2: MODULI DI PIATTAFORMA AGNOSTICI, PORTALE GIOCHI, SHOP & SAAS
+// NOTE: 100% DISACCOPPIATO DA TAILWIND - TEMPLATE DINAMICI A CLASSI SEMANTICHE
 // ============================================================================
 
 const AppModules = {
@@ -23,7 +24,7 @@ const AppModules = {
         this.applyHardLocking(AppState.allowedModules);
       }
 
-      // 2. Caricamento parallelo dei cataloghi
+      // 2. Caricamento parallelo dei cataloghi di piattaforma
       await Promise.allSettled([
         this.loadGamesCatalog(),
         this.fetchShop(),
@@ -34,10 +35,10 @@ const AppModules = {
       // 3. Slider Promozionale dinamico della Home
       this.initCarousel();
 
-      // 4. Rimozione Loader d'avvio
+      // 4. Rimozione Loader d'avvio tramite classe semantica
       const loader = document.getElementById("app-loading");
       if (loader) {
-        loader.classList.add("opacity-0");
+        loader.classList.add("fade-out");
         setTimeout(() => loader.remove(), 250);
       }
 
@@ -83,7 +84,7 @@ const AppModules = {
       const el = document.getElementById(boxId);
       if (!el) return;
       if (photoUrl) {
-        el.innerHTML = `<img src="${photoUrl}" class="w-full h-full object-cover rounded-2xl" alt="Avatar">`;
+        el.innerHTML = `<img src="${photoUrl}" class="avatar-img" alt="Avatar">`;
       } else {
         el.textContent = (u.nome || "U").charAt(0).toUpperCase();
       }
@@ -172,25 +173,23 @@ const AppModules = {
     AppState.carousel.index = 0;
 
     track.innerHTML = slides.map((s, idx) => `
-      <div class="min-w-full relative h-44 md:h-64 bg-slate-900 cursor-pointer overflow-hidden flex-none" onclick="AppModules.handleCarouselClick(${idx})">
-        <img src="${s.img}" class="w-full h-full object-cover">
-        <div class="absolute inset-0 bg-gradient-to-t from-[#090D16] via-black/40 to-transparent"></div>
-        <span class="badge badge-sm badge-primary font-bold uppercase text-[8px] md:text-[10px] absolute top-3.5 left-3.5 shadow-md">
-          ${s.badge}
-        </span>
-        <div class="absolute bottom-4 inset-x-4 flex items-end justify-between">
-          <div class="max-w-[70%]">
-            <h3 class="font-black text-sm md:text-lg text-white truncate">${s.titolo}</h3>
-            <p class="text-[10px] md:text-xs text-slate-300 mt-0.5 line-clamp-1">${s.sottotitolo}</p>
+      <div class="carousel-slide" onclick="AppModules.handleCarouselClick(${idx})">
+        <img src="${s.img}" class="carousel-slide-img" alt="${s.titolo}">
+        <div class="carousel-slide-overlay"></div>
+        <span class="carousel-slide-badge">${s.badge}</span>
+        <div class="carousel-slide-content">
+          <div class="carousel-slide-text">
+            <h3 class="carousel-slide-title">${s.titolo}</h3>
+            <p class="carousel-slide-sub">${s.sottotitolo}</p>
           </div>
-          <button class="btn btn-xs md:btn-sm btn-primary font-bold px-3 shadow-lg shadow-sky-600/30 flex-shrink-0">${s.btnText}</button>
+          <button class="carousel-slide-btn">${s.btnText}</button>
         </div>
       </div>
     `).join("");
 
     if (dotsBox) {
       dotsBox.innerHTML = slides.map((_, i) => `
-        <span class="w-2 h-1.5 rounded-full transition-all ${i === 0 ? 'bg-sky-400 w-4' : 'bg-white/20'}" id="car-dot-${i}"></span>
+        <span class="carousel-dot ${i === 0 ? 'active' : ''}" id="car-dot-${i}"></span>
       `).join("");
     }
 
@@ -224,7 +223,7 @@ const AppModules = {
     for (let i = 0; i < AppState.carousel.count; i++) {
       const dot = document.getElementById(`car-dot-${i}`);
       if (dot) {
-        dot.className = `h-1.5 rounded-full transition-all ${i === idx ? 'bg-sky-400 w-4' : 'bg-white/20 w-2'}`;
+        dot.className = `carousel-dot ${i === idx ? 'active' : ''}`;
       }
     }
   },
@@ -254,32 +253,28 @@ const AppModules = {
     if (counter) counter.textContent = `${list.length} Saghe Disponibili`;
 
     if (list.length === 0) {
-      container.innerHTML = `<div class="col-span-full py-12 text-center text-slate-500 text-xs">Nessun gioco registrato nella piattaforma.</div>`;
+      container.innerHTML = `<div class="empty-state-card">Nessun gioco registrato nella piattaforma.</div>`;
       return;
     }
 
     container.innerHTML = list.map(saga => {
       const ruleCode = saga.regole || "Rules2";
       return `
-        <div onclick="AppModules.openGameDetail('${saga.gameKey}')" class="bg-surface/90 hover:bg-surface rounded-2xl border border-white/10 p-4 flex flex-col justify-between space-y-3 cursor-pointer active:scale-[0.98] transition-all shadow-xl group">
-          <div class="h-36 w-full rounded-xl overflow-hidden relative bg-black/40">
-            <img src="${saga.mediaUrl}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
-            <span class="badge badge-xs badge-primary font-black uppercase text-[8px] absolute top-2.5 left-2.5 shadow">
-              ${ruleCode}
-            </span>
+        <div onclick="AppModules.openGameDetail('${saga.gameKey}')" class="game-saga-card group">
+          <div class="game-saga-media">
+            <img src="${saga.mediaUrl}" class="game-saga-img" alt="${saga.serie}">
+            <span class="badge badge-xs badge-primary game-saga-badge">${ruleCode}</span>
           </div>
-          <div>
-            <div class="flex items-center justify-between">
-              <h3 class="text-sm font-black text-white group-hover:text-sky-400 transition-colors">${saga.emoji || '🎮'} ${saga.serie}</h3>
-              <span class="text-[9px] text-slate-400 font-mono">${(saga.episodes || []).length} Ep.</span>
+          <div class="game-saga-body">
+            <div class="game-saga-title-row">
+              <h3 class="game-saga-title">${saga.emoji || '🎮'} ${saga.serie}</h3>
+              <span class="game-saga-ep-count">${(saga.episodes || []).length} Ep.</span>
             </div>
-            <p class="text-[11px] text-slate-300 line-clamp-2 mt-1 leading-relaxed">${saga.descrizione || ''}</p>
+            <p class="game-saga-desc">${saga.descrizione || ''}</p>
           </div>
-          <div class="pt-2 border-t border-white/5 flex items-center justify-between text-[10px]">
-            <span class="text-slate-400">${saga.hasActiveGame ? '⚔️ Partita in corso' : 'Pronto al lancio'}</span>
-            <button class="btn btn-xs btn-primary font-bold">
-              Esplora Capitoli ›
-            </button>
+          <div class="game-saga-footer">
+            <span class="game-saga-status">${saga.hasActiveGame ? '⚔️ Partita in corso' : 'Pronto al lancio'}</span>
+            <button class="btn btn-xs btn-primary font-bold">Esplora Capitoli ›</button>
           </div>
         </div>
       `;
@@ -309,14 +304,14 @@ const AppModules = {
     const container = document.getElementById("hub-episodes-container");
     if (container) {
       container.innerHTML = (saga.episodes || []).map(ep => `
-        <div class="p-3 bg-surface rounded-xl border border-white/5 flex items-center justify-between shadow-md">
-          <div>
-            <div class="text-xs font-bold text-white">${ep.emoji || '▶️'} Ep. ${ep.episodio}: ${ep.titolo}</div>
-            <div class="text-[9px] text-slate-400 mt-0.5">
+        <div class="episode-list-item">
+          <div class="episode-item-info">
+            <div class="episode-item-title">${ep.emoji || '▶️'} Ep. ${ep.episodio}: ${ep.titolo}</div>
+            <div class="episode-item-cost">
               ${ep.canContinueFree ? '⚔️ Continua con Eroe Veterano (Gratis)' : (ep.costoMegoin === 0 ? 'Gratis' : `${ep.costoMegoin} Megoin 🪙`)}
             </div>
           </div>
-          <button onclick="AppModules.startEpisode('${saga.gameKey}', ${ep.episodio}, ${!!ep.canContinueFree})" class="btn btn-xs btn-primary font-bold px-3 shadow-md">
+          <button onclick="AppModules.startEpisode('${saga.gameKey}', ${ep.episodio}, ${!!ep.canContinueFree})" class="btn btn-xs btn-primary font-bold">
             ${ep.canContinueFree ? 'Continua Veterano' : 'Gioca'}
           </button>
         </div>
@@ -332,7 +327,6 @@ const AppModules = {
 
     const ruleEngineKey = saga.regole || "Rules2";
 
-    // Ricerca robusta con fallback gerarchico
     let engine = null;
     if (typeof window.EngineRegistry !== "undefined" && typeof window.EngineRegistry.get === "function") {
       engine = window.EngineRegistry.get(ruleEngineKey);
@@ -345,7 +339,7 @@ const AppModules = {
     }
 
     if (!engine) {
-      alert(`⚠️ Motore di gioco "${ruleEngineKey}" non trovato o non ancora caricato.`);
+      alert(`⚠️ Motore di gioco "${ruleEngineKey}" non trovato.`);
       return;
     }
 
@@ -394,7 +388,7 @@ const AppModules = {
     if (sc && AppState.shop.categories.length > 0) {
       const all = ["tutti", ...AppState.shop.categories];
       sc.innerHTML = all.map(c => `
-        <button onclick="AppModules.setShopCategory('${c}')" class="px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap transition-all ${AppState.shop.activeCategory.toLowerCase() === c.toLowerCase() ? 'bg-sky-500 text-white' : 'bg-surface text-slate-400 border border-white/5'}">
+        <button onclick="AppModules.setShopCategory('${c}')" class="category-chip ${AppState.shop.activeCategory.toLowerCase() === c.toLowerCase() ? 'active' : ''}">
           ${c.toUpperCase()}
         </button>
       `).join("");
@@ -415,30 +409,30 @@ const AppModules = {
     }
 
     if (list.length === 0) {
-      grid.innerHTML = `<div class="col-span-full text-center py-8 text-slate-500 text-xs">Nessun articolo trovato nello Shop.</div>`;
+      grid.innerHTML = `<div class="empty-state-card col-span-full">Nessun articolo trovato nello Shop.</div>`;
       return;
     }
 
     grid.innerHTML = list.map(p => `
-      <div onclick="AppModules.openShopDetail('${p.id}')" class="bg-surface rounded-2xl border border-white/5 flex flex-col justify-between overflow-hidden cursor-pointer active:scale-[0.98] transition-transform relative p-0 shadow-lg">
+      <div onclick="AppModules.openShopDetail('${p.id}')" class="shop-product-card">
         ${p.isLocked ? `
-          <div class="absolute inset-0 z-10 bg-slate-950/85 backdrop-blur-sm flex flex-col items-center justify-center p-2 text-center">
-            <span class="text-xl mb-1">🔒</span>
-            <span class="text-[9px] font-black text-amber-300 uppercase">Richiede Piano ${p.requiredPlan}</span>
+          <div class="locked-card-overlay">
+            <span class="locked-icon">🔒</span>
+            <span class="locked-label">Richiede Piano ${p.requiredPlan}</span>
           </div>
         ` : ''}
-        <div class="h-36 md:h-44 w-full bg-slate-900 overflow-hidden relative">
-          <img src="${p.mediaUrl}" class="w-full h-full object-cover">
-          <span class="badge badge-xs ${p.isDigitale ? 'badge-info' : 'badge-neutral'} absolute top-2.5 left-2.5 text-[8px] uppercase font-bold">${p.tipo || 'Fisico'}</span>
+        <div class="shop-card-media">
+          <img src="${p.mediaUrl}" class="shop-card-img" alt="${p.nome}">
+          <span class="badge badge-xs ${p.isDigitale ? 'badge-info' : 'badge-neutral'} shop-type-badge">${p.tipo || 'Fisico'}</span>
         </div>
-        <div class="p-3.5 space-y-2.5">
+        <div class="shop-card-body">
           <div>
-            <div class="text-[9px] font-bold text-sky-400 uppercase">${p.categoria}</div>
-            <h4 class="font-bold text-xs md:text-sm text-white line-clamp-1 mt-0.5">${p.nome}</h4>
+            <div class="shop-card-cat">${p.categoria}</div>
+            <h4 class="shop-card-name">${p.nome}</h4>
           </div>
-          <div class="pt-2 border-t border-white/5 flex items-center justify-between">
-            <span class="text-xs md:text-sm font-black text-amber-300 text-glow-amber">${p.prezzoMegoin} 🪙</span>
-            <span class="text-[10px] text-slate-400 font-bold">${p.isEsaurito ? 'Esaurito' : '€ ' + p.prezzoEuro}</span>
+          <div class="shop-card-footer">
+            <span class="shop-card-price-megoin">${p.prezzoMegoin} 🪙</span>
+            <span class="shop-card-price-euro">${p.isEsaurito ? 'Esaurito' : '€ ' + p.prezzoEuro}</span>
           </div>
         </div>
       </div>
@@ -463,11 +457,11 @@ const AppModules = {
     const btn = document.getElementById("detail-shop-action-btn");
     if (item.isLocked) {
       btn.textContent = `🔒 Richiede Piano ${item.requiredPlan}`;
-      btn.className = "btn btn-warning btn-sm font-bold";
+      btn.className = "btn btn-warning btn-sm font-bold w-full";
       btn.onclick = () => AppModules.openPlanModal(item.requiredPlan);
     } else {
       btn.textContent = item.prezzoMegoin === 0 ? "🎁 Riscatta Gratis" : `Acquista (${item.prezzoMegoin} 🪙)`;
-      btn.className = "btn btn-primary btn-sm font-bold shadow-lg shadow-sky-600/30";
+      btn.className = "btn btn-primary btn-sm font-bold w-full shadow-lg shadow-sky-600/30";
       btn.onclick = () => AppModules.buyProduct(item.id);
     }
 
@@ -544,7 +538,7 @@ const AppModules = {
     if (rc && AppState.recipes.categories.length > 0) {
       const all = ["tutti", ...AppState.recipes.categories];
       rc.innerHTML = all.map(c => `
-        <button onclick="AppModules.setRecipeCategory('${c}')" class="px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap transition-all ${AppState.recipes.activeCategory.toLowerCase() === c.toLowerCase() ? 'bg-sky-500 text-white' : 'bg-surface text-slate-400 border border-white/5'}">
+        <button onclick="AppModules.setRecipeCategory('${c}')" class="category-chip ${AppState.recipes.activeCategory.toLowerCase() === c.toLowerCase() ? 'active' : ''}">
           ${c.toUpperCase()}
         </button>
       `).join("");
@@ -565,22 +559,22 @@ const AppModules = {
     }
 
     if (list.length === 0) {
-      grid.innerHTML = `<div class="col-span-full text-center py-8 text-slate-500 text-xs">Nessuna ricetta o cocktail trovato.</div>`;
+      grid.innerHTML = `<div class="empty-state-card col-span-full">Nessuna ricetta o cocktail trovato.</div>`;
       return;
     }
 
     grid.innerHTML = list.map(r => `
-      <div onclick="AppModules.openRecipeDetail(${r.rowIndex})" class="bg-surface rounded-2xl border border-white/5 flex items-center justify-between p-3.5 cursor-pointer active:scale-[0.98] transition-transform shadow-lg">
-        <div class="flex items-center space-x-3.5 overflow-hidden">
-          <div class="w-12 h-12 rounded-xl bg-slate-900 overflow-hidden flex-shrink-0">
-            <img src="${r.mediaUrl}" class="w-full h-full object-cover">
+      <div onclick="AppModules.openRecipeDetail(${r.rowIndex})" class="recipe-card">
+        <div class="recipe-card-content">
+          <div class="recipe-card-thumb">
+            <img src="${r.mediaUrl}" class="recipe-card-img" alt="${r.piatto}">
           </div>
-          <div class="overflow-hidden">
-            <h4 class="font-bold text-xs md:text-sm text-white truncate">${r.piatto}</h4>
-            <div class="text-[10px] text-slate-400 mt-0.5 truncate">${r.categoria} • ⏱️ ${r.tempo}</div>
+          <div class="recipe-card-info">
+            <h4 class="recipe-card-name">${r.piatto}</h4>
+            <div class="recipe-card-sub">${r.categoria} • ⏱️ ${r.tempo}</div>
           </div>
         </div>
-        <span class="badge badge-sm badge-outline border-sky-400/40 text-sky-400 font-bold text-[10px] px-2.5">${r.costo}</span>
+        <span class="badge badge-sm badge-outline border-sky-400/40 text-sky-400 font-bold">${r.costo}</span>
       </div>
     `).join("");
 
@@ -600,24 +594,23 @@ const AppModules = {
 
     const rpg = document.getElementById("detail-recipe-rpg");
     if (rpg && r.rpg) {
-      // Rendering completamente agnostico di qualsiasi parametro RPG presente
       const entries = Object.entries(r.rpg).filter(([_, val]) => val && val !== "—" && val !== "-");
       if (entries.length > 0) {
         rpg.innerHTML = entries.map(([key, val]) => `
-          <div class="p-2 rounded-xl bg-surface/80 border border-white/5 text-center">
-            <span class="text-sky-400 font-bold block capitalize">${val}</span>
-            <span class="text-[9px] text-slate-400 capitalize">${key}</span>
+          <div class="recipe-stat-box">
+            <span class="recipe-stat-val">${val}</span>
+            <span class="recipe-stat-label">${key}</span>
           </div>
         `).join("");
       } else {
-        rpg.innerHTML = `<div class="col-span-full text-slate-500 text-[10px] italic">Nessun modificatore associato.</div>`;
+        rpg.innerHTML = `<div class="empty-state-card col-span-full">Nessun parametro associato.</div>`;
       }
     }
     AppRouter.navigate("subview-recipe-detail");
   },
 
   // --------------------------------------------------------------------------
-  // 6. PIANI SAAS & ABBONAMENTI (100% AGNOSTICO E DATA-DRIVEN)
+  // 6. PIANI SAAS & ABBONAMENTI (100% DATA-DRIVEN & SEMANTICO)
   // --------------------------------------------------------------------------
   openPlansCatalogModal: function() {
     this.renderPlansCatalog();
@@ -627,11 +620,21 @@ const AppModules = {
 
   setBillingCycle: function(cycle) {
     AppState.billingCycle = cycle;
+    const isYearly = (cycle === "yearly");
+    
+    // TOGGLE PULITO DEGLI STATI ACTIVE / IDLE SENZA MANIPOLARE CLASSNAME
     const btnM = document.getElementById("billing-toggle-monthly");
     const btnY = document.getElementById("billing-toggle-yearly");
-    const isYearly = (cycle === "yearly");
-    if (btnM) btnM.className = `flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition-all ${!isYearly ? 'bg-sky-500 text-white shadow-md' : 'text-slate-400'}`;
-    if (btnY) btnY.className = `flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition-all ${isYearly ? 'bg-sky-500 text-white shadow-md' : 'text-slate-400'} flex items-center justify-center space-x-1`;
+
+    if (btnM) {
+      btnM.classList.toggle("active", !isYearly);
+      btnM.classList.toggle("idle", isYearly);
+    }
+    if (btnY) {
+      btnY.classList.toggle("active", isYearly);
+      btnY.classList.toggle("idle", !isYearly);
+    }
+
     this.renderPlansCatalog();
   },
 
@@ -641,7 +644,6 @@ const AppModules = {
 
     const isYearly = (AppState.billingCycle === "yearly");
 
-    // Identificazione agnostica del piano gratuito basata sul prezzo a zero
     const isPlanFree = p => {
       const pStr = String(p.prezzoMensile || "").toLowerCase();
       return pStr.includes("0,00") || cleanNumber(p.prezzoMensile) === 0;
@@ -649,11 +651,8 @@ const AppModules = {
 
     const freePlan = AppState.plans.find(isPlanFree) || AppState.plans[0];
     const paidPlans = AppState.plans.filter(p => p !== freePlan);
-
-    // Identificazione dinamica del piano in evidenza (piano mediano tra quelli a pagamento)
     const featuredIndex = paidPlans.length > 0 ? Math.floor(paidPlans.length / 2) : -1;
 
-    // Estrazione dinamica della mappa completa di tutti i perk per la tabella comparativa
     const allPerksMap = new Map();
     AppState.plans.forEach(p => {
       (p.perks || []).forEach(pk => {
@@ -664,25 +663,25 @@ const AppModules = {
     });
 
     container.innerHTML = `
-      <!-- Vista Desktop: Griglia Dinamica -->
-      <div class="hidden md:grid grid-cols-${Math.min(paidPlans.length, 4)} gap-4">
+      <!-- Vista Desktop: Griglia Piani -->
+      <div class="plans-desktop-grid">
         ${paidPlans.map((p, idx) => {
           const isFeatured = (idx === featuredIndex);
           const price = isYearly ? p.prezzoAnnuale : p.prezzoMensile;
           const period = isYearly ? "/anno" : "/mese";
           return `
-            <div onclick="AppModules.openPlanModal('${p.id}')" class="bg-surface/90 hover:bg-surface active:scale-[0.98] transition-all rounded-2xl border ${p.isAttivo ? 'border-sky-400 ring-2 ring-sky-400/40 shadow-xl' : (isFeatured ? 'border-amber-400/60 ring-1 ring-amber-400/30' : 'border-white/10')} p-4 flex flex-col justify-between space-y-3 cursor-pointer relative group">
-              ${p.isAttivo ? `<div class="absolute top-2.5 right-2.5"><span class="badge badge-xs badge-info font-black uppercase text-[8px] py-1.5 px-2">✨ ATTIVO</span></div>` : ''}
-              ${(!p.isAttivo && isFeatured) ? `<div class="absolute top-2.5 right-2.5"><span class="badge badge-xs badge-warning font-black uppercase text-[8px] py-1.5 px-2">CONSIGLIATO</span></div>` : ''}
+            <div onclick="AppModules.openPlanModal('${p.id}')" class="plan-card ${p.isAttivo ? 'active-plan' : (isFeatured ? 'featured-plan' : '')}">
+              ${p.isAttivo ? `<div class="plan-card-badge-top"><span class="badge badge-xs badge-info font-black">✨ ATTIVO</span></div>` : ''}
+              ${(!p.isAttivo && isFeatured) ? `<div class="plan-card-badge-top"><span class="badge badge-xs badge-warning font-black">CONSIGLIATO</span></div>` : ''}
               <div class="space-y-1">
-                <h4 class="font-black text-sm text-white group-hover:text-sky-400 transition-colors">${p.nome}</h4>
-                <div class="text-lg font-black text-amber-300">${price} <span class="text-[10px] text-slate-400 font-normal">${period}</span></div>
+                <h4 class="plan-card-title">${p.nome}</h4>
+                <div class="plan-card-price">${price} <span class="plan-card-period">${period}</span></div>
               </div>
-              <div class="space-y-1.5 pt-2 border-t border-white/5 text-[11px] text-slate-300">
-                <div class="text-amber-400 font-bold">🪙 +${p.bonusMegoin} Megoin / mese</div>
-                <div class="text-[10px] text-slate-400 line-clamp-2">${p.descrizione || ''}</div>
+              <div class="plan-card-body">
+                <div class="plan-bonus-text">🪙 +${p.bonusMegoin} Megoin / mese</div>
+                <div class="plan-desc-text">${p.descrizione || ''}</div>
               </div>
-              <button class="btn btn-xs ${p.isAttivo ? 'btn-outline border-white/20 text-slate-400 cursor-not-allowed' : 'btn-primary'} w-full font-bold">
+              <button class="btn btn-xs ${p.isAttivo ? 'btn-outline border-white/20' : 'btn-primary'} w-full font-bold">
                 ${p.isAttivo ? 'In Uso' : 'Dettagli Piano ›'}
               </button>
             </div>
@@ -690,40 +689,40 @@ const AppModules = {
         }).join("")}
       </div>
 
-      <!-- Vista Mobile: Tabella Comparativa 100% Agnostica su Tutti i Perk -->
-      <div class="md:hidden bg-surface/90 rounded-2xl border border-white/10 overflow-hidden shadow-xl">
-        <table class="w-full text-center border-collapse text-[10px]">
+      <!-- Vista Mobile: Tabella Comparativa Dinamica -->
+      <div class="plans-mobile-table-wrapper">
+        <table class="plans-compare-table">
           <thead>
-            <tr class="border-b border-white/10 bg-black/40">
-              <th class="p-2 text-left text-[9px] font-bold uppercase text-slate-400">Piano</th>
+            <tr>
+              <th class="table-head-corner">Piano</th>
               ${paidPlans.map(p => `
-                <th onclick="AppModules.openPlanModal('${p.id}')" class="p-2 cursor-pointer">
-                  <div class="font-black text-white ${p.isAttivo ? 'text-sky-400' : ''}">${p.nome}</div>
-                  <div class="text-amber-300 text-[9px]">${isYearly ? p.prezzoAnnuale : p.prezzoMensile}</div>
+                <th onclick="AppModules.openPlanModal('${p.id}')" class="table-head-plan">
+                  <div class="table-plan-name ${p.isAttivo ? 'text-sky-400' : ''}">${p.nome}</div>
+                  <div class="table-plan-price">${isYearly ? p.prezzoAnnuale : p.prezzoMensile}</div>
                 </th>
               `).join("")}
             </tr>
           </thead>
-          <tbody class="divide-y divide-white/5">
+          <tbody>
             <tr>
-              <td class="p-2 text-left text-slate-300 font-semibold">🪙 Megoin</td>
-              ${paidPlans.map(p => `<td class="p-2 font-bold text-amber-400">+${p.bonusMegoin}</td>`).join("")}
+              <td class="table-cell-lead">🪙 Megoin</td>
+              ${paidPlans.map(p => `<td class="table-cell-val font-bold text-amber-400">+${p.bonusMegoin}</td>`).join("")}
             </tr>
             ${Array.from(allPerksMap.entries()).map(([k, label]) => `
               <tr>
-                <td class="p-2 text-left text-slate-300 font-semibold truncate max-w-[110px]">${label}</td>
+                <td class="table-cell-lead">${label}</td>
                 ${paidPlans.map(p => {
                   const pk = (p.perks || []).find(x => x.key === k);
                   const isEnabled = pk ? pk.enabled : false;
-                  return `<td class="p-2">${isEnabled ? '✅' : '❌'}</td>`;
+                  return `<td class="table-cell-val">${isEnabled ? '✅' : '❌'}</td>`;
                 }).join("")}
               </tr>
             `).join("")}
-            <tr class="bg-black/30">
-              <td class="p-2 text-left text-[9px] font-bold text-slate-400">Azione</td>
+            <tr class="table-footer-row">
+              <td class="table-cell-lead">Azione</td>
               ${paidPlans.map(p => `
-                <td class="p-1.5">
-                  <button onclick="AppModules.openPlanModal('${p.id}')" class="btn btn-xs ${p.isAttivo ? 'btn-outline border-white/20' : 'btn-primary'} px-2 font-bold text-[8px]">
+                <td class="table-cell-val">
+                  <button onclick="AppModules.openPlanModal('${p.id}')" class="btn btn-xs ${p.isAttivo ? 'btn-outline border-white/20' : 'btn-primary'} font-bold">
                     ${p.isAttivo ? 'In Uso' : 'Apri'}
                   </button>
                 </td>
@@ -733,20 +732,20 @@ const AppModules = {
         </table>
       </div>
 
-      <!-- Card Piano Base / Gratuito (Dinamica) -->
+      <!-- Card Piano Base / Gratuito -->
       ${freePlan ? `
-        <div onclick="AppModules.openPlanModal('${freePlan.id}')" class="bg-surface/60 hover:bg-surface active:scale-[0.99] transition-all p-3.5 rounded-2xl border ${freePlan.isAttivo ? 'border-sky-400/50' : 'border-white/5'} flex items-center justify-between cursor-pointer group mt-3 shadow-md">
-          <div class="flex items-center space-x-3">
-            <div class="w-8 h-8 rounded-xl bg-white/5 flex items-center justify-center text-sm">⚓</div>
+        <div onclick="AppModules.openPlanModal('${freePlan.id}')" class="free-plan-card ${freePlan.isAttivo ? 'active-plan' : ''}">
+          <div class="free-plan-lead">
+            <div class="free-plan-icon">⚓</div>
             <div>
               <div class="flex items-center space-x-2">
-                <span class="text-xs font-black text-white group-hover:text-sky-400 transition-colors">${freePlan.nome}</span>
-                ${freePlan.isAttivo ? '<span class="badge badge-xs badge-info font-bold text-[8px] uppercase">IN USO</span>' : ''}
+                <span class="free-plan-title">${freePlan.nome}</span>
+                ${freePlan.isAttivo ? '<span class="badge badge-xs badge-info font-bold">IN USO</span>' : ''}
               </div>
-              <p class="text-[10px] text-slate-400 mt-0.5">${freePlan.descrizione || 'Include 1 Megoin mensile • Gratuito'}</p>
+              <p class="free-plan-desc">${freePlan.descrizione || 'Include 1 Megoin mensile • Gratuito'}</p>
             </div>
           </div>
-          <button class="btn btn-xs btn-ghost text-slate-400 group-hover:text-white font-bold text-[10px]">Dettagli ›</button>
+          <button class="btn btn-xs btn-ghost text-slate-400 font-bold">Dettagli ›</button>
         </div>
       ` : ''}
     `;
@@ -771,10 +770,10 @@ const AppModules = {
 
     const perksBox = document.getElementById("plan-modal-perks-list");
     if (perksBox) {
-      let htmlPerks = `<div class="flex items-center space-x-2 text-amber-300 font-bold pb-1.5 border-b border-white/5"><span>🪙</span> <span>+${plan.bonusMegoin} Megoin al mese inclusi</span></div>`;
+      let htmlPerks = `<div class="plan-perk-bonus"><span>🪙</span> <span>+${plan.bonusMegoin} Megoin al mese inclusi</span></div>`;
       if (plan.perks && plan.perks.length > 0) {
         htmlPerks += plan.perks.map(pk => `
-          <div class="flex items-center space-x-2 ${pk.enabled ? 'text-slate-200' : 'text-slate-500'}">
+          <div class="plan-perk-row ${pk.enabled ? 'enabled' : 'disabled'}">
             <span>${pk.enabled ? '✅' : '❌'}</span> <span>${pk.label}</span>
           </div>
         `).join("");
@@ -787,7 +786,7 @@ const AppModules = {
       if (plan.isAttivo) {
         actBtn.textContent = "Piano Attualmente in Uso";
         actBtn.disabled = true;
-        actBtn.className = "btn btn-outline border-white/20 btn-sm w-full text-slate-400 font-bold cursor-not-allowed";
+        actBtn.className = "btn btn-outline border-white/20 btn-sm w-full text-slate-400 font-bold";
       } else {
         actBtn.textContent = `Attiva ${plan.nome} (${priceText}${periodText})`;
         actBtn.disabled = false;
@@ -823,16 +822,16 @@ const AppModules = {
     const c = document.getElementById("profile-vault-container");
     if (!c) return;
     if (AppState.vault.length === 0) {
-      c.innerHTML = `<div class="text-center py-4 text-slate-500 text-xs">Nessun file scaricato o riscattato finora.</div>`;
+      c.innerHTML = `<div class="empty-state-card">Nessun file scaricato o riscattato finora.</div>`;
       return;
     }
     c.innerHTML = AppState.vault.map(v => `
-      <div class="p-3 rounded-2xl bg-surface/80 border border-white/5 flex items-center justify-between">
+      <div class="vault-item-card">
         <div>
-          <div class="font-bold text-white text-xs md:text-sm">${v.nome}</div>
-          <div class="text-[10px] text-slate-400">${v.data}</div>
+          <div class="vault-item-title">${v.nome}</div>
+          <div class="vault-item-date">${v.data}</div>
         </div>
-        <a href="${v.url}" target="_blank" class="btn btn-xs btn-success font-bold px-3">Scarica</a>
+        <a href="${v.url}" target="_blank" class="btn btn-xs btn-success font-bold">Scarica</a>
       </div>
     `).join("");
 
@@ -860,16 +859,16 @@ const AppModules = {
     const c = document.getElementById("profile-transactions-container");
     if (!c) return;
     if (!txs || txs.length === 0) {
-      c.innerHTML = `<div class="text-center py-4 text-slate-500 text-xs">Nessuna transazione recente registrata.</div>`;
+      c.innerHTML = `<div class="empty-state-card">Nessuna transazione recente registrata.</div>`;
       return;
     }
     c.innerHTML = txs.map(t => `
-      <div class="py-2.5 flex justify-between items-center">
+      <div class="transaction-row">
         <div>
-          <div class="font-bold text-white text-xs md:text-sm">${t.tipo}</div>
-          <div class="text-[10px] text-slate-400">${t.data} • ${t.dettaglio}</div>
+          <div class="transaction-type">${t.tipo}</div>
+          <div class="transaction-desc">${t.data} • ${t.dettaglio}</div>
         </div>
-        <div class="font-mono text-xs md:text-sm font-bold ${t.megoin.includes('+') ? 'text-emerald-400' : 'text-amber-400'}">
+        <div class="transaction-amount ${t.megoin.includes('+') ? 'income' : 'expense'}">
           ${t.megoin}
         </div>
       </div>
@@ -879,5 +878,4 @@ const AppModules = {
   }
 };
 
-// Esposizione globale per garantire compatibilità con l'intera piattaforma
 window.AppModules = AppModules;
