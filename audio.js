@@ -1,9 +1,10 @@
 // ============================================================================
 // PROJECT: ESTIQATSY BOT & WEBAPP
-// FILE: audio.js (VERSIONE 4.0 - CINEMA NOIR, TACTICAL SOUND DESIGN & HOWLER.JS)
-// DESCRIZIONE: Motore sonoro avanzato per WebApp e RPG Engine.
-//              Musiche BGM noir/poliziottesco, SFX diegetici specifici per ogni azione,
-//              Audio Ducking sui colpi critici, sblocco iOS Safari e crossfade fluido.
+// FILE: audio.js (VERSIONE 6.0 - CORE & RULES2 SOUND DESIGN)
+// DESCRIZIONE: Motore sonoro per Piattaforma e Motore RPG Noir.
+//              - BGM & SFX CORE: Hub, Bottega, Ricette, Profilo, UI Click, Coin.
+//              - BGM & SFX RULES2: Wizard, Moli, Combattimento, Dadi, Zombi, Droghe.
+//              - Supporto avanzato iOS Safari (Silent Buffer Unlock) e Android.
 // ============================================================================
 
 const SoundEngine = (function() {
@@ -12,133 +13,135 @@ const SoundEngine = (function() {
   let currentBgmHowl = null;
   let isUnlocked = false;
 
-  const BGM_VOLUME = 0.32; // Volume d'atmosfera per non disturbare la lettura
-  const SFX_VOLUME = 0.70; // Volume d'impatto per feedback tattile e dadi
+  let duckTimer = null;
+  let fadeTimer = null;
+
+  const BGM_VOLUME = 0.30; // Volume d'atmosfera equilibrato per la lettura
+  const SFX_VOLUME = 0.68; // Volume d'impatto per feedback tattile e dadi
 
   // ==========================================================================
-  // 1. TRACCE MUSICALI BGM (COERENZA NARRATIVA NOIR SALMASTRO & POLIZIOTTESCO)
-  // File MP3 verificati, stabili e compatibili con iOS WebKit / Android / Desktop
+  // 1. TRACCE MUSICALI BGM (FILE VERIFICATI SU WIKIMEDIA COMMONS)
   // ==========================================================================
   const bgmUrls = {
-    // A. Intro / Hub Serie / Banchina (Hard-Boiled Detective Jazz: tromba cupa e pioggia)
+    // --- AMBITO A: PIATTAFORMA CORE ---
+    // Dashboard & Hub Saghe: Hard Boiled (Tromba noir cupa e pioggia)
+    core_hub: "https://commons.wikimedia.org/wiki/Special:FilePath/Hard_Boiled_(ISRC_USUAN1700076).mp3",
     intro: "https://commons.wikimedia.org/wiki/Special:FilePath/Hard_Boiled_(ISRC_USUAN1700076).mp3",
     
-    // B. Wizard Creazione Eroe (Poliziottesco anni '70: contrabbasso furtivo e groove da strada)
-    wizard: "https://commons.wikimedia.org/wiki/Special:FilePath/Bass_Walker_(ISRC_USUAN1100720).mp3",
+    // Bottega Syndicate & Mercato: Backbay Lounge (Smoky lounge jazz da bisca)
+    core_shop: "https://commons.wikimedia.org/wiki/Special:FilePath/Backbay_Lounge_(ISRC_USUAN1700068).mp3",
     
-    // C. Esplorazione & Snodi Padule (Dark Coastal Ambient: vento cupo, miasmi e tensione salmastra)
-    exploration: "https://commons.wikimedia.org/wiki/Special:FilePath/Ossuary_1_-_A_Beginning_(ISRC_USUAN1500045).mp3",
-    
-    // D. Duello & Combattimento (Ritmica industriale e percussioni grezze da rissa da banchina)
-    combat: "https://commons.wikimedia.org/wiki/Special:FilePath/Volatile_Reaction_(ISRC_USUAN1400039).mp3",
-    
-    // E. Emporio Ciccio & CO. (Smoky Lounge Jazz da bisca e ricettatore portuale clandestino)
-    emporio: "https://commons.wikimedia.org/wiki/Special:FilePath/Backbay_Lounge_(ISRC_USUAN1700068).mp3",
-    
-    // F. Morte / Overdose / Sconfitta (Tragico e disilluso: violoncello e desolazione)
+    // Barlady & Ricettario: Airport Lounge (Jazz rilassato da cocktail bar)
+    core_recipes: "https://commons.wikimedia.org/wiki/Special:FilePath/Airport_Lounge_(ISRC_USUAN1100806).mp3",
+
+    // --- AMBITO B: MOTORE RULES2 (RPG NOIR SALMASTRO) ---
+    // Wizard Creazione Eroe: Bass Walker (Groove furtivo di contrabbasso)
+    rules2_wizard: "https://commons.wikimedia.org/wiki/Special:FilePath/Bass_Walker_(ISRC_USUAN1200071).mp3",
+    wizard: "https://commons.wikimedia.org/wiki/Special:FilePath/Bass_Walker_(ISRC_USUAN1200071).mp3",
+
+    // Esplorazione Moli & Capannoni: Covert Affair (Tensione investigativa)
+    rules2_explore: "https://commons.wikimedia.org/wiki/Special:FilePath/Covert_Affair_(ISRC_USUAN1100795).mp3",
+    exploration: "https://commons.wikimedia.org/wiki/Special:FilePath/Covert_Affair_(ISRC_USUAN1100795).mp3",
+
+    // Padule Notturno & Snodi Cupi: Dark Walk (Miasmi salmastri e sospetto)
+    rules2_ambient: "https://commons.wikimedia.org/wiki/Special:FilePath/Dark_Walk_(ISRC_USUAN1100468).mp3",
+
+    // Duello D20 & Rissa da Banchina: Aggressor (Percussioni industriali pesanti)
+    rules2_combat: "https://commons.wikimedia.org/wiki/Special:FilePath/Aggressor_(ISRC_USUAN1700051).mp3",
+    combat: "https://commons.wikimedia.org/wiki/Special:FilePath/Aggressor_(ISRC_USUAN1700051).mp3",
+
+    // Scontro col Boss / Tensione Estrema: Deadly Roulette (Suspense noir)
+    rules2_boss: "https://commons.wikimedia.org/wiki/Special:FilePath/Deadly_Roulette_(ISRC_USUAN1600033).mp3",
+
+    // Morte / Overdose / Sconfitta: Bittersweet (Tragico violoncello disilluso)
+    rules2_defeat: "https://commons.wikimedia.org/wiki/Special:FilePath/Bittersweet_(ISRC_USUAN1700004).mp3",
     defeat: "https://commons.wikimedia.org/wiki/Special:FilePath/Bittersweet_(ISRC_USUAN1700004).mp3",
-    
-    // G. Vittoria / Epilogo Capitolo (Groove blues/jazz cinico e trionfale, non infantile)
-    victory: "https://commons.wikimedia.org/wiki/Special:FilePath/Opportunity_Walks_(ISRC_USUAN1100588).mp3"
+
+    // Vittoria Duello / Epilogo Capitolo: Opportunity Walks (Blues cinico e trionfale)
+    rules2_victory: "https://commons.wikimedia.org/wiki/Special:FilePath/Opportunity_Walks_(ISRC_USUAN1100123).mp3",
+    victory: "https://commons.wikimedia.org/wiki/Special:FilePath/Opportunity_Walks_(ISRC_USUAN1100123).mp3"
   };
 
   // ==========================================================================
-  // 2. EFFETTI SONORI SFX (DISTINZIONE DIEGETICA PER OGNI AZIONE DI GIOCO)
+  // 2. EFFETTI SONORI SFX (MIXKIT VERIFICATI - CORE + RULES2)
   // ==========================================================================
   const sfxUrls = {
-    // Interfaccia e Navigazione
-    click: "https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3",
-    
-    // Tiro del Dado D20 (Rimbalzo pesante su legno/pietra)
-    dice: "https://assets.mixkit.co/active_storage/sfx/1070/1070-preview.mp3",
-    
-    // Inserimento Gettone Megoin (Arcade Coin Drop)
-    insert_coin: "https://assets.mixkit.co/active_storage/sfx/2602/2602-preview.mp3",
-    
-    // Guadagno Monete d'Oro / Saldo
-    coin: "https://assets.mixkit.co/active_storage/sfx/2019/2019-preview.mp3",
-    
-    // Banco di Cambio / Cassa Emporio
-    cash_register: "https://assets.mixkit.co/active_storage/sfx/2870/2870-preview.mp3",
-    
-    // Allarme Ingresso Combattimento (Stinger drammatico)
-    combat_start: "https://assets.mixkit.co/active_storage/sfx/2908/2908-preview.mp3",
-    
-    // Colpo a Segno Standard (Lama / cricchetto / impatto)
-    hit: "https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3",
-    
-    // Colpo Critico (20 Naturale: impatto devastante con riverbero)
-    crit_hit: "https://assets.mixkit.co/active_storage/sfx/1143/1143-preview.mp3",
-    
-    // Fuga Riuscita tra i rovi (Scatto rapido e fruscio)
-    flee: "https://assets.mixkit.co/active_storage/sfx/166/166-preview.mp3",
-    
-    // Rianimazione Zombie / Risveglio chimico (Tono viscerale oscuro)
-    zombie: "https://assets.mixkit.co/active_storage/sfx/2608/2608-preview.mp3",
-    
-    // Cessione Droga / Inalazione sostanze (Accendino/fruscio chimico)
-    drug: "https://assets.mixkit.co/active_storage/sfx/2586/2586-preview.mp3",
+    // --- AMBITO A: UI & INTERFACCIA PIATTAFORMA (CORE) ---
+    click: "https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3",          // Tap pulsante UI
+    coin: "https://assets.mixkit.co/active_storage/sfx/2019/2019-preview.mp3",           // Ritiro / Saldo Megoin
+    cash_register: "https://assets.mixkit.co/active_storage/sfx/2870/2870-preview.mp3",  // Cassa Bottega & Banco Cambio
+    success: "https://assets.mixkit.co/active_storage/sfx/2013/2013-preview.mp3",        // Acquisto shop / fulfillment
+    modal_open: "https://assets.mixkit.co/active_storage/sfx/3115/3115-preview.mp3",     // Apertura cassetto / drawer
+    tab_switch: "https://assets.mixkit.co/active_storage/sfx/166/166-preview.mp3",       // Cambio tab navigazione
 
-    // Corruzione / Mazzetta (Fruscio di carta moneta e metallo)
-    bribe: "https://assets.mixkit.co/active_storage/sfx/2005/2005-preview.mp3",
-    
-    // Reperto Trovato / Prova Dossier acquisita
-    clue_found: "https://assets.mixkit.co/active_storage/sfx/1435/1435-preview.mp3",
-
-    // Vittoria Scontro
-    victory: "https://assets.mixkit.co/active_storage/sfx/1435/1435-preview.mp3",
-    
-    // Sconfitta / Collasso
-    defeat: "https://assets.mixkit.co/active_storage/sfx/2303/2303-preview.mp3"
+    // --- AMBITO B: GAMEPLAY TATTICO & D20 (RULES2) ---
+    dice: "https://assets.mixkit.co/active_storage/sfx/1070/1070-preview.mp3",           // Rotolamento D20 su legno
+    insert_coin: "https://assets.mixkit.co/active_storage/sfx/2602/2602-preview.mp3",    // Inizio partita a gettone
+    combat_start: "https://assets.mixkit.co/active_storage/sfx/2908/2908-preview.mp3",   // Stinger inizio combattimento
+    hit: "https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3",            // Colpo a segno standard
+    crit_hit: "https://assets.mixkit.co/active_storage/sfx/1143/1143-preview.mp3",       // Colpo critico (20 naturale)
+    flee: "https://assets.mixkit.co/active_storage/sfx/166/166-preview.mp3",             // Fuga rapida tra i moli
+    zombie: "https://assets.mixkit.co/active_storage/sfx/2608/2608-preview.mp3",         // Necromanzia / risveglio
+    drug: "https://assets.mixkit.co/active_storage/sfx/2586/2586-preview.mp3",           // Assunzione droga / reagenti
+    bribe: "https://assets.mixkit.co/active_storage/sfx/2005/2005-preview.mp3",          // Corruzione con banconote
+    clue_found: "https://assets.mixkit.co/active_storage/sfx/1133/1133-preview.mp3"     // Scatto foto / reperto dossier
   };
 
   const sfxPlayers = {};
   const bgmPlayers = {};
 
-  /**
-   * Sblocco forzato AudioContext per iOS Safari & Telegram WebApp al primo tocco
-   */
+  // ==========================================================================
+  // 3. SBLOCCO AUDIO AVANZATO PER APPLE IOS (SAFARI WEBKIT) & TELEGRAM
+  // ==========================================================================
+  function playSilentBuffer() {
+    if (!window.Howler || !Howler.ctx) return;
+    try {
+      const buffer = Howler.ctx.createBuffer(1, 1, 22050);
+      const source = Howler.ctx.createBufferSource();
+      source.buffer = buffer;
+      source.connect(Howler.ctx.destination);
+      source.start(0);
+      isUnlocked = true;
+    } catch (e) {
+      console.warn("[SoundEngine] Silent buffer fallito:", e);
+    }
+  }
+
   function unlockAudioContext() {
     if (isUnlocked) return;
-    
+
     if (window.Howler && Howler.ctx) {
       if (Howler.ctx.state === "suspended") {
         Howler.ctx.resume().then(() => {
-          isUnlocked = true;
-        });
+          playSilentBuffer();
+          cleanupUnlockListeners();
+        }).catch(() => {});
       } else {
-        isUnlocked = true;
+        playSilentBuffer();
+        cleanupUnlockListeners();
       }
     }
+  }
 
+  function cleanupUnlockListeners() {
     window.removeEventListener("touchstart", unlockAudioContext, true);
     window.removeEventListener("touchend", unlockAudioContext, true);
     window.removeEventListener("click", unlockAudioContext, true);
   }
 
-  /**
-   * Inizializzazione motore e precaricamento SFX
-   */
+  // ==========================================================================
+  // 4. INIZIALIZZAZIONE & GESTIONE VISIBILITÀ MOBILE
+  // ==========================================================================
   function init() {
     window.addEventListener("touchstart", unlockAudioContext, true);
     window.addEventListener("touchend", unlockAudioContext, true);
     window.addEventListener("click", unlockAudioContext, true);
 
-    // Precarica gli SFX leggeri in memoria
-    for (let key in sfxUrls) {
-      try {
-        sfxPlayers[key] = new Howl({
-          src: [sfxUrls[key]],
-          format: ["mp3"],
-          volume: SFX_VOLUME,
-          preload: true
-        });
-      } catch (e) {
-        console.warn("SFX warning:", key);
-      }
-    }
+    // Precarica in memoria SOLO i suoni di base UI per non intasare la banda su mobile
+    const coreEssentialSfx = ["click", "coin", "insert_coin", "dice", "cash_register"];
+    coreEssentialSfx.forEach(key => getOrCreateSfx(key));
 
-    // Gestione background: sospende l'audio se Telegram viene minimizzato
+    // Sospensione audio intelligente quando Telegram viene minimizzato
     document.addEventListener("visibilitychange", () => {
       if (document.hidden) {
         if (currentBgmHowl && currentBgmHowl.playing()) {
@@ -154,42 +157,67 @@ const SoundEngine = (function() {
     updateMuteUI();
   }
 
-  /**
-   * Riproduzione di un effetto sonoro con gestione di sicurezza
-   */
-  function playSfx(name) {
-    if (isMuted || !sfxPlayers[name]) return;
+  // Factory Lazy: carica l'audio solo alla prima richiesta e lo inserisce in cache
+  function getOrCreateSfx(name) {
+    if (sfxPlayers[name]) return sfxPlayers[name];
+    if (!sfxUrls[name]) return null;
+
     try {
-      sfxPlayers[name].play();
+      sfxPlayers[name] = new Howl({
+        src: [sfxUrls[name]],
+        format: ["mp3"],
+        volume: SFX_VOLUME,
+        preload: true
+      });
+      return sfxPlayers[name];
     } catch (e) {
-      console.warn("Errore SFX:", name);
+      console.warn("[SoundEngine] Impossibile inizializzare SFX:", name);
+      return null;
     }
   }
 
-  /**
-   * Riproduzione BGM con dissolvenza incrociata automatica (Crossfade)
-   */
+  // ==========================================================================
+  // 5. METODI PUBBLICI: CONTROLLO SFX, BGM & DUCKING
+  // ==========================================================================
+
+  function playSfx(name) {
+    if (isMuted) return;
+    const player = getOrCreateSfx(name);
+    if (!player) return;
+
+    try {
+      player.play();
+    } catch (e) {
+      console.warn("[SoundEngine] Errore riproduzione SFX:", name);
+    }
+  }
+
   function playBgm(name, fadeDuration = 1000) {
     if (!bgmUrls[name]) return;
     if (currentBgmKey === name && currentBgmHowl && currentBgmHowl.playing()) return;
 
-    // Se c'è già una musica in corso, sfumala ed arrestala
+    // Cancella eventuali timer di dissolvenza pendenti per evitare sovrapposizioni cacofoniche
+    if (fadeTimer) {
+      clearTimeout(fadeTimer);
+      fadeTimer = null;
+    }
+
     if (currentBgmHowl) {
       const oldHowl = currentBgmHowl;
       oldHowl.fade(oldHowl.volume(), 0, fadeDuration);
-      setTimeout(() => {
+      fadeTimer = setTimeout(() => {
         try { oldHowl.stop(); } catch (e) {}
       }, fadeDuration);
     }
 
     currentBgmKey = name;
 
-    // Caricamento in streaming HTML5 solo quando il brano viene richiesto (salva RAM su iOS)
+    // Streaming progressivo HTML5 per preservare la RAM su iOS Safari
     if (!bgmPlayers[name]) {
       bgmPlayers[name] = new Howl({
         src: [bgmUrls[name]],
         format: ["mp3"],
-        html5: true, // Streaming progressivo indispensabile su mobile
+        html5: true,
         loop: true,
         volume: 0
       });
@@ -202,42 +230,40 @@ const SoundEngine = (function() {
         currentBgmHowl.play();
         currentBgmHowl.fade(0, BGM_VOLUME, fadeDuration);
       } catch (e) {
-        console.warn("BGM in attesa di interazione utente:", name);
+        console.warn("[SoundEngine] BGM in attesa di interazione utente:", name);
       }
     }
   }
 
-  /**
-   * Ferma la musica di sottofondo con fade-out morbido
-   */
   function stopBgm(fadeDuration = 800) {
     if (!currentBgmHowl) return;
     const howl = currentBgmHowl;
     currentBgmKey = null;
     currentBgmHowl = null;
 
+    if (fadeTimer) clearTimeout(fadeTimer);
+
     howl.fade(howl.volume(), 0, fadeDuration);
-    setTimeout(() => {
+    fadeTimer = setTimeout(() => {
       try { howl.stop(); } catch (e) {}
     }, fadeDuration);
   }
 
-  /**
-   * Audio Ducking: abbassa momentaneamente la musica durante un colpo critico o evento
-   */
+  // Audio Ducking Robusto: abbassa la musica durante i colpi critici o gli eventi
   function duck(targetVol = 0.08, duration = 1200) {
     if (isMuted || !currentBgmHowl || !currentBgmHowl.playing()) return;
+
+    if (duckTimer) clearTimeout(duckTimer);
+
     currentBgmHowl.fade(currentBgmHowl.volume(), targetVol, 150);
-    setTimeout(() => {
+    duckTimer = setTimeout(() => {
       if (!isMuted && currentBgmHowl && currentBgmHowl.playing()) {
-        currentBgmHowl.fade(currentBgmHowl.volume(), BGM_VOLUME, 450);
+        currentBgmHowl.fade(currentBgmHowl.volume(), BGM_VOLUME, 400);
       }
+      duckTimer = null;
     }, duration);
   }
 
-  /**
-   * Attiva / Disattiva Audio Globale (Mute)
-   */
   function toggleMute() {
     isMuted = !isMuted;
     localStorage.setItem("estiqatsy_audio_muted", isMuted);
@@ -254,22 +280,18 @@ const SoundEngine = (function() {
     updateMuteUI();
   }
 
-  /**
-   * Sincronizzazione visiva dei pulsanti Audio Desktop e Mobile
-   */
+  // Sincronizzazione visiva pulsanti Mute (100% Semantica CSS)
   function updateMuteUI() {
     const badgeDesk = document.getElementById("audio-status-desk");
     if (badgeDesk) {
       badgeDesk.textContent = isMuted ? "OFF" : "ON";
-      badgeDesk.className = isMuted 
-        ? "badge badge-xs badge-error font-bold text-[9px]" 
-        : "badge badge-xs badge-success font-bold text-[9px]";
+      badgeDesk.classList.toggle("badge-error", isMuted);
+      badgeDesk.classList.toggle("badge-success", !isMuted);
     }
 
     const btnMob = document.getElementById("audio-toggle-btn-mob");
     if (btnMob) {
-      btnMob.classList.toggle("text-slate-500", isMuted);
-      btnMob.classList.toggle("text-sky-400", !isMuted);
+      btnMob.classList.toggle("muted", isMuted);
     }
   }
 
@@ -281,6 +303,13 @@ const SoundEngine = (function() {
     stopBgm: stopBgm,
     duck: duck,
     toggleMute: toggleMute,
-    isMuted: () => isMuted
+    isMuted: () => isMuted,
+    // Alias semantici di dominio
+    playCoreBgm: (k) => playBgm(k.startsWith("core_") ? k : `core_${k}`),
+    playRulesBgm: (k) => playBgm(k.startsWith("rules2_") ? k : `rules2_${k}`),
+    playCoreSfx: playSfx,
+    playRulesSfx: playSfx
   };
 })();
+
+window.SoundEngine = SoundEngine;
