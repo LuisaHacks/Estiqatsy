@@ -612,8 +612,12 @@
         </button>
       </footer>
 
-      <!-- 4.B FOOTER GAME COCKPIT RULES2 -->
+      <!-- 4.B FOOTER GAME COCKPIT RULES2 (5 SEZIONI UFFICIALI) -->
       <footer id="main-game-cockpit-footer" class="cockpit-footer hidden">
+        <button onclick="GameEngine.openHeroSheetDrawer()" class="cockpit-btn text-slate-300 hover:text-sky-400">
+          <i data-lucide="user" class="w-4 h-4"></i>
+          <span class="cockpit-btn-label">Scheda</span>
+        </button>
         <button onclick="GameEngine.openBackpackDrawer()" class="cockpit-btn text-slate-300 hover:text-sky-400">
           <i data-lucide="backpack" class="w-4 h-4"></i>
           <span class="cockpit-btn-label">Zaino</span>
@@ -621,10 +625,6 @@
         <button onclick="GameEngine.openEmporioDrawer()" class="cockpit-btn text-slate-300 hover:text-amber-400">
           <i data-lucide="shopping-bag" class="w-4 h-4"></i>
           <span class="cockpit-btn-label">Emporio</span>
-        </button>
-        <button onclick="GameEngine.openCambioModal()" class="cockpit-btn text-amber-400 hover:text-amber-300">
-          <i data-lucide="coins" class="w-4 h-4 text-glow-amber"></i>
-          <span class="cockpit-btn-label font-black">Cambio 🪙</span>
         </button>
         <button onclick="GameEngine.openSquadDrawer()" class="cockpit-btn text-slate-300 hover:text-indigo-400">
           <i data-lucide="users" class="w-4 h-4"></i>
@@ -696,6 +696,82 @@
     </div>
   </dialog>
 
+  <!-- DRAWER SCHEDA EROE (CON BANCO CAMBIO INTEGRATO) -->
+  <dialog id="drawer-hero-sheet" class="modal modal-bottom sm:modal-middle">
+    <div class="modal-box drawer-standard-box">
+      <div class="drawer-header-row">
+        <div class="flex items-center space-x-2">
+          <span class="text-base">📊</span>
+          <h3 class="drawer-title">Scheda Agente & Competenze</h3>
+        </div>
+        <button onclick="document.getElementById('drawer-hero-sheet').close()" class="btn btn-xs btn-circle btn-ghost">✕</button>
+      </div>
+
+      <!-- Profilo Eroe & Avatar Ritratto -->
+      <div class="hero-sheet-profile-card">
+        <div class="flex items-center space-x-3">
+          <div class="hero-sheet-avatar-box">
+            <img id="sheet-hero-avatar-img" src="" class="avatar-img hidden" alt="Avatar">
+            <span id="sheet-hero-avatar-fallback" class="text-2xl">🥋</span>
+          </div>
+          <div class="min-w-0 flex-1">
+            <h4 class="hero-sheet-name" id="sheet-hero-name">Avventuriero</h4>
+            <div class="hero-sheet-class-badge" id="sheet-hero-class">Archetipo (Destra)</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Borsello Sonante & Banco di Cambio Integrato -->
+      <div class="hero-sheet-wallet-box">
+        <div class="flex items-center justify-between">
+          <div>
+            <div class="wallet-label">Borsello Oro Sonante</div>
+            <div class="text-base font-black text-amber-300 font-mono" id="sheet-hero-gold">0 🟡</div>
+          </div>
+          <button onclick="GameEngine.openCambioModal()" class="btn btn-xs btn-warning font-black text-[9px] shadow-sm">
+            💱 Banco Cambio 🪙
+          </button>
+        </div>
+      </div>
+
+      <!-- Trittico Statistiche Pure & Modificatori D20 -->
+      <div class="hero-sheet-stats-grid">
+        <div class="sheet-stat-card">
+          <div class="stat-icon">🥊</div>
+          <div class="stat-label">Forza</div>
+          <div class="stat-val" id="sheet-mod-for">+0</div>
+          <div class="stat-pure" id="sheet-pure-for">10</div>
+        </div>
+        <div class="sheet-stat-card">
+          <div class="stat-icon">🤸</div>
+          <div class="stat-label">Destrezza</div>
+          <div class="stat-val" id="sheet-mod-des">+0</div>
+          <div class="stat-pure" id="sheet-pure-des">10</div>
+        </div>
+        <div class="sheet-stat-card">
+          <div class="stat-icon">🧠</div>
+          <div class="stat-label">Intelligenza</div>
+          <div class="stat-val" id="sheet-mod-int">+0</div>
+          <div class="stat-pure" id="sheet-pure-int">10</div>
+        </div>
+      </div>
+
+      <!-- Dotazione Attiva & Talenti Clandestini -->
+      <div class="space-y-2 pt-1 text-xs">
+        <div class="p-2.5 rounded-xl bg-black/40 border border-white/5 space-y-1">
+          <div class="text-[9.5px] font-bold text-sky-400 uppercase tracking-wider">Dotazione Clandestina Attiva</div>
+          <div class="text-slate-300 text-[11px]">🗡️ Arma in pugno: <b id="sheet-active-weapon" class="text-white">Nessuna</b></div>
+          <div class="text-slate-300 text-[11px]">🛴 Veicolo in uso: <b id="sheet-active-vehicle" class="text-white">Nessuno</b></div>
+        </div>
+
+        <div class="p-2.5 rounded-xl bg-black/40 border border-white/5 space-y-1">
+          <div class="text-[9.5px] font-bold text-amber-400 uppercase tracking-wider">Talenti Appresi</div>
+          <div id="sheet-abilities-list" class="text-slate-300 text-[11px] leading-snug">Nessun talento sbloccato</div>
+        </div>
+      </div>
+    </div>
+  </dialog>
+  
   <!-- DRAWER ZAINO -->
   <dialog id="drawer-backpack" class="modal modal-bottom sm:modal-middle">
     <div class="modal-box drawer-standard-box">
