@@ -1,7 +1,7 @@
 // ============================================================================
 // PROJECT: ESTIQATSY SYNDICATE & RPG PLATFORM
-// FILE: js/rules2.js (VERSIONE 7.0 - CYLINDRICAL DECK, DUAL VIEW & BREATHING GLOW)
-// LAYER 3: ENGINE RULES2, WIZARD 3D / LISTA, COCKPIT & CASSETTI TATTICI
+// FILE: js/rules2.js (VERSIONE 8.0 - FULL-STAGE, STICKY FOOTER & ARCADE CABIN)
+// LAYER 3: ENGINE RULES2, WIZARD FULL-STAGE, COCKPIT & CASSETTI TATTICI
 // ============================================================================
 
 // ----------------------------------------------------------------------------
@@ -17,7 +17,6 @@ const RULES2_SHOP_CATEGORIES = {
   "CURE": { key: "CURE", label: "Cure", emoji: "🍱" }
 };
 
-// Classificazione agnostica 1:1 con la funzione Rules2_ClassifyItem di Google Apps Script
 function Rules2_ClassifyEntity(item) {
   if (!item) return "STRUMENTI";
   const cat = String(item.categoria || "").toUpperCase().trim();
@@ -32,7 +31,6 @@ function Rules2_ClassifyEntity(item) {
   return "STRUMENTI";
 }
 
-// Parser dinamico dei tag atomici dalla colonna Requisito_Bypass (senza dizionari hardcoded)
 function Rules2_FormatHumanEffect(rawEffect, faction = "") {
   if (!rawEffect || rawEffect === "—" || rawEffect === "-") return "Nessuna proprietà speciale.";
   const tags = String(rawEffect).split(/[,|]/);
@@ -123,7 +121,7 @@ const Rules2Store = {
 };
 
 // ----------------------------------------------------------------------------
-// 4. WIZARD CREAZIONE PERSONAGGIO (DOPPIA VISTA: 3D CILINDRO & LISTA TATTICA)
+// 4. WIZARD CREAZIONE PERSONAGGIO (FULL-STAGE, DOPPIA VISTA & FOOTER STICKY)
 // ----------------------------------------------------------------------------
 const Rules2Wizard = {
   state: {
@@ -136,16 +134,14 @@ const Rules2Wizard = {
     shopCatalog: [],
     shopCategory: "ARMI",
 
-    // Indici attivi per i Cilindri 3D
     activeClassIndex: 0,
     activeAbilityIndex: 0,
     activeShopIndex: 0,
 
-    // Preferenze di Visualizzazione per ciascuno Step
     viewModes: {
-      class: "3d",       // '3d' | 'list'
-      abilities: "list", // '3d' | 'list'
-      shop: "list"       // '3d' | 'list'
+      class: "3d",
+      abilities: "list",
+      shop: "list"
     },
 
     chosenClass: null,
@@ -167,7 +163,6 @@ const Rules2Wizard = {
       this.state.isVeteran = isVeteran;
       this.state.step = 1;
 
-      // 1. Lettura Dati con Cache
       let wizData = Rules2Store.loadCachedWizardData(gameKey);
       if (!wizData) {
         wizData = await apiCall("game_wizard_data", { gameKey: gameKey });
@@ -223,23 +218,25 @@ const Rules2Wizard = {
 
   showStep: function(stepNum) {
     this.state.step = stepNum;
+
+    // Toggle dei pannelli di ciascun passo nello stage centrale
     const steps = [
-      { num: 1, id: "wizard-step-class", ind: "wiz-step-ind-1" },
-      { num: 2, id: "wizard-step-abilities", ind: "wiz-step-ind-2" },
-      { num: 3, id: "wizard-step-shop", ind: "wiz-step-ind-3" },
-      { num: 4, id: "wizard-step-name", ind: "wiz-step-ind-4" }
+      { num: 1, id: "wizard-step-class" },
+      { num: 2, id: "wizard-step-abilities" },
+      { num: 3, id: "wizard-step-shop" },
+      { num: 4, id: "wizard-step-name" }
     ];
 
     steps.forEach(s => {
       const el = document.getElementById(s.id);
-      const ind = document.getElementById(s.ind);
       if (el) el.classList.toggle("hidden", s.num !== stepNum);
-      if (ind) {
-        if (s.num === stepNum) ind.className = "step-active";
-        else if (s.num < stepNum) ind.className = "step-completed";
-        else ind.className = "step-idle";
-      }
     });
+
+    // SINCRONIZZAZIONE COMANDI STICKY FOOTER
+    for (let f = 1; f <= 4; f++) {
+      const fEl = document.getElementById(`wiz-footer-step-${f}`);
+      if (fEl) fEl.classList.toggle("hidden", f !== stepNum);
+    }
 
     const scrollContainer = document.getElementById("app-main-scroll");
     if (scrollContainer) scrollContainer.scrollTop = 0;
@@ -281,7 +278,7 @@ const Rules2Wizard = {
   },
 
   // --------------------------------------------------------------------------
-  // PASSO 1: ARCHETIPI (CILINDRO 3D & LISTA TATTICA)
+  // PASSO 1: ARCHETIPI
   // --------------------------------------------------------------------------
   renderStep1: function() {
     this.renderClasses3D();
@@ -296,7 +293,7 @@ const Rules2Wizard = {
 
     const classes = this.state.classes || [];
     if (classes.length === 0) {
-      stage.innerHTML = `<div class="empty-state-card">Nessun archetipo di classe disponibile.</div>`;
+      stage.innerHTML = `<div class="empty-state-card">Nessun archetipo disponibile.</div>`;
       return;
     }
 
@@ -423,7 +420,6 @@ const Rules2Wizard = {
       el.style.zIndex = zIndex;
       el.style.opacity = opacity;
 
-      // Attivazione dell'alone neon solo sulla carta al centro (che respira nel fossato a 38px)
       el.classList.toggle("glow-destra", isCenter && isDestra);
       el.classList.toggle("glow-sinistra", isCenter && !isDestra);
 
@@ -449,7 +445,6 @@ const Rules2Wizard = {
     }
   },
 
-  // Modalità B: Rendering Lista Tattica Archetipi
   renderClassesList: function() {
     const container = document.getElementById("wizard-classes-list-container");
     if (!container) return;
@@ -482,7 +477,7 @@ const Rules2Wizard = {
             <button onclick="event.stopPropagation(); Rules2Wizard.selectClassByIndex(${idx})" class="btn btn-xs ${isSelected ? 'btn-success font-black' : 'btn-outline border-white/20 text-slate-300'}">
               ${isSelected ? 'Scelto ✓' : 'Scegli'}
             </button>
-            <button onclick="event.stopPropagation(); Rules2Wizard.inspectClassDetail('${cls.id}')" class="btn btn-xs btn-ghost text-slate-400" title="Apri Scheda">
+            <button onclick="event.stopPropagation(); Rules2Wizard.inspectClassDetail('${cls.id}')" class="btn btn-xs btn-ghost text-slate-400">
               🔍
             </button>
           </div>
@@ -617,7 +612,7 @@ const Rules2Wizard = {
   },
 
   // --------------------------------------------------------------------------
-  // PASSO 2: TALENTI & ABILITÀ (LISTA & CILINDRO 3D)
+  // PASSO 2: TALENTI & ABILITÀ
   // --------------------------------------------------------------------------
   renderStep2: function() {
     this.renderAbilitiesList();
@@ -872,7 +867,7 @@ const Rules2Wizard = {
   },
 
   // --------------------------------------------------------------------------
-  // PASSO 3: EMPORIO DI CICCIO (GRIGLIA & CILINDRO 3D)
+  // PASSO 3: EMPORIO DI CICCIO
   // --------------------------------------------------------------------------
   renderStep3: function() {
     this.filterShop(this.state.shopCategory || "ARMI");
@@ -1164,7 +1159,7 @@ const Rules2Wizard = {
     const hasStarting = (startingItem && startingItem !== "—" && startingItem !== "-");
     const total = (hasStarting ? 1 : 0) + this.state.boughtItems.length;
 
-    countEl.innerHTML = `${total} oggetti ${hasStarting ? `<span class="text-amber-300 font-bold text-[11px]">(${startingItem})</span>` : ''}`;
+    countEl.innerHTML = `${total} ogg. ${hasStarting ? `<span class="text-amber-300 font-bold text-[10px]">(${startingItem})</span>` : ''}`;
   },
 
   // --------------------------------------------------------------------------
@@ -1242,13 +1237,7 @@ const Rules2Wizard = {
       avatarUrl: heroAvatarUrl
     };
 
-    const confirmMsg = isFree
-      ? `Continui come Eroe Veterano "${heroName}" (Gratis). Confermi?`
-      : `L'avvio della partita consumerà 1 Megoin (Tuo saldo: ${userBalance} 🪙). Confermi?`;
-
-    tgConfirm(confirmMsg, () => {
-      Rules2Engine.executeStartGame(payload, heroAvatarUrl);
-    });
+    Rules2Engine.executeStartGame(payload, heroAvatarUrl);
   },
 
   nextStep: function(stepNum) {
@@ -1269,23 +1258,86 @@ const Rules2Wizard = {
 // ----------------------------------------------------------------------------
 const Rules2Engine = {
 
+  // Flusso Arcade Identico a GAS: Modal "INSERT MEGOIN 🪙" & Gestione Partita Attiva
   launchSession: function(gameKey, epNum, canContinueFree, savedHero) {
     const saga = (AppState.games.catalog || []).find(g => g.gameKey === gameKey);
-    
-    if (saga && saga.hasActiveGame && saga.activePartitaId) {
-      tgConfirm(
-        `⚠️ Hai già una partita attiva (ID: ${saga.activePartitaId}) per questa saga.\n\nVuoi riprendere la partita in corso o avviarne una nuova sovrascrivendola?`,
-        () => {
-          Rules2Wizard.open(gameKey, epNum, canContinueFree, savedHero);
-        },
-        () => {
-          this.advanceToNode(saga.activeNode || ("SND_0001_S1_E" + epNum));
-        }
-      );
+    const modal = document.getElementById("modal-insert-megoin");
+    if (!modal) {
+      Rules2Wizard.open(gameKey, epNum, canContinueFree, savedHero);
       return;
     }
 
-    Rules2Wizard.open(gameKey, epNum, canContinueFree, savedHero);
+    const activeBox = document.getElementById("arcade-active-game-box");
+    const insertBox = document.getElementById("arcade-insert-coin-box");
+    const s = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+
+    if (saga && saga.hasActiveGame && saga.activePartitaId) {
+      if (activeBox) activeBox.classList.remove("hidden");
+      if (insertBox) insertBox.classList.add("hidden");
+
+      s("arcade-active-title", `Partita in corso (${saga.serie})`);
+      s("arcade-active-desc", `Hai una sessione attiva (ID: ${saga.activePartitaId}). Vuoi riprendere la marcia o iniziare una nuova avventura sovrascrivendola?`);
+
+      const btnResume = document.getElementById("arcade-btn-resume");
+      if (btnResume) {
+        btnResume.onclick = () => {
+          modal.close();
+          this.advanceToNode(saga.activeNode || ("SND_0001_S1_E" + epNum));
+        };
+      }
+
+      const btnOverwrite = document.getElementById("arcade-btn-overwrite");
+      if (btnOverwrite) {
+        btnOverwrite.onclick = () => {
+          if (activeBox) activeBox.classList.add("hidden");
+          if (insertBox) insertBox.classList.remove("hidden");
+          this._setupArcadeCoinScreen(gameKey, epNum, canContinueFree, savedHero, modal);
+        };
+      }
+    } else {
+      if (activeBox) activeBox.classList.add("hidden");
+      if (insertBox) insertBox.classList.remove("hidden");
+      this._setupArcadeCoinScreen(gameKey, epNum, canContinueFree, savedHero, modal);
+    }
+
+    modal.showModal();
+  },
+
+  _setupArcadeCoinScreen: function(gameKey, epNum, canContinueFree, savedHero, modal) {
+    const s = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+    const userBalance = Wallet.getMegoin();
+
+    s("arcade-user-balance", userBalance);
+
+    if (canContinueFree || (savedHero && epNum > 1)) {
+      s("arcade-coin-title", "EROE VETERANO");
+      s("arcade-coin-desc", `Prosegui la campagna con l'Eroe veterano "${savedHero ? (savedHero.nomeEroe || savedHero.classe) : 'In Memoria'}". Nessun gettone richiesto!`);
+      s("arcade-cost-badge", "GRATIS 🎖️");
+      const btnLaunch = document.getElementById("arcade-btn-launch");
+      if (btnLaunch) {
+        btnLaunch.textContent = "🎖️ Gioca da Veterano (Gratis)";
+        btnLaunch.onclick = () => {
+          modal.close();
+          Rules2Wizard.open(gameKey, epNum, true, savedHero);
+        };
+      }
+    } else {
+      s("arcade-coin-title", "INSERT 1 MEGOIN");
+      s("arcade-coin-desc", "L'avvio di un nuovo eroe consuma 1 Megoin dal tuo borsello di piattaforma.");
+      s("arcade-cost-badge", "1 🪙");
+      const btnLaunch = document.getElementById("arcade-btn-launch");
+      if (btnLaunch) {
+        btnLaunch.textContent = "🕹️ Inserisci 1 Megoin & Inizia";
+        btnLaunch.onclick = () => {
+          if (userBalance < 1) {
+            tgAlert("⚠️ Saldo Megoin insufficiente! Ricarica il tuo borsello dal Profilo.");
+            return;
+          }
+          modal.close();
+          Rules2Wizard.open(gameKey, epNum, false, null);
+        };
+      }
+    }
   },
 
   executeStartGame: async function(payloadParams, avatarUrl = "") {
@@ -1494,7 +1546,7 @@ const Rules2Engine = {
           </div>
           <div class="quiz-options-grid">
             ${currentNode.quiz.opzioni.map(opz => `
-              <button onclick="Rules2Engine.submitQuizAnswer('${opz.replace(/'/g, "\\"')}')" class="btn btn-sm btn-outline border-white/20 text-[11px] truncate">
+              <button onclick="Rules2Engine.submitQuizAnswer('${opz.replace(/'/g, "\\'")}')" class="btn btn-sm btn-outline border-white/20 text-[11px] truncate">
                 ${opz}
               </button>
             `).join("")}
@@ -1905,7 +1957,7 @@ const Rules2Engine = {
     document.getElementById("modal-universal-detail")?.showModal();
   },
 
-  // 1. CASSETTO SCHEDA EROE (CON BANCO CAMBIO INTEGRATO)
+  // 1. CASSETTO SCHEDA EROE
   openHeroSheetDrawer: function() {
     const h = AppState.activeSession.hero;
     if (!h) return;
@@ -2356,16 +2408,18 @@ const Rules2Engine = {
 };
 
 // ----------------------------------------------------------------------------
-// 7. ESPOSIZIONE GLOBALE SU WINDOW & BINDING ONCLICK PER INDEX.HTML
+// 7. ESPOSIZIONE GLOBALE RESILIENTE & BINDING ONCLICK
 // ----------------------------------------------------------------------------
 window.Rules2Wizard = Rules2Wizard;
 window.Rules2Engine = Rules2Engine;
 
+// Registrazione resiliente multi-chiave per abbattere qualunque bug mobile
 if (typeof window.EngineRegistry !== "undefined" && typeof window.EngineRegistry.register === "function") {
   window.EngineRegistry.register("Rules2", Rules2Engine);
+  window.EngineRegistry.register("rules2", Rules2Engine);
+  window.EngineRegistry.register("Rules 2", Rules2Engine);
 }
 
-// Handler retrocompatibili per i tag onclick di index.html
 window.GameEngine = {
   setWizardViewMode: (step, mode) => Rules2Wizard.setWizardViewMode(step, mode),
   coverflowPrev: () => Rules2Wizard.coverflowPrev(),
