@@ -1,7 +1,7 @@
 /* ============================================================================
    PROJECT: ESTIQATSY SYNDICATE & RPG PLATFORM
-   FILE: css/rules2.css (VERSIONE 6.0 - ZERO-SCROLL, BREATHING & MODAL MIDDLE)
-   LAYER: ENGINE RULES2, WIZARD 3D, COCKPIT NARRATIVO & CASSETTI TATTICI
+   FILE: css/rules2.css (VERSIONE 7.0 - CYLINDRICAL DECK, DUAL VIEW & BREATHING GLOW)
+   LAYER: ENGINE RULES2, WIZARD 3D / LISTA, COCKPIT NARRATIVO & CASSETTI TATTICI
    ============================================================================ */
 
 /* ----------------------------------------------------------------------------
@@ -189,12 +189,12 @@
 }
 
 /* ----------------------------------------------------------------------------
-   3. WIZARD: STEPPER & CAROSELLO 3D CON RESPIRO TOTALE (PASSO 1)
+   3. WIZARD: STEPPER & INTERRUTTORE DOPPIA VISTA (3D CILINDRO / LISTA)
    ---------------------------------------------------------------------------- */
 .wizard-container {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.65rem;
   width: 100%;
 }
 
@@ -226,6 +226,7 @@
   justify-content: space-between;
   padding-bottom: 0.35rem;
   border-bottom: 1px solid var(--tg-border);
+  gap: 0.5rem;
 }
 .step-tag {
   font-size: 8.5px;
@@ -242,59 +243,123 @@
   line-height: 1.2;
 }
 
-/* PALCOSCENICO COVERFLOW CON FOSSATO D'ARIA SUPERIORE E INFERIORE */
+/* Pillola Selettore Modalità di Visualizzazione (3D vs Lista) */
+.wizard-view-toggle-pill {
+  display: inline-flex;
+  align-items: center;
+  background: rgba(0, 0, 0, 0.65);
+  border: 1px solid var(--tg-border-light);
+  border-radius: 9999px;
+  padding: 2px;
+  gap: 2px;
+  flex-shrink: 0;
+}
+.toggle-pill-btn {
+  padding: 0.25rem 0.55rem;
+  border-radius: 9999px;
+  font-size: 9px;
+  font-weight: 800;
+  color: var(--tg-text-muted);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  line-height: 1;
+}
+.toggle-pill-btn:hover {
+  color: #FFFFFF;
+}
+.toggle-pill-btn.active {
+  background: var(--tg-sky);
+  color: #090D16;
+  font-weight: 900;
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.4);
+}
+
+.wizard-display-mode {
+  animation: modeFade 0.2s ease-out forwards;
+}
+@keyframes modeFade {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ----------------------------------------------------------------------------
+   4. PALCOSCENICO CILINDRICO 3D (FOSSATO DI RESPIRO A 38px & ALONE A 32px)
+   ---------------------------------------------------------------------------- */
 .coverflow-stage-outer {
   position: relative;
-  /* FOSSATO DI SICUREZZA: distanzia la carta dal neon di 20px sopra e sotto */
-  margin: 0.85rem 0;
+  /* FOSSATO DI RISPETTO ESTERNO: 38px verticali di buio puro per far respirare l'alone */
+  margin: 2.375rem auto; /* 38px sopra e sotto */
+  padding: 0.25rem 1.75rem; /* 28px laterali */
+  width: 100%;
   overflow: hidden;
 }
+
 .coverflow-stage-wrapper {
   position: relative;
   width: 100%;
-  height: clamp(345px, 47dvh, 420px);
+  /* Altezza carta (~395px) + 2 * 38px di cuscinetto = 470px max */
+  height: clamp(385px, 51dvh, 470px);
   display: flex;
   align-items: center;
   justify-content: center;
-  perspective: 1200px;
+  perspective: 1300px;
+  perspective-origin: center center;
   user-select: none;
   touch-action: pan-y;
 }
 
+/* Scheda Archetipo / Entità nel Palcoscenico 3D */
 .coverflow-card {
   position: absolute;
-  width: clamp(265px, 78vw, 315px);
-  height: clamp(335px, 45dvh, 405px);
+  width: clamp(260px, 75vw, 310px);
+  height: clamp(330px, 45dvh, 395px);
   border-radius: 1.15rem;
   background: #0D131F;
   border: 2px solid var(--tg-border-light);
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 20px 35px -10px rgba(0, 0, 0, 0.8);
-  transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1),
+  transition: transform 0.45s cubic-bezier(0.2, 0.8, 0.2, 1),
               opacity 0.4s ease,
-              box-shadow 0.4s ease;
-  will-change: transform, opacity;
+              box-shadow 0.4s ease,
+              border-color 0.4s ease;
+  will-change: transform, opacity, box-shadow;
   transform-style: preserve-3d;
   cursor: pointer;
 }
 
-/* Glow Neon a 360° senza collisioni con elementi esterni */
+/* ALONE NEON A DOPPIO STRATO (Raggio visibile 32px - Respira nel fossato a 38px) */
 .glow-destra {
   border-color: var(--tg-sky) !important;
-  box-shadow: 0 0 25px -3px rgba(56, 189, 248, 0.65), 0 0 10px rgba(56, 189, 248, 0.35) !important;
+  box-shadow: 0 0 18px 2px rgba(56, 189, 248, 0.65), 
+              0 0 32px 6px rgba(56, 189, 248, 0.25) !important;
 }
 .glow-sinistra {
   border-color: var(--tg-rose) !important;
-  box-shadow: 0 0 25px -3px rgba(244, 63, 94, 0.7), 0 0 10px rgba(244, 63, 94, 0.4) !important;
+  box-shadow: 0 0 18px 2px rgba(244, 63, 94, 0.7), 
+              0 0 32px 6px rgba(244, 63, 94, 0.25) !important;
+}
+.glow-gold {
+  border-color: var(--tg-amber) !important;
+  box-shadow: 0 0 18px 2px rgba(245, 158, 11, 0.65), 
+              0 0 32px 6px rgba(245, 158, 11, 0.25) !important;
+}
+.glow-purple {
+  border-color: var(--tg-purple) !important;
+  box-shadow: 0 0 18px 2px rgba(168, 85, 247, 0.65), 
+              0 0 32px 6px rgba(168, 85, 247, 0.25) !important;
 }
 
-/* Immagine Ridotta per Liberare Ossigeno al Testo */
+/* Riquadro Immagine Scheda */
 .coverflow-media-frame {
   position: relative;
   width: 100%;
-  height: clamp(135px, 19dvh, 165px);
+  height: clamp(130px, 18dvh, 160px);
   background: #090D16;
   flex-shrink: 0;
   overflow: hidden;
@@ -306,17 +371,17 @@
   object-position: top center;
 }
 
-/* BADGE PULITI E DISTANZIATI DAI BORDI */
+/* Inset di sicurezza per i badge interni */
 .coverflow-badge-faction {
   position: absolute;
   top: 0.65rem;
-  left: 0.65rem; /* Inset di sicurezza dal bordo neon */
+  left: 0.65rem;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.4);
 }
 .coverflow-kpi-pill {
   position: absolute;
   top: 0.65rem;
-  right: 0.65rem; /* Inset di sicurezza dal bordo neon */
+  right: 0.65rem;
   display: flex;
   gap: 0.35rem;
 }
@@ -340,7 +405,7 @@
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  gap: 0.4rem;
+  gap: 0.35rem;
   background: #0D131F;
 }
 .coverflow-title {
@@ -371,14 +436,14 @@
 }
 .stat-mod { color: var(--tg-text-muted); }
 
-/* RISOLUZIONE TESTO NARRATIVO TRANCIATO */
+/* Testo Narrativo con Clamp fluido a 3 righe */
 .coverflow-lore {
   font-size: 10.5px;
   color: #CBD5E1;
   line-height: 1.48;
   margin: 0.2rem 0;
   display: -webkit-box;
-  -webkit-line-clamp: 3; /* Bloccato a 3 righe fluide con respiro */
+  -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
   max-height: 3.5rem;
@@ -393,7 +458,7 @@
   gap: 0.45rem;
 }
 .coverflow-gear-label {
-  font-size: 10.5px;
+  font-size: 10px;
   color: #CBD5E1;
   max-width: 60%;
 }
@@ -446,8 +511,78 @@
 }
 
 /* ----------------------------------------------------------------------------
-   4. WIZARD: TALENTI (PASSO 2) & MERCATO NERO (PASSO 3)
+   5. MODALITÀ LISTA TATTICA (PER ARCHETIPI, TALENTI & EMPORIO)
    ---------------------------------------------------------------------------- */
+.wizard-list-scroll-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.55rem;
+  max-height: 48dvh;
+  overflow-y: auto;
+  padding: 0.2rem 0.2rem 0.5rem 0.1rem;
+}
+@media (min-width: 640px) {
+  .wizard-list-scroll-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+  }
+}
+
+/* Card Archetipo in Modalità Lista */
+.class-list-card {
+  background: var(--tg-surface);
+  border: 1px solid var(--tg-border);
+  border-radius: 0.95rem;
+  padding: 0.75rem 0.85rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.class-list-card:hover {
+  background: var(--tg-surface-hover);
+}
+.class-list-card.selected {
+  border-color: var(--tg-sky);
+  background: rgba(56, 189, 248, 0.12);
+  box-shadow: 0 0 15px rgba(56, 189, 248, 0.25);
+}
+.class-list-thumb {
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 0.65rem;
+  background: #090D16;
+  overflow: hidden;
+  flex-shrink: 0;
+  border: 1px solid var(--tg-border);
+}
+.class-list-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top center;
+}
+.class-list-info {
+  flex: 1 1 0%;
+  min-width: 0;
+}
+.class-list-name {
+  font-size: 0.8rem;
+  font-weight: 900;
+  color: #FFFFFF;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.class-list-sub {
+  font-size: 9px;
+  color: var(--tg-text-muted);
+  margin-top: 0.1rem;
+}
+
+/* Griglia Abilità & Talenti (Passo 2) */
 .abilities-scroll-grid {
   display: grid;
   grid-template-columns: 1fr;
@@ -502,7 +637,7 @@
   overflow: hidden;
 }
 
-/* Griglia Merci Ciccio */
+/* Griglia Merci Ciccio (Passo 3) */
 .shop-cards-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -584,7 +719,7 @@
 }
 
 /* ----------------------------------------------------------------------------
-   5. WIZARD: BATTESIMO (PASSO 4) & FOCUS SHIELD
+   6. WIZARD: BATTESIMO (PASSO 4) & FOCUS SHIELD
    ---------------------------------------------------------------------------- */
 .recap-card-box {
   background: var(--tg-surface);
@@ -600,7 +735,7 @@
 }
 
 /* ----------------------------------------------------------------------------
-   6. COCKPIT GAMEPLAY: HUD A DUE RIGHE & SCATOLA NARRATIVA
+   7. COCKPIT GAMEPLAY: HUD A DUE RIGHE & SCATOLA NARRATIVA
    ---------------------------------------------------------------------------- */
 .gameplay-container {
   display: flex;
@@ -620,7 +755,7 @@
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
-/* Riga 1: Avatar da Media URL + Nome Eroe + Borsello Oro */
+/* Riga 1: Identità, Avatar Classe da Media URL e Oro */
 .hud-row-identity {
   display: flex;
   align-items: center;
@@ -803,9 +938,8 @@
 }
 
 /* ----------------------------------------------------------------------------
-   7. MODALE UNIVERSALE & DADO SUSPENSE (CENTRATURE FORENSI AL 100%)
+   8. MODALE UNIVERSALE & DADO SUSPENSE (CENTRATURE RIGIDE)
    ---------------------------------------------------------------------------- */
-/* FORZATURA CENTRATURA RIGIDA MODALE: addio slittamento dal basso */
 dialog.modal.modal-middle,
 dialog.modal:not(.modal-bottom) {
   display: flex !important;
@@ -825,7 +959,6 @@ dialog.modal:not([open]) {
 .modal-dossier .dossier-box {
   background: var(--tg-sec-bg);
   border: 1px solid rgba(56, 189, 248, 0.4);
-  /* PADDING DI RISPETTO GENEROSO: dà aria a tutti i bordi */
   padding: 1.25rem 1.35rem 1.65rem 1.35rem;
   border-radius: 1.25rem;
   max-width: 30rem;
@@ -843,7 +976,6 @@ dialog.modal:not([open]) {
   gap: 0.75rem;
   padding-bottom: 0.45rem;
   border-bottom: 1px solid var(--tg-border);
-  /* PADDING DESTRO: protegge il titolo dalla '✕' di chiusura */
   padding-right: 2.75rem;
 }
 .dossier-icon { font-size: 1.65rem; flex-shrink: 0; }
@@ -940,12 +1072,11 @@ dialog.modal:not([open]) {
 }
 
 /* ----------------------------------------------------------------------------
-   8. I 5 CASSETTI COCKPIT (SCHEDA, ZAINO, EMPORIO, SQUADRA, DOSSIER)
+   9. I 5 CASSETTI COCKPIT (SCHEDA, ZAINO, EMPORIO, SQUADRA, DOSSIER)
    ---------------------------------------------------------------------------- */
 .drawer-standard-box {
   background: var(--tg-sec-bg);
   border: 1px solid var(--tg-border-light);
-  /* Respiro generoso anche dal basso */
   padding: 1.15rem 1.25rem 1.65rem 1.25rem;
   border-radius: 1.25rem;
   display: flex;
