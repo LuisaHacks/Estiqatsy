@@ -4,7 +4,6 @@
 // LAYER 3B: COCKPIT GAMEPLAY, COMBATTIMENTO D20 & CASSETTI (DATA-DRIVEN)
 // ============================================================================
 
-// Mappa categorie conforme al foglio Google
 const RULES2_CATEGORY_MAP = {
   "ARMA": "ARMI",         "ARMI": "ARMI",
   "VEICOLO": "VEICOLI",   "VEICOLI": "VEICOLI",
@@ -21,7 +20,6 @@ function getNormalizedCategory(item) {
   const raw = String(item.categoria || "").trim().toUpperCase();
   if (RULES2_CATEGORY_MAP[raw]) return RULES2_CATEGORY_MAP[raw];
 
-  // Riconoscimento euristico di sicurezza per loot raccolto sul campo
   const name = String(item.nome || item || "").toLowerCase();
   if (name.includes("coltello") || name.includes("machete") || name.includes("lama") || name.includes("serramanico") || name.includes("fiocina") || name.includes("tubo") || name.includes("gomena") || name.includes("chiodatrice") || name.includes("mazzetta")) return "ARMI";
   if (name.includes("scooter") || name.includes("zodiac") || name.includes("bici") || name.includes("panda") || name.includes("apecar") || name.includes("ciao") || name.includes("canoa") || name.includes("barchino")) return "VEICOLI";
@@ -31,6 +29,38 @@ function getNormalizedCategory(item) {
   if (name.includes("bitta") || name.includes("zanna") || name.includes("corno") || name.includes("talismano") || name.includes("feticcio")) return "TALISMANI";
 
   return "STRUMENTI";
+}
+
+function formatHumanEffect(rawEffect) {
+  if (!rawEffect || rawEffect === "—" || rawEffect === "-") return "Nessuna proprietà speciale.";
+  const tags = String(rawEffect).split(/[,|]/);
+  const out = [];
+
+  for (let t of tags) {
+    const tag = t.trim();
+    if (!tag || tag === "—") continue;
+
+    if (tag === "TASTO:ZOMBI_ABILITA") out.push("🧟 <b>Necromanzia:</b> Costa 1 PV per rianimare un nemico caduto come Zombi (Danno x2).");
+    else if (tag === "TASTO:ZOMBI_DROGA") out.push("🧟 <b>Risveglio Chimico:</b> Consuma 1 dose di droga idonea per rianimare uno Zombi.");
+    else if (tag === "CLASSE:Destra") out.push("⚖️ <b>Orientamento Destra:</b> +1 Danno fisso vs fazioni Mazzu e Ideologi.");
+    else if (tag === "CLASSE:Sinistra") out.push("⚖️ <b>Orientamento Sinistra:</b> +1 Danno fisso vs fazioni Camorristi e Burocrati.");
+    else if (tag === "CLASSE:Tutti") out.push("⚖️ <b>Tratto Comune:</b> Accessibile a tutti gli schieramenti.");
+    else if (tag === "PASSIVO:STAT_FORTUNA_1") out.push("🍀 <b>Buona Sorte:</b> +1 costante a tutti i tiri D20 ed Eventi.");
+    else if (tag === "VULN:Mischia") out.push("💥 <b>Vulnerabile alla Mischia:</b> Subisce +2 danni da colpi ravvicinati.");
+    else if (tag === "VULN:Distanza") out.push("🏹 <b>Vulnerabile a Distanza:</b> Subisce +2 danni da proiettili o petardi.");
+    else if (tag.startsWith("PASSIVO:STAT_FOR_")) out.push(`🥊 <b>Forza Rinforzata:</b> +${tag.replace("PASSIVO:STAT_FOR_", "")} permanente.`);
+    else if (tag.startsWith("PASSIVO:STAT_DES_")) out.push(`🤸 <b>Destrezza Agile:</b> +${tag.replace("PASSIVO:STAT_DES_", "")} permanente.`);
+    else if (tag.startsWith("PASSIVO:STAT_INT_")) out.push(`🧠 <b>Intuito Fine:</b> +${tag.replace("PASSIVO:STAT_INT_", "")} permanente.`);
+    else if (tag.startsWith("PASSIVO:INT_VS_")) out.push(`📂 <b>Dossier Mirato:</b> +1 INT situazionale contro la fazione ${tag.replace("PASSIVO:INT_VS_", "")}.`);
+    else if (tag === "PASSIVO:PROVE" || tag === "PASSIVO:DOSSIER") out.push("📁 <b>Organigramma del Potere:</b> +1 INT permanente sull'inchiesta.");
+    else if (tag === "PASSIVO:OGGETTO_EQP_0026_S1_E0") out.push("🛡️ <b>Scudo Ricatto:</b> Riduce di 2 punti tutti i danni fisici subiti.");
+    else if (tag === "PASSIVO:OGGETTO_EQP_0017_S1_E0") out.push("🧰 <b>Scasso Industriale:</b> Sfonda porte e casseforti al 100%.");
+    else if (tag === "PASSIVO:OGGETTO_EQP_0020_S1_E0") out.push("📟 <b>Hacker Demaniale:</b> Bypassa cancelli e varchi elettronici al 100%.");
+    else if (tag === "PASSIVO:OGGETTO_EQP_0022_S1_E0") out.push("📡 <b>Schermatura Radio:</b> Blocca le chiamate di rinforzo nemiche al 100%.");
+    else out.push(`⚡ <b>Proprietà:</b> ${tag.replace(/_/g, " ")}`);
+  }
+
+  return out.join("<br>");
 }
 
 const Rules2Engine = {
@@ -56,7 +86,6 @@ const Rules2Engine = {
 
       const res = await apiCall("game_start", payloadParams);
       if (res && res.success) {
-        // Eredita tutti gli oggetti dell'Emporio di Ciccio per il matching nello zaino
         const wizardCatalog = (typeof Rules2Wizard !== "undefined" && (Rules2Wizard.state.shopCatalog || Rules2Wizard.state.emporioCatalog))
           ? (Rules2Wizard.state.shopCatalog || Rules2Wizard.state.emporioCatalog)
           : [];
@@ -76,6 +105,8 @@ const Rules2Engine = {
         AppState.activeSession.hero = res.statoEroe;
         AppState.activeSession.currentNode = res.nodoIniziale;
         AppState.activeSession.shopCatalog = allGameItems;
+        AppState.activeSession.combatRound = 1;
+        AppState.activeSession.combatEnemyId = null;
         AppState.activeSession.engineState = {
           pendingVictory: null,
           backpackFilter: "ALL",
@@ -118,6 +149,7 @@ const Rules2Engine = {
     s("game-header-series", (saga ? saga.serie : "AVVENTURA NOIR").toUpperCase());
     s("game-header-episode", `Episodio ${AppState.activeSession.episodio}`);
 
+    // Aggiornamento HUD Eroe con spaziature pulite (niente testi incollati)
     if (currentHero) {
       s("kpi-hero-name", currentHero.nomeEroe || "Avventuriero");
       s("kpi-hero-gold", currentHero.oro || 0);
@@ -143,7 +175,11 @@ const Rules2Engine = {
 
     s("scene-type-badge", currentNode.tipo || "SNODO");
     s("scene-title", currentNode.nome || "Avventura");
-    s("scene-text", currentNode.testo || "");
+
+    // Pulizia rigorosa del testo narrativo (rimuove codici ID grezzi tipo OBJ_0002_S1_E1)
+    let cleanText = currentNode.testo || "";
+    cleanText = cleanText.replace(/\s*\([A-Z]{3,4}_\d{4}_S\d+_E\d+\)/gi, "");
+    s("scene-text", cleanText);
 
     const wBanner = document.getElementById("scene-watermark-banner");
     if (currentNode.citazione && currentNode.citazione !== "—" && currentNode.citazione !== "-") {
@@ -158,42 +194,96 @@ const Rules2Engine = {
     if (!actBox) return;
 
     const isCombat = (currentNode.tipo === "NEMICO" || (currentNode.id && currentNode.id.includes("NEM_")));
+    const isEvento = (currentNode.tipo === "EVENTO" || (currentNode.id && currentNode.id.includes("EVT_")));
 
-    // CASO 1: COMBATTIMENTO D20
+    // ------------------------------------------------------------------------
+    // CASO 1: COMBATTIMENTO D20 (ROUND NUMERATI & SCHEDA NEMICO)
+    // ------------------------------------------------------------------------
     if (isCombat) {
       if (typeof SoundEngine !== "undefined") SoundEngine.playBgm("combat");
+
+      // Inizializza contatore round sul nemico corrente
+      if (AppState.activeSession.combatEnemyId !== currentNode.id) {
+        AppState.activeSession.combatEnemyId = currentNode.id;
+        AppState.activeSession.combatRound = 1;
+      }
+      const curRound = AppState.activeSession.combatRound || 1;
 
       let bribeHtml = "";
       if (currentNode.corruption && currentNode.corruption.canCorrupt && currentNode.corruption.validDrugs.length > 0) {
         bribeHtml = currentNode.corruption.validDrugs.map(d => `
-          <button onclick="Rules2Engine.combatBribe('${d.nome.replace(/'/g, "\\'")}')" class="btn btn-xs btn-block btn-warning font-bold text-[10px] mt-1 shadow-md">
-            💊 Cedi ${d.nome} ${d.costoDosi === 0 ? '(0 dosi - Alleato)' : ''}
+          <button onclick="Rules2Engine.combatBribe('${d.nome.replace(/'/g, "\\'")}')" class="btn btn-sm btn-block btn-warning font-bold text-xs h-11 shadow-md">
+            💊 Cedi ${d.nome} ${d.costoDosi === 0 ? '(0 dosi • Maestro)' : ''}
           </button>
         `).join("");
       }
 
       actBox.innerHTML = `
         <div class="grid grid-cols-2 gap-2">
-          <button onclick="Rules2Engine.combatAction('attack_round')" class="btn btn-sm btn-error font-black shadow-lg shadow-rose-600/30">
-            ⚔️ Attacca Round
+          <button onclick="Rules2Engine.combatAction('attack_round')" class="btn btn-sm btn-error font-black text-xs h-11 shadow-lg shadow-rose-600/30">
+            ⚔️ Attacca • Round ${curRound}
           </button>
-          <button onclick="Rules2Engine.combatAction('flee')" class="btn btn-sm btn-outline border-white/20 text-xs font-bold">
+          <button onclick="Rules2Engine.combatAction('flee')" class="btn btn-sm btn-outline border-white/20 text-xs font-bold h-11">
             🏃 Fuggi
           </button>
         </div>
         ${bribeHtml}
+        <div class="pt-0.5">
+          <button onclick="Rules2Engine.inspectCurrentEnemyDetail()" class="btn btn-xs btn-block btn-ghost border border-white/10 text-slate-300 font-bold text-[10px]">
+            🔍 Fascicolo Tattico Nemico (Debolezze & Stat)
+          </button>
+        </div>
       `;
       return;
     }
 
-    // CASO 2: ENIGMA / QUIZ D'ARCHIVIO
+    // ------------------------------------------------------------------------
+    // CASO 2: EVENTO / TRAPPOLA D20 (CON DADO SUSPENSE)
+    // ------------------------------------------------------------------------
+    if (isEvento) {
+      const statReq = currentNode.statRichiesta || "DESTREZZA";
+      const cdVal = currentNode.difficolta || 11;
+      const bypassTool = currentNode.equipLoot || currentNode.requisitoBypass;
+
+      // Verifica se l'eroe possiede lo strumento di bypass
+      const hasTool = bypassTool && (currentHero?.inventario || []).some(it => it.toLowerCase().includes(bypassTool.toLowerCase()));
+
+      if (hasTool) {
+        actBox.innerHTML = `
+          <div class="p-2.5 rounded-xl bg-emerald-950/80 border border-emerald-500/40 text-center space-y-1.5 mb-1">
+            <div class="text-[10px] font-bold text-emerald-300">🛡️ Vantaggio Tattico: possiedi ${bypassTool}!</div>
+          </div>
+          <button onclick="Rules2Engine.advanceToNode('${currentNode.destSuccesso}')" class="btn btn-sm btn-block btn-success font-black text-xs h-11 shadow-lg shadow-emerald-600/30">
+            ⚡ Oltrepassa Senza Danni (${bypassTool})
+          </button>
+        `;
+      } else {
+        actBox.innerHTML = `
+          <div class="grid grid-cols-2 gap-2">
+            <button onclick="Rules2Engine.executeEventRoll('${currentNode.id}', '${statReq}', ${cdVal})" class="btn btn-sm btn-primary font-black text-xs h-11 shadow-lg shadow-sky-600/30">
+              🎲 Prova ${statReq} (CD ${cdVal})
+            </button>
+            <button onclick="Rules2Engine.advanceToNode('${currentNode.destFallback || currentNode.destFallimento}')" class="btn btn-sm btn-outline border-white/20 text-xs font-bold h-11">
+              🏃 Arretra / Evita
+            </button>
+          </div>
+        `;
+      }
+      return;
+    }
+
+    // ------------------------------------------------------------------------
+    // CASO 3: ENIGMA / QUIZ D'ARCHIVIO
+    // ------------------------------------------------------------------------
     if (currentNode.quiz) {
       actBox.innerHTML = `
-        <div class="p-2 rounded-xl bg-black/40 border border-white/5 space-y-1.5 text-xs">
-          <div class="font-bold text-amber-300">❓ ${currentNode.quiz.domanda}</div>
+        <div class="p-2.5 rounded-2xl bg-black/60 border border-white/10 space-y-2 text-xs">
+          <div class="font-bold text-amber-300 flex items-center space-x-1.5">
+            <span>🔐</span> <span>${currentNode.quiz.domanda}</span>
+          </div>
           <div class="grid grid-cols-2 gap-1.5 pt-1">
             ${currentNode.quiz.opzioni.map(opz => `
-              <button onclick="Rules2Engine.submitQuizAnswer('${opz.replace(/'/g, "\\'")}')" class="btn btn-xs btn-outline border-white/20 text-[10px] truncate">
+              <button onclick="Rules2Engine.submitQuizAnswer('${opz.replace(/'/g, "\\'")}')" class="btn btn-sm btn-outline border-white/20 text-[11px] truncate h-10">
                 ${opz}
               </button>
             `).join("")}
@@ -203,7 +293,9 @@ const Rules2Engine = {
       return;
     }
 
-    // CASO 3: BIVIO NARRATIVO STANDARD (Supporta choices o parsedBivio, testo o text)
+    // ------------------------------------------------------------------------
+    // CASO 4: BIVIO NARRATIVO STANDARD (SCELTE DI PERCORSO)
+    // ------------------------------------------------------------------------
     const rawChoices = currentNode.choices || currentNode.parsedBivio || [];
     const choices = rawChoices.map(c => ({
       testo: c.testo || c.text || c.nome || "Avanza",
@@ -214,24 +306,24 @@ const Rules2Engine = {
       if (choices.length === 2) {
         actBox.innerHTML = `
           <div class="grid grid-cols-2 gap-2">
-            <button onclick="Rules2Engine.advanceToNode('${choices[0].target}')" class="btn btn-sm btn-primary text-xs font-bold truncate shadow-md">
+            <button onclick="Rules2Engine.advanceToNode('${choices[0].target}')" class="btn btn-sm btn-primary text-xs font-bold truncate h-11 shadow-md">
               ${choices[0].testo}
             </button>
-            <button onclick="Rules2Engine.advanceToNode('${choices[1].target}')" class="btn btn-sm btn-primary text-xs font-bold truncate shadow-md">
+            <button onclick="Rules2Engine.advanceToNode('${choices[1].target}')" class="btn btn-sm btn-primary text-xs font-bold truncate h-11 shadow-md">
               ${choices[1].testo}
             </button>
           </div>
         `;
       } else {
         actBox.innerHTML = choices.map(c => `
-          <button onclick="Rules2Engine.advanceToNode('${c.target}')" class="btn btn-sm btn-block btn-primary text-xs font-bold mb-1.5 truncate shadow-md">
+          <button onclick="Rules2Engine.advanceToNode('${c.target}')" class="btn btn-sm btn-block btn-primary text-xs font-bold mb-1.5 truncate h-11 shadow-md">
             ${c.testo}
           </button>
         `).join("");
       }
     } else {
       actBox.innerHTML = `
-        <button onclick="Rules2Engine.leaveGameToHub()" class="btn btn-sm btn-block btn-outline border-white/20 text-xs font-bold">
+        <button onclick="Rules2Engine.leaveGameToHub()" class="btn btn-sm btn-block btn-outline border-white/20 text-xs font-bold h-11">
           🏁 Capitolo Concluso ➔ Torna ai Giochi
         </button>
       `;
@@ -259,8 +351,58 @@ const Rules2Engine = {
   },
 
   // --------------------------------------------------------------------------
-  // 3. COMBATTIMENTO D20, SUSPENSE, NECROMANZIA & CORRUZIONE
+  // 3. ANIMATORE DADO D20 UNIVERSALE (SUSPENSE MODAL PER OGNI PROVA)
   // --------------------------------------------------------------------------
+  showDiceRollSuspense: function(title, desc, durationMs, onComplete) {
+    const diceModal = document.getElementById("modal-dice-suspense");
+    const diceCube = document.getElementById("dice-visual-cube");
+    const s = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+
+    s("dice-roll-title", title || "Lancio D20 in corso...");
+    s("dice-roll-result", "--");
+    s("dice-roll-desc", desc || "Il fato decide il tuo destino...");
+
+    if (diceCube) diceCube.classList.add("dice-rolling");
+    if (diceModal) diceModal.showModal();
+    if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("dice");
+
+    setTimeout(() => {
+      if (diceCube) diceCube.classList.remove("dice-rolling");
+      if (typeof onComplete === "function") {
+        onComplete(diceModal, s);
+      } else {
+        if (diceModal) diceModal.close();
+      }
+    }, durationMs || 700);
+  },
+
+  // Esecuzione Tiro Salvezza su Eventi/Trappole
+  executeEventRoll: async function(nodeId, statName, cdVal) {
+    const hero = AppState.activeSession.hero;
+    const statMod = hero?.modificatori ? (hero.modificatori[statName] || 0) : 0;
+    const d20 = Math.floor(Math.random() * 20) + 1;
+    const total = d20 + statMod;
+    const isSuccess = (d20 === 20) || (d20 !== 1 && total >= cdVal);
+
+    this.showDiceRollSuspense(`Prova ${statName} vs CD ${cdVal}`, `Tiro D20 (${d20}) ${statMod >= 0 ? '+' : ''}${statMod} = ${total}`, 750, (modal, s) => {
+      s("dice-roll-result", `${total} • ${isSuccess ? 'SUPERATO!' : 'FALLITO!'}`);
+      s("dice-roll-desc", isSuccess ? 'Ostacolo evitato con successo!' : 'Subisci danni dall\'imprevisto!');
+
+      setTimeout(() => {
+        modal.close();
+        const node = AppState.activeSession.currentNode;
+        if (isSuccess) {
+          this.showFloatingDamage("✅ Prova Superata!", false, false);
+          this.advanceToNode(node.destSuccesso);
+        } else {
+          this.showFloatingDamage("❌ Fallimento!", false, true);
+          this.advanceToNode(node.destFallback || node.destFallimento);
+        }
+      }, 650);
+    });
+  },
+
+  // Esecuzione Round Combattimento (Sempre garantita la chiusura della modale!)
   combatAction: async function(subAction) {
     if (!AppState.activeSession.gameKey) return;
 
@@ -268,10 +410,12 @@ const Rules2Engine = {
     const diceCube = document.getElementById("dice-visual-cube");
     const s = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
 
+    const curRound = AppState.activeSession.combatRound || 1;
+
     if (subAction === "attack_round") {
-      s("dice-roll-title", "Lancio D20 in corso...");
+      s("dice-roll-title", `Lancio D20 • Round ${curRound}`);
       s("dice-roll-result", "--");
-      s("dice-roll-desc", "Tiro di dado sommato ai modificatori...");
+      s("dice-roll-desc", "Tiro di attacco sommato ai modificatori...");
       if (diceCube) diceCube.classList.add("dice-rolling");
       if (diceModal) diceModal.showModal();
       if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("dice");
@@ -284,31 +428,42 @@ const Rules2Engine = {
         episodio: AppState.activeSession.episodio
       });
 
-      if (subAction === "attack_round" && res.combatLog) {
+      // GARANTISCE LA CHIUSURA DELLA MODALE IN QUALSIASI ESITO
+      if (subAction === "attack_round") {
         const log = res.combatLog;
         if (diceCube) diceCube.classList.remove("dice-rolling");
-        s("dice-roll-result", `D20: ${log.d20Hero} (${log.totHero >= log.cdTarget ? 'COLPITO' : 'A VUOTO'})`);
-        s("dice-roll-desc", `Totale: ${log.totHero} vs CD ${log.cdTarget}`);
+
+        if (log) {
+          s("dice-roll-result", `D20 (${log.d20Hero}) = ${log.totHero} vs CD ${log.cdTarget}`);
+          s("dice-roll-desc", log.isHit ? (log.isCrit ? "CRITICO! Colpo devastante!" : `COLPITO! -${log.dmgDealt} PV`) : "A VUOTO!");
+        } else {
+          s("dice-roll-result", res.status === "VICTORY" ? "VITTORIA!" : "FINE SCONTRO");
+        }
 
         setTimeout(() => {
-          if (diceModal) diceModal.close();
+          if (diceModal) diceModal.close(); // Chiusura blindata
 
-          if (log.isHit) {
-            this.showFloatingDamage(`💥 -${log.dmgDealt} PV`, log.isCrit, false);
-            if (typeof SoundEngine !== "undefined") SoundEngine.playSfx(log.isCrit ? "crit_hit" : "hit");
-          } else {
-            this.showFloatingDamage("💨 A vuoto", false, false);
+          if (log) {
+            if (log.isHit) {
+              this.showFloatingDamage(`💥 -${log.dmgDealt} PV`, log.isCrit, false);
+              if (typeof SoundEngine !== "undefined") SoundEngine.playSfx(log.isCrit ? "crit_hit" : "hit");
+            } else {
+              this.showFloatingDamage("💨 A vuoto", false, false);
+            }
+            if (log.dmgTaken > 0) {
+              setTimeout(() => {
+                this.showFloatingDamage(`💔 -${log.dmgTaken} PV Squadra`, false, true);
+              }, 250);
+            }
           }
 
-          if (log.dmgTaken > 0) {
-            setTimeout(() => {
-              this.showFloatingDamage(`💔 -${log.dmgTaken} PV Squadra`, false, true);
-            }, 300);
-          }
-
+          // Gestione Vittoria
           if (res.status === "VICTORY") {
+            AppState.activeSession.combatRound = 1;
+            AppState.activeSession.combatEnemyId = null;
+
             if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("victory");
-            if (window.confetti) confetti({ particleCount: 70, spread: 60 });
+            if (window.confetti) confetti({ particleCount: 75, spread: 60 });
 
             const hero = AppState.activeSession.hero;
             const hasNecroAbl = (hero && hero.abilita && hero.abilita.includes("Necromanzia") && hero.pv > 1);
@@ -319,20 +474,28 @@ const Rules2Engine = {
             } else {
               this.renderNode(res.nextView.nodo, res.nextView.statoEroe);
             }
-          } else if (res.status === "DEFEAT") {
+          }
+          // Gestione Sconfitta
+          else if (res.status === "DEFEAT") {
+            AppState.activeSession.combatRound = 1;
+            AppState.activeSession.combatEnemyId = null;
+
             if (typeof SoundEngine !== "undefined") SoundEngine.playBgm("defeat");
             this.renderNode(res.nextView.nodo, res.nextView.statoEroe);
-          } else {
+          }
+          // Avanzamento al Round Successivo
+          else {
+            AppState.activeSession.combatRound = (log ? log.round + 1 : curRound + 1);
             this.renderNode(res.nodo, res.statoEroe);
           }
-        }, 750);
-      } else if (res.nextView) {
-        this.renderNode(res.nextView.nodo, res.nextView.statoEroe);
-      } else if (res.nodo) {
-        this.renderNode(res.nodo, res.statoEroe);
+        }, 700);
+      } else {
+        if (diceModal) diceModal.close();
+        if (res.nextView) this.renderNode(res.nextView.nodo, res.nextView.statoEroe);
+        else if (res.nodo) this.renderNode(res.nodo, res.statoEroe);
       }
     } catch (e) {
-      if (diceModal) diceModal.close();
+      if (diceModal) diceModal.close(); // Chiusura di emergenza su errore
       console.error("[Rules2Engine] Errore combatAction:", e);
       alert("Errore durante l'azione di combattimento: " + e.message);
     }
@@ -343,14 +506,14 @@ const Rules2Engine = {
     if (!actBox) return;
 
     actBox.innerHTML = `
-      <div class="p-2.5 rounded-xl bg-purple-950/80 border border-purple-500/50 text-center space-y-2 text-xs">
+      <div class="p-2.5 rounded-2xl bg-purple-950/85 border border-purple-500/50 text-center space-y-2 text-xs shadow-xl">
         <div class="font-black text-purple-300">🧟 RIANIMAZIONE ZOMBI DISPONIBILE</div>
-        <div class="text-[10px] text-slate-300">Il cadavere di ${deadEnemy ? deadEnemy.nome : 'questo nemico'} può risorgere al tuo comando (Danno x2).</div>
+        <div class="text-[10px] text-slate-300">Il corpo di <b>${deadEnemy ? deadEnemy.nome : 'questo nemico'}</b> giace a terra. Puoi rianimarlo come Zombi al tuo comando (Danno x2).</div>
         <div class="grid grid-cols-2 gap-2 pt-1">
-          <button onclick="Rules2Engine.executeResurrectZombie('${deadEnemy ? deadEnemy.id : ''}')" class="btn btn-xs btn-secondary font-bold">
+          <button onclick="Rules2Engine.executeResurrectZombie('${deadEnemy ? deadEnemy.id : ''}')" class="btn btn-sm btn-secondary font-bold h-10">
             🧟 Rianima (1 PV)
           </button>
-          <button onclick="Rules2Engine.skipNecromancy()" class="btn btn-xs btn-outline border-white/20 text-slate-300">
+          <button onclick="Rules2Engine.skipNecromancy()" class="btn btn-sm btn-outline border-white/20 text-slate-300 h-10">
             Avanza oltre ▶️
           </button>
         </div>
@@ -421,19 +584,132 @@ const Rules2Engine = {
   submitQuizAnswer: function(selectedOpz) {
     const node = AppState.activeSession.currentNode;
     if (!node || !node.quiz) return;
-    const isCorrect = (selectedOpz.trim().toLowerCase() === node.quiz.rispostaEsatta?.trim().toLowerCase());
+    const isCorrect = (selectedOpz.trim().toLowerCase() === node.quiz.rispostaCorretta?.trim().toLowerCase() || selectedOpz.trim().toLowerCase() === node.quiz.rispostaEsatta?.trim().toLowerCase());
     if (isCorrect) {
-      this.showFloatingDamage("✅ Esatto!", false, false);
+      this.showFloatingDamage("✅ Risposta Esatta!", false, false);
       this.advanceToNode(node.destSuccesso);
     } else {
-      this.showFloatingDamage("❌ Errato!", false, true);
+      this.showFloatingDamage("❌ Risposta Errata!", false, true);
       this.advanceToNode(node.destFallimento);
     }
   },
 
   // --------------------------------------------------------------------------
-  // 4. I 5 CASSETTI DEL COCKPIT (DATA-DRIVEN DAL FOGLIO GOOGLE)
+  // 4. DEEP INSPECTION UNIVERSALE & I 5 CASSETTI
   // --------------------------------------------------------------------------
+
+  // Ispezione Nemico in combattimento (Senza consumare round)
+  inspectCurrentEnemyDetail: function() {
+    const enemy = AppState.activeSession.currentNode;
+    if (!enemy) return;
+
+    this.inspectEntityDetail({
+      id: enemy.id,
+      nome: enemy.nome,
+      tipo: "NEMICO",
+      categoria: enemy.categoria || "Mazzu",
+      sottocategoria: enemy.sottocategoria || "Soldato",
+      pv: enemy.pv,
+      danno: enemy.danno,
+      forza: enemy.forza,
+      destrezza: enemy.destrezza,
+      intelligenza: enemy.intelligenza,
+      difficolta: enemy.difficolta,
+      statRichiesta: enemy.statRichiesta,
+      debolezze: enemy.debolezze,
+      descrizione: enemy.testo,
+      citazione: enemy.citazione,
+      autoreCitazione: enemy.autoreCitazione,
+      mediaUrl: enemy.mediaUrl,
+      isEnemyInspection: true
+    });
+  },
+
+  // Scheda Dossier Universale Polimorfica
+  inspectEntityDetail: function(it) {
+    if (!it) return;
+
+    const s = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+    const h = (id, val) => { const el = document.getElementById(id); if (el) el.innerHTML = val; };
+
+    s("uni-detail-icon", it.emoji || (it.tipo === "NEMICO" ? "👾" : "📦"));
+    s("uni-detail-title", it.nome);
+    s("uni-detail-badge", `${(it.tipo || 'EQUIPAGGIAMENTO').toUpperCase()} • ${(it.categoria || 'GENERALE').toUpperCase()} • ${(it.sottocategoria || '').toUpperCase()}`);
+    s("uni-detail-metrics-label", it.tipo === "NEMICO" ? "PARAMETRI BELLICI & SFIDA" : "PROPRIETÀ & STATISTICHE");
+
+    const bonuses = [];
+    if (it.pv) bonuses.push(`❤️ PV: <b>${it.pv}</b>`);
+    if (it.danno) bonuses.push(`💥 Danno: <b>${it.danno}</b>`);
+    if (it.forza) bonuses.push(`🥊 FOR: <b>${it.forza}</b>`);
+    if (it.destrezza) bonuses.push(`🤸 DES: <b>${it.destrezza}</b>`);
+    if (it.intelligenza) bonuses.push(`🧠 INT: <b>${it.intelligenza}</b>`);
+    if (it.difficolta) bonuses.push(`🎯 Sfida: <b>${it.statRichiesta || 'FORZA'} (CD ${it.difficolta})</b>`);
+    if (it.costoOro) bonuses.push(`💰 Prezzo: <b class="text-amber-300">${it.costoOro} 🟡</b>`);
+
+    let humanProps = formatHumanEffect(it.requisitiCodificati || it.effettoCodificato || it.debolezze || "");
+    h("uni-detail-metrics-value", bonuses.join(" • ") + (humanProps ? "<br>" + humanProps : ""));
+
+    let cleanLore = it.descrizione || it.testo || "Nessun fascicolo allegato.";
+    cleanLore = cleanLore.replace(/\s*\([A-Z]{3,4}_\d{4}_S\d+_E\d+\)/gi, "");
+    s("uni-detail-lore", cleanLore);
+
+    const mediaContainer = document.getElementById("uni-detail-media-container");
+    if (mediaContainer) {
+      if (it.mediaUrl && it.mediaUrl !== "—" && it.mediaUrl.startsWith("http")) {
+        document.getElementById("uni-detail-img").src = it.mediaUrl;
+        mediaContainer.classList.remove("hidden");
+      } else {
+        mediaContainer.classList.add("hidden");
+      }
+    }
+
+    const btn = document.getElementById("uni-detail-action-btn");
+    if (btn) {
+      if (it.isEnemyInspection) {
+        btn.textContent = "⚔️ Torna al Duello";
+        btn.className = "btn btn-primary btn-sm w-full font-bold shadow-lg shadow-sky-600/30";
+        btn.onclick = () => document.getElementById("modal-universal-detail")?.close();
+      } else if (it.isFromBackpack) {
+        const cat = getNormalizedCategory(it);
+        const isArma = cat === "ARMI";
+        const isVeicolo = cat === "VEICOLI";
+        const isConsumabile = (cat === "CURE" || cat === "DROGHE");
+
+        if (isConsumabile) {
+          btn.textContent = (cat === "DROGHE") ? "💊 Assumi Sostanza" : "❤️ Usa Cura";
+          btn.className = "btn btn-success btn-sm w-full font-bold";
+          btn.onclick = () => {
+            Rules2Engine.useBackpackItem(it.nome);
+            document.getElementById("modal-universal-detail")?.close();
+          };
+        } else if (isArma) {
+          btn.textContent = "🗡️ Impugna come Arma";
+          btn.className = "btn btn-primary btn-sm w-full font-bold";
+          btn.onclick = () => {
+            Rules2Engine.equipItem(it.nome, "weapon");
+            document.getElementById("modal-universal-detail")?.close();
+          };
+        } else if (isVeicolo) {
+          btn.textContent = "🛴 Attiva come Veicolo";
+          btn.className = "btn btn-primary btn-sm w-full font-bold";
+          btn.onclick = () => {
+            Rules2Engine.equipItem(it.nome, "vehicle");
+            document.getElementById("modal-universal-detail")?.close();
+          };
+        } else {
+          btn.textContent = "Chiudi Fascicolo";
+          btn.className = "btn btn-ghost btn-sm w-full text-slate-400";
+          btn.onclick = () => document.getElementById("modal-universal-detail")?.close();
+        }
+      } else {
+        btn.textContent = "Chiudi Fascicolo";
+        btn.className = "btn btn-ghost btn-sm w-full text-slate-400";
+        btn.onclick = () => document.getElementById("modal-universal-detail")?.close();
+      }
+    }
+
+    document.getElementById("modal-universal-detail")?.showModal();
+  },
 
   // A. ZAINO DELL'EROE
   openBackpackDrawer: function() {
@@ -441,7 +717,6 @@ const Rules2Engine = {
     document.getElementById("drawer-backpack")?.showModal();
   },
 
-  // Cerca l'oggetto nell'intero catalogo di gioco per ricavarne la Categoria reale
   _findEntityData: function(itemName) {
     if (!itemName) return null;
     const catalog = AppState.activeSession.shopCatalog || [];
@@ -449,7 +724,6 @@ const Rules2Engine = {
     const found = catalog.find(x => String(x.nome || "").trim().toLowerCase() === clean || String(x.id || "").trim().toLowerCase() === clean);
     if (found) return found;
 
-    // Fallback sintetico per oggetti generati o loot
     return { nome: itemName, categoria: getNormalizedCategory(itemName) };
   },
 
@@ -493,43 +767,16 @@ const Rules2Engine = {
       const ent = this._findEntityData(it);
       const category = getNormalizedCategory(ent);
 
-      let btnLabel = "Dettagli";
-      let btnClass = "btn-outline border-white/20 text-white";
-      let btnAction = ``;
-
-      if (category === "ARMI") {
-        if (isArma) {
-          btnLabel = "✓ In Pugno";
-          btnClass = "btn-success font-black cursor-default text-white";
-          btnAction = "";
-        } else {
-          btnLabel = "Impugna";
-          btnAction = `Rules2Engine.equipItem('${it.replace(/'/g, "\\'")}', 'weapon')`;
-        }
-      } else if (category === "VEICOLI") {
-        if (isVeicolo) {
-          btnLabel = "✓ In Uso";
-          btnClass = "btn-success font-black cursor-default text-white";
-          btnAction = "";
-        } else {
-          btnLabel = "Attiva";
-          btnAction = `Rules2Engine.equipItem('${it.replace(/'/g, "\\'")}', 'vehicle')`;
-        }
-      } else if (category === "CURE" || category === "DROGHE") {
-        btnLabel = (category === "DROGHE") ? "Assumi" : "Usa";
-        btnAction = `Rules2Engine.useBackpackItem('${it.replace(/'/g, "\\'")}')`;
-      }
-
       return `
-        <div class="p-2.5 bg-surface rounded-xl border border-white/5 flex items-center justify-between text-xs">
-          <div class="overflow-hidden pr-2">
-            <div class="font-bold text-white truncate">${it}</div>
+        <div class="p-3 bg-surface rounded-2xl border border-white/5 flex items-center justify-between text-xs shadow-md">
+          <div onclick="Rules2Engine.inspectEntityDetail({ ...Rules2Engine._findEntityData('${it.replace(/'/g, "\\'")}'), isFromBackpack: true })" class="overflow-hidden pr-2 cursor-pointer group flex-1">
+            <div class="font-bold text-white truncate group-hover:text-sky-400 transition-colors">${it}</div>
             <div class="text-[9px] ${isArma || isVeicolo ? 'text-emerald-400 font-bold' : 'text-slate-400'}">
-              ${isArma ? '🗡️ [ARMA ATTIVA]' : (isVeicolo ? '🛴 [VEICOLO ATTIVO]' : category)}
+              ${isArma ? '🗡️ [ARMA IN PUGNO]' : (isVeicolo ? '🛴 [VEICOLO IN USO]' : category)} • Tocca per dettagli
             </div>
           </div>
-          <button onclick="${btnAction}" class="btn btn-xs ${btnClass} text-[9px] shrink-0" ${btnAction === "" ? "disabled" : ""}>
-            ${btnLabel}
+          <button onclick="Rules2Engine.inspectEntityDetail({ ...Rules2Engine._findEntityData('${it.replace(/'/g, "\\'")}'), isFromBackpack: true })" class="btn btn-xs btn-outline border-white/20 text-slate-300 text-[9.5px] shrink-0 font-bold">
+            Fascicolo ›
           </button>
         </div>
       `;
@@ -553,7 +800,7 @@ const Rules2Engine = {
         this.filterBackpack(AppState.activeSession.engineState.backpackFilter);
       }
     } catch (e) {
-      alert("Impossibile equipaggiare l'oggetto: " + e.message);
+      alert("Impossibile equipaggiare: " + e.message);
     }
   },
 
@@ -577,7 +824,7 @@ const Rules2Engine = {
     }
   },
 
-  // B. CASSETTO EMPORIO DI CICCIO (COMPRA DAL TAB DI GIOCO & VENDI AL 25%)
+  // B. CASSETTO EMPORIO DI CICCIO RPG (COMPRA DAL TAB DI GIOCO & VENDI AL 25%)
   openEmporioDrawer: function() {
     const h = AppState.activeSession.hero;
     const goldDisp = document.getElementById("emporio-gold-display");
@@ -631,18 +878,23 @@ const Rules2Engine = {
         const canAfford = (h && h.oro >= price);
 
         return `
-          <div class="p-2.5 bg-surface rounded-xl border border-white/5 flex flex-col justify-between text-xs space-y-2">
-            <div>
+          <div class="p-2.5 bg-surface rounded-2xl border border-white/5 flex flex-col justify-between text-xs space-y-2 shadow-md group">
+            <div onclick="Rules2Engine.inspectEntityDetail(Rules2Engine._findEntityData('${item.nome.replace(/'/g, "\\'")}'))" class="cursor-pointer space-y-1">
               <div class="flex items-center justify-between">
-                <span class="text-sm">${item.emoji || '📦'}</span>
+                <span class="text-lg">${item.emoji || '📦'}</span>
                 <span class="text-[10px] text-amber-300 font-mono font-bold">${price} 🟡</span>
               </div>
-              <div class="font-bold text-white truncate mt-1">${item.nome}</div>
-              <div class="text-[9px] text-slate-400 line-clamp-1">${item.testo || item.descrizione || ''}</div>
+              <div class="font-bold text-white truncate mt-1 group-hover:text-sky-400 transition-colors">${item.nome}</div>
+              <div class="text-[10px] text-slate-400 line-clamp-1">${item.testo || item.descrizione || ''}</div>
             </div>
-            <button onclick="Rules2Engine.buyFromEmporio('${item.id}', ${price})" class="btn btn-xs ${canAfford ? 'btn-primary' : 'btn-outline border-white/10 text-slate-500 cursor-not-allowed'} font-bold text-[9px]" ${!canAfford ? 'disabled' : ''}>
-              ${canAfford ? 'Compra' : 'Oro Insuff.'}
-            </button>
+            <div class="grid grid-cols-2 gap-1.5 pt-1">
+              <button onclick="Rules2Engine.inspectEntityDetail(Rules2Engine._findEntityData('${item.nome.replace(/'/g, "\\'")}'))" class="btn btn-xs btn-outline border-white/10 text-slate-300 text-[9px]">
+                Dettagli
+              </button>
+              <button onclick="Rules2Engine.buyFromEmporio('${item.id}', ${price})" class="btn btn-xs ${canAfford ? 'btn-primary' : 'btn-outline border-white/10 text-slate-500 cursor-not-allowed'} font-bold text-[9px]" ${!canAfford ? 'disabled' : ''}>
+                ${canAfford ? 'Compra' : 'Oro Insuff.'}
+              </button>
+            </div>
           </div>
         `;
       }).join("");
@@ -793,11 +1045,11 @@ const Rules2Engine = {
       html += comp.map(a => {
         const d = compData[a] || {};
         const hpText = d.pv ? ` (❤️ ${d.pv}/${d.pvMax || 15} PV)` : "";
-        return `<div class="p-2.5 bg-surface rounded-xl border border-white/5 font-bold text-xs flex justify-between"><span>🤝 ${a}${hpText}</span> <span class="text-emerald-400">Alleato Umano</span></div>`;
+        return `<div class="p-3 bg-surface rounded-2xl border border-white/5 font-bold text-xs flex justify-between items-center shadow-md"><span>🤝 ${a}${hpText}</span> <span class="text-emerald-400 font-bold text-[10px]">Alleato Umano</span></div>`;
       }).join("");
       html += zombies.map(z => `
-        <div class="p-2.5 bg-surface rounded-xl border border-rose-500/30 font-bold text-xs flex justify-between">
-          <span>🧟 ${z.nome}</span> <span class="text-rose-400 font-bold">Danno x2 (❤️ ${z.pv}/${z.pvMax || 15})</span>
+        <div class="p-3 bg-surface rounded-2xl border border-rose-500/30 font-bold text-xs flex justify-between items-center shadow-md">
+          <span>🧟 ${z.nome}</span> <span class="text-rose-400 font-bold text-[10px]">Danno x2 (❤️ ${z.pv}/${z.pvMax || 15})</span>
         </div>
       `).join("");
     }
@@ -827,12 +1079,12 @@ const Rules2Engine = {
         const isPermanent = (sub === "prove" || sub === "prova");
 
         return `
-          <div class="p-3 bg-surface rounded-xl border border-sky-500/30 text-xs space-y-1">
+          <div onclick="Rules2Engine.inspectEntityDetail(Rules2Engine._findEntityData('${p.replace(/'/g, "\\'")}'))" class="p-3 bg-surface rounded-2xl border border-sky-500/30 text-xs space-y-1 cursor-pointer hover:bg-surface/80 transition-colors shadow-md">
             <div class="flex items-center justify-between">
               <span class="font-bold text-sky-400">📁 ${p}</span>
               <span class="badge badge-xs badge-info font-mono text-[8px]">${ent?.categoria || 'Reperto'}</span>
             </div>
-            <div class="text-[10px] text-slate-300">
+            <div class="text-[10.5px] text-slate-300">
               ${isPermanent ? 'Reperto dell\'Organigramma: <b class="text-emerald-400">+1 INT permanente</b>' : `Reperto d'inchiesta: <b class="text-amber-300">+1 INT situazionale</b>`}
             </div>
           </div>
