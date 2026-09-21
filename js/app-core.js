@@ -2,6 +2,7 @@
 // PROJECT: ESTIQATSY SYNDICATE & RPG PLATFORM
 // FILE: js/app-core.js
 // LAYER 1: SISTEMA OPERATIVO CLIENT-SIDE, ROUTER SPA, STATO & API ENGINE
+// NOTE: 100% DISACCOPPIATO DA TAILWIND - GESTIONE SEMANTICA CSS (core.css)
 // ============================================================================
 
 // ----------------------------------------------------------------------------
@@ -51,9 +52,9 @@ const AppState = {
     gameKey: null,
     episodio: 1,
     partitaId: null,
-    hero: null,           // { nomeEroe, classe, mediaUrl (Avatar), pv, pvMax, oro, px, stats, ... }
+    hero: null,           // { nomeEroe, classe, mediaUrl, pv, pvMax, oro, px, stats, ... }
     combatRound: 1,       // Contatore round duello attivo
-    combatEnemyId: null,  // ID del nemico attualmente ingaggiato
+    combatEnemyId: null,  // ID del nemico ingaggiato
     currentNode: null,    // Nodo narrativo o duello corrente
     shopCatalog: [],      // Merci dell'Emporio di Ciccio RPG (EQP/OBJ)
     engineState: null     // Dati specifici del motore
@@ -61,7 +62,7 @@ const AppState = {
 };
 
 // ----------------------------------------------------------------------------
-// 3. INTEGRAZIONE TELEGRAM WEBAPP SDK
+// 3. INTEGRAZIONE TELEGRAM WEBAPP SDK & SAFE AREA
 // ----------------------------------------------------------------------------
 const tg = (window.Telegram && window.Telegram.WebApp) ? window.Telegram.WebApp : null;
 
@@ -73,8 +74,14 @@ if (tg) {
     if (typeof tg.disableVerticalSwipes === "function") tg.disableVerticalSwipes();
     tg.setHeaderColor(AppConfig.THEME.HEADER_COLOR);
     tg.setBackgroundColor(AppConfig.THEME.BG_COLOR);
+
+    // Propagazione safe-area native alle variabili CSS
+    if (tg.safeAreaInset) {
+      document.documentElement.style.setProperty("--tg-safe-area-inset-top", `${tg.safeAreaInset.top}px`);
+      document.documentElement.style.setProperty("--tg-safe-area-inset-bottom", `${tg.safeAreaInset.bottom}px`);
+    }
   } catch (e) {
-    console.warn("[app-core] Inizializzazione Telegram WebApp completata parzialmente:", e);
+    console.warn("[app-core] Inizializzazione Telegram WebApp parziale:", e);
   }
 }
 
@@ -136,7 +143,7 @@ const EngineRegistry = {
     if (!ruleKey || !engineInstance) return;
     const cleanKey = String(ruleKey).trim().toLowerCase();
     this._engines[cleanKey] = engineInstance;
-    console.log(`[EngineRegistry] Motore registrato con successo: ${ruleKey}`);
+    console.log(`[EngineRegistry] Motore registrato: ${ruleKey}`);
   },
 
   get: function(ruleKey) {
@@ -146,11 +153,10 @@ const EngineRegistry = {
   }
 };
 
-// Esposizione globale per garantire l'accesso tra file separati
 window.EngineRegistry = EngineRegistry;
 
 // ----------------------------------------------------------------------------
-// 5. ROUTER SPA (APPROUTER)
+// 5. ROUTER SPA (APPROUTER) - 100% CLASSI SEMANTICHE
 // ----------------------------------------------------------------------------
 const AppRouter = {
   navigate: function(screenName) {
@@ -180,6 +186,7 @@ const AppRouter = {
     const scrollContainer = document.getElementById("app-main-scroll");
     if (scrollContainer) scrollContainer.scrollTop = 0;
 
+    // Reset viste di ricerca
     if (targetId === "view-shop" && typeof AppModules !== "undefined") {
       AppState.shop.activeCategory = "tutti";
       AppState.shop.searchQuery = "";
@@ -200,6 +207,7 @@ const AppRouter = {
       "view-hub", "subview-game-detail", "view-wizard", "view-gameplay"
     ];
 
+    // Toggle visibilità schermi
     allScreens.forEach(id => {
       const el = document.getElementById(id);
       if (el) el.classList.toggle("hidden", id !== targetId);
@@ -231,20 +239,23 @@ const AppRouter = {
       if (gameFooter) gameFooter.classList.add("hidden");
     }
 
+    // Calcolo del Tab Attivo
     const activeTabKey = targetId.replace("view-", "").replace("subview-", "").split("-")[0];
     AppState.activeTab = (activeTabKey === "hub") ? "games" : activeTabKey;
 
+    // Aggancio dei Data Attributes sul BODY per styling dichiarativo via CSS
+    document.body.dataset.activeScreen = targetId;
+    document.body.dataset.activeTab = AppState.activeTab;
+
+    // GESTIONE DEGLI STATI ATTIVI SENZA CLASSI TAILWIND (PURA CLASSE .active)
     document.querySelectorAll(".nav-tab").forEach(btn => {
       const isCurrent = (btn.dataset.tab === AppState.activeTab);
-      btn.classList.toggle("text-sky-400", isCurrent);
-      btn.classList.toggle("text-slate-400", !isCurrent);
+      btn.classList.toggle("active", isCurrent);
     });
 
     document.querySelectorAll(".desk-nav-btn").forEach(btn => {
       const isCurrent = (btn.dataset.tab === AppState.activeTab);
-      btn.classList.toggle("text-sky-400", isCurrent);
-      btn.classList.toggle("bg-white/5", isCurrent);
-      btn.classList.toggle("text-slate-300", !isCurrent);
+      btn.classList.toggle("active", isCurrent);
     });
 
     setupTelegramBackButton(targetId);
@@ -253,9 +264,20 @@ const AppRouter = {
 };
 
 // ----------------------------------------------------------------------------
-// 6. COMUNICAZIONE API BACKEND (APICALL)
+// 6. COMUNICAZIONE API BACKEND (APICALL) CON DEBOUNCE ANTI-SPAM
 // ----------------------------------------------------------------------------
+let _isApiInProgress = false;
+
 async function apiCall(action, extraParams = {}) {
+  // Evita chiamate sovrapposte concorrenti per azioni transazionali critiche
+  const isCritical = ["shop_buy", "currency_exchange", "game_start", "game_action"].includes(action);
+  if (isCritical && _isApiInProgress) {
+    console.warn(`[apiCall] Richiesta "${action}" bloccata: un'altra transazione è in corso.`);
+    throw new Error("Transazione in corso. Attendi un istante...");
+  }
+
+  if (isCritical) _isApiInProgress = true;
+
   const initData = (tg && tg.initData) ? tg.initData : "";
   let url = `${AppConfig.GAS_URL}?action=${encodeURIComponent(action)}&initData=${encodeURIComponent(initData)}`;
 
@@ -278,6 +300,8 @@ async function apiCall(action, extraParams = {}) {
   } catch (err) {
     console.error(`[API Error] Azione "${action}":`, err);
     throw err;
+  } finally {
+    if (isCritical) _isApiInProgress = false;
   }
 }
 
