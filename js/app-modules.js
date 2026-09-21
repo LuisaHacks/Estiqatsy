@@ -1,6 +1,6 @@
 // ============================================================================
 // PROJECT: ESTIQATSY SYNDICATE & RPG PLATFORM
-// FILE: js/app-modules.js (VERSIONE 8.0 - RESILIENT ENGINE & FULL-STAGE SYNC)
+// FILE: js/app-modules.js (VERSIONE 9.0 - SESSION RESILIENCE, 1-2 WORDS BTNS)
 // LAYER 2: MODULI DI PIATTAFORMA AGNOSTICI, PORTALE GIOCHI, SHOP & SAAS
 // NOTE: 100% DISACCOPPIATO DA TAILWIND - TEMPLATE DINAMICI A CLASSI SEMANTICHE
 // ============================================================================
@@ -46,10 +46,33 @@ const AppModules = {
     } catch (err) {
       console.error("[AppModules.init] Errore di bootstrap:", err);
       const errBox = document.getElementById("loading-error-box");
+      const retryBtn = document.getElementById("loading-retry-btn");
+
       if (errBox) {
-        errBox.textContent = err.message || "Errore di connessione al database Syndicate.";
+        // GESTIONE INTELLIGENTE SESSION_EXPIRED (EVITA IL RELOAD LOOP)
+        const isSessionExpired = err.message && (err.message.includes("SESSION_EXPIRED") || err.message.includes("UNAUTHORIZED"));
+        
+        if (isSessionExpired) {
+          errBox.textContent = "Sessione scaduta per inattività. Chiudi e riapri la Mini App dalla chat per rinnovare il token sicuro.";
+          if (retryBtn) {
+            retryBtn.textContent = "Chiudi e Rinnova";
+            retryBtn.onclick = () => {
+              if (window.Telegram?.WebApp?.close) {
+                window.Telegram.WebApp.close();
+              } else {
+                location.reload();
+              }
+            };
+          }
+        } else {
+          errBox.textContent = err.message || "Errore di connessione al database Syndicate.";
+          if (retryBtn) {
+            retryBtn.textContent = "Riprova";
+            retryBtn.onclick = () => location.reload();
+          }
+        }
+
         errBox.classList.remove("hidden");
-        const retryBtn = document.getElementById("loading-retry-btn");
         if (retryBtn) retryBtn.classList.remove("hidden");
       }
     }
@@ -129,7 +152,7 @@ const AppModules = {
         badge: (topGame.tipologia || "GIOCO").toUpperCase(),
         titolo: `${topGame.emoji || '🎮'} ${topGame.serie}`,
         sottotitolo: topGame.descrizione || "Entra nelle avventure della piattaforma",
-        btnText: "Gioca Ora ➔",
+        btnText: "Gioca",
         action: () => AppRouter.navigate("games"),
         img: topGame.mediaUrl || "https://image.pollinations.ai/prompt/coastal-noir-docks-night-cinematic?width=800&height=400&nologo=true"
       });
@@ -142,7 +165,7 @@ const AppModules = {
         badge: "SHOP",
         titolo: topProduct.nome,
         sottotitolo: topProduct.descrizione || "Scopri gli articoli disponibili nello Shop",
-        btnText: "Apri Shop",
+        btnText: "Shop",
         action: () => AppRouter.navigate("shop"),
         img: topProduct.mediaUrl || "https://image.pollinations.ai/prompt/smugglers-dockside-warehouse-bazaar?width=800&height=400&nologo=true"
       });
@@ -155,7 +178,7 @@ const AppModules = {
         badge: (topRecipe.categoria || "RICETTA").toUpperCase(),
         titolo: topRecipe.piatto,
         sottotitolo: `Preparazione: ${topRecipe.tempo || 'rapida'} • Costo: ${topRecipe.costo || 'conveniente'}`,
-        btnText: "Ricettario",
+        btnText: "Ricette",
         action: () => AppRouter.navigate("recipes"),
         img: topRecipe.mediaUrl || "https://image.pollinations.ai/prompt/vintage-cocktail-bar-amber-lighting?width=800&height=400&nologo=true"
       });
@@ -268,13 +291,13 @@ const AppModules = {
           <div class="game-saga-body">
             <div class="game-saga-title-row">
               <h3 class="game-saga-title">${saga.emoji || '🎮'} ${saga.serie}</h3>
-              <span class="game-saga-ep-count">${(saga.episodes || []).length} Ep.</span>
+              <span class="game-saga-ep-count">${(saga.episodes || []).filter(ep => ep.episodio > 0).length} Ep.</span>
             </div>
             <p class="game-saga-desc">${saga.descrizione || ''}</p>
           </div>
           <div class="game-saga-footer">
-            <span class="game-saga-status">${saga.hasActiveGame ? '⚔️ Partita in corso' : 'Pronto al lancio'}</span>
-            <button class="btn btn-xs btn-primary font-bold">Esplora Capitoli ›</button>
+            <span class="game-saga-status">${saga.hasActiveGame ? '⚔️ In corso' : 'Pronto'}</span>
+            <button class="btn btn-xs btn-primary font-black uppercase">Esplora ›</button>
           </div>
         </div>
       `;
@@ -303,16 +326,19 @@ const AppModules = {
 
     const container = document.getElementById("hub-episodes-container");
     if (container) {
-      container.innerHTML = (saga.episodes || []).map(ep => `
+      // BONIFICA EPISODIO 0: Mostra esclusivamente capitoli giocabili (episodio > 0)
+      const playableEpisodes = (saga.episodes || []).filter(ep => ep.episodio > 0);
+
+      container.innerHTML = playableEpisodes.map(ep => `
         <div class="episode-list-item">
           <div class="episode-item-info">
             <div class="episode-item-title">${ep.emoji || '▶️'} Ep. ${ep.episodio}: ${ep.titolo}</div>
             <div class="episode-item-cost">
-              ${ep.canContinueFree ? '⚔️ Continua con Eroe Veterano (Gratis)' : (ep.costoMegoin === 0 ? 'Gratis' : `${ep.costoMegoin} Megoin 🪙`)}
+              ${ep.canContinueFree ? '⚔️ Eroe Veterano (Gratis)' : (ep.costoMegoin === 0 ? 'Gratis' : `${ep.costoMegoin} Megoin 🪙`)}
             </div>
           </div>
-          <button onclick="AppModules.startEpisode('${saga.gameKey}', ${ep.episodio}, ${!!ep.canContinueFree})" class="btn btn-xs btn-primary font-bold">
-            ${ep.canContinueFree ? 'Continua Veterano' : 'Gioca'}
+          <button onclick="AppModules.startEpisode('${saga.gameKey}', ${ep.episodio}, ${!!ep.canContinueFree})" class="btn btn-xs btn-primary font-black uppercase">
+            ${ep.canContinueFree ? 'Continua' : 'Gioca'}
           </button>
         </div>
       `).join("");
@@ -322,17 +348,17 @@ const AppModules = {
   },
 
   // --------------------------------------------------------------------------
-  // AVVIO EPISODIO: RISOLUZIONE ULTRA-RESILIENTE DEL MOTORE DI GIOCO
+  // AVVIO EPISODIO: RISOLUZIONE RESILIENTE DEL MOTORE
   // --------------------------------------------------------------------------
   startEpisode: function(gameKey, epNum, canContinueFree) {
     const saga = AppState.games.catalog.find(s => s.gameKey === gameKey);
     if (!saga) return;
 
-    // 1. Normalizzazione rigorosa: rimozione di qualsiasi spazio e standardizzazione
+    // Normalizzazione rigorosa: rimuove tutti gli spazi
     const rawRule = String(saga.regole || "Rules2").trim();
     const cleanRuleCode = rawRule.replace(/\s+/g, '');
 
-    // 2. Catena di fallback multipla per azzerare qualsiasi discrepanza su mobile
+    // Catena di fallback multipla per azzerare discrepanze su Telegram Mobile
     let engine = null;
 
     if (typeof window.EngineRegistry !== "undefined" && typeof window.EngineRegistry.get === "function") {
@@ -341,13 +367,12 @@ const AppModules = {
       engine = EngineRegistry.get(cleanRuleCode) || EngineRegistry.get(rawRule) || EngineRegistry.get("rules2");
     }
 
-    // 3. Fallback diretto sull'oggetto globale di Rules2 se il registro non è ancora agganciato
     if (!engine) {
       engine = window.Rules2Engine || (typeof Rules2Engine !== "undefined" ? Rules2Engine : null);
     }
 
     if (!engine) {
-      alert(`⚠️ Motore di gioco "${cleanRuleCode}" non trovato. Verifica la connessione e riprova.`);
+      alert(`⚠️ Motore "${cleanRuleCode}" non trovato. Verifica la connessione e riprova.`);
       console.error("[startEpisode] Impossibile trovare il motore per:", cleanRuleCode, rawRule);
       return;
     }
@@ -358,7 +383,7 @@ const AppModules = {
     AppState.activeSession.combatRound = 1;
     AppState.activeSession.combatEnemyId = null;
 
-    // 4. Delegazione alla procedura diegetica del cabinato arcade "INSERT MEGOIN 🪙"
+    // Apertura del cabinato arcade diegetico
     if (typeof engine.launchSession === "function") {
       const savedHeroProfile = saga.eroeSalvato || (saga.episodes && saga.episodes[epNum - 1]?.eroeSalvato) || null;
       engine.launchSession(gameKey, epNum, canContinueFree, savedHeroProfile);
@@ -429,7 +454,7 @@ const AppModules = {
         ${p.isLocked ? `
           <div class="locked-card-overlay">
             <span class="locked-icon">🔒</span>
-            <span class="locked-label">Richiede Piano ${p.requiredPlan}</span>
+            <span class="locked-label">Piano ${p.requiredPlan}</span>
           </div>
         ` : ''}
         <div class="shop-card-media">
@@ -467,12 +492,12 @@ const AppModules = {
 
     const btn = document.getElementById("detail-shop-action-btn");
     if (item.isLocked) {
-      btn.textContent = `🔒 Richiede Piano ${item.requiredPlan}`;
-      btn.className = "btn btn-warning btn-sm font-bold w-full";
+      btn.textContent = `Piano ${item.requiredPlan}`;
+      btn.className = "btn btn-warning btn-sm font-black uppercase w-full";
       btn.onclick = () => AppModules.openPlanModal(item.requiredPlan);
     } else {
-      btn.textContent = item.prezzoMegoin === 0 ? "🎁 Riscatta Gratis" : `Acquista (${item.prezzoMegoin} 🪙)`;
-      btn.className = "btn btn-primary btn-sm font-bold w-full shadow-lg shadow-sky-600/30";
+      btn.textContent = item.prezzoMegoin === 0 ? "Riscatta" : "Compra";
+      btn.className = "btn btn-primary btn-sm font-black uppercase w-full shadow-lg shadow-sky-600/30";
       btn.onclick = () => AppModules.buyProduct(item.id);
     }
 
@@ -508,7 +533,7 @@ const AppModules = {
     document.getElementById("fulfillment-summary").textContent = summary || "";
     const b = document.getElementById("fulfillment-download-box");
     if (downloads && downloads.length > 0) {
-      b.innerHTML = downloads.map(d => `<a href="${d.url}" target="_blank" class="btn btn-sm btn-success w-full font-bold">📥 Scarica ${d.nome}</a>`).join("");
+      b.innerHTML = downloads.map(d => `<a href="${d.url}" target="_blank" class="btn btn-sm btn-success w-full font-black uppercase">📥 Scarica</a>`).join("");
       b.classList.remove("hidden");
     } else {
       b.innerHTML = "";
@@ -691,8 +716,8 @@ const AppModules = {
                 <div class="plan-bonus-text">🪙 +${p.bonusMegoin} Megoin / mese</div>
                 <div class="plan-desc-text">${p.descrizione || ''}</div>
               </div>
-              <button class="btn btn-xs ${p.isAttivo ? 'btn-outline border-white/20' : 'btn-primary'} w-full font-bold">
-                ${p.isAttivo ? 'In Uso' : 'Dettagli Piano ›'}
+              <button class="btn btn-xs ${p.isAttivo ? 'btn-outline border-white/20' : 'btn-primary'} w-full font-black uppercase">
+                ${p.isAttivo ? 'In Uso' : 'Dettagli ›'}
               </button>
             </div>
           `;
@@ -732,7 +757,7 @@ const AppModules = {
               <td class="table-cell-lead">Azione</td>
               ${paidPlans.map(p => `
                 <td class="table-cell-val">
-                  <button onclick="AppModules.openPlanModal('${p.id}')" class="btn btn-xs ${p.isAttivo ? 'btn-outline border-white/20' : 'btn-primary'} font-bold">
+                  <button onclick="AppModules.openPlanModal('${p.id}')" class="btn btn-xs ${p.isAttivo ? 'btn-outline border-white/20' : 'btn-primary'} font-black uppercase">
                     ${p.isAttivo ? 'In Uso' : 'Apri'}
                   </button>
                 </td>
@@ -755,7 +780,7 @@ const AppModules = {
               <p class="free-plan-desc">${freePlan.descrizione || 'Include 1 Megoin mensile • Gratuito'}</p>
             </div>
           </div>
-          <button class="btn btn-xs btn-ghost text-slate-400 font-bold">Dettagli ›</button>
+          <button class="btn btn-xs btn-ghost text-slate-400 font-black uppercase">Dettagli ›</button>
         </div>
       ` : ''}
     `;
@@ -794,14 +819,14 @@ const AppModules = {
     const actBtn = document.getElementById("upgrade-modal-action-btn");
     if (actBtn) {
       if (plan.isAttivo) {
-        actBtn.textContent = "Piano Attualmente in Uso";
+        actBtn.textContent = "In Uso";
         actBtn.disabled = true;
-        actBtn.className = "btn btn-outline border-white/20 btn-sm w-full text-slate-400 font-bold";
+        actBtn.className = "btn btn-outline border-white/20 btn-sm w-full text-slate-400 font-black uppercase";
       } else {
-        actBtn.textContent = `Attiva ${plan.nome} (${priceText}${periodText})`;
+        actBtn.textContent = "Attiva";
         actBtn.disabled = false;
-        actBtn.className = "btn btn-primary btn-sm w-full font-bold shadow-lg shadow-sky-600/30";
-        actBtn.onclick = () => alert(`Reindirizzamento al checkout sicuro per ${plan.nome}...`);
+        actBtn.className = "btn btn-primary btn-sm w-full font-black uppercase shadow-lg shadow-sky-600/30";
+        actBtn.onclick = () => alert(`Reindirizzamento per ${plan.nome}...`);
       }
     }
 
@@ -841,7 +866,7 @@ const AppModules = {
           <div class="vault-item-title">${v.nome}</div>
           <div class="vault-item-date">${v.data}</div>
         </div>
-        <a href="${v.url}" target="_blank" class="btn btn-xs btn-success font-bold">Scarica</a>
+        <a href="${v.url}" target="_blank" class="btn btn-xs btn-success font-black uppercase">Scarica</a>
       </div>
     `).join("");
 
