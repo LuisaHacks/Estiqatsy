@@ -1,7 +1,7 @@
 /* ============================================================================
    PROJECT: ESTIQATSY SYNDICATE & RPG PLATFORM
-   FILE: css/rules2.css (VERSIONE 7.0 - CYLINDRICAL DECK, DUAL VIEW & BREATHING GLOW)
-   LAYER: ENGINE RULES2, WIZARD 3D / LISTA, COCKPIT NARRATIVO & CASSETTI TATTICI
+   FILE: css/rules2.css (VERSIONE 8.0 - ABOVE-THE-FOLD, STICKY FOOTER & ARCADE)
+   LAYER: ENGINE RULES2, WIZARD FULL-STAGE, COCKPIT & CASSETTI TATTICI
    ============================================================================ */
 
 /* ----------------------------------------------------------------------------
@@ -64,7 +64,7 @@
   align-items: center;
   padding-top: 0.35rem;
   padding-bottom: max(var(--safe-bottom), 0.75rem);
-  height: calc(54px + max(var(--safe-bottom), 0px));
+  height: calc(56px + max(var(--safe-bottom), 0px));
 }
 .cockpit-btn {
   display: flex;
@@ -189,61 +189,80 @@
 }
 
 /* ----------------------------------------------------------------------------
-   3. WIZARD: STEPPER & INTERRUTTORE DOPPIA VISTA (3D CILINDRO / LISTA)
+   3. WIZARD: ARCHITETTURA RIGIDA ABOVE-THE-FOLD & HEADER SINGLE-ROW
    ---------------------------------------------------------------------------- */
-.wizard-container {
+
+/* Regola App-Shell per bloccare lo scorrimento del body durante il Wizard */
+body[data-active-screen="view-wizard"] .app-scroll-area {
+  overflow: hidden !important;
+}
+body[data-active-screen="view-wizard"] .app-content-wrapper {
+  height: 100% !important;
+  max-height: 100% !important;
+  padding: 0.4rem 0.65rem 0.25rem 0.65rem !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+body[data-active-screen="view-wizard"] .main-app-footer,
+body[data-active-screen="view-wizard"] .cockpit-footer {
+  display: none !important;
+}
+body[data-active-screen="view-wizard"] #main-wizard-footer {
+  display: flex !important;
+}
+
+/* Contenitore Flessibile Wizard che occupa il 100% dell'altezza disponibile */
+.wizard-stage-container {
+  flex: 1 1 0%;
+  height: 100%;
+  min-height: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.65rem;
+  position: relative;
   width: 100%;
 }
 
-.wizard-stepper-bar {
+.wizard-step-panel {
+  flex: 1 1 0%;
+  height: 100%;
+  min-height: 0;
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0.45rem 0.85rem;
-  border-radius: 0.75rem;
-  background: rgba(0, 0, 0, 0.55);
-  border: 1px solid var(--tg-border);
-  font-size: 9.5px;
-  font-family: monospace;
+  flex-direction: column;
+  gap: 0.4rem;
 }
-@media (min-width: 640px) {
-  .wizard-stepper-bar {
-    font-size: 10.5px;
-    padding: 0.55rem 1.15rem;
-  }
-}
-.step-active { font-weight: 900; color: var(--tg-sky); }
-.step-completed { font-weight: 700; color: var(--tg-emerald); }
-.step-idle { color: #64748B; }
-.step-sep { color: rgba(255, 255, 255, 0.2); }
 
-.step-header-row {
+/* Single-Row Header Compatto (Altezza fissa: ~36-38px) */
+.wizard-single-header {
+  flex: none;
+  height: 38px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding-bottom: 0.35rem;
+  padding: 0 0.25rem 0.35rem 0.25rem;
   border-bottom: 1px solid var(--tg-border);
   gap: 0.5rem;
 }
-.step-tag {
+
+.wizard-step-badge {
+  background: var(--tg-amber);
+  color: #090D16;
   font-size: 8.5px;
-  font-weight: 800;
-  color: var(--tg-amber);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
+  font-weight: 900;
+  padding: 0.15rem 0.45rem;
+  border-radius: 9999px;
+  line-height: 1;
+  flex-shrink: 0;
 }
-.step-headline {
-  font-size: 0.85rem;
+
+.wizard-step-title {
+  font-size: 0.8rem;
   font-weight: 900;
   color: #FFFFFF;
   margin: 0;
   line-height: 1.2;
 }
 
-/* Pillola Selettore Modalità di Visualizzazione (3D vs Lista) */
+/* Selettore Pillola 3D / Lista */
 .wizard-view-toggle-pill {
   display: inline-flex;
   align-items: center;
@@ -255,7 +274,7 @@
   flex-shrink: 0;
 }
 .toggle-pill-btn {
-  padding: 0.25rem 0.55rem;
+  padding: 0.2rem 0.5rem;
   border-radius: 9999px;
   font-size: 9px;
   font-weight: 800;
@@ -279,31 +298,39 @@
   box-shadow: 0 0 10px rgba(56, 189, 248, 0.4);
 }
 
-.wizard-display-mode {
-  animation: modeFade 0.2s ease-out forwards;
-}
-@keyframes modeFade {
-  from { opacity: 0; transform: translateY(4px); }
-  to { opacity: 1; transform: translateY(0); }
+/* Area Contenuto Centrata (Zero-Scroll in 3D, Scroll controllato in Lista) */
+.wizard-content-fill {
+  flex: 1 1 0%;
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
 }
 
 /* ----------------------------------------------------------------------------
-   4. PALCOSCENICO CILINDRICO 3D (FOSSATO DI RESPIRO A 38px & ALONE A 32px)
+   4. PALCOSCENICO CILINDRICO 3D (FOSSATO DI RESPIRO TOTALE)
    ---------------------------------------------------------------------------- */
 .coverflow-stage-outer {
   position: relative;
-  /* FOSSATO DI RISPETTO ESTERNO: 38px verticali di buio puro per far respirare l'alone */
-  margin: 2.375rem auto; /* 38px sopra e sotto */
-  padding: 0.25rem 1.75rem; /* 28px laterali */
   width: 100%;
-  overflow: hidden;
+  height: 100%;
+  max-height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: visible;
+  padding: 0.5rem 1rem;
 }
 
 .coverflow-stage-wrapper {
   position: relative;
   width: 100%;
-  /* Altezza carta (~395px) + 2 * 38px di cuscinetto = 470px max */
-  height: clamp(385px, 51dvh, 470px);
+  /* Altezza dinamica che si adatta allo schermo */
+  height: clamp(340px, 48dvh, 420px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -313,11 +340,11 @@
   touch-action: pan-y;
 }
 
-/* Scheda Archetipo / Entità nel Palcoscenico 3D */
+/* Scheda Archetipo 3D Scalata con Proporzioni Aumentate */
 .coverflow-card {
   position: absolute;
-  width: clamp(260px, 75vw, 310px);
-  height: clamp(330px, 45dvh, 395px);
+  width: clamp(265px, 76vw, 315px);
+  height: clamp(325px, 45dvh, 395px);
   border-radius: 1.15rem;
   background: #0D131F;
   border: 2px solid var(--tg-border-light);
@@ -333,25 +360,25 @@
   cursor: pointer;
 }
 
-/* ALONE NEON A DOPPIO STRATO (Raggio visibile 32px - Respira nel fossato a 38px) */
+/* ALONE NEON A DOPPIO STRATO (Raggio visibile 32px - Respira nel fossato) */
 .glow-destra {
   border-color: var(--tg-sky) !important;
-  box-shadow: 0 0 18px 2px rgba(56, 189, 248, 0.65), 
+  box-shadow: 0 0 16px 2px rgba(56, 189, 248, 0.65), 
               0 0 32px 6px rgba(56, 189, 248, 0.25) !important;
 }
 .glow-sinistra {
   border-color: var(--tg-rose) !important;
-  box-shadow: 0 0 18px 2px rgba(244, 63, 94, 0.7), 
+  box-shadow: 0 0 16px 2px rgba(244, 63, 94, 0.7), 
               0 0 32px 6px rgba(244, 63, 94, 0.25) !important;
 }
 .glow-gold {
   border-color: var(--tg-amber) !important;
-  box-shadow: 0 0 18px 2px rgba(245, 158, 11, 0.65), 
+  box-shadow: 0 0 16px 2px rgba(245, 158, 11, 0.65), 
               0 0 32px 6px rgba(245, 158, 11, 0.25) !important;
 }
 .glow-purple {
   border-color: var(--tg-purple) !important;
-  box-shadow: 0 0 18px 2px rgba(168, 85, 247, 0.65), 
+  box-shadow: 0 0 16px 2px rgba(168, 85, 247, 0.65), 
               0 0 32px 6px rgba(168, 85, 247, 0.25) !important;
 }
 
@@ -371,7 +398,6 @@
   object-position: top center;
 }
 
-/* Inset di sicurezza per i badge interni */
 .coverflow-badge-faction {
   position: absolute;
   top: 0.65rem;
@@ -398,7 +424,7 @@
 .pill-pv { color: #FDA4AF; }
 .pill-gold { color: #FDE047; }
 
-/* Corpo Carta con Padding Proporzionato */
+/* Corpo Carta */
 .coverflow-details-box {
   padding: 0.75rem 0.95rem;
   flex: 1 1 0%;
@@ -436,21 +462,20 @@
 }
 .stat-mod { color: var(--tg-text-muted); }
 
-/* Testo Narrativo con Clamp fluido a 3 righe */
 .coverflow-lore {
   font-size: 10.5px;
   color: #CBD5E1;
-  line-height: 1.48;
-  margin: 0.2rem 0;
+  line-height: 1.45;
+  margin: 0.15rem 0;
   display: -webkit-box;
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  max-height: 3.5rem;
+  max-height: 3.4rem;
 }
 
 .coverflow-footer-row {
-  padding-top: 0.45rem;
+  padding-top: 0.4rem;
   border-top: 1px solid var(--tg-border);
   display: flex;
   align-items: center;
@@ -460,11 +485,11 @@
 .coverflow-gear-label {
   font-size: 10px;
   color: #CBD5E1;
-  max-width: 60%;
+  max-width: 65%;
 }
 .coverflow-gear-label b { color: var(--tg-amber); }
 
-/* Frecce & Pallini di Scorrimento */
+/* Frecce & Pallini */
 .coverflow-arrow-btn {
   display: none;
   position: absolute;
@@ -495,7 +520,8 @@
   justify-content: center;
   align-items: center;
   gap: 0.4rem;
-  margin-top: 0.35rem;
+  margin-top: 0.45rem;
+  flex-shrink: 0;
 }
 .coverflow-dot {
   width: 0.35rem;
@@ -511,33 +537,52 @@
 }
 
 /* ----------------------------------------------------------------------------
-   5. MODALITÀ LISTA TATTICA (PER ARCHETIPI, TALENTI & EMPORIO)
+   5. MODALITÀ LISTA TATTICA (SCROLL CONFINATO DENTRO LO STAGE)
    ---------------------------------------------------------------------------- */
-.wizard-list-scroll-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 0.55rem;
-  max-height: 48dvh;
+.wizard-list-scroll-grid,
+.abilities-scroll-grid,
+.shop-cards-grid {
+  flex: 1 1 0%;
+  height: 100%;
+  min-height: 0;
   overflow-y: auto;
-  padding: 0.2rem 0.2rem 0.5rem 0.1rem;
+  overflow-x: hidden;
+  padding: 0.4rem 0.2rem;
+  display: grid;
+  gap: 0.55rem;
+  -webkit-overflow-scrolling: touch;
+}
+
+.wizard-list-scroll-grid,
+.abilities-scroll-grid {
+  grid-template-columns: 1fr;
 }
 @media (min-width: 640px) {
-  .wizard-list-scroll-grid {
+  .wizard-list-scroll-grid,
+  .abilities-scroll-grid {
     grid-template-columns: repeat(2, 1fr);
     gap: 0.75rem;
   }
 }
+.shop-cards-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+@media (min-width: 640px) {
+  .shop-cards-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.75rem;
+  }
+}
 
-/* Card Archetipo in Modalità Lista */
 .class-list-card {
   background: var(--tg-surface);
   border: 1px solid var(--tg-border);
   border-radius: 0.95rem;
-  padding: 0.75rem 0.85rem;
+  padding: 0.65rem 0.8rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 0.75rem;
+  gap: 0.65rem;
   cursor: pointer;
   transition: all 0.15s ease;
 }
@@ -550,9 +595,9 @@
   box-shadow: 0 0 15px rgba(56, 189, 248, 0.25);
 }
 .class-list-thumb {
-  width: 2.75rem;
-  height: 2.75rem;
-  border-radius: 0.65rem;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 0.6rem;
   background: #090D16;
   overflow: hidden;
   flex-shrink: 0;
@@ -582,24 +627,8 @@
   margin-top: 0.1rem;
 }
 
-/* Griglia Abilità & Talenti (Passo 2) */
-.abilities-scroll-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 0.55rem;
-  max-height: 48dvh;
-  overflow-y: auto;
-  padding: 0.2rem 0.2rem 0.5rem 0.1rem;
-}
-@media (min-width: 640px) {
-  .abilities-scroll-grid { grid-template-columns: repeat(2, 1fr); }
-}
-@media (min-width: 1024px) {
-  .abilities-scroll-grid { grid-template-columns: repeat(3, 1fr); }
-}
-
 .wizard-ability-card {
-  padding: 0.8rem 0.95rem;
+  padding: 0.75rem 0.85rem;
   border-radius: 0.95rem;
   border: 1px solid var(--tg-border);
   background: var(--tg-surface);
@@ -635,22 +664,6 @@
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-}
-
-/* Griglia Merci Ciccio (Passo 3) */
-.shop-cards-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.55rem;
-  max-height: 46dvh;
-  overflow-y: auto;
-  padding: 0.2rem 0.2rem 0.5rem 0.1rem;
-}
-@media (min-width: 640px) {
-  .shop-cards-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.75rem; }
-}
-@media (min-width: 1024px) {
-  .shop-cards-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 }
 
 .wizard-shop-card {
@@ -690,7 +703,6 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.wizard-shop-card:hover .shop-card-title { color: var(--tg-sky); }
 .shop-card-desc {
   font-size: 10px;
   color: #CBD5E1;
@@ -708,34 +720,108 @@
   border-top: 1px solid var(--tg-border);
 }
 
-.backpack-summary-bar {
-  padding: 0.55rem 0.75rem;
-  border-radius: 0.75rem;
+/* ----------------------------------------------------------------------------
+   6. NUOVO FOOTER WIZARD STICKY (I PULSANTI DI CONTROLLO ANCORATI IN BASSO)
+   ---------------------------------------------------------------------------- */
+.wizard-sticky-footer {
+  flex: none;
+  z-index: 40;
+  width: 100%;
+  background: rgba(9, 13, 22, 0.98);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border-top: 1px solid var(--tg-border-light);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.45rem 0.85rem;
+  padding-bottom: max(var(--safe-bottom), 0.65rem);
+  height: calc(56px + max(var(--safe-bottom), 0px));
+}
+
+.wizard-footer-step-controls {
+  width: 100%;
+  display: flex;
+  align-items: center;
+}
+
+/* ----------------------------------------------------------------------------
+   7. MODALE ARCADE DIEGETICA "INSERT MEGOIN 🪙"
+   ---------------------------------------------------------------------------- */
+.arcade-coin-modal-box {
+  background: linear-gradient(180deg, #0F172A 0%, #090D16 100%);
+  border: 1px solid rgba(245, 158, 11, 0.5);
+  padding: 1.35rem 1.25rem 1.65rem 1.25rem;
+  border-radius: 1.35rem;
+  text-align: center;
+  max-width: 20rem;
+  width: 100%;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.9), 0 0 20px rgba(245, 158, 11, 0.2);
+  position: relative;
+}
+
+.arcade-coin-frame {
+  width: 5rem;
+  height: 5rem;
+  margin: 0 auto 0.75rem auto;
+  border-radius: 9999px;
+  background: radial-gradient(circle, rgba(245, 158, 11, 0.25) 0%, transparent 70%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.arcade-coin-huge {
+  font-size: 3.25rem;
+  display: inline-block;
+  animation: pulseArcadeCoin 2s ease-in-out infinite;
+  filter: drop-shadow(0 0 12px rgba(245, 158, 11, 0.6));
+}
+
+@keyframes pulseArcadeCoin {
+  0%, 100% { transform: scale(1) rotate(0deg); }
+  50% { transform: scale(1.12) rotate(6deg); }
+}
+
+.arcade-kicker {
+  font-size: 8.5px;
+  font-weight: 900;
+  letter-spacing: 0.2em;
+  color: var(--tg-amber);
+  text-transform: uppercase;
+}
+
+.arcade-title {
+  font-size: 1.1rem;
+  font-weight: 900;
+  color: #FFFFFF;
+  margin: 0.15rem 0 0 0;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.arcade-subtitle {
+  font-size: 11px;
+  color: #CBD5E1;
+  line-height: 1.45;
+  margin: 0.35rem 0 0 0;
+}
+
+.arcade-wallet-pill {
+  padding: 0.45rem 0.75rem;
+  border-radius: 0.65rem;
   background: rgba(0, 0, 0, 0.6);
   border: 1px solid var(--tg-border);
   display: flex;
   align-items: center;
   justify-content: space-between;
+  font-family: monospace;
+  font-size: 11px;
+  color: #FFFFFF;
 }
 
 /* ----------------------------------------------------------------------------
-   6. WIZARD: BATTESIMO (PASSO 4) & FOCUS SHIELD
-   ---------------------------------------------------------------------------- */
-.recap-card-box {
-  background: var(--tg-surface);
-  border-radius: 1.15rem;
-  border: 1px solid var(--tg-border-light);
-  padding: 1rem 1.15rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-#wizard-step-name:focus-within .recap-collapsible {
-  display: none !important;
-}
-
-/* ----------------------------------------------------------------------------
-   7. COCKPIT GAMEPLAY: HUD A DUE RIGHE & SCATOLA NARRATIVA
+   8. COCKPIT GAMEPLAY: HUD A DUE RIGHE & SCATOLA NARRATIVA
    ---------------------------------------------------------------------------- */
 .gameplay-container {
   display: flex;
@@ -755,7 +841,6 @@
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
-/* Riga 1: Identità, Avatar Classe da Media URL e Oro */
 .hud-row-identity {
   display: flex;
   align-items: center;
@@ -802,7 +887,6 @@
 }
 .gold-suffix { font-size: 9px; color: var(--tg-text-muted); }
 
-/* Riga 2: Salute (< 44%) & Trittico D20 (> 55%) */
 .hud-row-vitals {
   display: flex;
   align-items: center;
@@ -846,7 +930,6 @@
   white-space: nowrap;
 }
 
-/* Scatola Narrativa Flessibile */
 .narrative-box-flexible {
   flex: 1 1 auto;
   min-height: 95px;
@@ -874,7 +957,6 @@
   margin: 0;
 }
 
-/* Pulsantiera Tattica */
 .scene-actions-area {
   flex: none;
   display: flex;
@@ -938,7 +1020,7 @@
 }
 
 /* ----------------------------------------------------------------------------
-   8. MODALE UNIVERSALE & DADO SUSPENSE (CENTRATURE RIGIDE)
+   9. MODALE UNIVERSALE & DADO SUSPENSE
    ---------------------------------------------------------------------------- */
 dialog.modal.modal-middle,
 dialog.modal:not(.modal-bottom) {
@@ -1072,7 +1154,7 @@ dialog.modal:not([open]) {
 }
 
 /* ----------------------------------------------------------------------------
-   9. I 5 CASSETTI COCKPIT (SCHEDA, ZAINO, EMPORIO, SQUADRA, DOSSIER)
+   10. I 5 CASSETTI COCKPIT (SCHEDA, ZAINO, EMPORIO, SQUADRA, DOSSIER)
    ---------------------------------------------------------------------------- */
 .drawer-standard-box {
   background: var(--tg-sec-bg);
@@ -1106,7 +1188,7 @@ dialog.modal:not([open]) {
   line-height: 1.45;
 }
 
-/* 1. SCHEDA EROE */
+/* 1. Scheda Eroe */
 .hero-sheet-profile-card {
   padding: 0.75rem 0.85rem;
   border-radius: 0.85rem;
@@ -1165,18 +1247,7 @@ dialog.modal:not([open]) {
 .stat-val { font-size: 0.85rem; font-weight: 900; font-family: monospace; color: var(--tg-sky); }
 .stat-pure { font-size: 8px; font-family: monospace; color: #64748B; }
 
-/* 2. ZAINO DELL'EROE */
-.drawer-items-scroll-box {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 0.45rem;
-  max-height: 15rem;
-  overflow-y: auto;
-  padding-right: 0.25rem;
-}
-@media (min-width: 640px) {
-  .drawer-items-scroll-box { grid-template-columns: repeat(2, 1fr); }
-}
+/* 2. Zaino */
 .backpack-slot-card {
   padding: 0.65rem 0.8rem;
   border-radius: 0.75rem;
@@ -1203,7 +1274,7 @@ dialog.modal:not([open]) {
 .slot-tag { font-size: 8.5px; color: var(--tg-text-muted); margin-top: 0.1rem; }
 .slot-tag.active-gear { color: var(--tg-emerald); font-weight: 800; }
 
-/* 3. EMPORIO DI CICCIO */
+/* 3. Emporio Ciccio */
 .emporio-drawer-box {
   background: var(--tg-sec-bg);
   border: 1px solid var(--tg-border-light);
@@ -1300,7 +1371,7 @@ dialog.modal:not([open]) {
   font-size: 0.75rem;
 }
 
-/* 4 & 5. SQUADRA & DOSSIER */
+/* 4 & 5. Squadra & Dossier */
 .squad-member-card {
   padding: 0.7rem 0.85rem;
   border-radius: 0.75rem;
