@@ -1,0 +1,1337 @@
+/* ============================================================================
+   PROJECT: ESTIQATSY SYNDICATE & RPG PLATFORM
+   FILE: css/rules2.css (VERSIONE 6.0)
+   LAYER: ENGINE RPG, COCKPIT A DUE RIGHE, WIZARD 3D & CASSETTI TATTICI
+   ============================================================================ */
+
+/* ----------------------------------------------------------------------------
+   1. COCKPIT HEADER & FOOTER DI GIOCO (5 SEZIONI)
+   ---------------------------------------------------------------------------- */
+.game-header-titles {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+.game-header-tag {
+  font-size: 8.5px;
+  font-weight: 900;
+  color: var(--tg-amber);
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  line-height: 1;
+}
+.game-header-sub {
+  font-size: 0.75rem;
+  font-weight: 900;
+  color: #FFFFFF;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 180px;
+}
+@media (min-width: 640px) {
+  .game-header-sub {
+    max-width: 280px;
+    font-size: 0.875rem;
+  }
+}
+.btn-back-text {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-left: 0.15rem;
+}
+.game-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+/* Footer Cockpit Mobile a 5 Tasti */
+.cockpit-footer {
+  flex: none;
+  z-index: 30;
+  background: rgba(13, 19, 31, 0.98);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border-top: 1px solid var(--tg-border-light);
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  padding-top: 0.4rem;
+  padding-bottom: max(var(--safe-bottom), 0.75rem);
+  height: calc(56px + max(var(--safe-bottom), 0px));
+}
+@media (min-width: 768px) {
+  .cockpit-footer {
+    border-radius: 1rem 1rem 0 0;
+    max-width: 48rem;
+    margin: 0 auto;
+    width: 100%;
+  }
+}
+.cockpit-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.25rem 0.5rem;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.cockpit-btn:active {
+  transform: scale(0.92);
+}
+.cockpit-btn-label {
+  font-size: 8px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-top: 0.2rem;
+}
+
+/* ----------------------------------------------------------------------------
+   2. INQUADRATURA CINEMA, CITAZIONE DIEGETICA & DANNI FLUTTUANTI
+   ---------------------------------------------------------------------------- */
+.cinema-frame-rigid {
+  position: relative;
+  width: 100%;
+  height: clamp(160px, 24dvh, 220px);
+  border-radius: 1rem;
+  overflow: hidden;
+  background: #090D16;
+  border: 1px solid var(--tg-border);
+}
+@media (min-width: 768px) {
+  .cinema-frame-rigid {
+    height: clamp(210px, 28dvh, 260px);
+  }
+}
+.cinema-frame-rigid img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top center !important;
+}
+
+.scene-badge {
+  position: absolute;
+  top: 0.625rem;
+  left: 0.625rem;
+  font-size: 8px;
+  font-weight: 900;
+  text-transform: uppercase;
+  z-index: 10;
+}
+
+/* Banner Citazione Diegetico */
+.watermark-cover-banner {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(180deg, transparent 0%, rgba(9, 13, 22, 0.85) 30%, rgba(9, 13, 22, 0.98) 100%);
+  padding: 0.5rem 0.85rem 0.6rem 0.85rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  z-index: 10;
+}
+.quote-text {
+  font-size: 10px;
+  color: #F1F5F9;
+  font-style: italic;
+  line-height: 1.45;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+@media (min-width: 640px) {
+  .quote-text {
+    font-size: 11px;
+  }
+}
+.quote-author {
+  font-size: 8.5px;
+  font-weight: 800;
+  color: var(--tg-amber);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  text-align: right;
+  margin-top: 0.25rem;
+}
+
+/* Animazioni Combattimento & D20 */
+.floating-damage-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 25;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.floating-damage {
+  font-weight: 900;
+  font-size: 1.5rem;
+  color: var(--tg-sky);
+  animation: floatDamage 1.2s ease-out forwards;
+}
+@keyframes floatDamage {
+  0% { opacity: 0; transform: translateY(10px) scale(0.8); }
+  20% { opacity: 1; transform: translateY(-5px) scale(1.15); }
+  80% { opacity: 1; transform: translateY(-22px) scale(1); }
+  100% { opacity: 0; transform: translateY(-38px) scale(0.9); }
+}
+
+.dice-rolling {
+  animation: tumbleDice 0.65s cubic-bezier(0.25, 1, 0.5, 1) infinite;
+}
+@keyframes tumbleDice {
+  0% { transform: rotate(0deg) scale(0.9); }
+  50% { transform: rotate(180deg) scale(1.15); }
+  100% { transform: rotate(360deg) scale(0.9); }
+}
+
+/* ----------------------------------------------------------------------------
+   3. WIZARD: STEPPER & PALCOSCENICO 3D COVERFLOW (PASSO 1)
+   ---------------------------------------------------------------------------- */
+.wizard-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  width: 100%;
+}
+
+.wizard-stepper-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 0.85rem;
+  border-radius: 0.85rem;
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid var(--tg-border);
+  font-size: 10px;
+  font-family: monospace;
+}
+@media (min-width: 640px) {
+  .wizard-stepper-bar {
+    font-size: 11px;
+    padding: 0.6rem 1.25rem;
+  }
+}
+.step-active {
+  font-weight: 900;
+  color: var(--tg-sky);
+}
+.step-completed {
+  font-weight: 700;
+  color: var(--tg-emerald);
+}
+.step-idle {
+  color: #64748B;
+}
+.step-sep {
+  color: rgba(255, 255, 255, 0.2);
+}
+
+.step-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 0.4rem;
+  border-bottom: 1px solid var(--tg-border);
+}
+.step-tag {
+  font-size: 9px;
+  font-weight: 800;
+  color: var(--tg-amber);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.step-headline {
+  font-size: 0.85rem;
+  font-weight: 900;
+  color: #FFFFFF;
+  margin: 0;
+  line-height: 1.2;
+}
+@media (min-width: 640px) {
+  .step-headline {
+    font-size: 1rem;
+  }
+}
+
+/* Palcoscenico Coverflow 3D */
+.coverflow-stage-outer {
+  position: relative;
+  padding: 0.25rem 0;
+  overflow: hidden;
+}
+.coverflow-stage-wrapper {
+  position: relative;
+  width: 100%;
+  height: clamp(370px, 52dvh, 460px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  perspective: 1200px;
+  user-select: none;
+  touch-action: pan-y;
+}
+
+.coverflow-card {
+  position: absolute;
+  width: clamp(275px, 80vw, 330px);
+  height: clamp(355px, 50dvh, 445px);
+  border-radius: 1.15rem;
+  background: #0d131f;
+  border: 2px solid var(--tg-border-light);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 20px 35px -10px rgba(0, 0, 0, 0.8);
+  transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1),
+              opacity 0.4s ease,
+              box-shadow 0.4s ease;
+  will-change: transform, opacity;
+  transform-style: preserve-3d;
+  cursor: pointer;
+}
+
+/* Frazioni e Glow Neon a 360° */
+.glow-destra {
+  border-color: var(--tg-sky) !important;
+  box-shadow: 0 0 30px -4px rgba(56, 189, 248, 0.65), 0 0 12px rgba(56, 189, 248, 0.35) !important;
+}
+.glow-sinistra {
+  border-color: var(--tg-rose) !important;
+  box-shadow: 0 0 30px -4px rgba(244, 63, 94, 0.7), 0 0 12px rgba(244, 63, 94, 0.4) !important;
+}
+
+.coverflow-media-frame {
+  position: relative;
+  width: 100%;
+  height: clamp(170px, 23dvh, 205px);
+  background: #090D16;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+.coverflow-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top center;
+}
+.coverflow-badge-faction {
+  position: absolute;
+  top: 0.6rem;
+  left: 0.6rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.4);
+}
+.coverflow-kpi-pill {
+  position: absolute;
+  top: 0.6rem;
+  right: 0.6rem;
+  display: flex;
+  gap: 0.35rem;
+}
+.pill-pv, .pill-gold {
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(4px);
+  font-family: monospace;
+  font-size: 9.5px;
+  font-weight: 700;
+  padding: 0.15rem 0.45rem;
+  border-radius: 9999px;
+  border: 1px solid var(--tg-border);
+}
+.pill-pv { color: #FDA4AF; }
+.pill-gold { color: #FDE047; }
+
+/* Corpo Carta con Padding Proporzionato */
+.coverflow-details-box {
+  padding: 0.85rem 1rem;
+  flex: 1 1 0%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 0.5rem;
+  background: #0d131f;
+}
+.coverflow-title {
+  font-size: 0.95rem;
+  font-weight: 900;
+  color: #FFFFFF;
+  line-height: 1.15;
+  margin: 0;
+}
+.coverflow-sub {
+  font-size: 9.5px;
+  font-weight: 700;
+  color: var(--tg-sky);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-top: 0.1rem;
+}
+.coverflow-stats-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.35rem;
+  padding: 0.45rem 0.5rem;
+  border-radius: 0.65rem;
+  background: rgba(0, 0, 0, 0.55);
+  border: 1px solid var(--tg-border);
+  text-align: center;
+  font-size: 10px;
+}
+.stat-mod {
+  color: var(--tg-text-muted);
+}
+.coverflow-lore {
+  font-size: 11px;
+  color: #CBD5E1;
+  line-height: 1.5;
+  margin: 0;
+  max-height: 4.8rem;
+  overflow-y: auto;
+  padding-right: 0.25rem;
+}
+.coverflow-footer-row {
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--tg-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+.coverflow-gear-label {
+  font-size: 11px;
+  color: #CBD5E1;
+  max-width: 60%;
+}
+.coverflow-gear-label b {
+  color: var(--tg-amber);
+}
+
+/* Indicatori e Frecce Coverflow */
+.coverflow-arrow-btn {
+  display: none;
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 30;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 9999px;
+  background: rgba(0, 0, 0, 0.75);
+  border: 1px solid var(--tg-border-light);
+  color: #FFFFFF;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+@media (min-width: 640px) {
+  .coverflow-arrow-btn {
+    display: flex;
+  }
+}
+.coverflow-arrow-btn:hover {
+  background: var(--tg-sky);
+  color: #090D16;
+  border-color: var(--tg-sky);
+}
+.coverflow-dots {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.5rem;
+}
+.coverflow-dot {
+  width: 0.375rem;
+  height: 0.375rem;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.2);
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+.coverflow-dot.active {
+  width: 1.1rem;
+  background: var(--tg-sky);
+}
+
+/* ----------------------------------------------------------------------------
+   4. WIZARD: TALENTI (PASSO 2) & MERCATO NERO (PASSO 3)
+   ---------------------------------------------------------------------------- */
+.abilities-scroll-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.65rem;
+  max-height: 48dvh;
+  overflow-y: auto;
+  padding: 0.25rem 0.25rem 0.5rem 0.1rem;
+}
+@media (min-width: 640px) {
+  .abilities-scroll-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@media (min-width: 1024px) {
+  .abilities-scroll-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.wizard-ability-card {
+  padding: 0.85rem 1rem;
+  border-radius: 1rem;
+  border: 1px solid var(--tg-border);
+  background: var(--tg-surface);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
+}
+.wizard-ability-card:hover {
+  background: var(--tg-surface-hover);
+}
+.wizard-ability-card.selected {
+  border-color: var(--tg-sky);
+  background: rgba(56, 189, 248, 0.12);
+  box-shadow: 0 0 15px rgba(56, 189, 248, 0.3);
+}
+.wizard-ability-card.locked {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.ability-card-info {
+  overflow: hidden;
+  flex: 1 1 0%;
+}
+.ability-card-title {
+  font-size: 0.8rem;
+  font-weight: 900;
+  color: #FFFFFF;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ability-card-desc {
+  font-size: 11px;
+  color: #CBD5E1;
+  line-height: 1.45;
+  margin-top: 0.25rem;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.ability-card-badge-box {
+  flex-shrink: 0;
+}
+
+/* Griglia Articoli Mercato di Ciccio */
+.shop-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.65rem;
+  max-height: 46dvh;
+  overflow-y: auto;
+  padding: 0.25rem 0.25rem 0.5rem 0.1rem;
+}
+@media (min-width: 640px) {
+  .shop-cards-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.85rem;
+  }
+}
+@media (min-width: 1024px) {
+  .shop-cards-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.wizard-shop-card {
+  background: var(--tg-surface);
+  border-radius: 1rem;
+  border: 1px solid var(--tg-border);
+  padding: 0.75rem 0.85rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 0.5rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
+  transition: transform 0.15s ease;
+}
+.wizard-shop-card:hover {
+  background: var(--tg-surface-hover);
+}
+.shop-card-clickable {
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+.shop-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.shop-card-price {
+  font-family: monospace;
+  font-size: 10.5px;
+  font-weight: 800;
+  color: #FDE047;
+}
+.shop-card-title {
+  font-size: 0.75rem;
+  font-weight: 900;
+  color: #FFFFFF;
+  margin-top: 0.15rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.wizard-shop-card:hover .shop-card-title {
+  color: var(--tg-sky);
+}
+.shop-card-desc {
+  font-size: 10.5px;
+  color: #CBD5E1;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.shop-card-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.35rem;
+  padding-top: 0.35rem;
+  border-top: 1px solid var(--tg-border);
+}
+
+.backpack-summary-bar {
+  padding: 0.65rem 0.85rem;
+  border-radius: 0.75rem;
+  background: rgba(0, 0, 0, 0.65);
+  border: 1px solid var(--tg-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* ----------------------------------------------------------------------------
+   5. WIZARD: BATTESIMO (PASSO 4) & FOCUS KEYBOARD SHIELD
+   ---------------------------------------------------------------------------- */
+.recap-card-box {
+  background: var(--tg-surface);
+  border-radius: 1.15rem;
+  border: 1px solid var(--tg-border-light);
+  padding: 1rem 1.15rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4);
+}
+@media (min-width: 640px) {
+  .recap-card-box {
+    padding: 1.25rem 1.5rem;
+  }
+}
+
+/* Shield Tastiera Virtuale Mobile: nasconde i dettagli superflui al focus */
+#wizard-step-name:focus-within .recap-collapsible {
+  display: none !important;
+}
+
+/* ----------------------------------------------------------------------------
+   6. COCKPIT GAMEPLAY: HUD A DUE RIGHE & SCATOLA NARRATIVA
+   ---------------------------------------------------------------------------- */
+.gameplay-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  width: 100%;
+}
+
+/* HUD Ergonomico a Due Righe con Spaziature Anti-Collisione */
+.hud-cockpit {
+  background: rgba(17, 24, 39, 0.95);
+  border: 1px solid var(--tg-border-light);
+  border-radius: 0.95rem;
+  padding: 0.55rem 0.85rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+/* Riga 1: Identità, Avatar da Media URL e Oro */
+.hud-row-identity {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+.hud-avatar-box {
+  width: 2.1rem;
+  height: 2.1rem;
+  border-radius: 0.65rem;
+  background: #0F172A;
+  border: 1.5px solid var(--tg-sky);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  overflow: hidden;
+  box-shadow: 0 0 8px rgba(56, 189, 248, 0.35);
+}
+.hud-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top center;
+}
+.hud-avatar-fallback {
+  font-size: 1.15rem;
+}
+.hud-hero-name {
+  font-size: 0.8rem;
+  font-weight: 900;
+  color: #FFFFFF;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+@media (min-width: 640px) {
+  .hud-hero-name {
+    font-size: 0.95rem;
+  }
+}
+.hud-gold-display {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-family: monospace;
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: #FDE047;
+  flex-shrink: 0;
+}
+.gold-suffix {
+  font-size: 9.5px;
+  color: var(--tg-text-muted);
+}
+
+/* Riga 2: Vitals (< 45%) & Trittico D20 (> 55%) */
+.hud-row-vitals {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding-top: 0.35rem;
+  border-top: 1px solid var(--tg-border);
+}
+.hud-vitals-box {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex: 0 0 42%;
+  max-width: 44%;
+}
+.heart-icon {
+  font-size: 0.85rem;
+  flex-shrink: 0;
+}
+.progress-bar-container {
+  flex: 1 1 0%;
+}
+.hud-pv-number {
+  font-family: monospace;
+  font-size: 9.5px;
+  font-weight: 700;
+  color: #CBD5E1;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.hud-d20-trio {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.35rem;
+  flex: 1 1 0%;
+}
+.d20-chip {
+  padding: 0.15rem 0.35rem;
+  border-radius: 0.45rem;
+  background: rgba(0, 0, 0, 0.6);
+  border: 1px solid var(--tg-border);
+  font-size: 9px;
+  font-family: monospace;
+  white-space: nowrap;
+}
+@media (min-width: 640px) {
+  .d20-chip {
+    padding: 0.2rem 0.5rem;
+    font-size: 10px;
+  }
+}
+
+/* Scatola Narrativa Flessibile */
+.narrative-box-flexible {
+  flex: 1 1 auto;
+  min-height: 110px;
+  max-height: clamp(140px, 22dvh, 220px);
+  background: rgba(17, 24, 39, 0.85);
+  border: 1px solid var(--tg-border);
+  border-radius: 1rem;
+  padding: 0.85rem 1rem;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+.narrative-title {
+  font-size: 10px;
+  font-weight: 900;
+  color: #FFFFFF;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.narrative-prose {
+  font-size: 11.5px;
+  color: #E2E8F0;
+  line-height: 1.6;
+  margin: 0;
+}
+@media (min-width: 640px) {
+  .narrative-prose {
+    font-size: 12.5px;
+  }
+}
+
+/* Area Azioni Tattiche */
+.scene-actions-area {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  min-height: 48px;
+}
+.combat-actions-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+.btn-combat-attack, .btn-combat-flee {
+  height: 2.75rem !important;
+  font-size: 0.75rem !important;
+}
+.btn-inspect-enemy {
+  border: 1px solid var(--tg-border) !important;
+  color: #CBD5E1 !important;
+  font-size: 10px !important;
+  font-weight: 700 !important;
+}
+.tactical-advantage-box {
+  padding: 0.65rem;
+  border-radius: 0.75rem;
+  background: rgba(6, 78, 59, 0.85);
+  border: 1px solid rgba(16, 185, 129, 0.4);
+  text-align: center;
+}
+.quiz-box {
+  padding: 0.75rem;
+  border-radius: 1rem;
+  background: rgba(0, 0, 0, 0.6);
+  border: 1px solid var(--tg-border);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.quiz-question {
+  font-size: 11px;
+  font-weight: 700;
+  color: #FDE047;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+.quiz-options-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.4rem;
+}
+.necromancy-prompt-box {
+  padding: 0.75rem;
+  border-radius: 1rem;
+  background: rgba(88, 28, 135, 0.85);
+  border: 1px solid rgba(168, 85, 247, 0.4);
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+/* ----------------------------------------------------------------------------
+   7. MODALE UNIVERSALE DETTAGLIO & DADO SUSPENSE (CENTRATURE FORENSI)
+   ---------------------------------------------------------------------------- */
+.modal-dossier .dossier-box {
+  background: var(--tg-sec-bg);
+  border: 1px solid rgba(56, 189, 248, 0.4);
+  padding: 1.25rem 1.35rem;
+  border-radius: 1.25rem;
+  max-width: 32rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.85);
+  position: relative;
+  text-align: left;
+}
+.dossier-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--tg-border);
+  padding-right: 2rem;
+}
+.dossier-icon {
+  font-size: 1.75rem;
+  flex-shrink: 0;
+}
+.dossier-title {
+  font-size: 0.95rem;
+  font-weight: 900;
+  color: #FFFFFF;
+  margin: 0;
+  line-height: 1.2;
+}
+.dossier-metrics-box {
+  padding: 0.65rem 0.85rem;
+  border-radius: 0.75rem;
+  background: rgba(0, 0, 0, 0.55);
+  border: 1px solid var(--tg-border);
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+.metrics-label {
+  font-size: 9px;
+  font-weight: 800;
+  color: var(--tg-amber);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.metrics-value {
+  font-family: monospace;
+  font-size: 11px;
+  font-weight: 700;
+  color: #FFFFFF;
+  line-height: 1.5;
+}
+.dossier-lore-prose {
+  font-size: 11.5px;
+  color: #CBD5E1;
+  line-height: 1.6;
+  margin: 0;
+  max-height: 9rem;
+  overflow-y: auto;
+  padding-right: 0.35rem;
+}
+
+/* Dado Suspense */
+.dice-modal-box {
+  background: rgba(13, 19, 31, 0.95);
+  border: 1px solid rgba(56, 189, 248, 0.4);
+  padding: 1.5rem;
+  border-radius: 1.25rem;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  max-width: 18rem;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.85);
+}
+.dice-wrapper {
+  width: 4.5rem;
+  height: 4.5rem;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.dice-cube {
+  width: 3.75rem;
+  height: 3.75rem;
+  border-radius: 1rem;
+  background: linear-gradient(135deg, #0284C7, #4F46E5, #D97706);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.75rem;
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.4);
+}
+.dice-title {
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--tg-sky);
+  margin: 0;
+}
+.dice-result {
+  font-size: 1.5rem;
+  font-weight: 900;
+  font-family: monospace;
+  color: #FFFFFF;
+  margin-top: 0.25rem;
+}
+.dice-desc {
+  font-size: 9.5px;
+  color: var(--tg-text-muted);
+  margin: 0.25rem 0 0 0;
+}
+
+/* ----------------------------------------------------------------------------
+   8. I 5 CASSETTI COCKPIT (SCHEDA, ZAINO, EMPORIO, SQUADRA, DOSSIER)
+   ---------------------------------------------------------------------------- */
+.drawer-standard-box {
+  background: var(--tg-sec-bg);
+  border-top: 1px solid var(--tg-border-light);
+  padding: 1rem 1.15rem 1.5rem 1.15rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  max-width: 30rem;
+}
+@media (min-width: 640px) {
+  .drawer-standard-box {
+    border-radius: 1.25rem;
+    border: 1px solid var(--tg-border-light);
+  }
+}
+.drawer-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 0.4rem;
+  border-bottom: 1px solid var(--tg-border);
+}
+.drawer-title {
+  font-size: 0.8rem;
+  font-weight: 900;
+  color: #FFFFFF;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin: 0;
+}
+.drawer-subtitle {
+  font-size: 10.5px;
+  color: var(--tg-text-muted);
+  line-height: 1.45;
+}
+
+/* CASSETTO 1: SCHEDA EROE */
+.hero-sheet-profile-card {
+  padding: 0.85rem 1rem;
+  border-radius: 1rem;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--tg-border);
+}
+.hero-sheet-avatar-box {
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 0.75rem;
+  background: #0F172A;
+  border: 1.5px solid var(--tg-sky);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.hero-sheet-name {
+  font-size: 0.9rem;
+  font-weight: 900;
+  color: #FFFFFF;
+  margin: 0;
+}
+.hero-sheet-class-badge {
+  font-size: 9.5px;
+  font-weight: 700;
+  color: var(--tg-sky);
+  text-transform: uppercase;
+  margin-top: 0.15rem;
+}
+.hero-sheet-wallet-box {
+  padding: 0.75rem 1rem;
+  border-radius: 0.85rem;
+  background: rgba(0, 0, 0, 0.55);
+  border: 1px solid var(--tg-border);
+}
+.hero-sheet-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+.sheet-stat-card {
+  padding: 0.65rem 0.5rem;
+  border-radius: 0.85rem;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--tg-border);
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+}
+.stat-icon { font-size: 1rem; }
+.stat-label { font-size: 9px; font-weight: 700; color: var(--tg-text-muted); text-transform: uppercase; }
+.stat-val { font-size: 0.85rem; font-weight: 900; font-family: monospace; color: var(--tg-sky); }
+.stat-pure { font-size: 8.5px; font-family: monospace; color: #64748B; }
+
+/* CASSETTO 2: ZAINO */
+.drawer-items-scroll-box {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.5rem;
+  max-height: 16rem;
+  overflow-y: auto;
+  padding-right: 0.25rem;
+}
+@media (min-width: 640px) {
+  .drawer-items-scroll-box {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+.backpack-slot-card {
+  padding: 0.75rem 0.85rem;
+  border-radius: 0.85rem;
+  background: var(--tg-surface);
+  border: 1px solid var(--tg-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+.slot-info-clickable {
+  overflow: hidden;
+  flex: 1 1 0%;
+  cursor: pointer;
+}
+.slot-name {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #FFFFFF;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.slot-tag {
+  font-size: 9px;
+  color: var(--tg-text-muted);
+  margin-top: 0.15rem;
+}
+.slot-tag.active-gear {
+  color: var(--tg-emerald);
+  font-weight: 800;
+}
+
+/* CASSETTO 3: EMPORIO DI CICCIO */
+.emporio-drawer-box {
+  background: var(--tg-sec-bg);
+  border-top: 1px solid var(--tg-border-light);
+  padding: 1rem 1.15rem 1.5rem 1.15rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  max-width: 48rem;
+  width: 100%;
+}
+@media (min-width: 640px) {
+  .emporio-drawer-box {
+    border-radius: 1.25rem;
+    border: 1px solid var(--tg-border-light);
+  }
+}
+.emporio-gold-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.65rem 0.85rem;
+  border-radius: 0.75rem;
+  background: rgba(0, 0, 0, 0.45);
+  font-size: 11px;
+}
+.emporio-items-scroll-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.65rem;
+  max-height: 20rem;
+  overflow-y: auto;
+  padding: 0.25rem 0.25rem 0.5rem 0.1rem;
+}
+@media (min-width: 640px) {
+  .emporio-items-scroll-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.85rem;
+  }
+}
+@media (min-width: 1024px) {
+  .emporio-items-scroll-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+.emporio-item-card {
+  background: var(--tg-surface);
+  border-radius: 1rem;
+  border: 1px solid var(--tg-border);
+  padding: 0.75rem 0.85rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 0.5rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
+}
+.item-card-clickable {
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+.item-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.item-card-price {
+  font-family: monospace;
+  font-size: 10.5px;
+  font-weight: 800;
+  color: #FDE047;
+}
+.item-card-name {
+  font-size: 0.75rem;
+  font-weight: 900;
+  color: #FFFFFF;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.item-card-desc {
+  font-size: 10.5px;
+  color: #CBD5E1;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.item-card-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.35rem;
+  padding-top: 0.35rem;
+  border-top: 1px solid var(--tg-border);
+}
+.emporio-sell-row {
+  padding: 0.65rem 0.85rem;
+  border-radius: 0.75rem;
+  background: var(--tg-surface);
+  border: 1px solid var(--tg-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.75rem;
+}
+
+/* CASSETTI 4 & 5: SQUADRA & DOSSIER */
+.squad-member-card {
+  padding: 0.75rem 0.85rem;
+  border-radius: 0.85rem;
+  background: var(--tg-surface);
+  border: 1px solid var(--tg-border);
+  font-size: 0.75rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.squad-member-card.zombie {
+  border-color: rgba(244, 63, 94, 0.35);
+}
+.badge-human { font-size: 9.5px; font-weight: 800; color: var(--tg-emerald); }
+.badge-zombie { font-size: 9.5px; font-weight: 800; color: var(--tg-rose); }
+
+.dossier-evidence-card {
+  padding: 0.75rem 0.85rem;
+  border-radius: 0.85rem;
+  background: var(--tg-surface);
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+.dossier-evidence-card:hover {
+  background: var(--tg-surface-hover);
+}
+.evidence-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.evidence-name {
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: var(--tg-sky);
+}
+.evidence-desc {
+  font-size: 10.5px;
+  color: #CBD5E1;
+  line-height: 1.45;
+}
+
+/* MODALI SECONDARIE (CAMBIO & ABBANDONO) */
+.modal-cambio-box, .abandon-modal-box {
+  background: var(--tg-sec-bg);
+  border: 1px solid var(--tg-border-light);
+  padding: 1.25rem;
+  border-radius: 1.25rem;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  max-width: 20rem;
+  position: relative;
+}
+.modal-cambio-box {
+  border-color: rgba(245, 158, 11, 0.4);
+}
+.abandon-modal-box {
+  border-color: rgba(244, 63, 94, 0.4);
+}
+.cambio-balance-box {
+  padding: 0.5rem;
+  border-radius: 0.65rem;
+  background: rgba(0, 0, 0, 0.5);
+  font-family: monospace;
+  font-size: 0.75rem;
+  color: #FDE047;
+}
