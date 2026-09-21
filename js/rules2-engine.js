@@ -4,10 +4,33 @@
 // LAYER 3B: COCKPIT GAMEPLAY, COMBATTIMENTO D20 & CASSETTI (DATA-DRIVEN)
 // ============================================================================
 
+// Mappa categorie conforme al foglio Google
+const RULES2_CATEGORY_MAP = {
+  "ARMA": "ARMI",         "ARMI": "ARMI",
+  "VEICOLO": "VEICOLI",   "VEICOLI": "VEICOLI",
+  "STRUMENTO": "STRUMENTI","STRUMENTI": "STRUMENTI",
+  "INFORMAZIONE": "INFORMAZIONI", "INFORMAZIONI": "INFORMAZIONI",
+  "TALISMANO": "TALISMANI","TALISMANI": "TALISMANI",
+  "DROGA": "DROGHE",       "DROGHE": "DROGHE",
+  "INGREDIENTE": "DROGHE", "INGREDIENTI": "DROGHE",
+  "CURA": "CURE",          "CURE": "CURE"
+};
+
+function getNormalizedCategory(item) {
+  if (!item) return "STRUMENTI";
+  const raw = String(item.categoria || "").trim().toUpperCase();
+  return RULES2_CATEGORY_MAP[raw] || "STRUMENTI";
+}
+
 const Rules2Engine = {
+  // --------------------------------------------------------------------------
+  // 1. LIFECYCLE HOOKS: AVVIO SESSIONE & COMUNICAZIONE WIZARD
+  // --------------------------------------------------------------------------
   launchSession: function(gameKey, epNum, canContinueFree, savedHero) {
     if (typeof Rules2Wizard !== "undefined") {
       Rules2Wizard.open(gameKey, epNum, canContinueFree, savedHero);
+    } else {
+      console.error("[Rules2Engine] Modulo rules2-wizard.js non trovato.");
     }
   },
 
@@ -20,10 +43,16 @@ const Rules2Engine = {
 
       const res = await apiCall("game_start", payloadParams);
       if (res && res.success) {
-        // Eredita gli equipaggiamenti del foglio già caricati dal Wizard
-        const catalog = (typeof Rules2Wizard !== "undefined" && Rules2Wizard.state.shopCatalog)
+        // Eredita tutti gli oggetti di gioco (Emporio + Oggetti del campo) per il riconoscimento nello zaino
+        const wizardCatalog = (typeof Rules2Wizard !== "undefined" && Rules2Wizard.state.shopCatalog)
           ? Rules2Wizard.state.shopCatalog
           : [];
+        const allGameItems = deduplicateEntities([
+          ...(res.shopItems || []),
+          ...(res.equipaggiamenti || []),
+          ...(res.oggetti || []),
+          ...wizardCatalog
+        ]);
 
         AppState.activeSession.engineKey = "Rules2";
         AppState.activeSession.gameKey = payloadParams.gameKey;
@@ -31,7 +60,7 @@ const Rules2Engine = {
         AppState.activeSession.partitaId = res.partitaId;
         AppState.activeSession.hero = res.statoEroe;
         AppState.activeSession.currentNode = res.nodoIniziale;
-        AppState.activeSession.shopCatalog = deduplicateEntities(res.shopItems || res.equipaggiamenti || catalog);
+        AppState.activeSession.shopCatalog = allGameItems;
         AppState.activeSession.engineState = {
           pendingVictory: null,
           backpackFilter: "ALL",
@@ -54,6 +83,9 @@ const Rules2Engine = {
     }
   },
 
+  // --------------------------------------------------------------------------
+  // 2. RENDERING COCKPIT NARRATIVO & SCENE
+  // --------------------------------------------------------------------------
   renderNode: function(node, hero) {
     if (node) AppState.activeSession.currentNode = node;
     if (hero) {
@@ -112,6 +144,7 @@ const Rules2Engine = {
 
     const isCombat = (currentNode.tipo === "NEMICO" || (currentNode.id && currentNode.id.includes("NEM_")));
 
+    // CASO 1: COMBATTIMENTO
     if (isCombat) {
       if (typeof SoundEngine !== "undefined") SoundEngine.playBgm("combat");
 
@@ -138,6 +171,7 @@ const Rules2Engine = {
       return;
     }
 
+    // CASO 2: ENIGMA / QUIZ D'ARCHIVIO
     if (currentNode.quiz) {
       actBox.innerHTML = `
         <div class="p-2 rounded-xl bg-black/40 border border-white/5 space-y-1.5 text-xs">
@@ -154,6 +188,7 @@ const Rules2Engine = {
       return;
     }
 
+    // CASO 3: BIVIO NARRATIVO STANDARD (SND_*)
     if (currentNode.choices && currentNode.choices.length > 0) {
       if (currentNode.choices.length === 2) {
         actBox.innerHTML = `
@@ -197,10 +232,14 @@ const Rules2Engine = {
         this.renderNode(res.nodo, res.statoEroe);
       }
     } catch (e) {
-      alert("Errore avanzamento: " + e.message);
+      console.error("[Rules2Engine] Errore advanceToNode:", e);
+      alert("Errore nell'avanzamento allo snodo: " + e.message);
     }
   },
 
+  // --------------------------------------------------------------------------
+  // 3. COMBATTIMENTO D20, SUSPENSE, NECROMANZIA & CORRUZIONE
+  // --------------------------------------------------------------------------
   combatAction: async function(subAction) {
     if (!AppState.activeSession.gameKey) return;
 
@@ -273,7 +312,8 @@ const Rules2Engine = {
       }
     } catch (e) {
       if (diceModal) diceModal.close();
-      alert("Errore combattimento: " + e.message);
+      console.error("[Rules2Engine] Errore combatAction:", e);
+      alert("Errore durante l'azione di combattimento: " + e.message);
     }
   },
 
@@ -309,7 +349,7 @@ const Rules2Engine = {
       if (res && res.success) {
         if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("zombie");
         this.showFloatingDamage("🧟 Risorto!", false, false);
-        if (AppState.activeSession.engineState.pendingVictory) {
+        if (AppState.activeSession.engineState?.pendingVictory) {
           this.renderNode(AppState.activeSession.engineState.pendingVictory.nodo, res.statoEroe);
           AppState.activeSession.engineState.pendingVictory = null;
         }
@@ -371,17 +411,21 @@ const Rules2Engine = {
   },
 
   // --------------------------------------------------------------------------
-  // CASSETTO ZAINO (DATA-DRIVEN: NESSUN CONTROLLO HARDCODED SUL NOME)
+  // 4. I 5 CASSETTI DEL COCKPIT (DATA-DRIVEN DAL FOGLIO GOOGLE)
   // --------------------------------------------------------------------------
+
+  // A. ZAINO DELL'EROE
   openBackpackDrawer: function() {
     this.filterBackpack(AppState.activeSession.engineState?.backpackFilter || "ALL");
     document.getElementById("drawer-backpack")?.showModal();
   },
 
-  // Cerca l'entità completa nel catalogo o nello store per conoscerne la Categoria
+  // Cerca l'oggetto nell'intero catalogo di gioco per ricavarne la Categoria reale
   _findEntityData: function(itemName) {
+    if (!itemName) return null;
     const catalog = AppState.activeSession.shopCatalog || [];
-    return catalog.find(x => x.nome.toLowerCase() === itemName.toLowerCase() || x.id.toLowerCase() === itemName.toLowerCase()) || null;
+    const clean = String(itemName).trim().toLowerCase();
+    return catalog.find(x => String(x.nome || "").trim().toLowerCase() === clean || String(x.id || "").trim().toLowerCase() === clean) || null;
   },
 
   filterBackpack: function(cat) {
@@ -407,7 +451,7 @@ const Rules2Engine = {
       return;
     }
 
-    // Filtra basandosi sulla categoria del foglio
+    // Filtro pulito: usa la categoria normalizzata del foglio Google
     if (cat && cat !== "ALL") {
       inv = inv.filter(itemName => {
         const ent = this._findEntityData(itemName);
@@ -509,9 +553,7 @@ const Rules2Engine = {
     }
   },
 
-  // --------------------------------------------------------------------------
-  // CASSETTO EMPORIO RPG (COMPRA DAL FOGLIO & VENDI A CICCIO AL 25%)
-  // --------------------------------------------------------------------------
+  // B. CASSETTO EMPORIO DI CICCIO (COMPRA DAL FOGLIO & VENDI AL 25%)
   openEmporioDrawer: function() {
     const h = AppState.activeSession.hero;
     const goldDisp = document.getElementById("emporio-gold-display");
@@ -626,6 +668,7 @@ const Rules2Engine = {
     }
   },
 
+  // C. BANCO DI CAMBIO VALUTA (MEGOIN ➔ ORO)
   openCambioModal: function() {
     const balEl = document.getElementById("cambio-megoin-balance");
     if (balEl) balEl.textContent = Wallet.getMegoin();
@@ -677,6 +720,7 @@ const Rules2Engine = {
     }
   },
 
+  // D. SQUADRA & ZOMBI AL SEGUITO
   openSquadDrawer: function() {
     const c = document.getElementById("squad-list-container");
     const h = AppState.activeSession.hero;
@@ -706,6 +750,7 @@ const Rules2Engine = {
     document.getElementById("drawer-squad")?.showModal();
   },
 
+  // E. DOSSIER & ORGANIGRAMMA DEL POTERE (6 FAZIONI)
   openDossierDrawer: function() {
     const c = document.getElementById("dossier-list-container");
     const h = AppState.activeSession.hero;
@@ -742,6 +787,9 @@ const Rules2Engine = {
     document.getElementById("drawer-dossier")?.showModal();
   },
 
+  // --------------------------------------------------------------------------
+  // 5. CONTROLLO ABBANDONO & USCITA ALL'HUB
+  // --------------------------------------------------------------------------
   openAbandonModal: function() {
     document.getElementById("modal-abandon")?.showModal();
   },
@@ -760,6 +808,7 @@ const Rules2Engine = {
   }
 };
 
+// Auto-registrazione nel Registry di Piattaforma
 if (typeof EngineRegistry !== "undefined") {
   EngineRegistry.register("Rules2", Rules2Engine);
 }
