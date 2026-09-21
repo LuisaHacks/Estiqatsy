@@ -1680,3 +1680,134 @@ body[data-active-screen="view-wizard"] .main-app-footer {
   border-radius: 1rem;
   border: 1px dashed var(--tg-border);
 }
+
+/* ----------------------------------------------------------------------------
+   10. MODALE JUKEBOX & RADIO NOIR ("Radio Darsena Syndicate")
+   ---------------------------------------------------------------------------- */
+.jukebox-modal-box {
+  background: var(--tg-sec-bg);
+  border: 1px solid rgba(56, 189, 248, 0.4);
+  padding: 1.25rem;
+  border-radius: 1.25rem;
+  max-width: 26rem;
+  width: 100%;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.85);
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  position: relative;
+}
+.jukebox-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--tg-border);
+  padding-right: 2rem;
+}
+.jukebox-brand {
+  font-size: 0.85rem;
+  font-weight: 900;
+  color: #FFFFFF;
+  margin: 0;
+  line-height: 1.2;
+}
+.jukebox-tag {
+  font-size: 8.5px;
+  color: var(--tg-text-muted);
+}
+.jukebox-display-screen {
+  background: rgba(0, 0, 0, 0.6);
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  border-radius: 0.85rem;
+  padding: 0.75rem 0.85rem;
+}
+.jukebox-track-title {
+  font-size: 1rem;
+  font-weight: 900;
+  color: #FFFFFF;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.jukebox-track-sub {
+  font-size: 10px;
+  color: #CBD5E1;
+  margin-top: 0.15rem;
+}
+.jukebox-eq-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 12px;
+}
+.jukebox-eq-bars span {
+  width: 2px;
+  height: 3px;
+  background: var(--tg-sky);
+  border-radius: 1px;
+}
+.jukebox-eq-bars.animated span:nth-child(1) { animation: eqBounce 0.8s ease-in-out infinite; }
+.jukebox-eq-bars.animated span:nth-child(2) { animation: eqBounce 1.1s ease-in-out infinite 0.2s; }
+.jukebox-eq-bars.animated span:nth-child(3) { animation: eqBounce 0.7s ease-in-out infinite 0.4s; }
+.jukebox-eq-bars.animated span:nth-child(4) { animation: eqBounce 1.0s ease-in-out infinite 0.1s; }
+.jukebox-eq-bars.animated span:nth-child(5) { animation: eqBounce 0.9s ease-in-out infinite 0.3s; }
+
+@keyframes eqBounce {
+  0%, 100% { height: 3px; }
+  50% { height: 12px; }
+}
+
+.jukebox-controls-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0;
+}
+.jukebox-playlist-scroll {
+  max-height: 11rem;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding-right: 0.25rem;
+}
+.jukebox-track-item {
+  padding: 0.5rem 0.65rem;
+  border-radius: 0.65rem;
+  background: rgba(17, 24, 39, 0.7);
+  border: 1px solid var(--tg-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.jukebox-track-item:hover {
+  background: var(--tg-surface-hover);
+}
+.jukebox-track-item.active {
+  background: rgba(56, 189, 248, 0.15);
+  border-color: var(--tg-sky);
+}
+.track-item-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: #FFFFFF;
+}
+.jukebox-track-item.active .track-item-title {
+  color: var(--tg-sky);
+}
+.track-item-sub {
+  font-size: 9px;
+  color: var(--tg-text-muted);
+}
+.track-item-tag {
+  font-size: 8px;
+  font-weight: 800;
+  color: var(--tg-amber);
+  text-transform: uppercase;
+  margin-left: 0.5rem;
+  flex-shrink: 0;
+}
