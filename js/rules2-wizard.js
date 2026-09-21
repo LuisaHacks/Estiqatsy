@@ -1,7 +1,7 @@
 // ============================================================================
 // PROJECT: ESTIQATSY SYNDICATE & RPG PLATFORM
 // FILE: js/rules2-wizard.js
-// LAYER 3A: WIZARD CREAZIONE EROE (DATA-DRIVEN DAL FOGLIO GOOGLE)
+// LAYER 3A: WIZARD CREAZIONE EROE (DATA-DRIVEN & GAME DESIGN RESPONSIVE)
 // ============================================================================
 
 const CATEGORY_MAP = {
@@ -42,6 +42,9 @@ const Rules2Wizard = {
     _gesturesInitialized: false
   },
 
+  // --------------------------------------------------------------------------
+  // 1. INIZIALIZZAZIONE & APERTURA WIZARD
+  // --------------------------------------------------------------------------
   open: async function(gameKey, epNum, isVeteran = false, savedHero = null) {
     try {
       if (typeof SoundEngine !== "undefined") SoundEngine.playBgm("wizard");
@@ -55,9 +58,15 @@ const Rules2Wizard = {
 
       this.state.classes = deduplicateEntities(wizData.classes || wizData.classi || []);
       this.state.abilities = deduplicateEntities(wizData.abilities || wizData.abilita || []);
-      
-      // Carica il catalogo direttamente dagli equipaggiamenti del foglio
-      const rawShop = wizData.shopItems || wizData.equipaggiamenti || wizData.oggetti || [];
+
+      // Risoluzione resiliente del catalogo merci RPG (dati foglio)
+      const rawShop = wizData.shopItems ||
+                      wizData.shopCatalog ||
+                      wizData.equipaggiamenti ||
+                      wizData.oggetti ||
+                      wizData.items ||
+                      (AppState.games?.catalog?.find(s => s.gameKey === gameKey)?.equipaggiamenti) ||
+                      [];
       this.state.shopCatalog = deduplicateEntities(rawShop);
 
       this.state.chosenAbilities = [];
@@ -101,6 +110,9 @@ const Rules2Wizard = {
     }
   },
 
+  // --------------------------------------------------------------------------
+  // 2. PASSO 1: I TAROCCHI DEL SALMASTRO (PROPORZIONI FULL-CARD GAME DESIGN)
+  // --------------------------------------------------------------------------
   renderStep1: function() {
     const stage = document.getElementById("wizard-classes-stage");
     const dotsBox = document.getElementById("wizard-coverflow-dots");
@@ -113,7 +125,7 @@ const Rules2Wizard = {
     }
 
     stage.innerHTML = classes.map((cls, idx) => {
-      const pol = String(cls.sottocategoria || "Destra").toLowerCase();
+      const pol = String(cls.sottocategoria || cls.schieramento || "Destra").toLowerCase();
       const isDestra = pol === "destra";
 
       const forMod = Math.floor(((cleanNumber(cls.forza, 10)) - 10) / 2);
@@ -122,48 +134,58 @@ const Rules2Wizard = {
       const fmt = v => (v >= 0 ? "+" + v : String(v));
 
       const cleanQuote = String(cls.citazione || "A Viareggio non ci sono eroi: chi non colpisce per primo finisce a fondo.").replace(/^["'“”]+|["'“”]+$/g, "");
-      const startingGear = cls.equipLoot || "Nessuna dotazione";
+      const startingGear = cls.equipLoot || (cls.armaIniziale ? cls.armaIniziale.nome : "Pugni nudi");
 
       return `
         <div id="coverflow-card-${idx}" onclick="Rules2Wizard.coverflowSelectIndex(${idx})" class="coverflow-card bg-[#0d131f] border border-white/15 overflow-hidden flex flex-col justify-between shadow-2xl">
           
+          <!-- 1. Artwork con Face-Anchoring in alto -->
           <div class="card-media-box relative w-full bg-slate-950 overflow-hidden flex-none">
             <img src="${cls.mediaUrl}" class="w-full h-full object-cover object-top" alt="${cls.nome}">
             
-            <span class="badge badge-xs ${isDestra ? 'badge-info' : 'badge-error'} font-black uppercase text-[8px] absolute top-2.5 left-2.5 shadow-md">
+            <span class="badge badge-xs ${isDestra ? 'badge-info' : 'badge-error'} font-black uppercase text-[8.5px] absolute top-2.5 left-2.5 shadow-md">
               ${pol.toUpperCase()} (+1 Danno)
             </span>
 
             <div class="absolute top-2.5 right-2.5 flex space-x-1">
-              <span class="badge badge-xs bg-black/75 backdrop-blur-md text-rose-300 font-mono font-bold text-[8.5px]">❤️ ${cls.pv} PV</span>
-              <span class="badge badge-xs bg-black/75 backdrop-blur-md text-amber-300 font-mono font-bold text-[8.5px]">🟡 ${cls.oro}</span>
+              <span class="badge badge-xs bg-black/80 backdrop-blur-md text-rose-300 font-mono font-bold text-[9px]">❤️ ${cls.pv} PV</span>
+              <span class="badge badge-xs bg-black/80 backdrop-blur-md text-amber-300 font-mono font-bold text-[9px]">🟡 ${cls.oro}</span>
             </div>
 
-            <div class="watermark-cover-banner">
-              <span class="text-[9px] text-slate-200 italic leading-snug line-clamp-2 pr-1">“${cleanQuote}”</span>
-              <span class="text-[8px] font-bold text-amber-400 uppercase tracking-wider text-right mt-0.5">${cls.autoreCitazione || 'Darsena'}</span>
+            <!-- 2. Banner Citazione: ALLINEATO A DESTRA -->
+            <div class="watermark-cover-banner text-right flex flex-col items-end">
+              <span class="text-[10px] sm:text-[11px] text-slate-100 italic leading-snug line-clamp-2 w-full">“${cleanQuote}”</span>
+              <span class="text-[8.5px] font-black text-amber-400 uppercase tracking-wider mt-0.5">${cls.autoreCitazione || 'Darsena'}</span>
             </div>
           </div>
 
-          <div id="coverflow-details-${idx}" class="card-body-box p-3 space-y-1.5 flex-1 flex flex-col justify-between transition-opacity duration-300">
-            <div>
+          <!-- 3. Corpo Carta: TESTO NARRATIVO A SINISTRA & SPAZIO ESPANSO -->
+          <div id="coverflow-details-${idx}" class="card-body-box p-3 sm:p-4 space-y-2 flex-1 flex flex-col justify-between transition-opacity duration-300">
+            <div class="space-y-2">
               <div class="flex items-center space-x-2">
-                <span class="text-xl">${cls.emoji || '🥋'}</span>
-                <h4 class="font-black text-sm text-white">${cls.nome}</h4>
+                <span class="text-2xl">${cls.emoji || '🥋'}</span>
+                <h4 class="font-black text-base sm:text-lg text-white leading-tight">${cls.nome}</h4>
               </div>
 
-              <div class="grid grid-cols-3 gap-1 py-1 px-1.5 rounded-xl bg-black/45 border border-white/5 text-center font-mono text-[8.5px] mt-1">
+              <!-- Trittico Modificatori D20 Eroe -->
+              <div class="grid grid-cols-3 gap-1.5 py-1.5 px-2 rounded-xl bg-black/50 border border-white/5 text-center font-mono text-[9.5px] sm:text-[11px]">
                 <div>🥊 FOR <b>${cls.forza || 10}</b> <span class="text-slate-400">(${fmt(forMod)})</span></div>
                 <div>🤸 DES <b>${cls.destrezza || 10}</b> <span class="text-slate-400">(${fmt(desMod)})</span></div>
                 <div>🧠 INT <b>${cls.intelligenza || 10}</b> <span class="text-slate-400">(${fmt(intMod)})</span></div>
               </div>
 
-              <p class="text-[10px] text-slate-300 leading-snug mt-1.5 line-clamp-3">${cls.testo || cls.descrizione || ''}</p>
+              <!-- Testo Narrativo: ALLINEATO A SINISTRA, FONT 12.5px-13.5px, PIENO RESPIRO -->
+              <p class="text-left text-xs sm:text-[13px] text-slate-200 leading-relaxed max-h-32 overflow-y-auto no-scrollbar">
+                ${cls.testo || cls.descrizione || ''}
+              </p>
             </div>
 
-            <div class="pt-1.5 border-t border-white/5 flex items-center justify-between text-[9.5px]">
-              <span class="text-slate-400 truncate max-w-[140px]" title="${startingGear}">🎒 <b>${startingGear}</b></span>
-              <button class="btn btn-xs btn-primary font-bold px-2.5 shadow" id="coverflow-action-btn-${idx}">
+            <!-- 4. Footer Scheda: Dotazione Chiara e Tasto Scelta -->
+            <div class="pt-2 border-t border-white/10 flex items-center justify-between text-xs">
+              <span class="text-slate-300 truncate max-w-[160px]" title="${startingGear}">
+                🎒 Dotazione: <b class="text-white font-bold">${startingGear}</b>
+              </span>
+              <button class="btn btn-xs sm:btn-sm btn-primary font-bold px-3 shadow" id="coverflow-action-btn-${idx}">
                 Seleziona
               </button>
             </div>
@@ -186,7 +208,7 @@ const Rules2Wizard = {
     const classes = this.state.classes || [];
     const activeIdx = this.state.activeClassIndex;
     const isDesktop = window.innerWidth >= 768;
-    const spacing = isDesktop ? 220 : 160;
+    const spacing = isDesktop ? 230 : 165;
 
     classes.forEach((cls, i) => {
       const el = document.getElementById(`coverflow-card-${i}`);
@@ -205,8 +227,9 @@ const Rules2Wizard = {
       }
 
       const isCenter = (offset === 0);
-      const isDestra = String(cls.sottocategoria || "Destra").toLowerCase() === "destra";
+      const isDestra = String(cls.sottocategoria || cls.schieramento || "Destra").toLowerCase() === "destra";
 
+      // Nelle carte laterali i testi spariscono per non distrarre
       if (detailsBox) {
         detailsBox.style.opacity = isCenter ? "1" : "0";
         detailsBox.style.pointerEvents = isCenter ? "auto" : "none";
@@ -214,7 +237,7 @@ const Rules2Wizard = {
 
       const translateX = offset * spacing;
       const rotateY = offset * (isDesktop ? -20 : -15);
-      const scale = isCenter ? (isDesktop ? 1.06 : 1.03) : Math.max(0.75, 0.90 - absOffset * 0.08);
+      const scale = isCenter ? (isDesktop ? 1.06 : 1.02) : Math.max(0.75, 0.90 - absOffset * 0.08);
       const zIndex = 30 - absOffset * 5;
       const opacity = isCenter ? 1 : Math.max(0.20, 0.45 - absOffset * 0.10);
 
@@ -222,12 +245,13 @@ const Rules2Wizard = {
       el.style.zIndex = zIndex;
       el.style.opacity = opacity;
 
+      // Glow perimetrale completo
       el.classList.toggle("glow-destra", isCenter && isDestra);
       el.classList.toggle("glow-sinistra", isCenter && !isDestra);
 
       if (btn) {
         btn.textContent = isCenter ? "✓ In Uso" : "Scegli";
-        btn.className = isCenter ? "btn btn-xs btn-success font-black px-2.5 shadow" : "btn btn-xs btn-outline border-white/20 text-slate-400 font-bold px-2";
+        btn.className = isCenter ? "btn btn-xs sm:btn-sm btn-success font-black px-3 shadow" : "btn btn-xs btn-outline border-white/20 text-slate-400 font-bold px-2";
       }
     });
 
@@ -306,6 +330,9 @@ const Rules2Wizard = {
     this.showStep(2);
   },
 
+  // --------------------------------------------------------------------------
+  // 3. PASSO 2: TALENTI CLANDESTINI (FONT LEGGIBILI & EFFETTI IN CHIARO)
+  // --------------------------------------------------------------------------
   renderStep2: function() {
     const grid = document.getElementById("wizard-abilities-grid");
     const budgetBadge = document.getElementById("wizard-px-budget");
@@ -320,16 +347,17 @@ const Rules2Wizard = {
       const isCompatible = req.includes("tutti") || req.includes(userFaction);
 
       return `
-        <div onclick="Rules2Wizard.inspectAbilityDetail('${abl.id}')" class="p-2.5 rounded-xl border ${isSelected ? 'border-sky-400 bg-sky-500/15 shadow-md ring-1 ring-sky-400/40' : (isCompatible ? 'border-white/10 bg-surface/70 cursor-pointer hover:bg-surface active:scale-[0.99]' : 'border-white/5 bg-black/40 opacity-40 cursor-not-allowed')} flex items-center justify-between transition-all">
-          <div class="overflow-hidden pr-2">
+        <div onclick="Rules2Wizard.inspectAbilityDetail('${abl.id}')" class="p-3 rounded-xl border ${isSelected ? 'border-sky-400 bg-sky-500/15 shadow-md ring-1 ring-sky-400/40' : (isCompatible ? 'border-white/10 bg-surface/70 cursor-pointer hover:bg-surface active:scale-[0.99]' : 'border-white/5 bg-black/40 opacity-40 cursor-not-allowed')} flex items-center justify-between transition-all">
+          <div class="overflow-hidden pr-2.5">
             <div class="flex items-center space-x-2">
-              <span class="text-base">${abl.emoji || '⚡'}</span>
-              <span class="text-xs font-black text-white truncate">${abl.nome}</span>
+              <span class="text-lg">${abl.emoji || '⚡'}</span>
+              <span class="text-xs sm:text-sm font-black text-white truncate">${abl.nome}</span>
             </div>
-            <div class="text-[9px] text-slate-300 line-clamp-2 mt-0.5 leading-snug">${abl.testo || abl.descrizione || abl.effettoCodificato || ''}</div>
+            <!-- Testo leggibile a font 11.5px/12px senza troncamenti selvaggi -->
+            <div class="text-[11.5px] sm:text-xs text-slate-300 line-clamp-3 mt-1 leading-snug">${abl.testo || abl.descrizione || abl.effettoCodificato || ''}</div>
           </div>
           <div class="flex items-center space-x-1 shrink-0">
-            <span class="badge badge-xs ${isSelected ? 'badge-primary' : (isCompatible ? 'badge-ghost border-white/20' : 'badge-neutral')} font-black text-[8px] py-1.5 px-2">
+            <span class="badge badge-xs sm:badge-sm ${isSelected ? 'badge-primary' : (isCompatible ? 'badge-ghost border-white/20' : 'badge-neutral')} font-black text-[9px] py-1.5 px-2">
               ${isSelected ? 'ATTIVO ✓' : (isCompatible ? `${abl.costoPX || 100} PX` : '🔒')}
             </span>
           </div>
@@ -351,9 +379,9 @@ const Rules2Wizard = {
     s("uni-detail-icon", abl.emoji || "⚡");
     s("uni-detail-title", abl.nome);
     s("uni-detail-badge", `ABILITÀ • ${(req.includes("destra") ? "Destra" : (req.includes("sinistra") ? "Sinistra" : "Comune")).toUpperCase()}`);
-    s("uni-detail-metrics-label", "EFFETTO TECNICO APPRENDIMENTO");
+    s("uni-detail-metrics-label", "EFFETTO TECNICO BELLICO");
     s("uni-detail-metrics-value", abl.effettoCodificato || "Nessun modificatore passivo");
-    s("uni-detail-lore", abl.testo || abl.descrizione || "Nessuna nota d'archivio disponibile.");
+    s("uni-detail-lore", abl.testo || abl.descrizione || "Nessuna nota d'archivio.");
 
     const mediaContainer = document.getElementById("uni-detail-media-container");
     if (mediaContainer) {
@@ -368,7 +396,7 @@ const Rules2Wizard = {
     const btn = document.getElementById("uni-detail-action-btn");
     if (btn) {
       if (!isCompatible) {
-        btn.textContent = `🔒 Riservato a ${userFaction === "destra" ? "Sinistra" : "Destra"}`;
+        btn.textContent = `🔒 Talento Riservato a ${userFaction === "destra" ? "Sinistra" : "Destra"}`;
         btn.className = "btn btn-sm btn-outline border-white/10 text-slate-500 cursor-not-allowed w-full";
         btn.onclick = null;
       } else if (isSelected) {
@@ -415,12 +443,12 @@ const Rules2Wizard = {
   },
 
   // --------------------------------------------------------------------------
-  // 4. PASSO 3: MERCATO NERO DI CICCIO (CATEGORIZZAZIONE PURA DA FOGLIO)
+  // 4. PASSO 3: MERCATO NERO DI CICCIO (DATA-DRIVEN & FIX SOFFOCOTTO)
   // --------------------------------------------------------------------------
   filterShop: function(targetCategory) {
     this.state.shopCategory = targetCategory;
 
-    // Evidenziazione chip categoria
+    // Aggiornamento stile chips
     const chipsBox = document.getElementById("wizard-shop-category-chips");
     if (chipsBox) {
       chipsBox.querySelectorAll("button").forEach(btn => {
@@ -435,7 +463,7 @@ const Rules2Wizard = {
     const container = document.getElementById("wizard-shop-grid");
     if (!container) return;
 
-    // Filtro purissimo basato sulla colonna Categoria del foglio Google
+    // Filtro purissimo sulla colonna Categoria
     const filtered = (this.state.shopCatalog || []).filter(item => {
       return getNormalizedCategory(item) === targetCategory.toUpperCase();
     });
@@ -451,16 +479,16 @@ const Rules2Wizard = {
       const canAfford = (this.state.currentGold >= price);
 
       return `
-        <div class="bg-surface/80 p-2 rounded-xl border border-white/5 flex flex-col justify-between space-y-1.5 text-xs shadow-md">
+        <div class="bg-surface/90 p-2.5 rounded-xl border border-white/5 flex flex-col justify-between space-y-2 text-xs shadow-md">
           <div>
             <div class="flex items-center justify-between">
-              <span class="text-sm">${it.emoji || '📦'}</span>
-              <span class="font-mono text-[9px] text-amber-300 font-bold">${price} 🟡</span>
+              <span class="text-base">${it.emoji || '📦'}</span>
+              <span class="font-mono text-[10px] text-amber-300 font-bold">${price} 🟡</span>
             </div>
-            <div class="font-bold text-white line-clamp-1 mt-0.5">${it.nome}</div>
-            <div class="text-[9px] text-slate-300 line-clamp-2 mt-0.5 leading-tight">${it.testo || it.descrizione || ''}</div>
+            <div class="font-bold text-white text-xs sm:text-[13px] line-clamp-1 mt-1">${it.nome}</div>
+            <div class="text-[10.5px] text-slate-300 line-clamp-2 mt-0.5 leading-snug">${it.testo || it.descrizione || ''}</div>
           </div>
-          <button onclick="Rules2Wizard.buyItem('${it.id}', ${price})" class="btn btn-xs ${canAfford ? 'btn-primary' : 'btn-outline border-white/10 text-slate-500 cursor-not-allowed'} font-bold text-[9px] w-full" ${!canAfford ? 'disabled' : ''}>
+          <button onclick="Rules2Wizard.buyItem('${it.id}', ${price})" class="btn btn-xs ${canAfford ? 'btn-primary' : 'btn-outline border-white/10 text-slate-500 cursor-not-allowed'} font-bold text-[9.5px] w-full" ${!canAfford ? 'disabled' : ''}>
             ${canAfford ? 'Acquista' : 'Oro Insuff.'}
           </button>
         </div>
@@ -479,7 +507,6 @@ const Rules2Wizard = {
     const item = (this.state.shopCatalog || []).find(i => i.id === itemId);
     if (!item) return;
 
-    // Regola anti-exploit: 1 solo veicolo
     if (getNormalizedCategory(item) === "VEICOLI") {
       const alreadyHasVehicle = this.state.boughtItems.some(x => getNormalizedCategory(x) === "VEICOLI");
       if (alreadyHasVehicle) {
@@ -502,6 +529,7 @@ const Rules2Wizard = {
     this.filterShop(this.state.shopCategory);
   },
 
+  // FIX SOFFOCOTTO: legge equipLoot per mostrare 1 oggetto iniziale reale
   updateBackpackSummary: function() {
     const countEl = document.getElementById("wizard-shop-backpack-count");
     if (!countEl) return;
@@ -510,9 +538,12 @@ const Rules2Wizard = {
     const hasStarting = (startingItem && startingItem !== "—" && startingItem !== "-");
     const total = (hasStarting ? 1 : 0) + this.state.boughtItems.length;
 
-    countEl.innerHTML = `${total} oggetti ${hasStarting ? `<span class="text-slate-400 text-[10px]">(${startingItem})</span>` : ''}`;
+    countEl.innerHTML = `${total} oggetti ${hasStarting ? `<span class="text-slate-400 text-[11px]">(${startingItem})</span>` : ''}`;
   },
 
+  // --------------------------------------------------------------------------
+  // 5. PASSO 4: BATTESIMO DELL'EROE & KEYBOARD SHIELD
+  // --------------------------------------------------------------------------
   renderStep4: function() {
     const cls = this.state.chosenClass;
     if (!cls) return;
@@ -588,42 +619,4 @@ const Rules2Wizard = {
   prevStep: function(stepNum) {
     if (this.state.isVeteran && stepNum === 1) return;
     this.state.step = stepNum;
-    this.showStep(stepNum);
-  },
-
-  showStep: function(stepNum) {
-    const s1 = document.getElementById("wizard-step-class");
-    const s2 = document.getElementById("wizard-step-abilities");
-    const s3 = document.getElementById("wizard-step-shop");
-    const s4 = document.getElementById("wizard-step-name");
-
-    if (s1) s1.classList.toggle("hidden", stepNum !== 1);
-    if (s2) s2.classList.toggle("hidden", stepNum !== 2);
-    if (s3) s3.classList.toggle("hidden", stepNum !== 3);
-    if (s4) s4.classList.toggle("hidden", stepNum !== 4);
-
-    for (let i = 1; i <= 4; i++) {
-      const ind = document.getElementById(`wiz-step-ind-${i}`);
-      if (ind) {
-        ind.className = (i === stepNum) ? "font-black text-sky-400" : (i < stepNum ? "text-emerald-400 font-bold" : "text-slate-500");
-      }
-    }
-  }
-};
-
-// Aliasing per mantenere intatti gli handler onclick di index.html
-window.GameEngine = window.GameEngine || {};
-window.GameEngine.coverflowSelectIndex = (idx) => Rules2Wizard.coverflowSelectIndex(idx);
-window.GameEngine.coverflowNext = () => Rules2Wizard.coverflowNext();
-window.GameEngine.coverflowPrev = () => Rules2Wizard.coverflowPrev();
-window.GameEngine.wizardConfirmStep1 = () => Rules2Wizard.confirmStep1();
-window.GameEngine.inspectAbilityDetail = (id) => Rules2Wizard.inspectAbilityDetail(id);
-window.GameEngine.wizardToggleAbility = (id) => Rules2Wizard.toggleAbility(id);
-window.GameEngine.wizardConfirmStep2 = () => Rules2Wizard.confirmStep2();
-window.GameEngine.filterWizardShop = (cat) => Rules2Wizard.filterShop(cat);
-window.GameEngine.buyWizardShopItem = (id, p) => Rules2Wizard.buyItem(id, p);
-window.GameEngine.resetWizardShop = () => Rules2Wizard.resetShop();
-window.GameEngine.wizardNextStep = (s) => Rules2Wizard.nextStep(s);
-window.GameEngine.wizardPrevStep = (s) => Rules2Wizard.prevStep(s);
-window.GameEngine.wizardUseTelegramName = () => Rules2Wizard.useTelegramName();
-window.GameEngine.wizardFinalizeHero = () => Rules2Wizard.finalizeHero();
+    this.sho
