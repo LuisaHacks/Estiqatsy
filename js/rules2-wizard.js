@@ -59,10 +59,11 @@ const Rules2Wizard = {
       this.state.classes = deduplicateEntities(wizData.classes || wizData.classi || []);
       this.state.abilities = deduplicateEntities(wizData.abilities || wizData.abilita || []);
 
-      // Risoluzione resiliente del catalogo merci RPG (dati foglio)
-      const rawShop = wizData.shopItems ||
-                      wizData.shopCatalog ||
+      // Catalogo dedicato all'Emporio RPG di Ciccio (solo entità di gioco EQP/OBJ con costoOro)
+      const rawShop = wizData.emporioItems ||
                       wizData.equipaggiamenti ||
+                      wizData.shopCatalog ||
+                      wizData.shopItems ||
                       wizData.oggetti ||
                       wizData.items ||
                       (AppState.games?.catalog?.find(s => s.gameKey === gameKey)?.equipaggiamenti) ||
@@ -89,8 +90,8 @@ const Rules2Wizard = {
         this.state.startingGold = savedHero.oro || 40;
         this.state.currentGold = savedHero.oro || 40;
 
-        this.showStep(2);
         this.renderStep2();
+        this.showStep(2);
       } else {
         const firstClass = this.state.classes[0] || null;
         this.state.chosenClass = firstClass;
@@ -98,8 +99,8 @@ const Rules2Wizard = {
         this.state.startingGold = firstClass ? cleanNumber(firstClass.oro, 40) : 40;
         this.state.currentGold = this.state.startingGold;
 
-        this.showStep(1);
         this.renderStep1();
+        this.showStep(1);
       }
 
       this.initKeyboardShield();
@@ -111,7 +112,38 @@ const Rules2Wizard = {
   },
 
   // --------------------------------------------------------------------------
-  // 2. PASSO 1: I TAROCCHI DEL SALMASTRO (PROPORZIONI FULL-CARD GAME DESIGN)
+  // GESTIONE VISIBILITÀ STEP (1..4)
+  // --------------------------------------------------------------------------
+  showStep: function(stepNum) {
+    this.state.step = stepNum;
+    const steps = [
+      { num: 1, id: "wizard-step-class", ind: "wiz-step-ind-1" },
+      { num: 2, id: "wizard-step-abilities", ind: "wiz-step-ind-2" },
+      { num: 3, id: "wizard-step-shop", ind: "wiz-step-ind-3" },
+      { num: 4, id: "wizard-step-name", ind: "wiz-step-ind-4" }
+    ];
+
+    steps.forEach(s => {
+      const el = document.getElementById(s.id);
+      const ind = document.getElementById(s.ind);
+      if (el) el.classList.toggle("hidden", s.num !== stepNum);
+      if (ind) {
+        if (s.num === stepNum) {
+          ind.className = "font-black text-sky-400";
+        } else if (s.num < stepNum) {
+          ind.className = "text-emerald-400 font-bold";
+        } else {
+          ind.className = "text-slate-500 font-normal";
+        }
+      }
+    });
+
+    const scrollContainer = document.getElementById("app-main-scroll");
+    if (scrollContainer) scrollContainer.scrollTop = 0;
+  },
+
+  // --------------------------------------------------------------------------
+  // 2. PASSO 1: I TAROCCHI DEL SALMASTRO (COVER-FLOW)
   // --------------------------------------------------------------------------
   renderStep1: function() {
     const stage = document.getElementById("wizard-classes-stage");
@@ -174,7 +206,7 @@ const Rules2Wizard = {
                 <div>🧠 INT <b>${cls.intelligenza || 10}</b> <span class="text-slate-400">(${fmt(intMod)})</span></div>
               </div>
 
-              <!-- Testo Narrativo: ALLINEATO A SINISTRA, FONT 12.5px-13.5px, PIENO RESPIRO -->
+              <!-- Testo Narrativo -->
               <p class="text-left text-xs sm:text-[13px] text-slate-200 leading-relaxed max-h-32 overflow-y-auto no-scrollbar">
                 ${cls.testo || cls.descrizione || ''}
               </p>
@@ -229,7 +261,6 @@ const Rules2Wizard = {
       const isCenter = (offset === 0);
       const isDestra = String(cls.sottocategoria || cls.schieramento || "Destra").toLowerCase() === "destra";
 
-      // Nelle carte laterali i testi spariscono per non distrarre
       if (detailsBox) {
         detailsBox.style.opacity = isCenter ? "1" : "0";
         detailsBox.style.pointerEvents = isCenter ? "auto" : "none";
@@ -245,7 +276,6 @@ const Rules2Wizard = {
       el.style.zIndex = zIndex;
       el.style.opacity = opacity;
 
-      // Glow perimetrale completo
       el.classList.toggle("glow-destra", isCenter && isDestra);
       el.classList.toggle("glow-sinistra", isCenter && !isDestra);
 
@@ -331,7 +361,7 @@ const Rules2Wizard = {
   },
 
   // --------------------------------------------------------------------------
-  // 3. PASSO 2: TALENTI CLANDESTINI (FONT LEGGIBILI & EFFETTI IN CHIARO)
+  // 3. PASSO 2: TALENTI CLANDESTINI
   // --------------------------------------------------------------------------
   renderStep2: function() {
     const grid = document.getElementById("wizard-abilities-grid");
@@ -353,7 +383,6 @@ const Rules2Wizard = {
               <span class="text-lg">${abl.emoji || '⚡'}</span>
               <span class="text-xs sm:text-sm font-black text-white truncate">${abl.nome}</span>
             </div>
-            <!-- Testo leggibile a font 11.5px/12px senza troncamenti selvaggi -->
             <div class="text-[11.5px] sm:text-xs text-slate-300 line-clamp-3 mt-1 leading-snug">${abl.testo || abl.descrizione || abl.effettoCodificato || ''}</div>
           </div>
           <div class="flex items-center space-x-1 shrink-0">
@@ -443,12 +472,11 @@ const Rules2Wizard = {
   },
 
   // --------------------------------------------------------------------------
-  // 4. PASSO 3: MERCATO NERO DI CICCIO (DATA-DRIVEN & FIX SOFFOCOTTO)
+  // 4. PASSO 3: MERCATO NERO DI CICCIO (MERCI RPG)
   // --------------------------------------------------------------------------
   filterShop: function(targetCategory) {
     this.state.shopCategory = targetCategory;
 
-    // Aggiornamento stile chips
     const chipsBox = document.getElementById("wizard-shop-category-chips");
     if (chipsBox) {
       chipsBox.querySelectorAll("button").forEach(btn => {
@@ -463,7 +491,6 @@ const Rules2Wizard = {
     const container = document.getElementById("wizard-shop-grid");
     if (!container) return;
 
-    // Filtro purissimo sulla colonna Categoria
     const filtered = (this.state.shopCatalog || []).filter(item => {
       return getNormalizedCategory(item) === targetCategory.toUpperCase();
     });
@@ -529,7 +556,6 @@ const Rules2Wizard = {
     this.filterShop(this.state.shopCategory);
   },
 
-  // FIX SOFFOCOTTO: legge equipLoot per mostrare 1 oggetto iniziale reale
   updateBackpackSummary: function() {
     const countEl = document.getElementById("wizard-shop-backpack-count");
     if (!countEl) return;
@@ -604,9 +630,11 @@ const Rules2Wizard = {
       heroName: heroName
     };
 
-    const engine = EngineRegistry.get("Rules2");
+    const engine = (typeof EngineRegistry !== "undefined") ? EngineRegistry.get("Rules2") : (window.Rules2Engine || null);
     if (engine && typeof engine.executeStartGame === "function") {
       engine.executeStartGame(payload);
+    } else {
+      alert("Errore: motore di gioco Rules2 non caricato.");
     }
   },
 
@@ -619,4 +647,23 @@ const Rules2Wizard = {
   prevStep: function(stepNum) {
     if (this.state.isVeteran && stepNum === 1) return;
     this.state.step = stepNum;
-    this.sho
+    this.showStep(stepNum);
+  }
+};
+
+// ============================================================================
+// ESPOSIZIONE GLOBALE & BINDING SU WINDOW.GAMEENGINE (PER GLI ONCLICK IN INDEX.HTML)
+// ============================================================================
+window.Rules2Wizard = Rules2Wizard;
+
+window.GameEngine = window.GameEngine || {};
+window.GameEngine.coverflowPrev = () => Rules2Wizard.coverflowPrev();
+window.GameEngine.coverflowNext = () => Rules2Wizard.coverflowNext();
+window.GameEngine.wizardConfirmStep1 = () => Rules2Wizard.confirmStep1();
+window.GameEngine.wizardPrevStep = (step) => Rules2Wizard.prevStep(step);
+window.GameEngine.wizardConfirmStep2 = () => Rules2Wizard.confirmStep2();
+window.GameEngine.filterWizardShop = (cat) => Rules2Wizard.filterShop(cat);
+window.GameEngine.resetWizardShop = () => Rules2Wizard.resetShop();
+window.GameEngine.wizardNextStep = (step) => Rules2Wizard.nextStep(step);
+window.GameEngine.wizardUseTelegramName = () => Rules2Wizard.useTelegramName();
+window.GameEngine.wizardFinalizeHero = () => Rules2Wizard.finalizeHero();
