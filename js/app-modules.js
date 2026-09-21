@@ -1,7 +1,7 @@
 // ============================================================================
 // PROJECT: ESTIQATSY SYNDICATE & RPG PLATFORM
 // FILE: js/app-modules.js
-// LAYER 2: MODULI DI PIATTAFORMA, PORTALE GIOCHI, E-COMMERCE & SERVIZI SAAS
+// LAYER 2: MODULI DI PIATTAFORMA AGNOSTICI, PORTALE GIOCHI, SHOP & SAAS
 // ============================================================================
 
 const AppModules = {
@@ -31,7 +31,7 @@ const AppModules = {
         this.syncTransactions(false)
       ]);
 
-      // 3. Slider Promozionale della Home
+      // 3. Slider Promozionale dinamico della Home
       this.initCarousel();
 
       // 4. Rimozione Loader d'avvio
@@ -70,31 +70,46 @@ const AppModules = {
 
     s("home-username", u.nome || "Avventuriero");
     s("home-rank-points", u.puntiFedelta || 0);
-    s("home-plan-badge", `PIANO ${(u.piano || u.plan || "Free").toUpperCase()}`);
+    s("home-plan-badge", `PIANO ${(u.piano || u.plan || "Base").toUpperCase()}`);
     s("home-megoin-card", `${megoinVal} 🪙`);
     s("home-punti-card", `${u.puntiFedelta || 0} Pt`);
     s("home-purchases-count", u.prodottiAcquistati || 0);
 
-    s("user-avatar-desk", (u.nome || "U").charAt(0).toUpperCase());
+    // Avatar Utente: Foto Telegram o Iniziale
+    const tgUser = (window.tg && window.tg.initDataUnsafe && window.tg.initDataUnsafe.user) ? window.tg.initDataUnsafe.user : null;
+    const photoUrl = u.photo_url || (tgUser ? tgUser.photo_url : null);
+
+    const renderAvatarBox = (boxId) => {
+      const el = document.getElementById(boxId);
+      if (!el) return;
+      if (photoUrl) {
+        el.innerHTML = `<img src="${photoUrl}" class="w-full h-full object-cover rounded-2xl" alt="Avatar">`;
+      } else {
+        el.textContent = (u.nome || "U").charAt(0).toUpperCase();
+      }
+    };
+
+    renderAvatarBox("user-avatar-desk");
+    renderAvatarBox("profile-card-avatar");
+
     s("user-name-desk", u.nome || "Avventuriero");
-    s("user-plan-desk", `PIANO ${(u.piano || u.plan || "Free").toUpperCase()}`);
+    s("user-plan-desk", `PIANO ${(u.piano || u.plan || "Base").toUpperCase()}`);
     s("user-megoin-desk", `${megoinVal} 🪙`);
     s("user-points-desk", `${u.puntiFedelta || 0} Pt`);
 
-    s("profile-card-avatar", (u.nome || "U").charAt(0).toUpperCase());
     s("profile-card-name", u.nome || "Avventuriero");
     s("profile-card-username", u.username || "@anonimo");
-    s("profile-card-plan", `PIANO ${(u.piano || u.plan || "Free").toUpperCase()}`);
+    s("profile-card-plan", `PIANO ${(u.piano || u.plan || "Base").toUpperCase()}`);
     s("profile-card-id", `ID: ${u.chatId || "-"}`);
     s("profile-card-megoin", `${megoinVal} 🪙`);
     s("profile-card-points", `${u.puntiFedelta || 0} Pt`);
 
-    s("profile-action-plan-name", `Piano: ${(u.piano || u.plan || "Free").toUpperCase()}`);
+    s("profile-action-plan-name", `Piano: ${(u.piano || u.plan || "Base").toUpperCase()}`);
     s("profile-action-vault-count", AppState.vault.length);
   },
 
   // --------------------------------------------------------------------------
-  // 2. CAROSELLO PROMOZIONALE HOME
+  // 2. CAROSELLO PROMOZIONALE HOME (100% DATA-DRIVEN)
   // --------------------------------------------------------------------------
   _currentPromoSlides: [],
 
@@ -104,37 +119,59 @@ const AppModules = {
     const outer = document.getElementById("carousel-outer-wrapper");
     if (!track) return;
 
-    this._currentPromoSlides = [
-      {
-        badge: "GIOCHI NOIR RPG",
-        titolo: "Paul Sindaco & ViareGTA",
-        sottotitolo: "Vivi le saghe noir tra i canali e la pineta a colpi di D20",
-        btnText: "Gioca Ora ➔",
-        action: () => { AppRouter.navigate("games"); },
-        img: "https://image.pollinations.ai/prompt/noir-italian-docks-night-cinematic-libeccio-wind?width=800&height=400&nologo=true"
-      },
-      {
-        badge: "VETRINA BOTTEGA",
-        titolo: "Merci & Prodotti Esclusivi",
-        sottotitolo: "Spendi i tuoi gettoni Megoin riscattando manuali e sconti",
-        btnText: "Apri Shop",
-        action: () => { AppRouter.navigate("shop"); },
-        img: "https://image.pollinations.ai/prompt/smugglers-dockside-warehouse-bazaar-wooden-crates?width=800&height=400&nologo=true"
-      },
-      {
-        badge: "BARLADY & COCKTAIL",
-        titolo: "I Segreti della Darsena",
-        sottotitolo: "Sblocca le ricette ufficiali di cocktail, antipasti e primi",
-        btnText: "Ricettario",
-        action: () => { AppRouter.navigate("recipes"); },
-        img: "https://image.pollinations.ai/prompt/vintage-italian-cocktail-bar-amber-lighting-negroni?width=800&height=400&nologo=true"
-      }
-    ];
+    const slides = [];
 
-    AppState.carousel.count = this._currentPromoSlides.length;
+    // Slide 1: Generata dinamicamente dal primo gioco attivo a catalogo
+    if (AppState.games.catalog && AppState.games.catalog.length > 0) {
+      const topGame = AppState.games.catalog[0];
+      slides.push({
+        badge: (topGame.tipologia || "GIOCO").toUpperCase(),
+        titolo: `${topGame.emoji || '🎮'} ${topGame.serie}`,
+        sottotitolo: topGame.descrizione || "Entra nelle avventure della piattaforma",
+        btnText: "Gioca Ora ➔",
+        action: () => AppRouter.navigate("games"),
+        img: topGame.mediaUrl || "https://image.pollinations.ai/prompt/coastal-noir-docks-night-cinematic?width=800&height=400&nologo=true"
+      });
+    }
+
+    // Slide 2: Generata dal primo articolo in vetrina nello Shop
+    if (AppState.shop.items && AppState.shop.items.length > 0) {
+      const topProduct = AppState.shop.items[0];
+      slides.push({
+        badge: "SHOP",
+        titolo: topProduct.nome,
+        sottotitolo: topProduct.descrizione || "Scopri gli articoli disponibili nello Shop",
+        btnText: "Apri Shop",
+        action: () => AppRouter.navigate("shop"),
+        img: topProduct.mediaUrl || "https://image.pollinations.ai/prompt/smugglers-dockside-warehouse-bazaar?width=800&height=400&nologo=true"
+      });
+    }
+
+    // Slide 3: Generata dal primo cocktail o ricetta a catalogo
+    if (AppState.recipes.items && AppState.recipes.items.length > 0) {
+      const topRecipe = AppState.recipes.items[0];
+      slides.push({
+        badge: (topRecipe.categoria || "RICETTA").toUpperCase(),
+        titolo: topRecipe.piatto,
+        sottotitolo: `Preparazione: ${topRecipe.tempo || 'rapida'} • Costo: ${topRecipe.costo || 'conveniente'}`,
+        btnText: "Ricettario",
+        action: () => AppRouter.navigate("recipes"),
+        img: topRecipe.mediaUrl || "https://image.pollinations.ai/prompt/vintage-cocktail-bar-amber-lighting?width=800&height=400&nologo=true"
+      });
+    }
+
+    if (slides.length === 0) {
+      if (outer) outer.classList.add("hidden");
+      return;
+    } else {
+      if (outer) outer.classList.remove("hidden");
+    }
+
+    this._currentPromoSlides = slides;
+    AppState.carousel.count = slides.length;
     AppState.carousel.index = 0;
 
-    track.innerHTML = this._currentPromoSlides.map((s, idx) => `
+    track.innerHTML = slides.map((s, idx) => `
       <div class="min-w-full relative h-44 md:h-64 bg-slate-900 cursor-pointer overflow-hidden flex-none" onclick="AppModules.handleCarouselClick(${idx})">
         <img src="${s.img}" class="w-full h-full object-cover">
         <div class="absolute inset-0 bg-gradient-to-t from-[#090D16] via-black/40 to-transparent"></div>
@@ -142,17 +179,17 @@ const AppModules = {
           ${s.badge}
         </span>
         <div class="absolute bottom-4 inset-x-4 flex items-end justify-between">
-          <div>
-            <h3 class="font-black text-sm md:text-lg text-white">${s.titolo}</h3>
-            <p class="text-[10px] md:text-xs text-slate-300 mt-0.5">${s.sottotitolo}</p>
+          <div class="max-w-[70%]">
+            <h3 class="font-black text-sm md:text-lg text-white truncate">${s.titolo}</h3>
+            <p class="text-[10px] md:text-xs text-slate-300 mt-0.5 line-clamp-1">${s.sottotitolo}</p>
           </div>
-          <button class="btn btn-xs md:btn-sm btn-primary font-bold px-3 shadow-lg shadow-sky-600/30">${s.btnText}</button>
+          <button class="btn btn-xs md:btn-sm btn-primary font-bold px-3 shadow-lg shadow-sky-600/30 flex-shrink-0">${s.btnText}</button>
         </div>
       </div>
     `).join("");
 
     if (dotsBox) {
-      dotsBox.innerHTML = this._currentPromoSlides.map((_, i) => `
+      dotsBox.innerHTML = slides.map((_, i) => `
         <span class="w-2 h-1.5 rounded-full transition-all ${i === 0 ? 'bg-sky-400 w-4' : 'bg-white/20'}" id="car-dot-${i}"></span>
       `).join("");
     }
@@ -193,7 +230,7 @@ const AppModules = {
   },
 
   // --------------------------------------------------------------------------
-  // 3. PORTALE & CATALOGO GIOCHI (AGNOSTICO MULTI-ENGINE)
+  // 3. CATALOGO GIOCHI RPG
   // --------------------------------------------------------------------------
   loadGamesCatalog: async function() {
     try {
@@ -217,19 +254,17 @@ const AppModules = {
     if (counter) counter.textContent = `${list.length} Saghe Disponibili`;
 
     if (list.length === 0) {
-      container.innerHTML = `<div class="col-span-full py-12 text-center text-slate-500 text-xs">Nessun gioco registrato nel Syndicate.</div>`;
+      container.innerHTML = `<div class="col-span-full py-12 text-center text-slate-500 text-xs">Nessun gioco registrato nella piattaforma.</div>`;
       return;
     }
 
     container.innerHTML = list.map(saga => {
       const ruleCode = saga.regole || "Rules2";
-      const isRules2 = ruleCode.toLowerCase().includes("rules2");
-
       return `
-        <div onclick="AppModules.openGameDetail('${saga.gameKey}')" class="bg-surface/90 hover:bg-surface rounded-2xl border ${isRules2 ? 'border-sky-500/40 ring-1 ring-sky-500/20' : 'border-white/10'} p-4 flex flex-col justify-between space-y-3 cursor-pointer active:scale-[0.98] transition-all shadow-xl group">
+        <div onclick="AppModules.openGameDetail('${saga.gameKey}')" class="bg-surface/90 hover:bg-surface rounded-2xl border border-white/10 p-4 flex flex-col justify-between space-y-3 cursor-pointer active:scale-[0.98] transition-all shadow-xl group">
           <div class="h-36 w-full rounded-xl overflow-hidden relative bg-black/40">
             <img src="${saga.mediaUrl}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
-            <span class="badge badge-xs ${isRules2 ? 'badge-primary' : 'badge-warning'} font-black uppercase text-[8px] absolute top-2.5 left-2.5 shadow">
+            <span class="badge badge-xs badge-primary font-black uppercase text-[8px] absolute top-2.5 left-2.5 shadow">
               ${ruleCode}
             </span>
           </div>
@@ -242,7 +277,7 @@ const AppModules = {
           </div>
           <div class="pt-2 border-t border-white/5 flex items-center justify-between text-[10px]">
             <span class="text-slate-400">${saga.hasActiveGame ? '⚔️ Partita in corso' : 'Pronto al lancio'}</span>
-            <button class="btn btn-xs ${isRules2 ? 'btn-primary' : 'btn-outline border-white/20'} font-bold">
+            <button class="btn btn-xs btn-primary font-bold">
               Esplora Capitoli ›
             </button>
           </div>
@@ -291,25 +326,35 @@ const AppModules = {
     AppRouter.navigate("subview-game-detail");
   },
 
-  // PASSAGGIO DI CONSEGNE DAL MODULO AL MOTORE SPECIFICO (ENGINE REGISTRY)
   startEpisode: function(gameKey, epNum, canContinueFree) {
     const saga = AppState.games.catalog.find(s => s.gameKey === gameKey);
     if (!saga) return;
 
     const ruleEngineKey = saga.regole || "Rules2";
-    const engine = EngineRegistry.get(ruleEngineKey);
+
+    // Ricerca robusta con fallback gerarchico
+    let engine = null;
+    if (typeof window.EngineRegistry !== "undefined" && typeof window.EngineRegistry.get === "function") {
+      engine = window.EngineRegistry.get(ruleEngineKey);
+    } else if (typeof EngineRegistry !== "undefined" && typeof EngineRegistry.get === "function") {
+      engine = EngineRegistry.get(ruleEngineKey);
+    }
+
+    if (!engine) {
+      engine = window.Rules2Engine || (typeof Rules2Engine !== "undefined" ? Rules2Engine : null);
+    }
 
     if (!engine) {
       alert(`⚠️ Motore di gioco "${ruleEngineKey}" non trovato o non ancora caricato.`);
       return;
     }
 
-    // Registra la sessione attiva su AppState
     AppState.activeSession.engineKey = ruleEngineKey;
     AppState.activeSession.gameKey = gameKey;
     AppState.activeSession.episodio = epNum;
+    AppState.activeSession.combatRound = 1;
+    AppState.activeSession.combatEnemyId = null;
 
-    // Se l'engine dispone del metodo di avvio sessione, gli passa il controllo
     if (typeof engine.launchSession === "function") {
       engine.launchSession(gameKey, epNum, canContinueFree, saga.eroeSalvato || null);
     } else {
@@ -318,7 +363,7 @@ const AppModules = {
   },
 
   // --------------------------------------------------------------------------
-  // 4. BOTTEGA E-COMMERCE (ACQUISTI IN MEGOIN)
+  // 4. SHOP E-COMMERCE (ACQUISTI IN MEGOIN 🪙)
   // --------------------------------------------------------------------------
   fetchShop: async function() {
     try {
@@ -370,7 +415,7 @@ const AppModules = {
     }
 
     if (list.length === 0) {
-      grid.innerHTML = `<div class="col-span-full text-center py-8 text-slate-500 text-xs">Nessun articolo trovato nella bottega.</div>`;
+      grid.innerHTML = `<div class="col-span-full text-center py-8 text-slate-500 text-xs">Nessun articolo trovato nello Shop.</div>`;
       return;
     }
 
@@ -468,7 +513,7 @@ const AppModules = {
   },
 
   // --------------------------------------------------------------------------
-  // 5. BARLADY & RICETTARIO
+  // 5. RICETTARIO DINAMICO
   // --------------------------------------------------------------------------
   fetchRecipes: async function() {
     try {
@@ -555,17 +600,24 @@ const AppModules = {
 
     const rpg = document.getElementById("detail-recipe-rpg");
     if (rpg && r.rpg) {
-      rpg.innerHTML = `
-        <div class="p-2 rounded bg-surface"><span class="text-sky-400 font-bold block">${r.rpg.destrezza}</span>Destrezza</div>
-        <div class="p-2 rounded bg-surface"><span class="text-rose-400 font-bold block">${r.rpg.forza}</span>Forza</div>
-        <div class="p-2 rounded bg-surface"><span class="text-amber-400 font-bold block">${r.rpg.gusto}/10</span>Gusto</div>
-      `;
+      // Rendering completamente agnostico di qualsiasi parametro RPG presente
+      const entries = Object.entries(r.rpg).filter(([_, val]) => val && val !== "—" && val !== "-");
+      if (entries.length > 0) {
+        rpg.innerHTML = entries.map(([key, val]) => `
+          <div class="p-2 rounded-xl bg-surface/80 border border-white/5 text-center">
+            <span class="text-sky-400 font-bold block capitalize">${val}</span>
+            <span class="text-[9px] text-slate-400 capitalize">${key}</span>
+          </div>
+        `).join("");
+      } else {
+        rpg.innerHTML = `<div class="col-span-full text-slate-500 text-[10px] italic">Nessun modificatore associato.</div>`;
+      }
     }
     AppRouter.navigate("subview-recipe-detail");
   },
 
   // --------------------------------------------------------------------------
-  // 6. PIANI SAAS & ABBONAMENTI
+  // 6. PIANI SAAS & ABBONAMENTI (100% AGNOSTICO E DATA-DRIVEN)
   // --------------------------------------------------------------------------
   openPlansCatalogModal: function() {
     this.renderPlansCatalog();
@@ -588,20 +640,40 @@ const AppModules = {
     if (!container || !AppState.plans || AppState.plans.length === 0) return;
 
     const isYearly = (AppState.billingCycle === "yearly");
-    const freePlan = AppState.plans.find(p => p.nome.toLowerCase() === "free") || {
-      id: "Plan_1", nome: "Free", prezzoMensile: "€ 0,00", prezzoAnnuale: "€ 0,00", bonusMegoin: 1, isAttivo: true, descrizione: "Accesso base per tutti gli avventurieri."
+
+    // Identificazione agnostica del piano gratuito basata sul prezzo a zero
+    const isPlanFree = p => {
+      const pStr = String(p.prezzoMensile || "").toLowerCase();
+      return pStr.includes("0,00") || cleanNumber(p.prezzoMensile) === 0;
     };
-    const paidPlans = AppState.plans.filter(p => p.nome.toLowerCase() !== "free");
+
+    const freePlan = AppState.plans.find(isPlanFree) || AppState.plans[0];
+    const paidPlans = AppState.plans.filter(p => p !== freePlan);
+
+    // Identificazione dinamica del piano in evidenza (piano mediano tra quelli a pagamento)
+    const featuredIndex = paidPlans.length > 0 ? Math.floor(paidPlans.length / 2) : -1;
+
+    // Estrazione dinamica della mappa completa di tutti i perk per la tabella comparativa
+    const allPerksMap = new Map();
+    AppState.plans.forEach(p => {
+      (p.perks || []).forEach(pk => {
+        if (!allPerksMap.has(pk.key)) {
+          allPerksMap.set(pk.key, pk.label);
+        }
+      });
+    });
 
     container.innerHTML = `
-      <div class="hidden md:grid grid-cols-3 gap-4">
-        ${paidPlans.map(p => {
-          const isSilver = p.nome.toLowerCase().includes("silver");
+      <!-- Vista Desktop: Griglia Dinamica -->
+      <div class="hidden md:grid grid-cols-${Math.min(paidPlans.length, 4)} gap-4">
+        ${paidPlans.map((p, idx) => {
+          const isFeatured = (idx === featuredIndex);
           const price = isYearly ? p.prezzoAnnuale : p.prezzoMensile;
           const period = isYearly ? "/anno" : "/mese";
           return `
-            <div onclick="AppModules.openPlanModal('${p.id}')" class="bg-surface/90 hover:bg-surface active:scale-[0.98] transition-all rounded-2xl border ${p.isAttivo ? 'border-sky-400 ring-2 ring-sky-400/40 shadow-xl' : (isSilver ? 'border-amber-400/60 ring-1 ring-amber-400/30' : 'border-white/10')} p-4 flex flex-col justify-between space-y-3 cursor-pointer relative group">
+            <div onclick="AppModules.openPlanModal('${p.id}')" class="bg-surface/90 hover:bg-surface active:scale-[0.98] transition-all rounded-2xl border ${p.isAttivo ? 'border-sky-400 ring-2 ring-sky-400/40 shadow-xl' : (isFeatured ? 'border-amber-400/60 ring-1 ring-amber-400/30' : 'border-white/10')} p-4 flex flex-col justify-between space-y-3 cursor-pointer relative group">
               ${p.isAttivo ? `<div class="absolute top-2.5 right-2.5"><span class="badge badge-xs badge-info font-black uppercase text-[8px] py-1.5 px-2">✨ ATTIVO</span></div>` : ''}
+              ${(!p.isAttivo && isFeatured) ? `<div class="absolute top-2.5 right-2.5"><span class="badge badge-xs badge-warning font-black uppercase text-[8px] py-1.5 px-2">CONSIGLIATO</span></div>` : ''}
               <div class="space-y-1">
                 <h4 class="font-black text-sm text-white group-hover:text-sky-400 transition-colors">${p.nome}</h4>
                 <div class="text-lg font-black text-amber-300">${price} <span class="text-[10px] text-slate-400 font-normal">${period}</span></div>
@@ -618,6 +690,7 @@ const AppModules = {
         }).join("")}
       </div>
 
+      <!-- Vista Mobile: Tabella Comparativa 100% Agnostica su Tutti i Perk -->
       <div class="md:hidden bg-surface/90 rounded-2xl border border-white/10 overflow-hidden shadow-xl">
         <table class="w-full text-center border-collapse text-[10px]">
           <thead>
@@ -626,7 +699,7 @@ const AppModules = {
               ${paidPlans.map(p => `
                 <th onclick="AppModules.openPlanModal('${p.id}')" class="p-2 cursor-pointer">
                   <div class="font-black text-white ${p.isAttivo ? 'text-sky-400' : ''}">${p.nome}</div>
-                  <div class="text-amber-300">${isYearly ? p.prezzoAnnuale : p.prezzoMensile}</div>
+                  <div class="text-amber-300 text-[9px]">${isYearly ? p.prezzoAnnuale : p.prezzoMensile}</div>
                 </th>
               `).join("")}
             </tr>
@@ -636,8 +709,18 @@ const AppModules = {
               <td class="p-2 text-left text-slate-300 font-semibold">🪙 Megoin</td>
               ${paidPlans.map(p => `<td class="p-2 font-bold text-amber-400">+${p.bonusMegoin}</td>`).join("")}
             </tr>
+            ${Array.from(allPerksMap.entries()).map(([k, label]) => `
+              <tr>
+                <td class="p-2 text-left text-slate-300 font-semibold truncate max-w-[110px]">${label}</td>
+                ${paidPlans.map(p => {
+                  const pk = (p.perks || []).find(x => x.key === k);
+                  const isEnabled = pk ? pk.enabled : false;
+                  return `<td class="p-2">${isEnabled ? '✅' : '❌'}</td>`;
+                }).join("")}
+              </tr>
+            `).join("")}
             <tr class="bg-black/30">
-              <td class="p-2 text-left text-[9px] font-bold text-slate-400">Dettagli</td>
+              <td class="p-2 text-left text-[9px] font-bold text-slate-400">Azione</td>
               ${paidPlans.map(p => `
                 <td class="p-1.5">
                   <button onclick="AppModules.openPlanModal('${p.id}')" class="btn btn-xs ${p.isAttivo ? 'btn-outline border-white/20' : 'btn-primary'} px-2 font-bold text-[8px]">
@@ -650,19 +733,22 @@ const AppModules = {
         </table>
       </div>
 
-      <div onclick="AppModules.openPlanModal('${freePlan.id}')" class="bg-surface/60 hover:bg-surface active:scale-[0.99] transition-all p-3.5 rounded-2xl border ${freePlan.isAttivo ? 'border-sky-400/50' : 'border-white/5'} flex items-center justify-between cursor-pointer group mt-3">
-        <div class="flex items-center space-x-3">
-          <div class="w-8 h-8 rounded-xl bg-white/5 flex items-center justify-center text-sm">⚓</div>
-          <div>
-            <div class="flex items-center space-x-2">
-              <span class="text-xs font-black text-white group-hover:text-sky-400 transition-colors">Piano Base (Free)</span>
-              ${freePlan.isAttivo ? '<span class="badge badge-xs badge-info font-bold text-[8px] uppercase">IN USO</span>' : ''}
+      <!-- Card Piano Base / Gratuito (Dinamica) -->
+      ${freePlan ? `
+        <div onclick="AppModules.openPlanModal('${freePlan.id}')" class="bg-surface/60 hover:bg-surface active:scale-[0.99] transition-all p-3.5 rounded-2xl border ${freePlan.isAttivo ? 'border-sky-400/50' : 'border-white/5'} flex items-center justify-between cursor-pointer group mt-3 shadow-md">
+          <div class="flex items-center space-x-3">
+            <div class="w-8 h-8 rounded-xl bg-white/5 flex items-center justify-center text-sm">⚓</div>
+            <div>
+              <div class="flex items-center space-x-2">
+                <span class="text-xs font-black text-white group-hover:text-sky-400 transition-colors">${freePlan.nome}</span>
+                ${freePlan.isAttivo ? '<span class="badge badge-xs badge-info font-bold text-[8px] uppercase">IN USO</span>' : ''}
+              </div>
+              <p class="text-[10px] text-slate-400 mt-0.5">${freePlan.descrizione || 'Include 1 Megoin mensile • Gratuito'}</p>
             </div>
-            <p class="text-[10px] text-slate-400 mt-0.5">Include 1 Megoin mensile • Gratuito per sempre</p>
           </div>
+          <button class="btn btn-xs btn-ghost text-slate-400 group-hover:text-white font-bold text-[10px]">Dettagli ›</button>
         </div>
-        <button class="btn btn-xs btn-ghost text-slate-400 group-hover:text-white font-bold text-[10px]">Dettagli ›</button>
-      </div>
+      ` : ''}
     `;
 
     if (window.lucide) lucide.createIcons();
@@ -792,3 +878,6 @@ const AppModules = {
     if (window.lucide) lucide.createIcons();
   }
 };
+
+// Esposizione globale per garantire compatibilità con l'intera piattaforma
+window.AppModules = AppModules;
