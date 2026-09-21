@@ -18,9 +18,9 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.4/howler.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
 
-<!-- FOGLI DI STILE SEPARATI (CORE PIATTAFORMA + SPECIFICO RULES2) -->
-  <link rel="stylesheet" href="css/core.css?v=6">
-  <link rel="stylesheet" href="css/rules2.css?v=6">
+  <!-- FOGLI DI STILE SEPARATI (CORE PIATTAFORMA + SPECIFICO RULES2) -->
+  <link rel="stylesheet" href="css/core.css?v=7">
+  <link rel="stylesheet" href="css/rules2.css?v=7">
 </head>
 
 <body class="rpg-app-body">
@@ -32,7 +32,7 @@
       <div class="loader-icon">⚓</div>
     </div>
     <h2 class="loader-title">Estiqatsy Syndicate</h2>
-    <p class="loader-status" id="loading-status">Sincronizzazione fascicoli e archivi...</p>
+    <p class="loader-status" id="loading-status">Sincronizzazione archivi e frequenze...</p>
     <div id="loading-error-box" class="loader-error-box hidden"></div>
     <button id="loading-retry-btn" onclick="location.reload()" class="btn btn-sm btn-primary hidden mt-4">Riprova</button>
   </div>
@@ -128,7 +128,7 @@
           <i data-lucide="volume-2" class="w-4 h-4"></i>
           <span id="audio-status-desk" class="badge badge-xs badge-success">ON</span>
         </button>
-        <span class="version-label">v6.0 Semantics</span>
+        <span class="version-label">v7.0 Cylinder</span>
       </div>
     </aside>
 
@@ -237,10 +237,11 @@
           </section>
 
           <!-- =============================================================== -->
-          <!-- VISTA 3: WIZARD CREAZIONE EROE (CAROSELLO 3D CIRCOLARE)        -->
+          <!-- VISTA 3: WIZARD CREAZIONE EROE (DOPPIA VISTA: 3D CILINDRO / LISTA) -->
           <!-- =============================================================== -->
           <section id="view-wizard" class="wizard-container hidden app-screen max-w-5xl mx-auto">
             
+            <!-- Barra Avanzamento Wizard -->
             <div class="wizard-stepper-bar">
               <span id="wiz-step-ind-1" class="step-active">1. Archetipo</span>
               <span class="step-sep">›</span>
@@ -251,22 +252,39 @@
               <span id="wiz-step-ind-4" class="step-idle">4. Battesimo</span>
             </div>
 
-            <!-- PASSO 1: CAROSELLO 3D CIRCOLARE CONTINUO -->
-            <div id="wizard-step-class" class="space-y-2">
+            <!-- ============================================================= -->
+            <!-- PASSO 1: ARCHETIPO DI CLASSE                                  -->
+            <!-- ============================================================= -->
+            <div id="wizard-step-class" class="space-y-3">
               <div class="step-header-row">
                 <div>
                   <span class="step-tag">Passo 1 di 4</span>
                   <h3 class="step-headline">Scegli la tua Classe Costiera</h3>
                 </div>
-                <span class="badge badge-xs badge-info font-mono font-bold">Episodio 0</span>
+                <!-- Interruttore Doppia Vista: 3D Cilindro / Lista Tattica -->
+                <div class="wizard-view-toggle-pill">
+                  <button id="toggle-view-btn-class-3d" onclick="GameEngine.setWizardViewMode('class', '3d')" class="toggle-pill-btn active" title="Cilindro 3D">
+                    🎡 3D
+                  </button>
+                  <button id="toggle-view-btn-class-list" onclick="GameEngine.setWizardViewMode('class', 'list')" class="toggle-pill-btn" title="Lista Tattica">
+                    📋 Lista
+                  </button>
+                </div>
               </div>
-              
-              <!-- Palcoscenico 3D Cover Flow -->
-              <div class="coverflow-stage-outer">
-                <button onclick="GameEngine.coverflowPrev()" class="coverflow-arrow-btn left-2">❮</button>
-                <button onclick="GameEngine.coverflowNext()" class="coverflow-arrow-btn right-2">❯</button>
-                <div class="coverflow-stage-wrapper" id="wizard-classes-stage"></div>
-                <div class="coverflow-dots" id="wizard-coverflow-dots"></div>
+
+              <!-- Vista A: Palcoscenico Cilindrico 3D (con Fossato di Respiro) -->
+              <div id="wizard-class-view-3d" class="wizard-display-mode">
+                <div class="coverflow-stage-outer">
+                  <button onclick="GameEngine.coverflowPrev()" class="coverflow-arrow-btn left-2" aria-label="Precedente">❮</button>
+                  <button onclick="GameEngine.coverflowNext()" class="coverflow-arrow-btn right-2" aria-label="Successivo">❯</button>
+                  <div class="coverflow-stage-wrapper" id="wizard-classes-stage"></div>
+                  <div class="coverflow-dots" id="wizard-coverflow-dots"></div>
+                </div>
+              </div>
+
+              <!-- Vista B: Lista Tattica Compatta (Click apre il Dettaglio) -->
+              <div id="wizard-class-view-list" class="wizard-display-mode hidden">
+                <div class="wizard-list-scroll-grid" id="wizard-classes-list-container"></div>
               </div>
               
               <div class="pt-2">
@@ -276,17 +294,44 @@
               </div>
             </div>
 
-            <!-- PASSO 2: TALENTI CLANDESTINI -->
-            <div id="wizard-step-abilities" class="space-y-2.5 hidden">
+            <!-- ============================================================= -->
+            <!-- PASSO 2: TALENTI CLANDESTINI                                  -->
+            <!-- ============================================================= -->
+            <div id="wizard-step-abilities" class="space-y-3 hidden">
               <div class="step-header-row">
                 <div>
                   <span class="step-tag">Passo 2 di 4</span>
                   <h3 class="step-headline">Apprendi Abilità & Talenti</h3>
                 </div>
-                <span class="badge badge-xs badge-info font-mono" id="wizard-px-budget">✨ 100 PX Disponibili</span>
+                <div class="flex items-center space-x-2">
+                  <span class="badge badge-xs badge-info font-mono" id="wizard-px-budget">✨ 100 PX</span>
+                  <!-- Interruttore Vista Step 2 -->
+                  <div class="wizard-view-toggle-pill">
+                    <button id="toggle-view-btn-abilities-3d" onclick="GameEngine.setWizardViewMode('abilities', '3d')" class="toggle-pill-btn" title="Cilindro 3D">
+                      🎡 3D
+                    </button>
+                    <button id="toggle-view-btn-abilities-list" onclick="GameEngine.setWizardViewMode('abilities', 'list')" class="toggle-pill-btn active" title="Lista Tattica">
+                      📋 Lista
+                    </button>
+                  </div>
+                </div>
               </div>
-              <p class="text-[11px] text-slate-300">Tocca un talento per aprirne la Scheda Dettagliata con le proprietà belliche decodificate:</p>
-              <div class="abilities-scroll-grid" id="wizard-abilities-grid"></div>
+
+              <!-- Vista A: Cilindro 3D Abilità -->
+              <div id="wizard-abilities-view-3d" class="wizard-display-mode hidden">
+                <div class="coverflow-stage-outer">
+                  <button onclick="GameEngine.cylinderAbilitiesPrev()" class="coverflow-arrow-btn left-2" aria-label="Precedente">❮</button>
+                  <button onclick="GameEngine.cylinderAbilitiesNext()" class="coverflow-arrow-btn right-2" aria-label="Successivo">❯</button>
+                  <div class="coverflow-stage-wrapper" id="wizard-abilities-stage"></div>
+                  <div class="coverflow-dots" id="wizard-abilities-dots"></div>
+                </div>
+              </div>
+
+              <!-- Vista B: Lista Tattica Abilità -->
+              <div id="wizard-abilities-view-list" class="wizard-display-mode">
+                <p class="text-[11px] text-slate-300">Tocca un talento per aprirne la Scheda Dettagliata con le proprietà belliche decodificate:</p>
+                <div class="abilities-scroll-grid" id="wizard-abilities-grid"></div>
+              </div>
               
               <div class="flex gap-2 pt-2">
                 <button onclick="GameEngine.wizardPrevStep(1)" class="btn btn-xs sm:btn-sm btn-ghost">🔙 Modifica Classe</button>
@@ -296,8 +341,10 @@
               </div>
             </div>
 
-            <!-- PASSO 3: MERCATO NERO DI CICCIO (MERCI RPG) -->
-            <div id="wizard-step-shop" class="space-y-2.5 hidden">
+            <!-- ============================================================= -->
+            <!-- PASSO 3: MERCATO NERO DI CICCIO (MERCI RPG)                   -->
+            <!-- ============================================================= -->
+            <div id="wizard-step-shop" class="space-y-3 hidden">
               <div class="step-header-row">
                 <div>
                   <span class="step-tag">Passo 3 di 4</span>
@@ -306,6 +353,15 @@
                 <div class="flex items-center space-x-2">
                   <span class="badge badge-xs bg-black/70 border border-amber-400/40 text-amber-300 font-mono font-bold" id="wizard-shop-gold-display">💰 40 🟡</span>
                   <button onclick="GameEngine.openCambioModal()" class="btn btn-xs btn-warning font-black text-[8.5px]">💱 Cambio 🪙</button>
+                  <!-- Interruttore Vista Step 3 -->
+                  <div class="wizard-view-toggle-pill">
+                    <button id="toggle-view-btn-shop-3d" onclick="GameEngine.setWizardViewMode('shop', '3d')" class="toggle-pill-btn" title="Cilindro 3D">
+                      🎡 3D
+                    </button>
+                    <button id="toggle-view-btn-shop-list" onclick="GameEngine.setWizardViewMode('shop', 'list')" class="toggle-pill-btn active" title="Griglia Lista">
+                      📋 Griglia
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -319,7 +375,20 @@
                 <button onclick="GameEngine.filterWizardShop('TALISMANI')" class="rpg-category-chip badge badge-ghost">📿 Talismani</button>
               </div>
 
-              <div class="shop-cards-grid" id="wizard-shop-grid"></div>
+              <!-- Vista A: Cilindro 3D Merci Emporio -->
+              <div id="wizard-shop-view-3d" class="wizard-display-mode hidden">
+                <div class="coverflow-stage-outer">
+                  <button onclick="GameEngine.cylinderShopPrev()" class="coverflow-arrow-btn left-2" aria-label="Precedente">❮</button>
+                  <button onclick="GameEngine.cylinderShopNext()" class="coverflow-arrow-btn right-2" aria-label="Successivo">❯</button>
+                  <div class="coverflow-stage-wrapper" id="wizard-shop-stage"></div>
+                  <div class="coverflow-dots" id="wizard-shop-dots"></div>
+                </div>
+              </div>
+
+              <!-- Vista B: Griglia Tattica Merci -->
+              <div id="wizard-shop-view-list" class="wizard-display-mode">
+                <div class="shop-cards-grid" id="wizard-shop-grid"></div>
+              </div>
 
               <div class="backpack-summary-bar" id="wizard-shop-backpack-summary">
                 <span class="text-slate-300 text-[11px]">🎒 Zaino di Partenza: <b id="wizard-shop-backpack-count" class="text-white">0 oggetti</b></span>
@@ -334,7 +403,9 @@
               </div>
             </div>
 
-            <!-- PASSO 4: BATTESIMO DELL'EROE -->
+            <!-- ============================================================= -->
+            <!-- PASSO 4: BATTESIMO DELL'EROE                                  -->
+            <!-- ============================================================= -->
             <div id="wizard-step-name" class="space-y-2.5 hidden pb-6">
               <div class="step-header-row">
                 <div>
@@ -381,14 +452,12 @@
           </section>
 
           <!-- =============================================================== -->
-          <!-- VISTA 4: COCKPIT GAMEPLAY (HUD A DOPPIA RIGA OTTIMIZZATO)      -->
+          <!-- VISTA 4: COCKPIT GAMEPLAY                                      -->
           <!-- =============================================================== -->
           <section id="view-gameplay" class="gameplay-container hidden app-screen max-w-3xl mx-auto">
             
-            <!-- HUD ERGONOMICO A DUE RIGHE (NESSUN TESTO INCOLLATO) -->
+            <!-- HUD Ergonomico a Due Righe -->
             <div class="hud-cockpit">
-              
-              <!-- Riga 1: Identità, Avatar Classe da Media URL e Oro -->
               <div class="hud-row-identity">
                 <div class="flex items-center space-x-2.5 min-w-0">
                   <div class="hud-avatar-box">
@@ -404,7 +473,6 @@
                 </div>
               </div>
 
-              <!-- Riga 2: Barra Salute (< 45% larghezza) e Trittico D20 Leggibile -->
               <div class="hud-row-vitals">
                 <div class="hud-vitals-box">
                   <span class="heart-icon">❤️</span>
@@ -420,7 +488,6 @@
                   <span class="d20-chip" title="Intelligenza">🧠 <b id="kpi-mod-int">+0</b></span>
                 </div>
               </div>
-
             </div>
 
             <!-- Inquadratura Cinema con Banner Citazione Fisso -->
@@ -612,7 +679,7 @@
         </button>
       </footer>
 
-      <!-- 4.B FOOTER GAME COCKPIT RULES2 (5 SEZIONI UFFICIALI) -->
+      <!-- 4.B FOOTER GAME COCKPIT RULES2 (5 SEZIONI) -->
       <footer id="main-game-cockpit-footer" class="cockpit-footer hidden">
         <button onclick="GameEngine.openHeroSheetDrawer()" class="cockpit-btn text-slate-300 hover:text-sky-400">
           <i data-lucide="user" class="w-4 h-4"></i>
@@ -643,7 +710,7 @@
   <!-- 5. CASSETTI & MODALI UNIFICATE (CENTRATURE E SCHEDE FORENSI)            -->
   <!-- ======================================================================= -->
 
-  <!-- SCHEDA DETTAGLIATA UNIVERSALE -->
+  <!-- SCHEDA DETTAGLIATA UNIVERSALE (DEEP INSPECTION MODAL) -->
   <dialog id="modal-universal-detail" class="modal modal-middle modal-dossier">
     <div class="modal-box dossier-box">
       <button onclick="document.getElementById('modal-universal-detail').close()" class="modal-close-btn">✕</button>
@@ -721,7 +788,7 @@
         </div>
       </div>
 
-      <!-- Borsello Sonante & Banco di Cambio Integrato -->
+      <!-- Borsello Oro & Banco di Cambio Integrato -->
       <div class="hero-sheet-wallet-box">
         <div class="flex items-center justify-between">
           <div>
@@ -867,15 +934,12 @@
       <div id="dossier-list-container" class="space-y-2 text-xs"></div>
     </div>
   </dialog>
-
-  
   
   <!-- MODALE JUKEBOX RADIO NOIR -->
   <dialog id="modal-audio-jukebox" class="modal modal-middle">
     <div class="modal-box jukebox-modal-box">
       <button onclick="SoundEngine.closeJukeboxModal()" class="modal-close-btn">✕</button>
 
-      <!-- Testata Ricevitore -->
       <div class="jukebox-header">
         <div class="flex items-center space-x-2">
           <span class="text-xl">📻</span>
@@ -889,7 +953,6 @@
         </button>
       </div>
 
-      <!-- Display Ricevitore -->
       <div class="jukebox-display-screen">
         <div class="flex items-center justify-between">
           <span class="badge badge-xs badge-info font-black" id="jukebox-current-tag">HUB / NOIR</span>
@@ -905,7 +968,6 @@
         </div>
       </div>
 
-      <!-- Controlli Riproduzione -->
       <div class="jukebox-controls-row">
         <button onclick="SoundEngine.playPrevTrack()" class="btn btn-sm btn-circle btn-ghost text-slate-200" title="Precedente">⏮</button>
         <button id="jukebox-btn-play" onclick="SoundEngine.togglePlayPause()" class="btn btn-sm btn-primary font-bold flex-1">⏸ Pausa</button>
@@ -913,12 +975,10 @@
         <button id="jukebox-btn-shuffle" onclick="SoundEngine.toggleShuffle()" class="btn btn-sm btn-circle btn-ghost" title="Shuffle">🔀</button>
       </div>
 
-      <!-- Playlist Selezionabile -->
       <div class="space-y-1">
         <span class="section-kicker">Archivio Frequenze Noir</span>
         <div class="jukebox-playlist-scroll" id="jukebox-playlist-items"></div>
       </div>
-
     </div>
   </dialog>
   
@@ -987,11 +1047,11 @@
   </dialog>
 
   <!-- MOTORE AUDIO -->
-  <script src="audio.js?v=6"></script>
+  <script src="audio.js?v=7"></script>
 
-  <!-- ARCHITETTURA MODULARE ESTIQATSY CON CACHE BUSTER -->
-  <script src="js/app-core.js?v=6"></script>
-  <script src="js/app-modules.js?v=6"></script>
-  <script src="js/rules2.js?v=6"></script>
+  <!-- ARCHITETTURA MODULARE ESTIQATSY -->
+  <script src="js/app-core.js?v=7"></script>
+  <script src="js/app-modules.js?v=7"></script>
+  <script src="js/rules2.js?v=7"></script>
 </body>
 </html>
