@@ -1,6 +1,6 @@
 /* ============================================================================
    PROJECT: ESTIQATSY SYNDICATE & RPG PLATFORM
-   FILE: css/rules2.css (VERSIONE 9.0 - RESPONSIVE CARDS, OVERLAY TITLE & TYPO+25%)
+   FILE: css/rules2.css (VERSIONE 9.2 - WHITE GLOW, OVERLAY TITLE & SYMMETRIC FIT)
    LAYER: ENGINE RULES2, WIZARD FULL-STAGE, COCKPIT & CASSETTI TATTICI
    ============================================================================ */
 
@@ -139,19 +139,19 @@
   min-height: 75px;
 }
 .quote-text {
-  font-size: clamp(11.5px, 1.4dvh, 12.5px); /* +25% */
+  font-size: clamp(11.5px, 1.4dvh, 12.5px);
   color: #F1F5F9;
   font-style: italic;
   line-height: 1.42;
   text-align: right;
   display: -webkit-box;
-  -webkit-line-clamp: 4; /* Spazio garantito per 4 righe */
+  -webkit-line-clamp: 4;
   -webkit-box-orient: vertical;
   overflow: hidden;
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.95);
 }
 .quote-author {
-  font-size: 10px; /* +25% */
+  font-size: 10px;
   font-weight: 800;
   color: var(--tg-amber);
   text-transform: uppercase;
@@ -196,7 +196,6 @@
 /* ----------------------------------------------------------------------------
    3. WIZARD: HEADER STICKY & SCROLL DI SICUREZZA PER SCHERMI COMPATTI
    ---------------------------------------------------------------------------- */
-/* Su schermi >= iPhone 12 (844px) sta tutto above-the-fold; su schermi < 680px consente lo scroll */
 body[data-active-screen="view-wizard"] .app-scroll-area {
   overflow-y: auto !important;
   -webkit-overflow-scrolling: touch;
@@ -257,7 +256,7 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
 .wizard-step-badge {
   background: var(--tg-amber);
   color: #090D16;
-  font-size: 9.5px; /* +10% */
+  font-size: 9.5px;
   font-weight: 900;
   padding: 0.18rem 0.5rem;
   border-radius: 9999px;
@@ -279,7 +278,7 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
   gap: 0.25rem;
   white-space: nowrap;
   font-family: monospace;
-  font-size: 10.5px; /* +10% */
+  font-size: 10.5px;
   line-height: 1;
   padding: 0.2rem 0.5rem;
 }
@@ -329,7 +328,7 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
 }
 
 /* ----------------------------------------------------------------------------
-   4. PALCOSCENICO CILINDRICO 3D (OVERLAY TITOLO, PALLINI A 24px, GLOW MORBIDO)
+   4. PALCOSCENICO CILINDRICO 3D (ALONE BIANCO, SIMMETRIA 24px & BADGE TOP-RIGHT)
    ---------------------------------------------------------------------------- */
 .coverflow-stage-outer {
   position: relative;
@@ -339,7 +338,8 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
   align-items: center;
   justify-content: center;
   overflow: visible;
-  padding: 12px 0.5rem 6px 0.5rem;
+  /* DISTANZA SIMMETRICA: Esattamente 24px sopra e 24px sotto */
+  padding: 24px 0.5rem !important;
 }
 
 /* Wrapper 3D Adattivo Tri-Device */
@@ -354,15 +354,15 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
   user-select: none;
   touch-action: pan-y;
   /* Mobile Default */
-  height: clamp(475px, 65dvh, 545px);
+  height: clamp(480px, 66dvh, 555px);
 }
 
-/* Scheda Archetipo ad Altezza Invariante (+10% rispetto allo screenshot) */
+/* Scheda Archetipo: ALONE BIANCO AMBIENTALE ETÈRO PER TUTTE LE CARTE */
 .coverflow-card {
   position: absolute;
   border-radius: 1.25rem;
   background: #0D131F;
-  border: 2px solid var(--tg-border-light);
+  border: 2px solid rgba(255, 255, 255, 0.2) !important;
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -374,19 +374,24 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
   transform-style: preserve-3d;
   cursor: pointer;
 
-  /* Mobile (+10% esatto per capienza di 9 righe piene) */
+  /* Mobile (+10% in altezza per le 9 righe di testo) */
   width: clamp(285px, 82vw, 335px);
-  height: clamp(470px, 64dvh, 535px);
+  height: clamp(475px, 65dvh, 545px);
+
+  /* ALONE PERIMETRALE BIANCO MORBIDO A 3 STADI (Raggio 12px) */
+  box-shadow: 0 0 5px 1px rgba(255, 255, 255, 0.25),
+              0 0 10px 2px rgba(255, 255, 255, 0.12),
+              0 0 16px 3px rgba(255, 255, 255, 0.05) !important;
 }
 
 /* TABLET TUNING (640px - 1024px) */
 @media (min-width: 640px) and (max-width: 1023px) {
   .coverflow-stage-wrapper {
-    height: clamp(525px, 66dvh, 600px);
+    height: clamp(530px, 67dvh, 610px);
   }
   .coverflow-card {
     width: 345px;
-    height: clamp(515px, 65dvh, 585px);
+    height: clamp(520px, 65dvh, 595px);
   }
 }
 
@@ -397,52 +402,26 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
     margin: 0 auto;
   }
   .coverflow-stage-wrapper {
-    height: clamp(560px, 68dvh, 630px);
+    height: clamp(570px, 70dvh, 640px);
   }
   .coverflow-card {
     width: 365px;
-    height: clamp(540px, 66dvh, 615px);
+    height: clamp(550px, 68dvh, 625px);
   }
 }
 
-/* ALONE NEON MORBIDO AMBIENTALE (Spazio Ridotto del 20%, 3 Strati Diffusi ~12px) */
-.glow-destra {
-  border-color: var(--tg-sky) !important;
-  box-shadow: 0 0 5px 1px rgba(56, 189, 248, 0.45),
-              0 0 10px 2px rgba(56, 189, 248, 0.22),
-              0 0 14px 2px rgba(56, 189, 248, 0.1) !important;
-}
-.glow-sinistra {
-  border-color: var(--tg-rose) !important;
-  box-shadow: 0 0 5px 1px rgba(244, 63, 94, 0.5),
-              0 0 10px 2px rgba(244, 63, 94, 0.22),
-              0 0 14px 2px rgba(244, 63, 94, 0.1) !important;
-}
-.glow-gold {
-  border-color: var(--tg-amber) !important;
-  box-shadow: 0 0 5px 1px rgba(245, 158, 11, 0.45),
-              0 0 10px 2px rgba(245, 158, 11, 0.22),
-              0 0 14px 2px rgba(245, 158, 11, 0.1) !important;
-}
-.glow-purple {
-  border-color: var(--tg-purple) !important;
-  box-shadow: 0 0 5px 1px rgba(168, 85, 247, 0.45),
-              0 0 10px 2px rgba(168, 85, 247, 0.22),
-              0 0 14px 2px rgba(168, 85, 247, 0.1) !important;
-}
-
-/* 1. AREA SUPERIORE IMMAGINE (Focalizzata al Centro Rigido 1:1) */
+/* 1. AREA SUPERIORE IMMAGINE (+30% ALTEZZA, FOCALIZZATA 1:1 AL CENTRO) */
 .coverflow-media-frame {
   position: relative;
   width: 100%;
-  height: clamp(180px, 25dvh, 220px);
+  height: clamp(230px, 32dvh, 265px) !important; /* +30% esatto */
   background: #090D16;
   flex-shrink: 0;
   overflow: hidden;
 }
 @media (min-width: 640px) {
   .coverflow-media-frame {
-    height: clamp(215px, 28dvh, 260px);
+    height: clamp(250px, 34dvh, 285px) !important;
   }
 }
 .coverflow-img {
@@ -452,77 +431,79 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
   object-position: center center !important;
 }
 
-/* SPOSTAMENTO STRUTTURALE 1: BLOCCO EMOJI + NOME + SOTTOTITOLO IN SOVRIMPRESSIONE (Top-Left) */
+/* TOP-LEFT: EMOJI + NOME IN SOVRIMPRESSIONE (SENZA FONDINO SCURO, SOLO OMBRA MORBIDA) */
 .coverflow-title-overlay,
 .coverflow-card .coverflow-details-box > div:first-child > .flex {
   position: absolute !important;
-  top: 0.6rem !important;
-  left: 0.6rem !important;
+  top: 0.65rem !important;
+  left: 0.75rem !important;
   z-index: 15 !important;
   display: flex !important;
   align-items: center !important;
-  gap: 0.45rem !important;
-  background: rgba(9, 13, 22, 0.82) !important;
-  backdrop-filter: blur(8px) !important;
-  -webkit-backdrop-filter: blur(8px) !important;
-  padding: 0.25rem 0.65rem 0.25rem 0.45rem !important;
-  border-radius: 9999px !important;
-  border: 1px solid rgba(255, 255, 255, 0.15) !important;
-  max-width: calc(100% - 135px) !important;
-  height: 32px !important;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5) !important;
+  gap: 0.35rem !important;
+  background: transparent !important; /* NO FONDINO */
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  padding: 0 !important;
+  border: none !important;
+  box-shadow: none !important;
+  max-width: calc(100% - 110px) !important;
+  height: auto !important;
 }
 .coverflow-title {
-  font-size: 0.95rem; /* +10% */
-  font-weight: 900;
-  color: #FFFFFF;
+  font-size: 1.05rem !important;
+  font-weight: 900 !important;
+  color: #FFFFFF !important;
   line-height: 1.15;
   margin: 0;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.95), 0 0 12px rgba(0, 0, 0, 0.8) !important;
 }
+/* Rimosso sottotitolo ridondante */
 .coverflow-sub {
-  font-size: 8.5px;
-  font-weight: 800;
-  color: var(--tg-sky);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  margin-top: 0;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  display: none !important;
 }
 
-/* KPI Pills (Top-Right dell'Immagine): Uniformati ai Badge (+10%) */
-.coverflow-kpi-pill {
-  position: absolute;
-  top: 0.6rem;
-  right: 0.6rem;
-  height: 32px;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  z-index: 15;
+/* TOP-RIGHT: BADGE POLITICO CON MICRO-BAGLIORE COLORATO DEDICATO */
+.coverflow-card .coverflow-badge-faction {
+  position: absolute !important;
+  top: 0.65rem !important;
+  right: 0.75rem !important;
+  bottom: auto !important;
+  left: auto !important;
+  z-index: 15 !important;
+  font-size: 10.5px !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.06em !important;
+  padding: 0.22rem 0.55rem !important;
+  border-radius: 9999px !important;
+  line-height: 1 !important;
+  border: none !important;
 }
-.pill-pv, .pill-gold {
-  background: rgba(9, 13, 22, 0.85);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  font-family: monospace;
-  font-size: 10px; /* +10% uniformato */
-  font-weight: 800;
-  padding: 0.22rem 0.5rem;
-  border-radius: 9999px;
-  border: 1px solid var(--tg-border-light);
-  line-height: 1;
-}
-.pill-pv { color: #FDA4AF; }
-.pill-gold { color: #FDE047; }
 
-/* 2. AREA INFERIORE DATI & LORE NARRATIVO INTEGRALE (+25%) */
+/* Micro-Glow Fazione Destra (Ciano) */
+.coverflow-card .coverflow-badge-faction.badge-info,
+.coverflow-card .coverflow-badge-faction[data-faction="destra"],
+.badge-faction-destra {
+  background: #38BDF8 !important;
+  color: #090D16 !important;
+  box-shadow: 0 0 8px 1px rgba(56, 189, 248, 0.7) !important;
+}
+
+/* Micro-Glow Fazione Sinistra (Magenta/Rosa) */
+.coverflow-card .coverflow-badge-faction.badge-error,
+.coverflow-card .coverflow-badge-faction[data-faction="sinistra"],
+.badge-faction-sinistra {
+  background: #F43F5E !important;
+  color: #FFFFFF !important;
+  box-shadow: 0 0 8px 1px rgba(244, 63, 94, 0.7) !important;
+}
+
+/* 2. AREA INFERIORE DATI & LORE NARRATIVO INTEGRALE */
 .coverflow-details-box {
-  padding: 0.65rem 0.85rem 0.75rem 0.85rem;
+  padding: 0.55rem 0.85rem 0.65rem 0.85rem;
   flex: 1 1 auto;
   display: flex;
   flex-direction: column;
@@ -541,7 +522,7 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
   background: rgba(0, 0, 0, 0.55);
   border: 1px solid var(--tg-border);
   align-items: center;
-  font-size: 10.5px; /* +10% */
+  font-size: 10.5px;
   margin: 0.15rem 0 0.35rem 0;
 }
 .coverflow-stats-row > div {
@@ -559,7 +540,7 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
   color: var(--tg-text-muted); 
 }
 
-/* C. TESTO NARRATIVO (+25% FONT, ALLINEATO A SINISTRA, NO TAGLI) */
+/* C. TESTO NARRATIVO (+25% FONT, ALLINEATO A SINISTRA, NESSUN TRONCAMENTO) */
 .coverflow-lore {
   display: block !important;
   text-align: left !important;
@@ -568,7 +549,6 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
   line-height: 1.5;
   margin: 0.1rem 0;
   word-break: break-word;
-  /* Capienza aumentata a 9-10 righe piene */
   min-height: 140px;
   max-height: 175px;
   overflow-y: auto;
@@ -595,7 +575,7 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
   }
 }
 
-/* D. Piede Scheda: SPOSTAMENTO STRUTTURALE 2 (Badge Politico al Posto del Tasto Scelto) */
+/* D. Piede Scheda: DOTAZIONE A SINISTRA, BADGE PV E ORO IN BASSO A DESTRA */
 .coverflow-footer-row {
   height: 38px;
   min-height: 38px;
@@ -610,44 +590,54 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
 .coverflow-gear-label {
   font-size: 10.5px;
   color: #CBD5E1;
-  max-width: 65%;
+  max-width: 55%;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 .coverflow-gear-label b { color: var(--tg-amber); }
 
-/* Nasconde il tasto superfluo 'Scelto' */
+/* Rimosso tasto superfluo 'Scelto' */
 .coverflow-footer-row button,
 .coverflow-card button[id^="coverflow-action-btn"] {
   display: none !important;
 }
 
-/* Posiziona il Badge Politico in Basso a Destra nel Footer al Posto del Bottone */
-.coverflow-card .coverflow-badge-faction {
+/* KPI Pills (PV e Oro) Spostati in Basso a Destra nel Footer */
+.coverflow-kpi-pill {
   position: absolute !important;
   bottom: 0.65rem !important;
-  right: 0.85rem !important;
+  right: 0.75rem !important;
   top: auto !important;
   left: auto !important;
   z-index: 15 !important;
-  font-size: 10px !important; /* +10% uniformato */
-  padding: 0.22rem 0.55rem !important;
-  border-radius: 9999px !important;
-  font-weight: 900 !important;
-  letter-spacing: 0.05em !important;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.6) !important;
+  display: flex !important;
+  gap: 0.3rem !important;
+  align-items: center !important;
 }
+.pill-pv, .pill-gold {
+  background: rgba(9, 13, 22, 0.85);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  font-family: monospace;
+  font-size: 10px;
+  font-weight: 800;
+  padding: 0.22rem 0.5rem;
+  border-radius: 9999px;
+  border: 1px solid var(--tg-border-light);
+  line-height: 1;
+}
+.pill-pv { color: #FDA4AF; }
+.pill-gold { color: #FDE047; }
 
-/* PALLINI DI SCORRIMENTO (DOTS): DISTANZA MINIMA 24px DAL BORDO CARTA */
+/* PALLINI DI SCORRIMENTO (DOTS): DISTANZA SIMMETRICA DI 24px DAL BORDO CARTA */
 .coverflow-dots {
   display: flex;
   justify-content: center;
   align-items: center;
   gap: 0.4rem;
-  /* Distanza di sicurezza: 24px dal bordo carta (12px oltre l'alone) */
   margin-top: 24px !important;
-  margin-bottom: 8px !important;
+  margin-bottom: 0 !important;
   flex-shrink: 0;
 }
 .coverflow-dot {
@@ -876,7 +866,7 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
 }
 
 /* ----------------------------------------------------------------------------
-   6. FOOTER WIZARD STICKY (PROTEZIONE ANTI-WRAP & ANCORAGGIO)
+   6. FOOTER WIZARD STICKY (PULSANTI A 1-2 PAROLE & ANCORAGGIO)
    ---------------------------------------------------------------------------- */
 .wizard-sticky-footer {
   flex: none;
@@ -914,7 +904,7 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
 }
 
 /* ----------------------------------------------------------------------------
-   7. MODALE ARCADE DIEGETICA "INSERT MEGOIN 🪙"
+   7. MODALE ARCADE DIEGETICA "INSERT MEGOIN 🪙" (PULSANTI 50/50 COMPATTI)
    ---------------------------------------------------------------------------- */
 .arcade-coin-modal-box {
   background: linear-gradient(180deg, #0F172A 0%, #090D16 100%);
@@ -986,6 +976,14 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
   font-family: monospace;
   font-size: 11px;
   color: #FFFFFF;
+}
+
+/* Griglia 50/50 per Nuova / Riprendi */
+.arcade-actions-50-50 {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 0.5rem !important;
+  width: 100%;
 }
 
 /* ----------------------------------------------------------------------------
@@ -1119,7 +1117,7 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
   letter-spacing: 0.08em;
 }
 .narrative-prose {
-  font-size: 12.5px; /* +25% */
+  font-size: 12.5px;
   color: #E2E8F0;
   line-height: 1.52;
   margin: 0;
@@ -1133,7 +1131,7 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
   min-height: 44px;
 }
 
-/* Griglia Azioni di Gioco Simmetriche */
+/* Griglia Azioni di Gioco Simmetriche (Pulsanti a 1-2 Parole) */
 .combat-actions-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1148,11 +1146,11 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
   justify-content: center;
   line-height: 1.25;
   padding: 0.35rem 0.5rem;
+  font-size: 0.82rem !important;
+  font-weight: 900 !important;
+  text-transform: uppercase !important;
 }
 
-.btn-combat-attack, .btn-combat-flee {
-  font-size: 0.78rem !important;
-}
 .btn-inspect-enemy {
   border: 1px solid var(--tg-border) !important;
   color: #CBD5E1 !important;
@@ -1163,7 +1161,7 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
   padding: 0.55rem;
   border-radius: 0.75rem;
   background: rgba(6, 78, 59, 0.85);
-  border: 1px solid rgba(16, 185, 129, 0.4);
+  border: 1px solid rgba(168, 85, 247, 0.4);
   text-align: center;
 }
 .quiz-box {
@@ -1278,14 +1276,14 @@ dialog.modal:not([open]) {
 }
 .metrics-value {
   font-family: monospace;
-  font-size: 11px; /* +10% */
+  font-size: 11px;
   font-weight: 700;
   color: #FFFFFF;
   line-height: 1.45;
 }
 
 .dossier-lore-prose {
-  font-size: 12.5px; /* +25% */
+  font-size: 12.5px;
   color: #CBD5E1;
   line-height: 1.5;
   margin: 0;
