@@ -1,7 +1,7 @@
 // ============================================================================
 // PROJECT: ESTIQATSY SYNDICATE & RPG PLATFORM
-// FILE: js/rules2.js (VERSIONE 7.0 - TAB-DRIVEN STORE, GAS SECURITY & TELEGRAM UI)
-// LAYER 3: ENGINE RULES2, CLIENT CACHE, COCKPIT & CASSETTI TATTICI
+// FILE: js/rules2.js (VERSIONE 7.0 - CYLINDRICAL DECK, DUAL VIEW & BREATHING GLOW)
+// LAYER 3: ENGINE RULES2, WIZARD 3D / LISTA, COCKPIT & CASSETTI TATTICI
 // ============================================================================
 
 // ----------------------------------------------------------------------------
@@ -17,7 +17,7 @@ const RULES2_SHOP_CATEGORIES = {
   "CURE": { key: "CURE", label: "Cure", emoji: "🍱" }
 };
 
-// Classificazione agnostica 1:1 con la funzione Rules2_ClassifyItem di UXGameRules2.gs
+// Classificazione agnostica 1:1 con la funzione Rules2_ClassifyItem di Google Apps Script
 function Rules2_ClassifyEntity(item) {
   if (!item) return "STRUMENTI";
   const cat = String(item.categoria || "").toUpperCase().trim();
@@ -86,7 +86,7 @@ function tgAlert(message) {
 }
 
 // ----------------------------------------------------------------------------
-// 3. STORE CLIENT-SIDE (CACHE STATICA UNA-TANTUM PER RISPARMIARE DATI E RAM)
+// 3. STORE CLIENT-SIDE (CACHE STATICA PER WIZARD)
 // ----------------------------------------------------------------------------
 const Rules2Store = {
   _cache: {},
@@ -123,7 +123,7 @@ const Rules2Store = {
 };
 
 // ----------------------------------------------------------------------------
-// 4. WIZARD CREAZIONE PERSONAGGIO (DATA-DRIVEN & ZERO-SCROLL)
+// 4. WIZARD CREAZIONE PERSONAGGIO (DOPPIA VISTA: 3D CILINDRO & LISTA TATTICA)
 // ----------------------------------------------------------------------------
 const Rules2Wizard = {
   state: {
@@ -135,7 +135,19 @@ const Rules2Wizard = {
     abilities: [],
     shopCatalog: [],
     shopCategory: "ARMI",
+
+    // Indici attivi per i Cilindri 3D
     activeClassIndex: 0,
+    activeAbilityIndex: 0,
+    activeShopIndex: 0,
+
+    // Preferenze di Visualizzazione per ciascuno Step
+    viewModes: {
+      class: "3d",       // '3d' | 'list'
+      abilities: "list", // '3d' | 'list'
+      shop: "list"       // '3d' | 'list'
+    },
+
     chosenClass: null,
     chosenAbilities: [],
     boughtItems: [],
@@ -155,7 +167,7 @@ const Rules2Wizard = {
       this.state.isVeteran = isVeteran;
       this.state.step = 1;
 
-      // 1. Lettura Dati con Cache Una-Tantum
+      // 1. Lettura Dati con Cache
       let wizData = Rules2Store.loadCachedWizardData(gameKey);
       if (!wizData) {
         wizData = await apiCall("game_wizard_data", { gameKey: gameKey });
@@ -169,6 +181,8 @@ const Rules2Wizard = {
       this.state.chosenAbilities = [];
       this.state.boughtItems = [];
       this.state.activeClassIndex = 0;
+      this.state.activeAbilityIndex = 0;
+      this.state.activeShopIndex = 0;
 
       if (isVeteran && savedHero) {
         this.state.chosenClass = {
@@ -231,14 +245,58 @@ const Rules2Wizard = {
     if (scrollContainer) scrollContainer.scrollTop = 0;
   },
 
+  // --------------------------------------------------------------------------
+  // SWITCH DOPPIA VISTA (CILINDRO 3D / LISTA TATTICA)
+  // --------------------------------------------------------------------------
+  setWizardViewMode: function(stepKey, mode) {
+    if (!this.state.viewModes) {
+      this.state.viewModes = { class: "3d", abilities: "list", shop: "list" };
+    }
+    this.state.viewModes[stepKey] = mode;
+
+    const is3D = (mode === "3d");
+
+    const btn3D = document.getElementById(`toggle-view-btn-${stepKey}-3d`);
+    const btnList = document.getElementById(`toggle-view-btn-${stepKey}-list`);
+    if (btn3D) btn3D.classList.toggle("active", is3D);
+    if (btnList) btnList.classList.toggle("active", !is3D);
+
+    const v3D = document.getElementById(`wizard-${stepKey}-view-3d`);
+    const vList = document.getElementById(`wizard-${stepKey}-view-list`);
+    if (v3D) v3D.classList.toggle("hidden", !is3D);
+    if (vList) vList.classList.toggle("hidden", is3D);
+
+    if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("click");
+
+    if (stepKey === "class") {
+      if (is3D) this.updateCoverflowStage();
+      else this.renderClassesList();
+    } else if (stepKey === "abilities") {
+      if (is3D) this.renderAbilities3D();
+      else this.renderAbilitiesList();
+    } else if (stepKey === "shop") {
+      if (is3D) this.renderShop3D();
+      else this.renderShopList();
+    }
+  },
+
+  // --------------------------------------------------------------------------
+  // PASSO 1: ARCHETIPI (CILINDRO 3D & LISTA TATTICA)
+  // --------------------------------------------------------------------------
   renderStep1: function() {
+    this.renderClasses3D();
+    this.renderClassesList();
+    this.setWizardViewMode("class", this.state.viewModes.class || "3d");
+  },
+
+  renderClasses3D: function() {
     const stage = document.getElementById("wizard-classes-stage");
     const dotsBox = document.getElementById("wizard-coverflow-dots");
     if (!stage) return;
 
     const classes = this.state.classes || [];
     if (classes.length === 0) {
-      stage.innerHTML = `<div class="empty-state-card">Nessun archetipo di classe disponibile nel foglio.</div>`;
+      stage.innerHTML = `<div class="empty-state-card">Nessun archetipo di classe disponibile.</div>`;
       return;
     }
 
@@ -259,7 +317,6 @@ const Rules2Wizard = {
           <div class="coverflow-media-frame">
             <img src="${cls.mediaUrl}" class="coverflow-img" alt="${cls.nome}">
             
-            <!-- BADGE ASCIUTTO SENZA (+1 DANNO) -->
             <span class="badge badge-xs ${isDestra ? 'badge-info' : 'badge-error'} coverflow-badge-faction">
               ${pol.toUpperCase()}
             </span>
@@ -366,6 +423,7 @@ const Rules2Wizard = {
       el.style.zIndex = zIndex;
       el.style.opacity = opacity;
 
+      // Attivazione dell'alone neon solo sulla carta al centro (che respira nel fossato a 38px)
       el.classList.toggle("glow-destra", isCenter && isDestra);
       el.classList.toggle("glow-sinistra", isCenter && !isDestra);
 
@@ -391,11 +449,122 @@ const Rules2Wizard = {
     }
   },
 
+  // Modalità B: Rendering Lista Tattica Archetipi
+  renderClassesList: function() {
+    const container = document.getElementById("wizard-classes-list-container");
+    if (!container) return;
+
+    const classes = this.state.classes || [];
+    if (classes.length === 0) {
+      container.innerHTML = `<div class="empty-state-card col-span-full">Nessun archetipo registrato.</div>`;
+      return;
+    }
+
+    container.innerHTML = classes.map((cls, idx) => {
+      const isSelected = (this.state.chosenClass?.id === cls.id);
+      const pol = String(cls.sottocategoria || cls.schieramento || "Destra").toUpperCase();
+      const isDestra = pol === "DESTRA";
+
+      return `
+        <div onclick="Rules2Wizard.inspectClassDetail('${cls.id}')" class="class-list-card ${isSelected ? 'selected' : ''}">
+          <div class="flex items-center space-x-3 min-w-0 flex-1">
+            <div class="class-list-thumb">
+              <img src="${cls.mediaUrl}" alt="${cls.nome}">
+            </div>
+            <div class="class-list-info">
+              <div class="class-list-name">${cls.emoji || '🥋'} ${cls.nome}</div>
+              <div class="class-list-sub">
+                <span class="${isDestra ? 'text-sky-400' : 'text-rose-400'} font-bold">${pol}</span> • ❤️ ${cls.pv} PV • 🟡 ${cls.oro} Oro
+              </div>
+            </div>
+          </div>
+          <div class="flex items-center space-x-2">
+            <button onclick="event.stopPropagation(); Rules2Wizard.selectClassByIndex(${idx})" class="btn btn-xs ${isSelected ? 'btn-success font-black' : 'btn-outline border-white/20 text-slate-300'}">
+              ${isSelected ? 'Scelto ✓' : 'Scegli'}
+            </button>
+            <button onclick="event.stopPropagation(); Rules2Wizard.inspectClassDetail('${cls.id}')" class="btn btn-xs btn-ghost text-slate-400" title="Apri Scheda">
+              🔍
+            </button>
+          </div>
+        </div>
+      `;
+    }).join("");
+  },
+
+  selectClassByIndex: function(idx) {
+    this.state.activeClassIndex = idx;
+    this.state.chosenClass = this.state.classes[idx];
+    this.state.startingGold = this.state.chosenClass ? cleanNumber(this.state.chosenClass.oro, 40) : 40;
+    this.state.currentGold = this.state.startingGold;
+
+    if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("click");
+    this.updateCoverflowStage();
+    this.renderClassesList();
+  },
+
+  inspectClassDetail: function(clsId) {
+    const cls = this.state.classes.find(c => c.id === clsId);
+    if (!cls) return;
+
+    const pol = String(cls.sottocategoria || cls.schieramento || "Destra").toUpperCase();
+    const isSelected = (this.state.chosenClass?.id === cls.id);
+
+    const forMod = Math.floor(((cleanNumber(cls.forza, 10)) - 10) / 2);
+    const desMod = Math.floor(((cleanNumber(cls.destrezza, 10)) - 10) / 2);
+    const intMod = Math.floor(((cleanNumber(cls.intelligenza, 10)) - 10) / 2);
+    const fmt = v => (v >= 0 ? "+" + v : String(v));
+
+    const s = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+    const h = (id, val) => { const el = document.getElementById(id); if (el) el.innerHTML = val; };
+
+    s("uni-detail-icon", cls.emoji || "🥋");
+    s("uni-detail-title", cls.nome);
+    s("uni-detail-badge", `ARCHETIPO • ${pol}`);
+    s("uni-detail-metrics-label", "PARAMETRI BELLICI & DOTAZIONE INIZIALE");
+
+    const statsMetrics = `
+      ❤️ Salute: <b>${cls.pv} PV</b> • 🟡 Borsello: <b class="text-amber-300">${cls.oro} Oro</b><br>
+      🥊 Forza: <b>${cls.forza || 10} (${fmt(forMod)})</b> • 🤸 Destrezza: <b>${cls.destrezza || 10} (${fmt(desMod)})</b> • 🧠 Intelligenza: <b>${cls.intelligenza || 10} (${fmt(intMod)})</b><br>
+      🎒 Dotazione: <b>${cls.equipLoot || 'Pugni nudi'}</b>
+    `;
+    h("uni-detail-metrics-value", statsMetrics);
+
+    let cleanLore = cls.testo || cls.descrizione || "Nessuna nota d'archivio.";
+    if (cls.citazione && cls.citazione !== "—") {
+      cleanLore = `“${cls.citazione.replace(/^["'“”]+|["'“”]+$/g, '')}”<br><span class="text-amber-400 text-[10px]">— ${cls.autoreCitazione || 'Darsena'}</span><br><br>${cleanLore}`;
+    }
+    h("uni-detail-lore", cleanLore);
+
+    const mediaContainer = document.getElementById("uni-detail-media-container");
+    if (mediaContainer) {
+      if (cls.mediaUrl && cls.mediaUrl !== "—" && cls.mediaUrl.startsWith("http")) {
+        document.getElementById("uni-detail-img").src = cls.mediaUrl;
+        mediaContainer.classList.remove("hidden");
+      } else {
+        mediaContainer.classList.add("hidden");
+      }
+    }
+
+    const btn = document.getElementById("uni-detail-action-btn");
+    if (btn) {
+      btn.textContent = isSelected ? "✓ Archetipo Attualmente Selezionato" : `Scegli ${cls.nome}`;
+      btn.className = isSelected ? "btn btn-sm btn-success font-bold w-full" : "btn btn-sm btn-primary font-bold shadow-lg shadow-sky-600/30 w-full";
+      btn.onclick = () => {
+        const idx = this.state.classes.findIndex(c => c.id === cls.id);
+        if (idx !== -1) this.selectClassByIndex(idx);
+        document.getElementById("modal-universal-detail")?.close();
+      };
+    }
+
+    document.getElementById("modal-universal-detail")?.showModal();
+  },
+
   coverflowSelectIndex: function(idx) {
     if (idx === this.state.activeClassIndex) return;
     this.state.activeClassIndex = idx;
     if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("click");
     this.updateCoverflowStage();
+    this.renderClassesList();
   },
 
   coverflowNext: function() {
@@ -404,6 +573,7 @@ const Rules2Wizard = {
     this.state.activeClassIndex = (this.state.activeClassIndex + 1) % total;
     if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("click");
     this.updateCoverflowStage();
+    this.renderClassesList();
   },
 
   coverflowPrev: function() {
@@ -412,6 +582,7 @@ const Rules2Wizard = {
     this.state.activeClassIndex = (this.state.activeClassIndex - 1 + total) % total;
     if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("click");
     this.updateCoverflowStage();
+    this.renderClassesList();
   },
 
   initCoverflowGestures: function() {
@@ -445,12 +616,21 @@ const Rules2Wizard = {
     this.showStep(2);
   },
 
+  // --------------------------------------------------------------------------
+  // PASSO 2: TALENTI & ABILITÀ (LISTA & CILINDRO 3D)
+  // --------------------------------------------------------------------------
   renderStep2: function() {
+    this.renderAbilitiesList();
+    this.renderAbilities3D();
+    this.setWizardViewMode("abilities", this.state.viewModes.abilities || "list");
+  },
+
+  renderAbilitiesList: function() {
     const grid = document.getElementById("wizard-abilities-grid");
     const budgetBadge = document.getElementById("wizard-px-budget");
     if (!grid) return;
 
-    if (budgetBadge) budgetBadge.textContent = `✨ ${this.state.remainingPx} PX Disponibili`;
+    if (budgetBadge) budgetBadge.textContent = `✨ ${this.state.remainingPx} PX`;
     const userFaction = String(this.state.chosenClass?.sottocategoria || "Destra").toLowerCase();
 
     grid.innerHTML = this.state.abilities.map(abl => {
@@ -477,6 +657,140 @@ const Rules2Wizard = {
         </div>
       `;
     }).join("");
+  },
+
+  renderAbilities3D: function() {
+    const stage = document.getElementById("wizard-abilities-stage");
+    const dotsBox = document.getElementById("wizard-abilities-dots");
+    if (!stage) return;
+
+    const abilities = this.state.abilities || [];
+    if (abilities.length === 0) {
+      stage.innerHTML = `<div class="empty-state-card">Nessuna abilità a catalogo.</div>`;
+      return;
+    }
+
+    stage.innerHTML = abilities.map((abl, idx) => {
+      const isSelected = this.state.chosenAbilities.includes(abl.id);
+      const userFaction = String(this.state.chosenClass?.sottocategoria || "Destra").toLowerCase();
+      const req = String(abl.requisitiCodificati || abl.effettoCodificato || "tutti").toLowerCase();
+      const isCompatible = req.includes("tutti") || req.includes(userFaction);
+
+      return `
+        <div id="abilities-card-${idx}" onclick="Rules2Wizard.selectAbilityIndex(${idx})" class="coverflow-card">
+          <div class="coverflow-media-frame">
+            <img src="${abl.mediaUrl && abl.mediaUrl !== '—' ? abl.mediaUrl : 'https://image.pollinations.ai/prompt/cyberpunk-noir-secret-agent-skill-icon?width=800&height=450&nologo=true'}" class="coverflow-img" alt="${abl.nome}">
+            <span class="badge badge-xs badge-info coverflow-badge-faction">
+              ${abl.costoPX || 100} PX
+            </span>
+            <div class="coverflow-kpi-pill">
+              <span class="pill-pv">${isSelected ? 'ATTIVO ✓' : (isCompatible ? 'DISPONIBILE' : 'BLOCCATO')}</span>
+            </div>
+          </div>
+
+          <div class="coverflow-details-box">
+            <div class="space-y-1">
+              <div class="flex items-center space-x-2">
+                <span class="text-xl">${abl.emoji || '⚡'}</span>
+                <h4 class="coverflow-title">${abl.nome}</h4>
+              </div>
+              <p class="coverflow-lore">${abl.descrizione || abl.testo || ''}</p>
+            </div>
+
+            <div class="coverflow-footer-row">
+              <button onclick="event.stopPropagation(); Rules2Wizard.inspectAbilityDetail('${abl.id}')" class="btn btn-xs btn-outline border-white/20 text-slate-300">
+                Fascicolo
+              </button>
+              <button onclick="event.stopPropagation(); Rules2Wizard.toggleAbility('${abl.id}')" class="btn btn-xs ${isSelected ? 'btn-error font-bold' : (isCompatible ? 'btn-primary font-bold' : 'btn-disabled')}">
+                ${isSelected ? 'Rimuovi' : 'Attiva'}
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+    }).join("");
+
+    if (dotsBox) {
+      dotsBox.innerHTML = abilities.map((_, i) => `
+        <span onclick="Rules2Wizard.selectAbilityIndex(${i})" class="coverflow-dot ${i === this.state.activeAbilityIndex ? 'active' : ''}"></span>
+      `).join("");
+    }
+
+    this.updateAbilitiesCylinder();
+  },
+
+  updateAbilitiesCylinder: function() {
+    const abilities = this.state.abilities || [];
+    const total = abilities.length;
+    if (total === 0) return;
+
+    const activeIdx = this.state.activeAbilityIndex;
+    const isDesktop = window.innerWidth >= 768;
+    const spacing = isDesktop ? 220 : 160;
+
+    abilities.forEach((abl, i) => {
+      const el = document.getElementById(`abilities-card-${i}`);
+      if (!el) return;
+
+      let diff = (i - activeIdx) % total;
+      if (diff > total / 2) diff -= total;
+      if (diff < -total / 2) diff += total;
+
+      const offset = diff;
+      const absOffset = Math.abs(offset);
+
+      if (absOffset > 2 && !isDesktop) {
+        el.style.display = "none";
+        return;
+      } else {
+        el.style.display = "flex";
+      }
+
+      const isCenter = (offset === 0);
+      const isSelected = this.state.chosenAbilities.includes(abl.id);
+
+      const translateX = offset * spacing;
+      const rotateY = offset * (isDesktop ? -24 : -16);
+      const scale = isCenter ? (isDesktop ? 1.05 : 1.02) : Math.max(0.72, 0.88 - absOffset * 0.08);
+      const zIndex = 30 - Math.round(absOffset * 5);
+      const opacity = isCenter ? 1 : Math.max(0.2, 0.5 - absOffset * 0.15);
+
+      el.style.transform = `translateX(${translateX}px) translateZ(${isCenter ? 40 : -50}px) rotateY(${rotateY}deg) scale(${scale})`;
+      el.style.zIndex = zIndex;
+      el.style.opacity = opacity;
+
+      el.classList.toggle("glow-purple", isCenter && !isSelected);
+      el.classList.toggle("glow-destra", isCenter && isSelected);
+    });
+
+    const dotsBox = document.getElementById("wizard-abilities-dots");
+    if (dotsBox) {
+      dotsBox.querySelectorAll(".coverflow-dot").forEach((d, i) => {
+        d.classList.toggle("active", i === activeIdx);
+      });
+    }
+  },
+
+  selectAbilityIndex: function(idx) {
+    this.state.activeAbilityIndex = idx;
+    if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("click");
+    this.updateAbilitiesCylinder();
+  },
+
+  cylinderAbilitiesNext: function() {
+    const total = (this.state.abilities || []).length;
+    if (total <= 1) return;
+    this.state.activeAbilityIndex = (this.state.activeAbilityIndex + 1) % total;
+    if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("click");
+    this.updateAbilitiesCylinder();
+  },
+
+  cylinderAbilitiesPrev: function() {
+    const total = (this.state.abilities || []).length;
+    if (total <= 1) return;
+    this.state.activeAbilityIndex = (this.state.activeAbilityIndex - 1 + total) % total;
+    if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("click");
+    this.updateAbilitiesCylinder();
   },
 
   inspectAbilityDetail: function(ablId) {
@@ -553,8 +867,16 @@ const Rules2Wizard = {
   },
 
   confirmStep2: function() {
-    this.filterShop(this.state.shopCategory || "ARMI");
+    this.renderStep3();
     this.showStep(3);
+  },
+
+  // --------------------------------------------------------------------------
+  // PASSO 3: EMPORIO DI CICCIO (GRIGLIA & CILINDRO 3D)
+  // --------------------------------------------------------------------------
+  renderStep3: function() {
+    this.filterShop(this.state.shopCategory || "ARMI");
+    this.setWizardViewMode("shop", this.state.viewModes.shop || "list");
   },
 
   filterShop: function(targetCategory) {
@@ -571,17 +893,22 @@ const Rules2Wizard = {
     const goldDisp = document.getElementById("wizard-shop-gold-display");
     if (goldDisp) goldDisp.textContent = `💰 ${this.state.currentGold} 🟡`;
 
+    this.renderShopList();
+    this.renderShop3D();
+    this.updateBackpackSummary();
+  },
+
+  renderShopList: function() {
     const container = document.getElementById("wizard-shop-grid");
     if (!container) return;
 
-    // Filtro 100% data-driven dalle colonne Categoria/Sottocategoria
+    const targetCategory = this.state.shopCategory || "ARMI";
     const filtered = (this.state.shopCatalog || []).filter(item => {
       return Rules2_ClassifyEntity(item) === targetCategory.toUpperCase();
     });
 
     if (filtered.length === 0) {
       container.innerHTML = `<div class="empty-state-card col-span-full">Nessun articolo per il reparto <b>${targetCategory}</b> all'Emporio.</div>`;
-      this.updateBackpackSummary();
       return;
     }
 
@@ -610,8 +937,142 @@ const Rules2Wizard = {
         </div>
       `;
     }).join("");
+  },
 
-    this.updateBackpackSummary();
+  renderShop3D: function() {
+    const stage = document.getElementById("wizard-shop-stage");
+    const dotsBox = document.getElementById("wizard-shop-dots");
+    if (!stage) return;
+
+    const targetCategory = this.state.shopCategory || "ARMI";
+    const filtered = (this.state.shopCatalog || []).filter(item => {
+      return Rules2_ClassifyEntity(item) === targetCategory.toUpperCase();
+    });
+
+    if (filtered.length === 0) {
+      stage.innerHTML = `<div class="empty-state-card">Nessun articolo in questo reparto.</div>`;
+      return;
+    }
+
+    stage.innerHTML = filtered.map((it, idx) => {
+      const price = Math.abs(cleanNumber(it.costoOro || it.costo, 15));
+      const canAfford = (this.state.currentGold >= price);
+
+      return `
+        <div id="shop-cylinder-card-${idx}" onclick="Rules2Wizard.selectShopIndex(${idx})" class="coverflow-card">
+          <div class="coverflow-media-frame">
+            <img src="${it.mediaUrl && it.mediaUrl !== '—' ? it.mediaUrl : 'https://image.pollinations.ai/prompt/contraband-weapons-black-market-crate?width=800&height=450&nologo=true'}" class="coverflow-img" alt="${it.nome}">
+            <span class="badge badge-xs badge-warning coverflow-badge-faction">
+              ${price} 🟡
+            </span>
+          </div>
+
+          <div class="coverflow-details-box">
+            <div class="space-y-1">
+              <div class="flex items-center space-x-2">
+                <span class="text-xl">${it.emoji || '📦'}</span>
+                <h4 class="coverflow-title">${it.nome}</h4>
+              </div>
+              <p class="coverflow-lore">${it.descrizione || it.testo || ''}</p>
+            </div>
+
+            <div class="coverflow-footer-row">
+              <button onclick="event.stopPropagation(); Rules2Wizard.inspectItemDetail('${it.id}')" class="btn btn-xs btn-outline border-white/20 text-slate-300">
+                Fascicolo
+              </button>
+              <button onclick="event.stopPropagation(); Rules2Wizard.buyItem('${it.id}', ${price})" class="btn btn-xs ${canAfford ? 'btn-primary font-bold' : 'btn-disabled'}" ${!canAfford ? 'disabled' : ''}>
+                ${canAfford ? `Compra (${price} 🟡)` : 'Oro Insuff.'}
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+    }).join("");
+
+    if (dotsBox) {
+      dotsBox.innerHTML = filtered.map((_, i) => `
+        <span onclick="Rules2Wizard.selectShopIndex(${i})" class="coverflow-dot ${i === this.state.activeShopIndex ? 'active' : ''}"></span>
+      `).join("");
+    }
+
+    this.updateShopCylinder();
+  },
+
+  updateShopCylinder: function() {
+    const targetCategory = this.state.shopCategory || "ARMI";
+    const filtered = (this.state.shopCatalog || []).filter(item => {
+      return Rules2_ClassifyEntity(item) === targetCategory.toUpperCase();
+    });
+    const total = filtered.length;
+    if (total === 0) return;
+
+    const activeIdx = this.state.activeShopIndex;
+    const isDesktop = window.innerWidth >= 768;
+    const spacing = isDesktop ? 220 : 160;
+
+    filtered.forEach((it, i) => {
+      const el = document.getElementById(`shop-cylinder-card-${i}`);
+      if (!el) return;
+
+      let diff = (i - activeIdx) % total;
+      if (diff > total / 2) diff -= total;
+      if (diff < -total / 2) diff += total;
+
+      const offset = diff;
+      const absOffset = Math.abs(offset);
+
+      if (absOffset > 2 && !isDesktop) {
+        el.style.display = "none";
+        return;
+      } else {
+        el.style.display = "flex";
+      }
+
+      const isCenter = (offset === 0);
+
+      const translateX = offset * spacing;
+      const rotateY = offset * (isDesktop ? -24 : -16);
+      const scale = isCenter ? (isDesktop ? 1.05 : 1.02) : Math.max(0.72, 0.88 - absOffset * 0.08);
+      const zIndex = 30 - Math.round(absOffset * 5);
+      const opacity = isCenter ? 1 : Math.max(0.2, 0.5 - absOffset * 0.15);
+
+      el.style.transform = `translateX(${translateX}px) translateZ(${isCenter ? 40 : -50}px) rotateY(${rotateY}deg) scale(${scale})`;
+      el.style.zIndex = zIndex;
+      el.style.opacity = opacity;
+
+      el.classList.toggle("glow-gold", isCenter);
+    });
+
+    const dotsBox = document.getElementById("wizard-shop-dots");
+    if (dotsBox) {
+      dotsBox.querySelectorAll(".coverflow-dot").forEach((d, i) => {
+        d.classList.toggle("active", i === activeIdx);
+      });
+    }
+  },
+
+  selectShopIndex: function(idx) {
+    this.state.activeShopIndex = idx;
+    if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("click");
+    this.updateShopCylinder();
+  },
+
+  cylinderShopNext: function() {
+    const targetCategory = this.state.shopCategory || "ARMI";
+    const total = (this.state.shopCatalog || []).filter(item => Rules2_ClassifyEntity(item) === targetCategory.toUpperCase()).length;
+    if (total <= 1) return;
+    this.state.activeShopIndex = (this.state.activeShopIndex + 1) % total;
+    if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("click");
+    this.updateShopCylinder();
+  },
+
+  cylinderShopPrev: function() {
+    const targetCategory = this.state.shopCategory || "ARMI";
+    const total = (this.state.shopCatalog || []).filter(item => Rules2_ClassifyEntity(item) === targetCategory.toUpperCase()).length;
+    if (total <= 1) return;
+    this.state.activeShopIndex = (this.state.activeShopIndex - 1 + total) % total;
+    if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("click");
+    this.updateShopCylinder();
   },
 
   inspectItemDetail: function(itemId) {
@@ -653,7 +1114,7 @@ const Rules2Wizard = {
 
     const btn = document.getElementById("uni-detail-action-btn");
     if (btn) {
-      btn.textContent = canAfford ? `Compra (${price} 🟡)` : `${price} 🟡 (Mancante)`;
+      btn.textContent = canAfford ? `Compra (${price} 🟡)` : `${price} 🟡 (Oro Mancante)`;
       btn.className = `btn btn-sm ${canAfford ? 'btn-primary font-bold shadow-lg shadow-sky-600/30' : 'btn-outline border-white/10 text-slate-500 cursor-not-allowed'} w-full`;
       btn.onclick = canAfford ? () => {
         Rules2Wizard.buyItem(it.id, price);
@@ -706,6 +1167,9 @@ const Rules2Wizard = {
     countEl.innerHTML = `${total} oggetti ${hasStarting ? `<span class="text-amber-300 font-bold text-[11px]">(${startingItem})</span>` : ''}`;
   },
 
+  // --------------------------------------------------------------------------
+  // PASSO 4: BATTESIMO DELL'EROE
+  // --------------------------------------------------------------------------
   renderStep4: function() {
     const cls = this.state.chosenClass;
     if (!cls) return;
@@ -754,7 +1218,6 @@ const Rules2Wizard = {
     if (input && AppState.user) input.value = AppState.user.nome;
   },
 
-  // Finalizzazione: Convalida Megoin prima della chiamata a GAS
   finalizeHero: function() {
     const input = document.getElementById("wizard-name-input");
     const defaultName = this.state.isVeteran ? this.state.heroName : (AppState.user?.nome || "Avventuriero");
@@ -806,7 +1269,6 @@ const Rules2Wizard = {
 // ----------------------------------------------------------------------------
 const Rules2Engine = {
 
-  // Controllo Partita Attiva prima dell'accesso (ispirato a Modulo_Games.gs ask_new_game)
   launchSession: function(gameKey, epNum, canContinueFree, savedHero) {
     const saga = (AppState.games.catalog || []).find(g => g.gameKey === gameKey);
     
@@ -814,11 +1276,9 @@ const Rules2Engine = {
       tgConfirm(
         `⚠️ Hai già una partita attiva (ID: ${saga.activePartitaId}) per questa saga.\n\nVuoi riprendere la partita in corso o avviarne una nuova sovrascrivendola?`,
         () => {
-          // Sovrascrittura: avvia nuovo setup
           Rules2Wizard.open(gameKey, epNum, canContinueFree, savedHero);
         },
         () => {
-          // Ripresa partita
           this.advanceToNode(saga.activeNode || ("SND_0001_S1_E" + epNum));
         }
       );
@@ -828,7 +1288,6 @@ const Rules2Engine = {
     Rules2Wizard.open(gameKey, epNum, canContinueFree, savedHero);
   },
 
-  // Avvio Sessione Server-Authoritative protetto da lock
   executeStartGame: async function(payloadParams, avatarUrl = "") {
     try {
       if (typeof SoundEngine !== "undefined") {
@@ -850,7 +1309,6 @@ const Rules2Engine = {
         AppState.activeSession.episodio = payloadParams.episodio;
         AppState.activeSession.partitaId = res.partitaId;
 
-        // Trascrizione sicura dell'Avatar dell'archetipo
         AppState.activeSession.hero = {
           ...res.statoEroe,
           mediaUrl: avatarUrl || res.statoEroe?.mediaUrl || ""
@@ -899,7 +1357,6 @@ const Rules2Engine = {
     s("game-header-series", (saga ? saga.serie : "AVVENTURA NOIR").toUpperCase());
     s("game-header-episode", `Episodio ${AppState.activeSession.episodio}`);
 
-    // GESTIONE AVATAR RITRATTO DA MEDIA URL
     if (currentHero) {
       const avatarImg = document.getElementById("kpi-hero-avatar-img");
       const avatarFallback = document.getElementById("kpi-hero-avatar-fallback");
@@ -1037,7 +1494,7 @@ const Rules2Engine = {
           </div>
           <div class="quiz-options-grid">
             ${currentNode.quiz.opzioni.map(opz => `
-              <button onclick="Rules2Engine.submitQuizAnswer('${opz.replace(/'/g, "\\'")}')" class="btn btn-sm btn-outline border-white/20 text-[11px] truncate">
+              <button onclick="Rules2Engine.submitQuizAnswer('${opz.replace(/'/g, "\\"')}')" class="btn btn-sm btn-outline border-white/20 text-[11px] truncate">
                 ${opz}
               </button>
             `).join("")}
@@ -1762,7 +2219,6 @@ const Rules2Engine = {
     }
   },
 
-  // BANCO DI CAMBIO VALUTA (MEGOIN ➔ ORO)
   openCambioModal: function() {
     const balEl = document.getElementById("cambio-megoin-balance");
     if (balEl) balEl.textContent = Wallet.getMegoin();
@@ -1911,8 +2367,14 @@ if (typeof window.EngineRegistry !== "undefined" && typeof window.EngineRegistry
 
 // Handler retrocompatibili per i tag onclick di index.html
 window.GameEngine = {
+  setWizardViewMode: (step, mode) => Rules2Wizard.setWizardViewMode(step, mode),
   coverflowPrev: () => Rules2Wizard.coverflowPrev(),
   coverflowNext: () => Rules2Wizard.coverflowNext(),
+  cylinderAbilitiesPrev: () => Rules2Wizard.cylinderAbilitiesPrev(),
+  cylinderAbilitiesNext: () => Rules2Wizard.cylinderAbilitiesNext(),
+  cylinderShopPrev: () => Rules2Wizard.cylinderShopPrev(),
+  cylinderShopNext: () => Rules2Wizard.cylinderShopNext(),
+
   wizardConfirmStep1: () => Rules2Wizard.confirmStep1(),
   wizardPrevStep: (s) => Rules2Wizard.prevStep(s),
   wizardConfirmStep2: () => Rules2Wizard.confirmStep2(),
