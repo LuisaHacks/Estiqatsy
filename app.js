@@ -14,7 +14,7 @@ const AppState = {
   user: null,
   allowedModules: { home: true, shop: true, games: true, recipes: true, profile: true },
   plans: [],
-  billingCycle: "monthly",
+  billingCycle: "monthly", // <-- RIMOSSA LA "f" VAGANTE CHE CAUSAVA IL CRASH
   activeTab: "home",
   shop: { items: [], categories: [], activeCategory: "tutti", searchQuery: "" },
   recipes: { items: [], categories: [], activeCategory: "tutti", searchQuery: "" },
@@ -695,10 +695,20 @@ const GameEngine = {
       const wizData = await apiCall("game_wizard_data", { gameKey: gameKey });
       
       AppState.game.wizard.isVeteran = isVeteran;
-      // DEDUPLICAZIONE GARANTITA
-      AppState.game.wizard.classes = deduplicateEntities(wizData.classes || []);
-      AppState.game.wizard.abilities = deduplicateEntities(wizData.abilities || []);
-      AppState.game.wizard.shopCatalog = deduplicateEntities(wizData.shopItems || AppState.shop.items || []);
+      
+      // DEDUPLICAZIONE RIGIDA CON ALIAS DI BACKEND (supporta sia chiavi inglesi che italiane)
+      AppState.game.wizard.classes = deduplicateEntities(wizData.classes || wizData.classi || []);
+      AppState.game.wizard.abilities = deduplicateEntities(wizData.abilities || wizData.abilita || []);
+      
+      // FIX SORGENTE DATI: carica SOLO equipaggiamenti del gioco RPG (non lo shop e-commerce)
+      AppState.game.wizard.shopCatalog = deduplicateEntities(
+        wizData.shopItems || 
+        wizData.equipaggiamenti || 
+        wizData.oggetti || 
+        (AppState.game.currentSeries ? AppState.game.currentSeries.equipaggiamenti : []) || 
+        []
+      );
+      
       AppState.game.wizard.chosenAbilities = [];
       AppState.game.wizard.boughtItems = [];
       AppState.game.wizard.activeClassIndex = 0;
@@ -724,8 +734,8 @@ const GameEngine = {
         const firstCls = AppState.game.wizard.classes[0] || null;
         AppState.game.wizard.chosenClass = firstCls;
         AppState.game.wizard.remainingPx = 100;
-        AppState.game.wizard.startingGold = firstCls ? firstCls.oro : 40;
-        AppState.game.wizard.currentGold = firstCls ? firstCls.oro : 40;
+        AppState.game.wizard.startingGold = firstCls ? (firstCls.oro || 40) : 40;
+        AppState.game.wizard.currentGold = firstCls ? (firstCls.oro || 40) : 40;
 
         this.wizardShowStep(1);
         this.renderWizardStep1();
@@ -736,9 +746,12 @@ const GameEngine = {
       alert("Errore caricamento wizard: " + e.message);
     }
   },
-
+  
   // =========================================================================
   // MOTORE SOLUZIONE 1: 3D SPOTLIGHT COVER-FLOW (TAROCCHI DEL SALMASTRO)
+  // =========================================================================
+  // =========================================================================
+  // PASSO 1: 3D SPOTLIGHT COVER-FLOW (SENZA TRONCAMENTI & CLEAN SUI LATI)
   // =========================================================================
   renderWizardStep1: function() {
     const stage = document.getElementById("wizard-classes-stage");
@@ -751,7 +764,6 @@ const GameEngine = {
       return;
     }
 
-    // Render carte nel palcoscenico
     stage.innerHTML = classes.map((cls, idx) => {
       const pol = (cls.schieramento || "Destra").toLowerCase();
       const isDestra = pol === "destra";
@@ -779,14 +791,15 @@ const GameEngine = {
               <span class="badge badge-xs bg-black/75 backdrop-blur-md text-amber-300 font-mono font-bold text-[8.5px]">🟡 ${cls.oro}</span>
             </div>
 
+            <!-- Banner diegetico: multilinea senza truncate -->
             <div class="watermark-cover-banner">
-              <span class="text-[9.5px] text-slate-300 italic truncate pr-2">“${cleanQuote}”</span>
-              <span class="text-[8.5px] text-amber-400 font-bold uppercase shrink-0">${cls.autoreCitazione || 'Darsena'}</span>
+              <span class="text-[9.5px] text-slate-200 italic leading-tight line-clamp-2 pr-2">“${cleanQuote}”</span>
+              <span class="text-[8px] text-amber-400 font-bold uppercase shrink-0">${cls.autoreCitazione || 'Darsena'}</span>
             </div>
           </div>
 
-          <!-- Corpo Carta: Dati & Modificatori D20 -->
-          <div class="p-3.5 space-y-2 flex-1 flex flex-col justify-between">
+          <!-- Corpo Carta CON ID ATTRIBUTO per nascondere i dati sui lati -->
+          <div id="coverflow-details-${idx}" class="p-3.5 space-y-2 flex-1 flex flex-col justify-between transition-opacity duration-300">
             <div>
               <div class="flex items-center space-x-2">
                 <span class="text-xl">${cls.emoji || '🥋'}</span>
@@ -800,7 +813,8 @@ const GameEngine = {
                 <div>🧠 INT <b>${cls.intelligenza || 10}</b> <span class="text-slate-400">(${fmt(intMod)})</span></div>
               </div>
 
-              <p class="text-[10px] text-slate-300 line-clamp-3 leading-relaxed mt-2">${cls.descrizione || ''}</p>
+              <!-- Descrizione fluida senza tagli forzati a 3 righe -->
+              <p class="text-[10px] text-slate-300 leading-relaxed mt-2 line-clamp-4">${cls.descrizione || ''}</p>
             </div>
 
             <!-- Footer Dotazione & Status Scelta -->
@@ -815,17 +829,13 @@ const GameEngine = {
       `;
     }).join("");
 
-    // Indicatori a Pallini
     if (dotsBox) {
       dotsBox.innerHTML = classes.map((_, i) => `
         <span onclick="GameEngine.coverflowSelectIndex(${i})" class="h-1.5 rounded-full transition-all cursor-pointer ${i === AppState.game.wizard.activeClassIndex ? 'bg-sky-400 w-4 shadow' : 'bg-white/20 w-1.5'}"></span>
       `).join("");
     }
 
-    // Gestione Gesture Touch / Swipe
     this.initCoverflowGestures();
-
-    // Aggiorna posizionamento 3D Cover Flow
     this.updateCoverflowStage();
   },
 
@@ -838,13 +848,13 @@ const GameEngine = {
     classes.forEach((cls, i) => {
       const el = document.getElementById(`coverflow-card-${i}`);
       const btn = document.getElementById(`coverflow-action-btn-${i}`);
+      const detailsBox = document.getElementById(`coverflow-details-${i}`);
       if (!el) return;
 
       const offset = i - activeIdx;
       const absOffset = Math.abs(offset);
 
       if (absOffset > 2 && !isDesktop) {
-        // Nascondi carte troppo distanti su mobile per salvare RAM
         el.style.display = "none";
         return;
       } else {
@@ -854,18 +864,22 @@ const GameEngine = {
       const isCenter = (offset === 0);
       const isDestra = (cls.schieramento || "Destra").toLowerCase() === "destra";
 
-      // Calcolo prospettiva 3D Cover Flow
+      // PULIZIA VISIVA RISOLTA: nasconde testo e modificatori sulle carte laterali!
+      if (detailsBox) {
+        detailsBox.style.opacity = isCenter ? "1" : "0";
+        detailsBox.style.pointerEvents = isCenter ? "auto" : "none";
+      }
+
       const translateX = offset * spacing;
       const rotateY = offset * (isDesktop ? -20 : -15);
       const scale = isCenter ? (isDesktop ? 1.08 : 1.05) : Math.max(0.75, 0.90 - absOffset * 0.08);
       const zIndex = 30 - absOffset * 5;
-      const opacity = isCenter ? 1 : Math.max(0.25, 0.60 - absOffset * 0.15);
+      const opacity = isCenter ? 1 : Math.max(0.20, 0.45 - absOffset * 0.10);
 
       el.style.transform = `translateX(${translateX}px) translateZ(${isCenter ? 50 : 0}px) rotateY(${rotateY}deg) scale(${scale})`;
       el.style.zIndex = zIndex;
       el.style.opacity = opacity;
 
-      // Alone al neon sulla carta al centro
       el.classList.toggle("glow-destra", isCenter && isDestra);
       el.classList.toggle("glow-sinistra", isCenter && !isDestra);
 
@@ -874,18 +888,16 @@ const GameEngine = {
           btn.textContent = "✓ In Uso";
           btn.className = "btn btn-xs btn-success font-black px-3 shadow";
         } else {
-          btn.textContent = "Mostra";
+          btn.textContent = "Scegli";
           btn.className = "btn btn-xs btn-outline border-white/20 text-slate-400 font-bold px-2";
         }
       }
     });
 
-    // Aggiorna classe scelta nello stato
     AppState.game.wizard.chosenClass = classes[activeIdx];
-    AppState.game.wizard.startingGold = classes[activeIdx] ? classes[activeIdx].oro : 40;
-    AppState.game.wizard.currentGold = classes[activeIdx] ? classes[activeIdx].oro : 40;
+    AppState.game.wizard.startingGold = classes[activeIdx] ? (classes[activeIdx].oro || 40) : 40;
+    AppState.game.wizard.currentGold = classes[activeIdx] ? (classes[activeIdx].oro || 40) : 40;
 
-    // Aggiorna pallini
     const dotsBox = document.getElementById("wizard-coverflow-dots");
     if (dotsBox) {
       dotsBox.querySelectorAll("span").forEach((d, i) => {
@@ -965,14 +977,15 @@ const GameEngine = {
     this.wizardShowStep(2);
   },
 
-  // PASSO 2: TALENTI CLANDESTINI
+// =========================================================================
+  // PASSO 2: TALENTI CLANDESTINI CON ANTEPRIMA A SCHEDA DETTAGLIATA AL TOCCO
+  // =========================================================================
   renderWizardStep2: function() {
     const grid = document.getElementById("wizard-abilities-grid");
     const budgetBadge = document.getElementById("wizard-px-budget");
     if (!grid) return;
 
     if (budgetBadge) budgetBadge.textContent = `✨ ${AppState.game.wizard.remainingPx} PX Disponibili`;
-
     const userFaction = AppState.game.wizard.chosenClass ? (AppState.game.wizard.chosenClass.schieramento || "Destra").toLowerCase() : "destra";
 
     grid.innerHTML = AppState.game.wizard.abilities.map(abl => {
@@ -981,22 +994,66 @@ const GameEngine = {
       const isCompatible = req.includes("tutti") || req.includes(userFaction);
 
       return `
-        <div onclick="${isCompatible ? `GameEngine.wizardToggleAbility('${abl.id}')` : ''}" class="p-3 rounded-xl border ${isSelected ? 'border-sky-400 bg-sky-500/15 shadow-md ring-1 ring-sky-400/40' : (isCompatible ? 'border-white/10 bg-surface/70 cursor-pointer hover:bg-surface active:scale-[0.99]' : 'border-white/5 bg-black/40 opacity-40 cursor-not-allowed')} flex items-center justify-between transition-all">
+        <!-- Click apre la SCHEDA DETTAGLIO completa del talento -->
+        <div onclick="GameEngine.inspectAbilityDetail('${abl.id}')" class="p-3 rounded-xl border ${isSelected ? 'border-sky-400 bg-sky-500/15 shadow-md ring-1 ring-sky-400/40' : (isCompatible ? 'border-white/10 bg-surface/70 cursor-pointer hover:bg-surface active:scale-[0.99]' : 'border-white/5 bg-black/40 opacity-40 cursor-not-allowed')} flex items-center justify-between transition-all">
           <div class="overflow-hidden pr-2">
             <div class="flex items-center space-x-2">
               <span class="text-base">${abl.emoji || '⚡'}</span>
               <span class="text-xs font-black text-white truncate">${abl.nome}</span>
             </div>
-            <div class="text-[9.5px] text-slate-300 line-clamp-2 mt-1 leading-tight">${abl.descrizione || abl.effetto || ''}</div>
+            <!-- Testo leggibile su due righe senza troncamenti violenti -->
+            <div class="text-[9.5px] text-slate-300 line-clamp-2 mt-1 leading-snug">${abl.descrizione || abl.effetto || ''}</div>
           </div>
-          <span class="badge badge-xs ${isSelected ? 'badge-primary' : (isCompatible ? 'badge-ghost border-white/20' : 'badge-neutral')} font-black text-[8px] py-2 px-2 shrink-0">
-            ${isSelected ? 'ATTIVO ✓' : (isCompatible ? `${abl.costoPX || 100} PX` : '🔒')}
-          </span>
+          <div class="flex items-center space-x-1 shrink-0">
+            <span class="badge badge-xs ${isSelected ? 'badge-primary' : (isCompatible ? 'badge-ghost border-white/20' : 'badge-neutral')} font-black text-[8px] py-1.5 px-2">
+              ${isSelected ? 'ATTIVO ✓' : (isCompatible ? `${abl.costoPX || 100} PX` : '🔒')}
+            </span>
+          </div>
         </div>
       `;
     }).join("");
   },
 
+  // APRE LA SCHEDA COMPLETA DEL TALENTO (Modalità Inspector)
+  inspectAbilityDetail: function(ablId) {
+    const abl = AppState.game.wizard.abilities.find(a => a.id === ablId);
+    if (!abl) return;
+
+    const userFaction = AppState.game.wizard.chosenClass ? (AppState.game.wizard.chosenClass.schieramento || "Destra").toLowerCase() : "destra";
+    const req = String(abl.requisitoClasse || abl.requisitiCodificati || "tutti").toLowerCase();
+    const isCompatible = req.includes("tutti") || req.includes(userFaction);
+    const isSelected = AppState.game.wizard.chosenAbilities.includes(abl.id);
+
+    document.getElementById("modal-abl-icon").textContent = abl.emoji || "⚡";
+    document.getElementById("modal-abl-title").textContent = abl.nome;
+    document.getElementById("modal-abl-faction").textContent = (req.includes("destra") ? "Destra" : (req.includes("sinistra") ? "Sinistra" : "Comune")).toUpperCase();
+    document.getElementById("modal-abl-effect").textContent = abl.effettoCodificato || abl.effetto || "Modificatore tattico standard";
+    document.getElementById("modal-abl-desc").textContent = abl.descrizione || "Nessuna descrizione d'archivio.";
+
+    const btn = document.getElementById("modal-abl-action-btn");
+    if (!isCompatible) {
+      btn.textContent = `🔒 Bloccato per ${userFaction.toUpperCase()}`;
+      btn.className = "btn btn-sm btn-outline border-white/10 text-slate-500 cursor-not-allowed w-full";
+      btn.onclick = null;
+    } else if (isSelected) {
+      btn.textContent = "Rimuovi Talento (+100 PX)";
+      btn.className = "btn btn-sm btn-error font-bold w-full";
+      btn.onclick = () => {
+        GameEngine.wizardToggleAbility(abl.id);
+        document.getElementById("modal-ability-detail").close();
+      };
+    } else {
+      btn.textContent = "Attiva Talento (-100 PX)";
+      btn.className = "btn btn-sm btn-primary font-bold shadow-lg shadow-sky-600/30 w-full";
+      btn.onclick = () => {
+        GameEngine.wizardToggleAbility(abl.id);
+        document.getElementById("modal-ability-detail").close();
+      };
+    }
+
+    const modal = document.getElementById("modal-ability-detail");
+    if (modal) modal.showModal();
+  },  
   wizardToggleAbility: function(ablId) {
     const idx = AppState.game.wizard.chosenAbilities.indexOf(ablId);
     if (idx !== -1) {
@@ -1020,14 +1077,16 @@ const GameEngine = {
     this.wizardShowStep(3);
   },
 
-  // PASSO 3: MERCATO NERO DI CICCIO (PRE-ADVENTURE)
+// =========================================================================
+  // PASSO 3: MERCATO NERO CON CATEGORIZZAZIONE TOLLERANTE & NO MERCHANDISE
+  // =========================================================================
   filterWizardShop: function(category) {
     AppState.game.wizard.shopCategory = category;
 
     const chipsBox = document.getElementById("wizard-shop-category-chips");
     if (chipsBox) {
       chipsBox.querySelectorAll("button").forEach(btn => {
-        const isAct = btn.textContent.toUpperCase().includes(category);
+        const isAct = btn.textContent.toUpperCase().includes(category.toUpperCase());
         btn.className = `badge badge-sm ${isAct ? 'badge-info' : 'badge-ghost'} font-bold cursor-pointer transition-all`;
       });
     }
@@ -1038,16 +1097,20 @@ const GameEngine = {
     const container = document.getElementById("wizard-shop-grid");
     if (!container) return;
 
-    const allItems = AppState.game.wizard.shopCatalog || [];
-    const filtered = allItems.filter(it => classifyShopCategory(it) === category);
+    let allItems = AppState.game.wizard.shopCatalog || [];
+    if (allItems.length === 0 && AppState.game.currentSeries && AppState.game.currentSeries.equipaggiamenti) {
+      allItems = AppState.game.currentSeries.equipaggiamenti;
+    }
+
+    const filtered = allItems.filter(it => classifyShopCategory(it).toUpperCase() === category.toUpperCase());
 
     if (filtered.length === 0) {
-      container.innerHTML = `<div class="col-span-full py-8 text-center text-slate-500 text-xs">Nessun articolo in questo reparto.</div>`;
+      container.innerHTML = `<div class="col-span-full py-8 text-center text-slate-400 text-xs">Nessun articolo per il reparto <b>${category}</b>.</div>`;
       return;
     }
 
     container.innerHTML = filtered.map(it => {
-      const price = Math.abs(parseInt(it.costoOro || it.costo || it.prezzoMegoin * 10, 10)) || 15;
+      const price = Math.abs(parseInt(it.costoOro || it.costo || 15, 10)) || 15;
       const canAfford = (AppState.game.wizard.currentGold >= price);
 
       return `
@@ -1058,7 +1121,7 @@ const GameEngine = {
               <span class="font-mono text-[9px] text-amber-300 font-bold">${price} 🟡</span>
             </div>
             <div class="font-bold text-white line-clamp-1 mt-1">${it.nome}</div>
-            <div class="text-[9px] text-slate-400 line-clamp-2 mt-0.5">${it.descrizione || ''}</div>
+            <div class="text-[9.5px] text-slate-300 line-clamp-2 mt-0.5 leading-tight">${it.descrizione || ''}</div>
           </div>
           <button onclick="GameEngine.buyWizardShopItem('${it.id}', ${price})" class="btn btn-xs ${canAfford ? 'btn-primary' : 'btn-outline border-white/10 text-slate-500 cursor-not-allowed'} font-bold text-[9px] w-full" ${!canAfford ? 'disabled' : ''}>
             ${canAfford ? 'Acquista' : 'Oro Insufficiente'}
@@ -1533,8 +1596,8 @@ const GameEngine = {
     }
   },
 
-  // =========================================================================
-  // CASSETTI COCKPIT
+ // =========================================================================
+  // CASSETTI COCKPIT (ZAINO, EMPORIO RPG, SQUADRA, DOSSIER, ABBANDONO)
   // =========================================================================
   openBackpackDrawer: function() {
     this.filterBackpack(AppState.game.backpackFilter || "ALL");
@@ -1542,41 +1605,83 @@ const GameEngine = {
     if (drawer) drawer.showModal();
   },
 
+  // FIX: Filtro reale per categoria + Riconoscimento armi esteso (incluso Piede di Porco)
   filterBackpack: function(cat) {
-    AppState.game.backpackFilter = cat;
+    AppState.game.backpackFilter = cat || "ALL";
+
+    // Aggiorna stato visivo delle linguette/chip dello zaino
+    const tabsContainer = document.getElementById("backpack-tabs");
+    if (tabsContainer) {
+      tabsContainer.querySelectorAll("button").forEach(btn => {
+        const btnText = btn.textContent.toUpperCase();
+        const isMatch = (cat === "ALL" && btnText.includes("TUTTI")) || btnText.includes(cat);
+        btn.className = `badge badge-sm ${isMatch ? 'badge-info font-black shadow' : 'badge-ghost font-bold'} cursor-pointer transition-all`;
+      });
+    }
+
     const c = document.getElementById("backpack-slots-container");
     const h = AppState.game.hero;
     if (!c || !h) return;
 
-    const inv = h.inventario || [];
+    let inv = h.inventario || [];
     if (inv.length === 0) {
       c.innerHTML = `<div class="col-span-full py-8 text-center text-slate-500 text-xs">Il tuo zaino è vuoto.</div>`;
       return;
     }
 
+    // Filtra per categoria se non è selezionato "ALL"
+    if (cat && cat !== "ALL") {
+      inv = inv.filter(it => classifyShopCategory({ nome: it }) === cat);
+      if (inv.length === 0) {
+        c.innerHTML = `<div class="col-span-full py-6 text-center text-slate-500 text-xs">Nessun articolo per il reparto <b>${cat}</b> nello zaino.</div>`;
+        return;
+      }
+    }
+
     c.innerHTML = inv.map(it => {
-      const isArma = (it === h.armaAttiva);
-      const isVeicolo = (it === h.veicoloAttivo);
-      
-      let btnLabel = "Usa";
-      let btnAction = `GameEngine.useBackpackItem('${it.replace(/'/g, "\\'")}')`;
-      
+      const isArma = (h.armaAttiva && it.toLowerCase() === h.armaAttiva.toLowerCase());
+      const isVeicolo = (h.veicoloAttivo && it.toLowerCase() === h.veicoloAttivo.toLowerCase());
       const low = it.toLowerCase();
-      if (low.includes("remo") || low.includes("serramanico") || low.includes("fiocina") || low.includes("mannaia") || low.includes("catena") || low.includes("tondino") || low.includes("coltello") || low.includes("arpione") || low.includes("tubo")) {
-        btnLabel = isArma ? "In Pugno" : "Impugna";
-        btnAction = `GameEngine.equipItem('${it.replace(/'/g, "\\'")}', 'weapon')`;
-      } else if (low.includes("ciao") || low.includes("apecar") || low.includes("panda") || low.includes("monopattino") || low.includes("bici") || low.includes("barchino") || low.includes("parapendio") || low.includes("canoa")) {
-        btnLabel = isVeicolo ? "In Uso" : "Attiva";
-        btnAction = `GameEngine.equipItem('${it.replace(/'/g, "\\'")}', 'vehicle')`;
+
+      let btnLabel = "Usa";
+      let btnClass = "btn-outline border-white/20 text-white";
+      let btnAction = `GameEngine.useBackpackItem('${it.replace(/'/g, "\\'")}')`;
+
+      // Riconoscimento armi completo (risolve il bug del Piede di Porco con tasto Usa)
+      if (low.includes("remo") || low.includes("serramanico") || low.includes("fiocina") || 
+          low.includes("mannaia") || low.includes("catena") || low.includes("tondino") || 
+          low.includes("coltello") || low.includes("arpione") || low.includes("tubo") || 
+          low.includes("piede porco") || low.includes("piede di porco") || low.includes("mazzetta")) {
+        if (isArma) {
+          btnLabel = "✓ In Pugno";
+          btnClass = "btn-success font-black cursor-default text-white";
+          btnAction = "";
+        } else {
+          btnLabel = "Impugna";
+          btnAction = `GameEngine.equipItem('${it.replace(/'/g, "\\'")}', 'weapon')`;
+        }
+      } else if (low.includes("ciao") || low.includes("apecar") || low.includes("panda") || 
+                 low.includes("monopattino") || low.includes("bici") || low.includes("barchino") || 
+                 low.includes("parapendio") || low.includes("canoa") || low.includes("zodiac") || low.includes("scarabeo")) {
+        if (isVeicolo) {
+          btnLabel = "✓ In Uso";
+          btnClass = "btn-success font-black cursor-default text-white";
+          btnAction = "";
+        } else {
+          btnLabel = "Attiva";
+          btnAction = `GameEngine.equipItem('${it.replace(/'/g, "\\'")}', 'vehicle')`;
+        }
       }
 
       return `
         <div class="p-2.5 bg-surface rounded-xl border border-white/5 flex items-center justify-between text-xs">
           <div class="overflow-hidden pr-2">
             <div class="font-bold text-white truncate">${it}</div>
-            <div class="text-[9px] text-slate-400">${isArma ? '🗡️ [ARMA ATTIVA]' : (isVeicolo ? '🛴 [VEICOLO ATTIVO]' : 'Articolo')}</div>
+            <div class="text-[9px] ${isArma || isVeicolo ? 'text-emerald-400 font-bold' : 'text-slate-400'}">
+              ${isArma ? '🗡️ [ARMA ATTIVA]' : (isVeicolo ? '🛴 [VEICOLO ATTIVO]' : 'Articolo')}
+            </div>
           </div>
-          <button onclick="${btnAction}" class="btn btn-xs ${isArma || isVeicolo ? 'btn-success' : 'btn-outline border-white/20'} text-[9px] shrink-0">
+          <button onclick="${btnAction}" class="btn btn-xs ${btnClass} text-[9px] shrink-0" ${btnAction === "" ? "disabled" : ""}>
             ${btnLabel}
           </button>
         </div>
@@ -1627,12 +1732,14 @@ const GameEngine = {
 
   openEmporioDrawer: function() {
     const h = AppState.game.hero;
-    document.getElementById("emporio-gold-display").textContent = `${h ? h.oro : 0} 🟡`;
+    const goldDisp = document.getElementById("emporio-gold-display");
+    if (goldDisp) goldDisp.textContent = `${h ? h.oro : 0} 🟡`;
     this.setEmporioMode(AppState.game.emporioMode || "buy");
     const drawer = document.getElementById("drawer-emporio");
     if (drawer) drawer.showModal();
   },
 
+  // FIX: L'Emporio carica solo gli equipaggiamenti del gioco RPG, MAI merchandising (smartphone/corsi)
   setEmporioMode: function(mode) {
     AppState.game.emporioMode = mode;
     const btnBuy = document.getElementById("emporio-tab-buy");
@@ -1646,7 +1753,7 @@ const GameEngine = {
     if (mode === "sell") {
       const inv = (h && h.inventario) ? h.inventario : [];
       if (inv.length === 0) {
-        container.innerHTML = `<div class="col-span-full py-8 text-center text-slate-500 text-xs">Nessuna merce da vendere a Ciccio.</div>`;
+        container.innerHTML = `<div class="col-span-full py-8 text-center text-slate-500 text-xs">Nessuna merce da vendere a Ciccio nello zaino.</div>`;
         return;
       }
       container.innerHTML = inv.map(it => `
@@ -1658,23 +1765,37 @@ const GameEngine = {
         </div>
       `).join("");
     } else {
-      const shopItems = AppState.shop.items || [];
+      // Usa SOLO gli articoli dell'avventura RPG (shopCatalog)
+      let shopItems = AppState.game.wizard.shopCatalog || [];
+      if (shopItems.length === 0 && AppState.game.currentSeries && AppState.game.currentSeries.equipaggiamenti) {
+        shopItems = AppState.game.currentSeries.equipaggiamenti;
+      }
+
       if (shopItems.length === 0) {
-        container.innerHTML = `<div class="col-span-full py-6 text-center text-slate-500 text-xs">Nessun articolo disponibile all'Emporio.</div>`;
+        container.innerHTML = `<div class="col-span-full py-6 text-center text-slate-500 text-xs">Nessun articolo dell'avventura disponibile al momento.</div>`;
         return;
       }
 
-      container.innerHTML = shopItems.slice(0, 8).map(item => `
-        <div class="p-2.5 bg-surface rounded-xl border border-white/5 flex flex-col justify-between text-xs space-y-2">
-          <div>
-            <div class="font-bold text-white truncate">${item.nome}</div>
-            <div class="text-[9px] text-amber-300 font-mono">${item.prezzoMegoin * 10} 🟡</div>
+      container.innerHTML = shopItems.slice(0, 12).map(item => {
+        const price = Math.abs(parseInt(item.costoOro || item.costo || 15, 10)) || 15;
+        const canAfford = (h && h.oro >= price);
+
+        return `
+          <div class="p-2.5 bg-surface rounded-xl border border-white/5 flex flex-col justify-between text-xs space-y-2">
+            <div>
+              <div class="flex items-center justify-between">
+                <span class="text-sm">${item.emoji || '📦'}</span>
+                <span class="text-[10px] text-amber-300 font-mono font-bold">${price} 🟡</span>
+              </div>
+              <div class="font-bold text-white truncate mt-1">${item.nome}</div>
+              <div class="text-[9px] text-slate-400 line-clamp-1">${item.descrizione || item.categoria || ''}</div>
+            </div>
+            <button onclick="GameEngine.buyFromEmporio('${item.id}', ${price})" class="btn btn-xs ${canAfford ? 'btn-primary' : 'btn-outline border-white/10 text-slate-500 cursor-not-allowed'} font-bold text-[9px]" ${!canAfford ? 'disabled' : ''}>
+              ${canAfford ? 'Compra' : 'Oro Insuff.'}
+            </button>
           </div>
-          <button onclick="GameEngine.buyFromEmporio('${item.id}', ${item.prezzoMegoin * 10})" class="btn btn-xs btn-primary font-bold text-[9px]">
-            Compra
-          </button>
-        </div>
-      `).join("");
+        `;
+      }).join("");
     }
   },
 
@@ -1684,8 +1805,23 @@ const GameEngine = {
       alert("Monete d'oro insufficienti!");
       return;
     }
-    const item = AppState.shop.items.find(i => i.id === itemId);
+
+    // Cerca l'articolo nel catalogo RPG
+    let shopItems = AppState.game.wizard.shopCatalog || [];
+    if (shopItems.length === 0 && AppState.game.currentSeries && AppState.game.currentSeries.equipaggiamenti) {
+      shopItems = AppState.game.currentSeries.equipaggiamenti;
+    }
+    const item = shopItems.find(i => i.id === itemId);
     if (!item) return;
+
+    // Regola del veicolo singolo
+    if (classifyShopCategory(item) === "VEICOLI") {
+      const hasVehicle = (AppState.game.hero.inventario || []).some(x => classifyShopCategory({ nome: x }) === "VEICOLI");
+      if (hasVehicle) {
+        alert("Puoi possedere un solo Veicolo nello zaino!");
+        return;
+      }
+    }
 
     AppState.game.hero.oro -= goldCost;
     AppState.game.hero.inventario.push(item.nome);
@@ -1700,6 +1836,8 @@ const GameEngine = {
       if (idx !== -1) {
         AppState.game.hero.inventario.splice(idx, 1);
         AppState.game.hero.oro += 10;
+        if (AppState.game.hero.armaAttiva === itemName) AppState.game.hero.armaAttiva = "";
+        if (AppState.game.hero.veicoloAttivo === itemName) AppState.game.hero.veicoloAttivo = "";
         if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("cash_register");
         this.openEmporioDrawer();
         this.renderNode(AppState.game.node, AppState.game.hero);
@@ -1709,13 +1847,15 @@ const GameEngine = {
 
   openCambioModal: function() {
     const balEl = document.getElementById("cambio-megoin-balance");
-    if (balEl) balEl.textContent = AppState.user ? AppState.user.saldoMegoin : 0;
+    const userMegoin = (AppState.user && (AppState.user.saldoMegoin !== undefined ? AppState.user.saldoMegoin : AppState.user.megoin)) || 0;
+    if (balEl) balEl.textContent = userMegoin;
     const modal = document.getElementById("modal-banco-cambio");
     if (modal) modal.showModal();
   },
 
   convertMegoinToGold: async function(megoinCost, goldEarned) {
-    if (!AppState.user || AppState.user.saldoMegoin < megoinCost) {
+    const currentMegoin = (AppState.user && (AppState.user.saldoMegoin !== undefined ? AppState.user.saldoMegoin : AppState.user.megoin)) || 0;
+    if (currentMegoin < megoinCost) {
       alert("Saldo Megoin insufficiente!");
       return;
     }
@@ -1731,25 +1871,29 @@ const GameEngine = {
         if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("cash_register");
         if (window.confetti) confetti({ particleCount: 60, spread: 50 });
 
-        AppState.user.saldoMegoin = res.nuovoSaldoMegoin;
-        
+        const nuovoSaldo = res.nuovoSaldoMegoin !== undefined ? res.nuovoSaldoMegoin : (currentMegoin - megoinCost);
+        AppState.user.saldoMegoin = nuovoSaldo;
+        AppState.user.megoin = nuovoSaldo;
+
+        // Se siamo durante il Wizard:
         if (AppState.game.wizard && AppState.game.wizard.currentGold !== undefined) {
           AppState.game.wizard.currentGold += goldEarned;
           const wizGoldDisp = document.getElementById("wizard-shop-gold-display");
           if (wizGoldDisp) wizGoldDisp.textContent = `💰 ${AppState.game.wizard.currentGold} 🟡`;
         }
 
+        // Se siamo nel Gameplay attivo:
         if (AppState.game.hero) {
-          AppState.game.hero.oro = res.nuovoOro;
+          const nuovoOro = res.nuovoOro !== undefined ? res.nuovoOro : (AppState.game.hero.oro + goldEarned);
+          AppState.game.hero.oro = nuovoOro;
           this.renderNode(AppState.game.node, AppState.game.hero);
           const empGoldDisp = document.getElementById("emporio-gold-display");
-          if (empGoldDisp) empGoldDisp.textContent = `${res.nuovoOro} 🟡`;
+          if (empGoldDisp) empGoldDisp.textContent = `${nuovoOro} 🟡`;
         }
 
         AppRenderer.renderProfile(AppState.user);
-
         const balEl = document.getElementById("cambio-megoin-balance");
-        if (balEl) balEl.textContent = res.nuovoSaldoMegoin;
+        if (balEl) balEl.textContent = nuovoSaldo;
 
         alert(`✅ Convertiti con successo ${megoinCost} 🪙 in +${goldEarned} 🟡 Oro!`);
         document.getElementById("modal-banco-cambio").close();
@@ -1766,12 +1910,17 @@ const GameEngine = {
 
     let html = "";
     const comp = h.compagni || [];
+    const compData = h.compagniData || {};
     const zombies = h.zombieSquad || [];
 
     if (comp.length === 0 && zombies.length === 0) {
       html = `<div class="py-6 text-center text-slate-500 text-xs">Sei in solitaria. Nessun alleato o zombi presente.</div>`;
     } else {
-      html += comp.map(a => `<div class="p-2.5 bg-surface rounded-xl border border-white/5 font-bold text-xs flex justify-between"><span>🤝 ${a}</span> <span class="text-emerald-400">Alleato Umano</span></div>`).join("");
+      html += comp.map(a => {
+        const d = compData[a] || {};
+        const hpText = d.pv ? ` (❤️ ${d.pv}/${d.pvMax || 15} PV)` : "";
+        return `<div class="p-2.5 bg-surface rounded-xl border border-white/5 font-bold text-xs flex justify-between"><span>🤝 ${a}${hpText}</span> <span class="text-emerald-400">Alleato Umano</span></div>`;
+      }).join("");
       html += zombies.map(z => `<div class="p-2.5 bg-surface rounded-xl border border-rose-500/30 font-bold text-xs flex justify-between"><span>🧟 ${z.nome}</span> <span class="text-rose-400">Danno x2 (❤️ ${z.pv}/${z.pvMax})</span></div>`).join("");
     }
 
@@ -1842,7 +1991,7 @@ const GameEngine = {
 };
 
 // ============================================================================
-// APP RENDERER
+// APP RENDERER (VETRINE, PROFILO & CAVEAU)
 // ============================================================================
 const AppRenderer = {
   applyHardLocking: function(allowed) {
@@ -1856,28 +2005,30 @@ const AppRenderer = {
 
   renderProfile: function(u) {
     const s = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
-    s("home-username", u.nome);
-    s("home-rank-points", u.puntiFedelta);
-    s("home-plan-badge", `PIANO ${(u.piano || "Free").toUpperCase()}`);
-    s("home-megoin-card", `${u.saldoMegoin} 🪙`);
-    s("home-punti-card", `${u.puntiFedelta} Pt`);
+    const megoinVal = (u.saldoMegoin !== undefined ? u.saldoMegoin : u.megoin) || 0;
+
+    s("home-username", u.nome || "Avventuriero");
+    s("home-rank-points", u.puntiFedelta || 0);
+    s("home-plan-badge", `PIANO ${(u.piano || u.plan || "Free").toUpperCase()}`);
+    s("home-megoin-card", `${megoinVal} 🪙`);
+    s("home-punti-card", `${u.puntiFedelta || 0} Pt`);
     s("home-purchases-count", u.prodottiAcquistati || 0);
 
     s("user-avatar-desk", (u.nome || "U").charAt(0).toUpperCase());
-    s("user-name-desk", u.nome);
-    s("user-plan-desk", `PIANO ${(u.piano || "Free").toUpperCase()}`);
-    s("user-megoin-desk", `${u.saldoMegoin} 🪙`);
-    s("user-points-desk", `${u.puntiFedelta} Pt`);
+    s("user-name-desk", u.nome || "Avventuriero");
+    s("user-plan-desk", `PIANO ${(u.piano || u.plan || "Free").toUpperCase()}`);
+    s("user-megoin-desk", `${megoinVal} 🪙`);
+    s("user-points-desk", `${u.puntiFedelta || 0} Pt`);
 
     s("profile-card-avatar", (u.nome || "U").charAt(0).toUpperCase());
-    s("profile-card-name", u.nome);
-    s("profile-card-username", u.username);
-    s("profile-card-plan", `PIANO ${(u.piano || "Free").toUpperCase()}`);
-    s("profile-card-id", `ID: ${u.chatId}`);
-    s("profile-card-megoin", `${u.saldoMegoin} 🪙`);
-    s("profile-card-points", `${u.puntiFedelta} Pt`);
+    s("profile-card-name", u.nome || "Avventuriero");
+    s("profile-card-username", u.username || "@anonimo");
+    s("profile-card-plan", `PIANO ${(u.piano || u.plan || "Free").toUpperCase()}`);
+    s("profile-card-id", `ID: ${u.chatId || "-"}`);
+    s("profile-card-megoin", `${megoinVal} 🪙`);
+    s("profile-card-points", `${u.puntiFedelta || 0} Pt`);
 
-    s("profile-action-plan-name", `Piano: ${(u.piano || "Free").toUpperCase()}`);
+    s("profile-action-plan-name", `Piano: ${(u.piano || u.plan || "Free").toUpperCase()}`);
     s("profile-action-vault-count", AppState.vault.length);
   },
 
