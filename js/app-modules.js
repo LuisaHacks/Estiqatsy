@@ -1,1037 +1,1579 @@
 // ============================================================================
 // PROJECT: ESTIQATSY SYNDICATE & RPG PLATFORM
-// FILE: js/app-modules.js (VERSIONE 11.0 - UNIFIED SAAS, HUB & AUDIO DECK)
-// LAYER 2: MODULI DI PIATTAFORMA AGNOSTICI, PORTALE GIOCHI, SHOP, RICETTE & RADIO
-// NOTE: 100% DISACCOPPIATO DAL MOTORE DI GIOCO - GESTIONE SEMANTICA CSS
+// FILE: js/app-modules.js (VERSIONE 14.0 - FULL GAS COORDINATED & HYBRID MULTIPLAYER)
+// LAYER 2: SHOP E-COMMERCE GAS, SAAS PLANS REALI, SAGHE 3-AZIONI, ARENA & ADMIN
 // ============================================================================
 
-const AppModules = {
+(function() {
+  'use strict';
 
   // --------------------------------------------------------------------------
-  // 1. BOOTSTRAP & INIZIALIZZAZIONE PIATTAFORMA
+  // 1. STATO LOCALE DEI MODULI
   // --------------------------------------------------------------------------
-  init: async function() {
-    this.loadVault();
+  let currentShopCategory = 'tutti';
+  let currentRecipeCategory = 'tutti';
+  let selectedMultiplayerMode = '1vs1';
+  let currentSelectedSheet = '⚙️ Config';
+  let currentSelectedGasFile = 'Logic.gs';
 
-    try {
-      // 1. Profilo Utente, Permessi Moduli & Piani SaaS
-      const profileData = await apiCall("profile");
-      if (profileData && profileData.user) {
-        AppState.user = profileData.user;
-        AppState.allowedModules = profileData.allowedModules || AppState.allowedModules;
-        AppState.plans = profileData.plans || [];
-        this.renderProfile(profileData.user);
-        this.applyHardLocking(AppState.allowedModules);
-      }
+  const ARENA_OPPONENTS = [
+    { id: 'opp-1', name: 'Kira la Netrunner', rank: 'Operativa Lvl 2', avatar: '⚡', hp: 22, attack: 14, defense: 12, rewardMegoin: 45, rewardPoints: 10 },
+    { id: 'opp-2', name: 'Bruto lo Scaricatore', rank: 'Picchiatore Lvl 3', avatar: '🥊', hp: 30, attack: 17, defense: 14, rewardMegoin: 70, rewardPoints: 15 },
+    { id: 'opp-3', name: 'Silvia la Cecchina', rank: 'Tiratrice Lvl 4', avatar: '🎯', hp: 26, attack: 19, defense: 15, rewardMegoin: 100, rewardPoints: 25 },
+    { id: 'opp-4', name: 'Il Colonnello Ombra', rank: 'Master Syndicate Lvl 5', avatar: '👑', hp: 38, attack: 22, defense: 18, rewardMegoin: 160, rewardPoints: 40 }
+  ];
 
-      // 2. Caricamento parallelo dei cataloghi di piattaforma
-      await Promise.allSettled([
-        this.loadGamesCatalog(),
-        this.fetchShop(),
-        this.fetchRecipes(),
-        this.syncTransactions(false)
-      ]);
+  const SHEETS_TSV_MODELS = {
+    '⚙️ Config': "Key\tValue\tDescrizione\nbot_token\tYOUR_TELEGRAM_BOT_TOKEN\tToken API Telegram\nwebapp_url\thttps://your-domain.app\tURL della Web App Telegram Mini App\nadmin_chat_id\t123456789\tChat ID Telegram Admin\nbot_username\tEstiqatsyBot\tUsername Telegram senza @",
+    '👤 Users': "Nome\tCognome\tUsername\tChat_ID\tData_Iscrizione\tLingua\tPremium\tUltimo_Messaggio\tData_Ultima_Attivita\tPiano\tScadenza_Piano\tMegoin\tConsultati\tPunti_Fedelta\tStato_Utente",
+    '👑 Plans': "ID\tVisibile\tNome Piano\tDescrizione\tPrezzo Annuale\tPrezzo Mensile\tMesi\tRisparmio\tBonus Megoin\tCocktails\tAntipasti\tPrimi\tSecondi\tGiochi\tShop\tChatbot\tNews\tReport",
+    '🏪 Shop': "ID\tVisibile\tNome\tCategoria\tSottocategoria\tTipo\tDescrizione\tStock\tTempi_Consegna\tPrezzo_Euro\tPrezzo_Megoin\tPunti_Premio\tVarianti\tMedia_URL\tURL_Download\tIn_Promo\tPrezzo_Promo_Euro\tPrezzo_Promo_Megoin\tAccesso_Piano_Free\tAccesso_Piano_Bronze\tAccesso_Piano_Silver\tAccesso_Piano_Gold",
+    '🍳 Ricette': "ID\tVisibile\tPiatto\tCategoria\tCosto\tDifficolta\tTempo\tMedia_URL\tIngredienti\tPreparazione\tLink_Button\tFOR\tDES\tINT\tTasso_Alcolico\tGusto",
+    '🎮 Giochi': "ID_Nodo\tEpisodio\tTipo\tCategoria\tSottocategoria\tNome\tTesto\tCitazione\tAutore_Citazione\tPV\tDanno\tOro\tPX\tFOR\tDES\tINT\tDifficolta\tStat_Richiesta\tMedia_URL\tDest_Successo\tDest_Fallimento\tDest_Fallback\tBivio_JSON",
+    '👥 Stanze_Multiplayer': "room_id\tmodalita\ttitolo\tstato\thost_id\thost_nome\tguest_id\tguest_nome\tgiocatori_json\tmosse_json\tesito\tcreata_il\taggiornata_il",
+    '📜 Transazioni': "ID_TX\tData_Ora\tUser_ID\tNome\tCognome\tUsername\tChat_ID\tLingua\tTipo_Evento\tDettaglio\tVar_Euro\tVar_Megoin\tPt_Fedelta\tCanale\tNote\tStato\tSaldo_Megoin\tEuro_Netto"
+  };
 
-      // 3. Slider Promozionale dinamico della Home
-      this.initCarousel();
+  const GAS_SCRIPTS = {
+    'Logic.gs': `// ESTIQATSY BOT - TELEGRAM GATEWAY\nfunction doPost(e) {\n  return handleWebAppPostRequest(e);\n}\nfunction doGet(e) {\n  return handleWebAppGetRequest(e);\n}`,
+    'WebAppHandler.gs': `// GESTORE STANZE MULTIPLAYER\nfunction handleMultiplayerRoom(action, params) {\n  var s = DB.getSheet("👥", "Stanze_Multiplayer");\n  // Elaborazione server-side\n}`
+  };
 
-      // 4. Inizializzazione Miniplayer Radiofonico della Home
-      this.initRadio();
+  // --------------------------------------------------------------------------
+  // 2. MOTORE DI PIATTAFORMA: APPMODULES
+  // --------------------------------------------------------------------------
+  const AppModules = {
 
-      // 5. Rimozione Loader d'avvio tramite classe semantica
-      const loader = document.getElementById("app-loading");
-      if (loader) {
-        loader.classList.add("fade-out");
-        setTimeout(() => loader.remove(), 250);
-      }
+    // ------------------------------------------------------------------------
+    // INIZIALIZZAZIONE & FETCH PARALLELO DA GOOGLE APPS SCRIPT
+    // ------------------------------------------------------------------------
+    init: async function() {
+      this.loadVault();
 
-      if (window.lucide) lucide.createIcons();
-    } catch (err) {
-      console.error("[AppModules.init] Errore di bootstrap:", err);
-      const errBox = document.getElementById("loading-error-box");
-      const retryBtn = document.getElementById("loading-retry-btn");
-
-      if (errBox) {
-        const isSessionExpired = err.message && (err.message.includes("SESSION_EXPIRED") || err.message.includes("UNAUTHORIZED"));
-        
-        if (isSessionExpired) {
-          errBox.textContent = "Sessione scaduta per inattività. Chiudi e riapri la Mini App dalla chat per rinnovare il token sicuro.";
-          if (retryBtn) {
-            retryBtn.textContent = "Chiudi e Rinnova";
-            retryBtn.onclick = () => {
-              if (window.Telegram?.WebApp?.close) {
-                window.Telegram.WebApp.close();
-              } else {
-                location.reload();
-              }
-            };
-          }
-        } else {
-          errBox.textContent = err.message || "Errore di connessione al database Syndicate.";
-          if (retryBtn) {
-            retryBtn.textContent = "Riprova";
-            retryBtn.onclick = () => location.reload();
-          }
+      try {
+        // 1. Profilo Utente, Permessi & Piani di Membership reali da Modulo_WebApp.gs
+        const profileData = await apiCall("profile");
+        if (profileData && profileData.user) {
+          AppState.user = {
+            id: profileData.user.chatId,
+            chatId: profileData.user.chatId,
+            first_name: profileData.user.nome,
+            nome: profileData.user.nome,
+            cognome: profileData.user.cognome,
+            username: profileData.user.username,
+            megoin: profileData.user.saldoMegoin,
+            saldoMegoin: profileData.user.saldoMegoin,
+            loyalty_points: profileData.user.puntiFedelta,
+            puntiFedelta: profileData.user.puntiFedelta,
+            plan: profileData.user.piano || "Free",
+            isAdmin: !!profileData.user.isAdmin,
+            prodottiAcquistati: profileData.user.prodottiAcquistati || 0,
+            combatStats: AppState.user.combatStats
+          };
+          AppState.allowedModules = profileData.allowedModules || AppState.allowedModules;
+          AppState.plans = profileData.plans || [];
+          this.applyHardLocking(AppState.allowedModules);
         }
 
-        errBox.classList.remove("hidden");
-        if (retryBtn) retryBtn.classList.remove("hidden");
+        // 2. Fetch Parallelo dei cataloghi reali da GAS
+        await Promise.allSettled([
+          this.loadGamesCatalog(),
+          this.fetchShop(),
+          this.fetchRecipes(),
+          this.syncTransactions(false)
+        ]);
+
+        // 3. Setup componenti grafici
+        this.initCarousel();
+        this.initRadio();
+
+        // 4. Rimozione loader
+        const loader = document.getElementById("app-loading");
+        if (loader) {
+          loader.classList.add("fade-out");
+          setTimeout(() => loader.remove(), 250);
+        }
+
+        if (window.AppCore) AppCore.syncUI();
+      } catch (err) {
+        console.error("[AppModules.init] Errore bootstrap GAS:", err);
+        const errBox = document.getElementById("loading-error-box");
+        const retryBtn = document.getElementById("loading-retry-btn");
+        if (errBox) {
+          errBox.textContent = err.message || "Errore di connessione a Google Apps Script.";
+          errBox.classList.remove("hidden");
+          if (retryBtn) retryBtn.classList.remove("hidden");
+        }
       }
-    }
-  },
+    },
 
-  applyHardLocking: function(allowed) {
-    if (!allowed) return;
-    document.querySelectorAll("[data-module]").forEach(el => {
-      const mod = el.dataset.module;
-      const isPermitted = (allowed[mod] !== false);
-      el.classList.toggle("hidden", !isPermitted);
-    });
-  },
+    applyHardLocking: function(allowed) {
+      if (!allowed) return;
+      document.querySelectorAll("[data-module]").forEach(el => {
+        const mod = el.dataset.module;
+        const isPermitted = (allowed[mod] !== false);
+        el.classList.toggle("hidden", !isPermitted);
+      });
+    },
 
-  renderProfile: function(u) {
-    if (!u) return;
-    const s = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
-    const megoinVal = Wallet.getMegoin();
+    // ------------------------------------------------------------------------
+    // GESTIONE PROFILO UTENTE
+    // ------------------------------------------------------------------------
+    renderProfile: function() {
+      if (window.AppCore) AppCore.syncUI();
+      this.renderVault();
+      this.renderArenaSection();
+    },
 
-    s("home-username", u.nome || "Avventuriero");
-    s("home-rank-points", u.puntiFedelta || 0);
-    s("home-plan-badge", `PIANO ${(u.piano || u.plan || "Base").toUpperCase()}`);
-    s("home-megoin-card", `${megoinVal} 🪙`);
-    s("home-punti-card", `${u.puntiFedelta || 0} Pt`);
-    s("home-purchases-count", u.prodottiAcquistati || 0);
-
-    // Avatar Utente: Foto Telegram o Iniziale
-    const tgUser = (window.tg && window.tg.initDataUnsafe && window.tg.initDataUnsafe.user) ? window.tg.initDataUnsafe.user : null;
-    const photoUrl = u.photo_url || (tgUser ? tgUser.photo_url : null);
-
-    const renderAvatarBox = (boxId) => {
-      const el = document.getElementById(boxId);
-      if (!el) return;
-      if (photoUrl) {
-        el.innerHTML = `<img src="${photoUrl}" class="avatar-img" alt="Avatar">`;
-      } else {
-        el.textContent = (u.nome || "U").charAt(0).toUpperCase();
+    loadVault: function() {
+      const saved = localStorage.getItem(AppConfig.CACHE_KEYS.VAULT);
+      if (saved) {
+        try { AppState.digitalVault = JSON.parse(saved); } catch (e) {}
       }
-    };
+    },
 
-    renderAvatarBox("user-avatar-desk");
-    renderAvatarBox("profile-card-avatar");
+    addVault: function(nome, url) {
+      if (!AppState.digitalVault) AppState.digitalVault = [];
+      AppState.digitalVault.unshift({ nome, url, data: new Date().toLocaleDateString("it-IT") });
+      localStorage.setItem(AppConfig.CACHE_KEYS.VAULT, JSON.stringify(AppState.digitalVault));
+      this.renderVault();
+    },
 
-    s("user-name-desk", u.nome || "Avventuriero");
-    s("user-plan-desk", `PIANO ${(u.piano || u.plan || "Base").toUpperCase()}`);
-    s("user-megoin-desk", `${megoinVal} 🪙`);
-    s("user-points-desk", `${u.puntiFedelta || 0} Pt`);
-
-    s("profile-card-name", u.nome || "Avventuriero");
-    s("profile-card-username", u.username || "@anonimo");
-    s("profile-card-plan", `PIANO ${(u.piano || u.plan || "Base").toUpperCase()}`);
-    s("profile-card-id", `ID: ${u.chatId || "-"}`);
-    s("profile-card-megoin", `${megoinVal} 🪙`);
-    s("profile-card-points", `${u.puntiFedelta || 0} Pt`);
-
-    s("profile-action-plan-name", `Piano: ${(u.piano || u.plan || "Base").toUpperCase()}`);
-    s("profile-action-vault-count", AppState.vault.length);
-  },
-
-  // --------------------------------------------------------------------------
-  // 2. CAROSELLO PROMOZIONALE HOME (DATA-DRIVEN & RISPARMIO ENERGETICO)
-  // --------------------------------------------------------------------------
-  _currentPromoSlides: [],
-
-  initCarousel: function() {
-    const track = document.getElementById("carousel-track");
-    const dotsBox = document.getElementById("carousel-dots-container");
-    const outer = document.getElementById("carousel-outer-wrapper");
-    if (!track) return;
-
-    const slides = [];
-
-    // Slide 1: Primo gioco attivo a catalogo
-    if (AppState.games.catalog && AppState.games.catalog.length > 0) {
-      const topGame = AppState.games.catalog[0];
-      slides.push({
-        badge: (topGame.tipologia || "GIOCO").toUpperCase(),
-        titolo: `${topGame.emoji || '🎮'} ${topGame.serie}`,
-        sottotitolo: topGame.descrizione || "Entra nelle avventure investigative della piattaforma",
-        btnText: "Gioca",
-        action: () => AppRouter.navigate("games"),
-        img: topGame.mediaUrl || "https://image.pollinations.ai/prompt/coastal-noir-docks-night-cinematic?width=800&height=400&nologo=true"
-      });
-    }
-
-    // Slide 2: Articolo in vetrina nello Shop
-    if (AppState.shop.items && AppState.shop.items.length > 0) {
-      const topProduct = AppState.shop.items[0];
-      slides.push({
-        badge: "SHOP",
-        titolo: topProduct.nome,
-        sottotitolo: topProduct.descrizione || "Scopri gli articoli disponibili nel Syndicate",
-        btnText: "Shop",
-        action: () => AppRouter.navigate("shop"),
-        img: topProduct.mediaUrl || "https://image.pollinations.ai/prompt/smugglers-dockside-warehouse-bazaar?width=800&height=400&nologo=true"
-      });
-    }
-
-    // Slide 3: Ricetta in evidenza
-    if (AppState.recipes.items && AppState.recipes.items.length > 0) {
-      const topRecipe = AppState.recipes.items[0];
-      slides.push({
-        badge: (topRecipe.categoria || "RICETTA").toUpperCase(),
-        titolo: topRecipe.piatto,
-        sottotitolo: `Preparazione: ${topRecipe.tempo || 'rapida'} • Costo: ${topRecipe.costo || 'conveniente'}`,
-        btnText: "Ricette",
-        action: () => AppRouter.navigate("recipes"),
-        img: topRecipe.mediaUrl || "https://image.pollinations.ai/prompt/vintage-cocktail-bar-amber-lighting?width=800&height=400&nologo=true"
-      });
-    }
-
-    if (slides.length === 0) {
-      if (outer) outer.classList.add("hidden");
-      return;
-    } else {
-      if (outer) outer.classList.remove("hidden");
-    }
-
-    this._currentPromoSlides = slides;
-    AppState.carousel.count = slides.length;
-    AppState.carousel.index = 0;
-
-    track.innerHTML = slides.map((s, idx) => `
-      <div class="carousel-slide" onclick="AppModules.handleCarouselClick(${idx})">
-        <img src="${s.img}" class="carousel-slide-img" alt="${s.titolo}">
-        <div class="carousel-slide-overlay"></div>
-        <span class="carousel-slide-badge">${s.badge}</span>
-        <div class="carousel-slide-content">
-          <div class="carousel-slide-text">
-            <h3 class="carousel-slide-title">${s.titolo}</h3>
-            <p class="carousel-slide-sub">${s.sottotitolo}</p>
+    renderVault: function() {
+      const c = document.getElementById("profile-vault-container");
+      if (!c) return;
+      const vault = AppState.digitalVault || [];
+      if (vault.length === 0) {
+        c.innerHTML = `<div class="text-xs text-slate-500 font-mono py-2">Nessun file scaricato o riscattato finora.</div>`;
+        return;
+      }
+      c.innerHTML = vault.map(v => `
+        <div class="p-2.5 rounded-xl bg-slate-900/90 border border-white/5 flex items-center justify-between text-xs">
+          <div class="min-w-0 pr-2">
+            <div class="font-bold text-white truncate">${v.nome}</div>
+            <div class="text-[10px] font-mono text-slate-400">${v.data || 'Oggi'}</div>
           </div>
-          <button class="carousel-slide-btn">${s.btnText}</button>
+          <a href="${v.url}" target="_blank" class="btn btn-xs btn-outline border-emerald-500/40 text-emerald-300 font-bold shrink-0">
+            Scarica 📥
+          </a>
         </div>
-      </div>
-    `).join("");
-
-    if (dotsBox) {
-      dotsBox.innerHTML = slides.map((_, i) => `
-        <span class="carousel-dot ${i === 0 ? 'active' : ''}" id="car-dot-${i}"></span>
       `).join("");
-    }
+    },
 
-    if (outer) {
-      outer.onmouseenter = () => { AppState.carousel.isPaused = true; };
-      outer.onmouseleave = () => { AppState.carousel.isPaused = false; };
-      outer.ontouchstart = () => { AppState.carousel.isPaused = true; };
-      outer.ontouchend = () => { setTimeout(() => { AppState.carousel.isPaused = false; }, 3000); };
-    }
-
-    if (AppState.carousel.timer) clearInterval(AppState.carousel.timer);
-    AppState.carousel.timer = setInterval(() => {
-      // Risparmio risorse: non ciclare se l'utente non è nella tab Home
-      if (AppState.activeTab !== "home" || AppState.carousel.isPaused || AppState.carousel.count <= 1) return;
-      AppState.carousel.index = (AppState.carousel.index + 1) % AppState.carousel.count;
-      AppModules.updateCarouselPosition();
-    }, 5000);
-  },
-
-  handleCarouselClick: function(idx) {
-    if (this._currentPromoSlides && this._currentPromoSlides[idx]) {
-      this._currentPromoSlides[idx].action();
-    }
-  },
-
-  updateCarouselPosition: function() {
-    const track = document.getElementById("carousel-track");
-    if (!track) return;
-    const idx = AppState.carousel.index;
-    track.style.transform = `translateX(-${idx * 100}%)`;
-
-    for (let i = 0; i < AppState.carousel.count; i++) {
-      const dot = document.getElementById(`car-dot-${i}`);
-      if (dot) {
-        dot.className = `carousel-dot ${i === idx ? 'active' : ''}`;
+    syncTransactions: async function(notify = false) {
+      try {
+        const res = await apiCall("my_transactions");
+        if (res && res.transactions) {
+          AppState.transactions = res.transactions;
+          const c = document.getElementById("profile-transactions-container");
+          if (c) {
+            c.innerHTML = res.transactions.map(tx => `
+              <div class="flex justify-between items-center py-2 text-xs border-b border-white/5 last:border-none">
+                <div>
+                  <div class="font-bold text-slate-200">${tx.dettaglio || tx.tipo}</div>
+                  <div class="text-[10px] text-slate-500 font-mono">${tx.data}</div>
+                </div>
+                <div class="font-mono font-black ${String(tx.megoin).includes('+') ? 'text-emerald-400' : 'text-amber-400'}">
+                  ${tx.megoin}
+                </div>
+              </div>
+            `).join("");
+          }
+        }
+      } catch (e) {
+        console.warn("[syncTransactions] Errore sync transazioni:", e);
       }
-    }
-  },
+      if (notify && window.AppCore) AppCore.toast("Transazioni aggiornate dal server.", "info");
+    },
 
-  // --------------------------------------------------------------------------
-  // 3. CATALOGO GIOCHI RPG
-  // --------------------------------------------------------------------------
-  loadGamesCatalog: async function() {
-    try {
-      const gamesData = await apiCall("games");
-      if (gamesData && gamesData.series) {
-        AppState.games.catalog = deduplicateEntities(gamesData.series);
-        const gc = document.getElementById("home-games-count");
-        if (gc) gc.textContent = AppState.games.catalog.length;
+    // ------------------------------------------------------------------------
+    // CAROSELLO HOME DINAMICO (DATA-DRIVEN SUI GIOCHI, SHOP E RICETTE REALI)
+    // ------------------------------------------------------------------------
+    initCarousel: function() {
+      const track = document.getElementById("carousel-track");
+      const dotsBox = document.getElementById("carousel-dots-container");
+      if (!track) return;
+
+      const slides = [];
+
+      if (AppState.games.catalog && AppState.games.catalog.length > 0) {
+        const topGame = AppState.games.catalog[0];
+        slides.push({
+          badge: (topGame.tipologia || "GIOCO").toUpperCase(),
+          titolo: `${topGame.emoji || '🎮'} ${topGame.serie}`,
+          sottotitolo: topGame.descrizione || "Entra nelle avventure investigative della piattaforma",
+          action: () => AppRouter.navigate("games"),
+          img: topGame.mediaUrl
+        });
       }
-    } catch (e) {
-      console.warn("[AppModules] Errore caricamento catalogo giochi:", e);
-    }
-  },
 
-  renderGamesCatalog: function() {
-    const container = document.getElementById("games-catalog-container");
-    const counter = document.getElementById("games-total-counter");
-    if (!container) return;
+      if (AppState.shop.items && AppState.shop.items.length > 0) {
+        const topProduct = AppState.shop.items[0];
+        slides.push({
+          badge: "SHOP",
+          titolo: topProduct.nome,
+          sottotitolo: topProduct.descrizione || "Scopri gli articoli disponibili nel Syndicate",
+          action: () => AppRouter.navigate("shop"),
+          img: topProduct.mediaUrl
+        });
+      }
 
-    const list = AppState.games.catalog || [];
-    if (counter) counter.textContent = `${list.length} Saghe Disponibili`;
+      if (AppState.recipes.items && AppState.recipes.items.length > 0) {
+        const topRecipe = AppState.recipes.items[0];
+        slides.push({
+          badge: (topRecipe.categoria || "RICETTA").toUpperCase(),
+          titolo: topRecipe.piatto,
+          sottotitolo: `Preparazione: ${topRecipe.tempo || 'rapida'} • Costo: ${topRecipe.costo || 'conveniente'}`,
+          action: () => AppRouter.navigate("recipes"),
+          img: topRecipe.mediaUrl
+        });
+      }
 
-    if (list.length === 0) {
-      container.innerHTML = `<div class="empty-state-card">Nessun gioco registrato nella piattaforma.</div>`;
-      return;
-    }
+      if (slides.length === 0) return;
 
-    container.innerHTML = list.map(saga => {
-      const ruleCode = saga.regole || "Rules2";
-      return `
-        <div onclick="AppModules.openGameDetail('${saga.gameKey}')" class="game-saga-card group">
-          <div class="game-saga-media">
-            <img src="${saga.mediaUrl}" class="game-saga-img" alt="${saga.serie}">
-            <span class="badge badge-xs badge-primary game-saga-badge">${ruleCode}</span>
-          </div>
-          <div class="game-saga-body">
-            <div class="game-saga-title-row">
-              <h3 class="game-saga-title">${saga.emoji || '🎮'} ${saga.serie}</h3>
-              <span class="game-saga-ep-count">${(saga.episodes || []).filter(ep => ep.episodio > 0).length} Ep.</span>
+      track.innerHTML = slides.map((s, idx) => `
+        <div class="carousel-slide" onclick="AppModules.handleCarouselClick(${idx})">
+          <img src="${s.img}" class="carousel-slide-img" alt="${s.titolo}">
+          <div class="carousel-slide-overlay"></div>
+          <span class="carousel-slide-badge">${s.badge}</span>
+          <div class="carousel-slide-content">
+            <div class="carousel-slide-text">
+              <h3 class="carousel-slide-title">${s.titolo}</h3>
+              <p class="carousel-slide-sub">${s.sottotitolo}</p>
             </div>
-            <p class="game-saga-desc">${saga.descrizione || ''}</p>
+            <button class="carousel-slide-btn">Esplora ›</button>
           </div>
-          <div class="game-saga-footer">
-            <span class="game-saga-status ${saga.hasActiveGame ? 'text-amber-400 font-bold' : ''}">
-              ${saga.hasActiveGame ? '⚔️ In corso' : 'Pronto'}
-            </span>
-            <button class="btn btn-xs btn-primary font-black uppercase">Esplora ›</button>
+        </div>
+      `).join("");
+
+      if (dotsBox) {
+        dotsBox.innerHTML = slides.map((_, i) => `
+          <span class="carousel-dot ${i === 0 ? 'active' : ''}" id="car-dot-${i}"></span>
+        `).join("");
+      }
+
+      this._promoSlides = slides;
+    },
+
+    handleCarouselClick: function(idx) {
+      if (this._promoSlides && this._promoSlides[idx]) {
+        this._promoSlides[idx].action();
+      }
+    },
+
+    // ------------------------------------------------------------------------
+    // CATALOGO GIOCHI REALE (SEZIONE D GAS - 3 AZIONI)
+    // ------------------------------------------------------------------------
+    loadGamesCatalog: async function() {
+      try {
+        const gamesData = await apiCall("games");
+        if (gamesData && gamesData.series) {
+          AppState.games.catalog = gamesData.series;
+          const gc = document.getElementById("home-games-count");
+          if (gc) gc.textContent = gamesData.series.length;
+        }
+      } catch (e) {
+        console.warn("[AppModules] Errore caricamento catalogo giochi da GAS:", e);
+      }
+      this.renderGamesCatalog();
+    },
+
+    renderGamesCatalog: function() {
+      const container = document.getElementById("games-catalog-container");
+      const counter = document.getElementById("games-total-counter");
+      if (!container) return;
+
+      const list = AppState.games.catalog || [];
+      if (counter) counter.textContent = `${list.length} Saghe Attive`;
+
+      if (list.length === 0) {
+        container.innerHTML = `<div class="col-span-full text-center py-8 text-slate-500 font-mono text-xs">Nessun gioco registrato nel database.</div>`;
+        return;
+      }
+
+      container.innerHTML = list.map(saga => `
+        <div class="item-card group" onclick="AppModules.openGameDetail('${saga.gameKey}')">
+          <div class="item-card-media h-40">
+            <img src="${saga.mediaUrl}" class="item-card-img" alt="${saga.serie}">
+            <span class="item-card-badge">${saga.regole || 'Rules 2'}</span>
+            <div class="absolute bottom-2 right-2 bg-black/80 px-2 py-0.5 rounded text-[10px] font-mono text-amber-300 font-bold">
+              ${(saga.episodes || []).filter(e => e.episodio > 0).length} Capitoli
+            </div>
           </div>
+          <div class="item-card-body">
+            <div>
+              <span class="text-[9.5px] font-bold text-sky-400 uppercase tracking-wider">${saga.tipologia || 'INVESTIGATIVO'}</span>
+              <h3 class="item-card-title text-sm mt-0.5">${saga.emoji || '🎮'} ${saga.serie}</h3>
+              <p class="item-card-desc text-xs mt-1 line-clamp-2">${saga.descrizione || ''}</p>
+            </div>
+            <div class="item-card-footer mt-2">
+              <span class="text-[10px] font-mono ${saga.hasActiveGame ? 'text-amber-400 font-bold' : 'text-slate-400'}">
+                ${saga.hasActiveGame ? '⚔️ In corso' : 'Pronto'}
+              </span>
+              <button class="btn btn-xs btn-primary font-bold px-3">Apri Scheda ›</button>
+            </div>
+          </div>
+        </div>
+      `).join("");
+    },
+
+    openGameDetail: function(gameKey) {
+      const saga = (AppState.games.catalog || []).find(s => s.gameKey === gameKey);
+      if (!saga) return;
+      AppState.games.activeGameKey = gameKey;
+
+      const s = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+      s("hub-title", `${saga.emoji || '🎮'} ${saga.serie}`);
+      s("hub-desc", saga.descrizione || "");
+      s("hub-quote", saga.citazione ? `“${saga.citazione.replace(/^["'“”]+|["'“”]+$/g, '')}”` : "");
+      s("hub-author", saga.autoreCitazione || "");
+
+      const img = document.getElementById("hub-image");
+      if (img) img.src = saga.mediaUrl;
+
+      // Iniezione delle 3 Azioni Principali della Saga (Gioca, Regole, Caratteristiche)
+      let actionsCluster = document.getElementById("hub-saga-actions-cluster");
+      if (!actionsCluster) {
+        const titleEl = document.getElementById("hub-title");
+        if (titleEl && titleEl.parentElement) {
+          actionsCluster = document.createElement("div");
+          actionsCluster.id = "hub-saga-actions-cluster";
+          actionsCluster.className = "grid grid-cols-3 gap-2 my-3";
+          titleEl.parentElement.appendChild(actionsCluster);
+        }
+      }
+
+      if (actionsCluster) {
+        actionsCluster.innerHTML = `
+          <button onclick="AppModules.scrollToEpisodes()" class="btn btn-sm btn-primary font-black text-xs flex items-center justify-center gap-1 shadow-md">
+            <span>▶️</span> <span>Capitoli</span>
+          </button>
+          <button onclick="AppModules.openSagaRulesModal('${saga.gameKey}')" class="btn btn-sm btn-outline border-white/20 text-slate-200 font-bold text-xs flex items-center justify-center gap-1">
+            <span>📜</span> <span>Regole</span>
+          </button>
+          <button onclick="AppModules.openSagaFeaturesModal('${saga.gameKey}')" class="btn btn-sm btn-outline border-sky-400/40 text-sky-300 font-bold text-xs flex items-center justify-center gap-1">
+            <span>🔍</span> <span>Scheda</span>
+          </button>
+        `;
+      }
+
+      // Elenco Episodi Giocabili (da GAS)
+      const epContainer = document.getElementById("hub-episodes-container");
+      if (epContainer) {
+        const playableEpisodes = (saga.episodes || []).filter(ep => ep.episodio > 0);
+        epContainer.innerHTML = playableEpisodes.map(ep => {
+          const isCurrentActive = saga.hasActiveGame && (Number(saga.activeEpisodio) === Number(ep.episodio));
+          let btnText = "Gioca";
+          let btnClass = "btn-primary";
+
+          if (isCurrentActive) {
+            btnText = "Riprendi ▶️";
+            btnClass = "btn-success font-black";
+          } else if (ep.canContinueFree) {
+            btnText = "Continua 🎖️";
+            btnClass = "btn-info font-bold";
+          }
+
+          return `
+            <div class="p-3.5 rounded-xl bg-slate-900/90 border ${isCurrentActive ? 'border-amber-400/50 bg-amber-950/20' : 'border-white/10'} flex items-center justify-between gap-3">
+              <div class="min-w-0 flex-1">
+                <div class="flex items-center gap-2">
+                  <span class="text-sky-400 font-mono font-extrabold text-xs">EP. ${ep.episodio}</span>
+                  <span class="text-slate-600">·</span>
+                  <h4 class="text-xs font-bold text-white truncate">${ep.titolo}</h4>
+                </div>
+                <div class="text-[10px] font-mono text-slate-400 mt-1">
+                  ${isCurrentActive ? '⚔️ Partita in corso' : (ep.canContinueFree ? '🎖️ Eroe Veterano (Gratis)' : (ep.costoMegoin === 0 ? 'Gratuito' : `${ep.costoMegoin} Megoin 🪙`))}
+                </div>
+              </div>
+              <button onclick="AppModules.startEpisode('${saga.gameKey}', ${ep.episodio}, ${!!ep.canContinueFree})" class="btn btn-sm ${btnClass} font-black text-xs shrink-0 shadow-md min-h-[44px]">
+                ${btnText}
+              </button>
+            </div>
+          `;
+        }).join("");
+      }
+
+      AppRouter.navigate("subview-game-detail");
+    },
+
+    scrollToEpisodes: function() {
+      const el = document.getElementById("hub-episodes-container");
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+    },
+
+    openSagaRulesModal: function(gameKey) {
+      const saga = (AppState.games.catalog || []).find(s => s.gameKey === gameKey);
+      if (!saga) return;
+
+      let modal = document.getElementById("modal-saga-rules");
+      if (!modal) {
+        modal = document.createElement("dialog");
+        modal.id = "modal-saga-rules";
+        modal.className = "modal modal-middle";
+        document.body.appendChild(modal);
+      }
+
+      modal.innerHTML = `
+        <div class="modal-box p-5 bg-slate-950 border border-sky-400/40 rounded-2xl max-w-lg space-y-3 relative">
+          <button onclick="document.getElementById('modal-saga-rules').close()" class="modal-close-btn">✕</button>
+          <div class="flex items-center gap-2">
+            <span class="text-2xl">📜</span>
+            <div>
+              <span class="text-[10px] font-mono text-sky-400 uppercase font-bold tracking-wider">REGOLAMENTO SAGA</span>
+              <h3 class="text-sm font-black text-white">${saga.serie} (${saga.regole || 'Rules 2'})</h3>
+            </div>
+          </div>
+          <div class="p-3.5 rounded-xl bg-black/60 border border-white/5 font-mono text-xs text-slate-300 leading-relaxed whitespace-pre-line">
+            Motore di gioco attivo: ${saga.regole || 'Rules 2'}
+            • Risoluzione tiri dadi D20 server-authoritative contro Classe Difficoltà (CD).
+            • Gestione dell'Oro sonante in-game disaccoppiata dal borsello Megoin di piattaforma.
+            • Combattimenti a round con supporto a sgherri, corruzione tramite sostanze e rianimazione zombi.
+          </div>
+          <button onclick="document.getElementById('modal-saga-rules').close()" class="btn btn-sm btn-primary w-full font-black uppercase text-xs">
+            Chiudi Regole
+          </button>
         </div>
       `;
-    }).join("");
+      modal.showModal();
+    },
 
-    if (typeof SoundEngine !== "undefined") SoundEngine.playBgm("intro");
-  },
+    openSagaFeaturesModal: function(gameKey) {
+      const saga = (AppState.games.catalog || []).find(s => s.gameKey === gameKey);
+      if (!saga) return;
 
-  openGameDetail: function(gameKey) {
-    const saga = AppState.games.catalog.find(s => s.gameKey === gameKey);
-    if (!saga) return;
+      let modal = document.getElementById("modal-saga-features");
+      if (!modal) {
+        modal = document.createElement("dialog");
+        modal.id = "modal-saga-features";
+        modal.className = "modal modal-middle";
+        document.body.appendChild(modal);
+      }
 
-    AppState.games.activeGameKey = gameKey;
-
-    const s = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
-    s("hub-title", `${saga.emoji || '🎮'} ${saga.serie}`);
-    s("hub-desc", saga.descrizione || "");
-
-    const img = document.getElementById("hub-image");
-    if (img) img.src = saga.mediaUrl;
-
-    if (saga.citazione) {
-      s("hub-quote", `“${saga.citazione.replace(/^["'“”]+|["'“”]+$/g, '')}”`);
-      s("hub-author", saga.autoreCitazione || "");
-    }
-
-    const container = document.getElementById("hub-episodes-container");
-    if (container) {
-      const playableEpisodes = (saga.episodes || []).filter(ep => ep.episodio > 0);
-
-      container.innerHTML = playableEpisodes.map(ep => {
-        const isCurrentActive = saga.hasActiveGame && (Number(saga.activeEpisodio) === Number(ep.episodio));
-        
-        let btnText = "Gioca";
-        let btnClass = "btn-primary";
-        
-        if (isCurrentActive) {
-          btnText = "Riprendi ▶️";
-          btnClass = "btn-success text-slate-950 font-black";
-        } else if (ep.canContinueFree) {
-          btnText = "Continua 🎖️";
-          btnClass = "btn-info";
-        }
-
-        return `
-          <div class="episode-list-item ${isCurrentActive ? 'border-amber-400/40 bg-amber-500/10' : ''}">
-            <div class="episode-item-info">
-              <div class="episode-item-title">${ep.emoji || '▶️'} Ep. ${ep.episodio}: ${ep.titolo}</div>
-              <div class="episode-item-cost">
-                ${isCurrentActive ? '⚔️ Partita in corso' : (ep.canContinueFree ? '🎖️ Eroe Veterano (Gratis)' : (ep.costoMegoin === 0 ? 'Gratis' : `${ep.costoMegoin} Megoin 🪙`))}
-              </div>
+      modal.innerHTML = `
+        <div class="modal-box p-5 bg-slate-950 border border-amber-400/40 rounded-2xl max-w-lg space-y-3 relative">
+          <button onclick="document.getElementById('modal-saga-features').close()" class="modal-close-btn">✕</button>
+          <div class="flex items-center gap-2">
+            <span class="text-2xl">🔍</span>
+            <div>
+              <span class="text-[10px] font-mono text-amber-300 uppercase font-bold tracking-wider">SCHEDA TECNICA</span>
+              <h3 class="text-sm font-black text-white">${saga.serie}</h3>
             </div>
-            <button onclick="AppModules.startEpisode('${saga.gameKey}', ${ep.episodio}, ${!!ep.canContinueFree})" class="btn btn-xs ${btnClass} font-black uppercase">
-              ${btnText}
+          </div>
+          <div class="p-3.5 rounded-xl bg-black/60 border border-white/5 font-mono text-xs text-slate-300 leading-relaxed space-y-2">
+            <div><b>Tipologia:</b> ${saga.tipologia || 'Avventura Narrativa'}</div>
+            <div><b>Capitoli Disponibili:</b> ${(saga.episodes || []).length}</div>
+            <div><b>Citazione d'apertura:</b> ${saga.citazione || '—'}</div>
+            <div><b>Archivio:</b> ${saga.autoreCitazione || 'Darsena Noir'}</div>
+          </div>
+          <button onclick="document.getElementById('modal-saga-features').close()" class="btn btn-sm btn-ghost text-slate-400 w-full font-bold uppercase text-xs">
+            Chiudi Scheda
+          </button>
+        </div>
+      `;
+      modal.showModal();
+    },
+
+    startEpisode: function(gameKey, epNum, canContinueFree) {
+      const saga = (AppState.games.catalog || []).find(s => s.gameKey === gameKey);
+      if (!saga) return;
+
+      const engineKey = (saga.regole || "Rules2").trim();
+      const engine = EngineRegistry.get(engineKey) || window.Rules2Engine;
+
+      if (!engine || typeof engine.launchSession !== "function") {
+        if (window.AppCore) AppCore.toast(`Motore "${engineKey}" non trovato.`, "error");
+        return;
+      }
+
+      const savedHeroProfile = saga.eroeSalvato || (saga.episodes && saga.episodes[epNum - 1]?.eroeSalvato) || null;
+      engine.launchSession(gameKey, epNum, canContinueFree, savedHeroProfile);
+    },
+
+    // ------------------------------------------------------------------------
+    // SHOP REALE DA GOOGLE APPS SCRIPT (SEZIONE B GAS)
+    // ------------------------------------------------------------------------
+    fetchShop: async function() {
+      try {
+        const data = await apiCall("shop");
+        if (data && data.items) {
+          AppState.shop.items = data.items;
+          AppState.shop.categories = data.categories || [];
+        }
+      } catch (e) {
+        console.warn("[AppModules] Errore caricamento shop da GAS:", e);
+      }
+      this.renderShop();
+    },
+
+    setShopCategory: function(cat) {
+      currentShopCategory = cat;
+      this.renderShop();
+    },
+
+    filterShop: function() {
+      const input = document.getElementById("shop-search-input");
+      AppState.shop.searchQuery = input ? input.value.trim().toLowerCase() : "";
+      this.renderShopProducts();
+    },
+
+    renderShop: function() {
+      const chips = document.getElementById("shop-category-chips");
+      if (chips && AppState.shop.categories) {
+        const all = ["tutti", ...AppState.shop.categories];
+        chips.innerHTML = all.map(c => `
+          <button onclick="AppModules.setShopCategory('${c}')" class="rpg-category-chip ${currentShopCategory.toLowerCase() === c.toLowerCase() ? 'active' : ''}">
+            ${c.toUpperCase()}
+          </button>
+        `).join("");
+      }
+      this.renderShopProducts();
+    },
+
+    renderShopProducts: function() {
+      const grid = document.getElementById("shop-products-grid");
+      if (!grid) return;
+
+      let list = AppState.shop.items || [];
+      if (currentShopCategory !== "tutti") {
+        list = list.filter(p => (p.categoria || "").toLowerCase() === currentShopCategory.toLowerCase());
+      }
+      if (AppState.shop.searchQuery) {
+        list = list.filter(p => (p.nome || "").toLowerCase().includes(AppState.shop.searchQuery));
+      }
+
+      if (list.length === 0) {
+        grid.innerHTML = `<div class="col-span-full text-center py-8 text-slate-500 font-mono text-xs">Nessun articolo trovato nello Shop.</div>`;
+        return;
+      }
+
+      grid.innerHTML = list.map(p => `
+        <div onclick="AppModules.openShopDetail('${p.id}')" class="item-card">
+          <div class="item-card-media">
+            <img src="${p.mediaUrl}" class="item-card-img" alt="${p.nome}">
+            <span class="item-card-badge">${p.isDigitale ? 'Digitale' : (p.tipo || 'Articolo')}</span>
+          </div>
+          <div class="item-card-body">
+            <div>
+              <span class="text-[9.5px] font-mono text-sky-400 font-bold uppercase">${p.categoria}</span>
+              <h3 class="item-card-title mt-0.5">${p.nome}</h3>
+              <p class="item-card-desc mt-1 line-clamp-2">${p.descrizione || ''}</p>
+            </div>
+            <div class="item-card-footer mt-2">
+              <span class="font-mono font-black text-amber-300 text-xs">${p.prezzoMegoin} 🪙</span>
+              <button class="btn btn-xs btn-primary font-bold px-3">Vedi Scheda ›</button>
+            </div>
+          </div>
+        </div>
+      `).join("");
+    },
+
+    openShopDetail: function(prodId) {
+      const item = (AppState.shop.items || []).find(p => p.id === prodId);
+      if (!item) return;
+
+      const s = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+      s("detail-shop-title", item.nome);
+      s("detail-shop-cat", item.categoria);
+      s("detail-shop-desc", item.descrizione || "");
+      s("detail-shop-price", `${item.prezzoMegoin} 🪙`);
+
+      const img = document.getElementById("detail-shop-img");
+      if (img) img.src = item.mediaUrl;
+
+      const btn = document.getElementById("detail-shop-action-btn");
+      if (btn) {
+        if (item.isLocked) {
+          btn.textContent = `Richiede Piano ${item.requiredPlan}`;
+          btn.className = "btn btn-sm btn-warning w-full font-bold";
+          btn.onclick = () => AppModules.openPlansCatalogModal();
+        } else {
+          btn.textContent = `Acquista (${item.prezzoMegoin} 🪙)`;
+          btn.className = "btn btn-sm btn-primary w-full font-bold";
+          btn.onclick = () => AppModules.buyProduct(item.id);
+        }
+      }
+
+      AppRouter.navigate("shop", "subview-shop-detail");
+    },
+
+    buyProduct: async function(prodId) {
+      try {
+        const res = await apiCall("shop_buy", { id: prodId, qty: 1 });
+        if (res && res.success) {
+          Wallet.setMegoin(res.nuovoSaldoMegoin);
+          if (res.digitalDownloads) {
+            res.digitalDownloads.forEach(d => this.addVault(d.nome, d.url));
+          }
+          this.showFulfillment(res.riepilogo, res.digitalDownloads);
+          this.syncTransactions(true);
+        }
+      } catch (err) {
+        if (window.AppCore) AppCore.toast(err.message, "error");
+      }
+    },
+
+    showFulfillment: function(summary, downloads) {
+      const s = document.getElementById("fulfillment-summary");
+      if (s) s.textContent = summary || "Acquisto registrato con successo!";
+      const b = document.getElementById("fulfillment-download-box");
+      if (downloads && downloads.length > 0 && b) {
+        b.innerHTML = downloads.map(d => `<a href="${d.url}" target="_blank" class="btn btn-sm btn-success w-full font-black uppercase">📥 Scarica File</a>`).join("");
+        b.classList.remove("hidden");
+      }
+      const modal = document.getElementById("modal-fulfillment");
+      if (modal) modal.showModal();
+    },
+
+    // ------------------------------------------------------------------------
+    // PIANI SAAS REALI DA GOOGLE APPS SCRIPT (TAB '👑 Plans')
+    // ------------------------------------------------------------------------
+    openPlansCatalogModal: function() {
+      this.renderPlansCatalog();
+      const modal = document.getElementById("modal-plans-catalog");
+      if (modal) modal.showModal();
+    },
+
+    setBillingCycle: function(cycle) {
+      AppState.billingCycle = cycle;
+      const isYearly = (cycle === "yearly");
+      const btnM = document.getElementById("billing-toggle-monthly");
+      const btnY = document.getElementById("billing-toggle-yearly");
+      if (btnM) btnM.className = isYearly ? "billing-btn idle" : "billing-btn active";
+      if (btnY) btnY.className = isYearly ? "billing-btn active" : "billing-btn idle";
+      this.renderPlansCatalog();
+    },
+
+    renderPlansCatalog: function() {
+      const container = document.getElementById("plans-catalog-cards-container");
+      if (!container) return;
+
+      const plans = AppState.plans || [];
+      const isYearly = (AppState.billingCycle === "yearly");
+
+      if (plans.length === 0) {
+        container.innerHTML = `<div class="text-center py-4 text-xs text-slate-500 font-mono">Nessun piano disponibile al momento.</div>`;
+        return;
+      }
+
+      container.innerHTML = plans.map(p => {
+        const price = isYearly ? (p.prezzoAnnuale || p.prezzoMensile) : p.prezzoMensile;
+        const period = isYearly ? "/anno" : "/mese";
+        return `
+          <div class="p-4 rounded-xl bg-slate-900 border ${p.isAttivo ? 'border-sky-400 bg-sky-950/20' : 'border-white/10'} flex items-center justify-between gap-3">
+            <div>
+              <div class="flex items-center gap-2">
+                <h4 class="font-bold text-white text-xs">${p.nome}</h4>
+                ${p.isAttivo ? '<span class="badge badge-xs badge-info font-black">IN USO</span>' : ''}
+              </div>
+              <div class="text-[11px] font-mono text-amber-300 font-bold mt-0.5">${price} <span class="text-slate-400 font-normal">${period}</span></div>
+              <p class="text-[10px] text-slate-400 mt-1 leading-snug">${p.descrizione || ''}</p>
+              ${p.bonusMegoin > 0 ? `<div class="text-[9.5px] font-mono text-emerald-400 mt-0.5">+${p.bonusMegoin} Megoin / mese inclusi</div>` : ''}
+            </div>
+            <button onclick="AppModules.activatePlan('${p.id}', '${p.nome}')" class="btn btn-xs ${p.isAttivo ? 'btn-outline border-white/20 text-slate-400' : 'btn-primary'} font-black uppercase shrink-0">
+              ${p.isAttivo ? 'Attivo' : 'Attiva ›'}
             </button>
           </div>
         `;
       }).join("");
-    }
+    },
 
-    AppRouter.navigate("subview-game-detail");
-  },
-
-  startEpisode: function(gameKey, epNum, canContinueFree) {
-    const saga = AppState.games.catalog.find(s => s.gameKey === gameKey);
-    if (!saga) return;
-
-    const rawRule = String(saga.regole || "Rules2").trim();
-    const cleanRuleCode = rawRule.replace(/\s+/g, '');
-
-    let engine = null;
-
-    if (typeof window.EngineRegistry !== "undefined" && typeof window.EngineRegistry.get === "function") {
-      engine = window.EngineRegistry.get(cleanRuleCode) || window.EngineRegistry.get(rawRule) || window.EngineRegistry.get("rules2");
-    } else if (typeof EngineRegistry !== "undefined" && typeof EngineRegistry.get === "function") {
-      engine = EngineRegistry.get(cleanRuleCode) || EngineRegistry.get(rawRule) || EngineRegistry.get("rules2");
-    }
-
-    if (!engine) {
-      engine = window.Rules2Engine || (typeof Rules2Engine !== "undefined" ? Rules2Engine : null);
-    }
-
-    if (!engine) {
-      alert(`⚠️ Motore "${cleanRuleCode}" non trovato. Verifica la connessione e riprova.`);
-      console.error("[startEpisode] Impossibile trovare il motore per:", cleanRuleCode, rawRule);
-      return;
-    }
-
-    AppState.activeSession.engineKey = cleanRuleCode;
-    AppState.activeSession.gameKey = gameKey;
-    AppState.activeSession.episodio = epNum;
-    AppState.activeSession.combatRound = 1;
-    AppState.activeSession.combatEnemyId = null;
-
-    if (typeof engine.launchSession === "function") {
-      const savedHeroProfile = saga.eroeSalvato || (saga.episodes && saga.episodes[epNum - 1]?.eroeSalvato) || null;
-      engine.launchSession(gameKey, epNum, canContinueFree, savedHeroProfile);
-    } else {
-      console.warn(`[AppModules] L'engine "${cleanRuleCode}" non implementa launchSession().`);
-    }
-  },
-
-  // --------------------------------------------------------------------------
-  // 4. SHOP E-COMMERCE (ACQUISTI IN MEGOIN 🪙)
-  // --------------------------------------------------------------------------
-  fetchShop: async function() {
-    try {
-      const data = await apiCall("shop");
-      if (data && data.items) {
-        AppState.shop.items = deduplicateEntities(data.items);
-        AppState.shop.categories = data.categories || [];
-        this.renderShop();
+    activatePlan: function(planId, planName) {
+      if (AppState.plans) {
+        AppState.plans.forEach(p => p.isAttivo = (p.id === planId));
       }
-    } catch (e) {
-      console.warn("[AppModules] Errore caricamento shop:", e);
-    }
-  },
+      AppState.user.plan = planName;
+      if (window.AppCore) {
+        AppCore.save();
+        AppCore.syncUI();
+        AppCore.toast(`Piano aggiornato a ${planName}!`, 'success');
+      }
+      const modal = document.getElementById("modal-plans-catalog");
+      if (modal) modal.close();
+      if (window.confetti) window.confetti({ particleCount: 60, spread: 60 });
+    },
 
-  setShopCategory: function(cat) {
-    AppState.shop.activeCategory = cat;
-    this.renderShop();
-  },
-
-  filterShop: function() {
-    const input = document.getElementById("shop-search-input");
-    AppState.shop.searchQuery = input ? input.value.trim().toLowerCase() : "";
-    this.renderShopProducts();
-  },
-
-  renderShop: function() {
-    const sc = document.getElementById("shop-category-chips");
-    if (sc && AppState.shop.categories.length > 0) {
-      const all = ["tutti", ...AppState.shop.categories];
-      sc.innerHTML = all.map(c => `
-        <button onclick="AppModules.setShopCategory('${c}')" class="category-chip ${AppState.shop.activeCategory.toLowerCase() === c.toLowerCase() ? 'active' : ''}">
-          ${c.toUpperCase()}
-        </button>
-      `).join("");
-    }
-    this.renderShopProducts();
-  },
-
-  renderShopProducts: function() {
-    const grid = document.getElementById("shop-products-grid");
-    if (!grid) return;
-    let list = AppState.shop.items;
-
-    if (AppState.shop.activeCategory !== "tutti") {
-      list = list.filter(p => p.categoria.toLowerCase() === AppState.shop.activeCategory.toLowerCase());
-    }
-    if (AppState.shop.searchQuery) {
-      list = list.filter(p => p.nome.toLowerCase().includes(AppState.shop.searchQuery));
-    }
-
-    if (list.length === 0) {
-      grid.innerHTML = `<div class="empty-state-card col-span-full">Nessun articolo trovato nello Shop.</div>`;
-      return;
-    }
-
-    grid.innerHTML = list.map(p => `
-      <div onclick="AppModules.openShopDetail('${p.id}')" class="shop-product-card">
-        ${p.isLocked ? `
-          <div class="locked-card-overlay">
-            <span class="locked-icon">🔒</span>
-            <span class="locked-label">Piano ${p.requiredPlan}</span>
-          </div>
-        ` : ''}
-        <div class="shop-card-media">
-          <img src="${p.mediaUrl}" class="shop-card-img" alt="${p.nome}">
-          <span class="badge badge-xs ${p.isDigitale ? 'badge-info' : 'badge-neutral'} shop-type-badge">${p.tipo || 'Fisico'}</span>
-        </div>
-        <div class="shop-card-body">
-          <div>
-            <div class="shop-card-cat">${p.categoria}</div>
-            <h4 class="shop-card-name">${p.nome}</h4>
-          </div>
-          <div class="shop-card-footer">
-            <span class="shop-card-price-megoin">${p.prezzoMegoin} 🪙</span>
-            <span class="shop-card-price-euro">${p.isEsaurito ? 'Esaurito' : '€ ' + p.prezzoEuro}</span>
-          </div>
-        </div>
-      </div>
-    `).join("");
-
-    if (window.lucide) lucide.createIcons();
-  },
-
-  openShopDetail: function(prodId) {
-    const item = AppState.shop.items.find(p => p.id === prodId);
-    if (!item) return;
-
-    document.getElementById("detail-shop-title").textContent = item.nome;
-    document.getElementById("detail-shop-cat").textContent = item.categoria;
-    document.getElementById("detail-shop-desc").textContent = item.descrizione || "";
-    document.getElementById("detail-shop-price").textContent = `${item.prezzoMegoin} 🪙 (ca. € ${item.prezzoEuro})`;
-    document.getElementById("detail-shop-img").src = item.mediaUrl;
-
-    const sb = document.getElementById("detail-shop-stock");
-    sb.textContent = item.isDigitale ? "Digitale" : (item.isEsaurito ? "Esaurito" : `${item.stock} Disp.`);
-
-    const btn = document.getElementById("detail-shop-action-btn");
-    if (item.isLocked) {
-      btn.textContent = `Piano ${item.requiredPlan}`;
-      btn.className = "btn btn-warning btn-sm font-black uppercase w-full";
-      btn.onclick = () => AppModules.openPlanModal(item.requiredPlan);
-    } else {
-      btn.textContent = item.prezzoMegoin === 0 ? "Riscatta" : "Compra";
-      btn.className = "btn btn-primary btn-sm font-black uppercase w-full shadow-lg shadow-sky-600/30";
-      btn.onclick = () => AppModules.buyProduct(item.id);
-    }
-
-    AppRouter.navigate("subview-shop-detail");
-  },
-
-  buyProduct: async function(prodId) {
-    try {
-      const res = await apiCall("shop_buy", { id: prodId });
-      if (res && res.success) {
-        if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("coin");
-        if (window.confetti) confetti({ particleCount: 80, spread: 60 });
-
-        Wallet.setMegoin(res.nuovoSaldoMegoin);
-        if (AppState.user) {
-          AppState.user.prodottiAcquistati = (AppState.user.prodottiAcquistati || 0) + 1;
+    // ------------------------------------------------------------------------
+    // RICETTARIO REALE DA GOOGLE APPS SCRIPT (SEZIONE C GAS)
+    // ------------------------------------------------------------------------
+    fetchRecipes: async function() {
+      try {
+        const data = await apiCall("recipes");
+        if (data && data.recipes) {
+          AppState.recipes.items = data.recipes;
+          AppState.recipes.categories = data.categories || [];
         }
-
-        this.renderProfile(AppState.user);
-        if (res.digitalDownloads) {
-          res.digitalDownloads.forEach(d => this.addVault(d.nome, d.url));
-        }
-
-        this.showFulfillment(res.riepilogo, res.digitalDownloads);
-        this.syncTransactions(true);
+      } catch (e) {
+        console.warn("[AppModules] Errore caricamento ricette da GAS:", e);
       }
-    } catch (err) {
-      alert("❌ " + err.message);
-    }
-  },
+      this.renderRecipes();
+    },
 
-  showFulfillment: function(summary, downloads) {
-    document.getElementById("fulfillment-summary").textContent = summary || "";
-    const b = document.getElementById("fulfillment-download-box");
-    if (downloads && downloads.length > 0) {
-      b.innerHTML = downloads.map(d => `<a href="${d.url}" target="_blank" class="btn btn-sm btn-success w-full font-black uppercase">📥 Scarica</a>`).join("");
-      b.classList.remove("hidden");
-    } else {
-      b.innerHTML = "";
-      b.classList.add("hidden");
-    }
-    document.getElementById("modal-fulfillment").showModal();
-  },
+    setRecipeCategory: function(cat) {
+      currentRecipeCategory = cat;
+      this.renderRecipes();
+    },
 
-  // --------------------------------------------------------------------------
-  // 5. RICETTARIO DINAMICO
-  // --------------------------------------------------------------------------
-  fetchRecipes: async function() {
-    try {
-      const data = await apiCall("recipes");
-      if (data && data.recipes) {
-        AppState.recipes.items = deduplicateEntities(data.recipes);
-        AppState.recipes.categories = data.categories || [];
-        this.renderRecipes();
+    filterRecipes: function() {
+      const input = document.getElementById("recipes-search-input");
+      AppState.recipes.searchQuery = input ? input.value.trim().toLowerCase() : "";
+      this.renderRecipesCards();
+    },
+
+    renderRecipes: function() {
+      const chips = document.getElementById("recipes-category-chips");
+      if (chips && AppState.recipes.categories) {
+        const all = ["tutti", ...AppState.recipes.categories];
+        chips.innerHTML = all.map(c => `
+          <button onclick="AppModules.setRecipeCategory('${c}')" class="rpg-category-chip ${currentRecipeCategory.toLowerCase() === c.toLowerCase() ? 'active' : ''}">
+            ${c.toUpperCase()}
+          </button>
+        `).join("");
       }
-    } catch (e) {
-      console.warn("[AppModules] Errore ricette:", e);
-    }
-  },
+      this.renderRecipesCards();
+    },
 
-  setRecipeCategory: function(cat) {
-    AppState.recipes.activeCategory = cat;
-    this.renderRecipes();
-  },
+    renderRecipesCards: function() {
+      const grid = document.getElementById("recipes-grid");
+      if (!grid) return;
 
-  filterRecipes: function() {
-    const input = document.getElementById("recipes-search-input");
-    AppState.recipes.searchQuery = input ? input.value.trim().toLowerCase() : "";
-    this.renderRecipesCards();
-  },
+      let list = AppState.recipes.items || [];
+      if (currentRecipeCategory !== "tutti") {
+        list = list.filter(r => (r.categoria || "").toLowerCase() === currentRecipeCategory.toLowerCase());
+      }
+      if (AppState.recipes.searchQuery) {
+        list = list.filter(r => (r.piatto || "").toLowerCase().includes(AppState.recipes.searchQuery));
+      }
 
-  renderRecipes: function() {
-    const rc = document.getElementById("recipes-category-chips");
-    if (rc && AppState.recipes.categories.length > 0) {
-      const all = ["tutti", ...AppState.recipes.categories];
-      rc.innerHTML = all.map(c => `
-        <button onclick="AppModules.setRecipeCategory('${c}')" class="category-chip ${AppState.recipes.activeCategory.toLowerCase() === c.toLowerCase() ? 'active' : ''}">
-          ${c.toUpperCase()}
-        </button>
-      `).join("");
-    }
-    this.renderRecipesCards();
-  },
+      if (list.length === 0) {
+        grid.innerHTML = `<div class="col-span-full text-center py-8 text-slate-500 font-mono text-xs">Nessuna ricetta trovata.</div>`;
+        return;
+      }
 
-  renderRecipesCards: function() {
-    const grid = document.getElementById("recipes-grid");
-    if (!grid) return;
-    let list = AppState.recipes.items;
-
-    if (AppState.recipes.activeCategory !== "tutti") {
-      list = list.filter(r => r.categoria.toLowerCase() === AppState.recipes.activeCategory.toLowerCase());
-    }
-    if (AppState.recipes.searchQuery) {
-      list = list.filter(r => r.piatto.toLowerCase().includes(AppState.recipes.searchQuery));
-    }
-
-    if (list.length === 0) {
-      grid.innerHTML = `<div class="empty-state-card col-span-full">Nessuna ricetta o cocktail trovato.</div>`;
-      return;
-    }
-
-    grid.innerHTML = list.map(r => `
-      <div onclick="AppModules.openRecipeDetail(${r.rowIndex})" class="recipe-card">
-        <div class="recipe-card-content">
-          <div class="recipe-card-thumb">
-            <img src="${r.mediaUrl}" class="recipe-card-img" alt="${r.piatto}">
+      grid.innerHTML = list.map(r => `
+        <div onclick="AppModules.openRecipeDetail(${r.rowIndex})" class="item-card">
+          <div class="item-card-media">
+            <img src="${r.mediaUrl}" class="item-card-img" alt="${r.piatto}">
+            <span class="item-card-badge">${r.categoria}</span>
           </div>
-          <div class="recipe-card-info">
-            <h4 class="recipe-card-name">${r.piatto}</h4>
-            <div class="recipe-card-sub">${r.categoria} • ⏱️ ${r.tempo}</div>
+          <div class="item-card-body">
+            <div>
+              <h3 class="item-card-title">${r.piatto}</h3>
+              <p class="item-card-desc mt-1">Tempo: ${r.tempo} • Costo: ${r.costo}</p>
+            </div>
+            <div class="item-card-footer mt-2">
+              <span class="text-[10px] font-mono text-slate-400">Difficoltà: ${r.difficolta}</span>
+              <button class="btn btn-xs btn-primary font-bold px-3">Vedi Scheda ›</button>
+            </div>
           </div>
         </div>
-        <span class="badge badge-sm badge-outline border-sky-400/40 text-sky-400 font-bold">${r.costo}</span>
-      </div>
-    `).join("");
+      `).join("");
+    },
 
-    if (window.lucide) lucide.createIcons();
-  },
+    openRecipeDetail: function(rowIdx) {
+      const r = (AppState.recipes.items || []).find(x => x.rowIndex === rowIdx);
+      if (!r) return;
 
-  openRecipeDetail: function(rowIdx) {
-    const r = AppState.recipes.items.find(x => x.rowIndex === rowIdx);
-    if (!r) return;
+      const s = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+      s("detail-recipe-title", r.piatto);
+      s("detail-recipe-cat", r.categoria);
+      s("detail-recipe-ingredients", r.ingredienti || "Nessun ingrediente elencato.");
+      s("detail-recipe-prep", r.preparazione || "Nessuna preparazione specificata.");
 
-    document.getElementById("detail-recipe-title").textContent = r.piatto;
-    document.getElementById("detail-recipe-cat").textContent = r.categoria;
-    document.getElementById("detail-recipe-meta").textContent = `Costo: ${r.costo} • Difficoltà: ${r.difficolta} • ⏱️ ${r.tempo}`;
-    document.getElementById("detail-recipe-ingredients").textContent = r.ingredienti || "Nessun ingrediente elencato.";
-    document.getElementById("detail-recipe-prep").textContent = r.preparazione || "Nessuna preparazione.";
-    document.getElementById("detail-recipe-img").src = r.mediaUrl;
+      const img = document.getElementById("detail-recipe-img");
+      if (img) img.src = r.mediaUrl;
 
-    const rpg = document.getElementById("detail-recipe-rpg");
-    if (rpg && r.rpg) {
-      const entries = Object.entries(r.rpg).filter(([_, val]) => val && val !== "—" && val !== "-");
-      if (entries.length > 0) {
-        rpg.innerHTML = entries.map(([key, val]) => `
-          <div class="recipe-stat-box">
-            <span class="recipe-stat-val">${val}</span>
-            <span class="recipe-stat-label">${key}</span>
+      const meta = document.getElementById("detail-recipe-meta");
+      if (meta) {
+        meta.innerHTML = `
+          <span class="badge badge-sm badge-info font-bold">⏱️ ${r.tempo}</span>
+          <span class="badge badge-sm badge-ghost text-slate-300 font-bold">📊 ${r.difficolta}</span>
+          <span class="badge badge-sm badge-outline border-amber-400/50 text-amber-300 font-bold">💰 ${r.costo}</span>
+        `;
+      }
+
+      const rpg = document.getElementById("detail-recipe-rpg");
+      if (rpg && r.rpg) {
+        rpg.innerHTML = Object.entries(r.rpg).map(([k, v]) => `
+          <div class="p-2 rounded-xl bg-slate-900 border border-white/5 text-center">
+            <div class="text-[9px] uppercase font-bold text-slate-400">${k}</div>
+            <div class="text-xs font-black text-sky-400 font-mono mt-0.5">${v}</div>
           </div>
         `).join("");
-      } else {
-        rpg.innerHTML = `<div class="empty-state-card col-span-full">Nessun parametro associato.</div>`;
       }
-    }
-    AppRouter.navigate("subview-recipe-detail");
-  },
 
-  // --------------------------------------------------------------------------
-  // 6. PIANI SAAS & ABBONAMENTI
-  // --------------------------------------------------------------------------
-  openPlansCatalogModal: function() {
-    this.renderPlansCatalog();
-    const modal = document.getElementById("modal-plans-catalog");
-    if (modal) modal.showModal();
-  },
+      AppRouter.navigate("recipes", "subview-recipe-detail");
+    },
 
-  setBillingCycle: function(cycle) {
-    AppState.billingCycle = cycle;
-    const isYearly = (cycle === "yearly");
-    
-    const btnM = document.getElementById("billing-toggle-monthly");
-    const btnY = document.getElementById("billing-toggle-yearly");
+    // ------------------------------------------------------------------------
+    // ARENA DUELLI CLANDESTINI (INTEGRATA NEL PROFILO)
+    // ------------------------------------------------------------------------
+    renderArenaSection: function() {
+      let arenaSection = document.getElementById('profile-arena-section');
+      if (!arenaSection) {
+        const profileScreen = document.getElementById('view-profile');
+        if (profileScreen) {
+          arenaSection = document.createElement('div');
+          arenaSection.id = 'profile-arena-section';
+          arenaSection.className = 'space-y-3 pt-2';
+          profileScreen.appendChild(arenaSection);
+        }
+      }
 
-    if (btnM) {
-      btnM.classList.toggle("active", !isYearly);
-      btnM.classList.toggle("idle", isYearly);
-    }
-    if (btnY) {
-      btnY.classList.toggle("active", isYearly);
-      btnY.classList.toggle("idle", !isYearly);
-    }
+      if (arenaSection) {
+        const stats = AppState.user.combatStats || { rank: "Agente Syndicate", wins: 0, losses: 0, attack: 14, defense: 12, hacking: 10, readiness: 12 };
+        arenaSection.innerHTML = `
+          <div class="p-4 rounded-2xl bg-gradient-to-br from-rose-950/40 via-slate-900 to-slate-900 border border-rose-500/30 shadow-xl">
+            <div class="flex items-center justify-between mb-3">
+              <div class="flex items-center gap-2">
+                <span class="text-xl">⚔️</span>
+                <div>
+                  <h3 class="font-black text-sm text-white">Arena Duelli Clandestini</h3>
+                  <span class="text-[10px] font-mono text-rose-400">${stats.rank}</span>
+                </div>
+              </div>
+              <div class="text-right">
+                <span class="text-[10px] font-mono uppercase text-slate-400">Record</span>
+                <div class="text-xs font-mono font-bold text-emerald-400">${stats.wins}V / ${stats.losses}S</div>
+              </div>
+            </div>
 
-    this.renderPlansCatalog();
-  },
+            <div class="grid grid-cols-4 gap-2 text-center font-mono my-2.5">
+              <div class="p-2 rounded-xl bg-slate-950 border border-white/5">
+                <div class="text-[9px] text-slate-400 uppercase">Attacco</div>
+                <div class="text-sm font-black text-rose-400">${stats.attack}</div>
+              </div>
+              <div class="p-2 rounded-xl bg-slate-950 border border-white/5">
+                <div class="text-[9px] text-slate-400 uppercase">Difesa</div>
+                <div class="text-sm font-black text-sky-400">${stats.defense}</div>
+              </div>
+              <div class="p-2 rounded-xl bg-slate-950 border border-white/5">
+                <div class="text-[9px] text-slate-400 uppercase">Hacking</div>
+                <div class="text-sm font-black text-amber-400">${stats.hacking}</div>
+              </div>
+              <div class="p-2 rounded-xl bg-slate-950 border border-white/5">
+                <div class="text-[9px] text-slate-400 uppercase">Riflessi</div>
+                <div class="text-sm font-black text-emerald-400">${stats.readiness}</div>
+              </div>
+            </div>
 
-  renderPlansCatalog: function() {
-    const container = document.getElementById("plans-catalog-cards-container");
-    if (!container || !AppState.plans || AppState.plans.length === 0) return;
+            <div id="arena-combat-log" class="p-2.5 rounded-xl bg-slate-950/80 border border-white/5 text-[11px] font-mono text-slate-400 min-h-[36px] flex items-center mb-3">
+              Seleziona un rivale qui sotto per lanciare la sfida...
+            </div>
 
-    const isYearly = (AppState.billingCycle === "yearly");
+            <div class="space-y-2">
+              ${ARENA_OPPONENTS.map(opp => `
+                <div class="p-2.5 rounded-xl bg-slate-950 border border-white/5 flex items-center justify-between gap-2 hover:border-rose-400/40 transition">
+                  <div class="flex items-center gap-2.5 min-w-0">
+                    <div class="w-8 h-8 rounded-lg bg-slate-800 border border-rose-400/30 flex items-center justify-center text-sm shrink-0">
+                      ${opp.avatar}
+                    </div>
+                    <div class="min-w-0">
+                      <div class="font-bold text-xs text-white truncate">${opp.name}</div>
+                      <div class="text-[10px] font-mono text-slate-400">${opp.rank} • ❤️ ${opp.hp} HP</div>
+                    </div>
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <span class="text-[10px] font-mono text-amber-300 font-bold">+${opp.rewardMegoin} 🪙</span>
+                    <button onclick="AppModules.challengeOpponent('${opp.id}')" class="btn btn-sm btn-error font-bold px-3 text-xs min-h-[44px]">
+                      Sfida ⚔️
+                    </button>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        `;
+      }
+    },
 
-    const isPlanFree = p => {
-      const pStr = String(p.prezzoMensile || "").toLowerCase();
-      return pStr.includes("0,00") || cleanNumber(p.prezzoMensile) === 0;
-    };
+    challengeOpponent: function(oppId) {
+      const opp = ARENA_OPPONENTS.find(o => o.id === oppId);
+      if (!opp) return;
 
-    const freePlan = AppState.plans.find(isPlanFree) || AppState.plans[0];
-    const paidPlans = AppState.plans.filter(p => p !== freePlan);
-    const featuredIndex = paidPlans.length > 0 ? Math.floor(paidPlans.length / 2) : -1;
+      const log = document.getElementById('arena-combat-log');
+      if (log) log.innerHTML = `<span class="text-sky-300 animate-pulse">Lancio D20 e duello vs ${opp.name}...</span>`;
 
-    const allPerksMap = new Map();
-    AppState.plans.forEach(p => {
-      (p.perks || []).forEach(pk => {
-        if (!allPerksMap.has(pk.key)) {
-          allPerksMap.set(pk.key, pk.label);
+      if (window.SoundEngine) SoundEngine.playDice();
+
+      setTimeout(() => {
+        const playerRoll = Math.floor(Math.random() * 20) + 1;
+        const playerBonus = AppState.user.combatStats?.attack || 14;
+        const totalPlayer = playerRoll + playerBonus;
+
+        const oppRoll = Math.floor(Math.random() * 20) + 1;
+        const oppBonus = opp.attack;
+        const totalOpp = oppRoll + oppBonus;
+
+        if (totalPlayer >= totalOpp) {
+          AppState.user.combatStats.wins = (AppState.user.combatStats.wins || 0) + 1;
+          Wallet.addMegoin(opp.rewardMegoin);
+          AppState.user.loyalty_points = (AppState.user.loyalty_points || 0) + opp.rewardPoints;
+
+          if (window.AppCore) {
+            AppCore.save();
+            AppCore.syncUI();
+          }
+
+          if (log) {
+            log.innerHTML = `<span class="text-emerald-400 font-bold">VITTORIA! Tu (${totalPlayer}) vs ${opp.name} (${totalOpp}). +${opp.rewardMegoin} 🪙 e +${opp.rewardPoints} Pt!</span>`;
+          }
+
+          if (window.confetti) {
+            try { window.confetti({ particleCount: 50, spread: 60 }); } catch (e) {}
+          }
+          if (window.SoundEngine) SoundEngine.playVictory();
+          if (window.AppCore) AppCore.toast(`Hai sconfitto ${opp.name}! +${opp.rewardMegoin} Megoin`, 'success');
+        } else {
+          AppState.user.combatStats.losses = (AppState.user.combatStats.losses || 0) + 1;
+          if (window.AppCore) {
+            AppCore.save();
+            AppCore.syncUI();
+          }
+          if (log) {
+            log.innerHTML = `<span class="text-rose-400 font-bold">SCONFITTA! Tu (${totalPlayer}) vs ${opp.name} (${totalOpp}). Riprova con un equipaggiamento migliore!</span>`;
+          }
+          if (window.SoundEngine) SoundEngine.playError();
+          if (window.AppCore) AppCore.toast(`Sconfitto da ${opp.name}!`, 'error');
+        }
+      }, 700);
+    },
+
+    // ------------------------------------------------------------------------
+    // STANZE MULTIPLAYER (MOCKUP REAL-TIME IN ATTESA TABELLA GAS)
+    // ------------------------------------------------------------------------
+    openMultiplayerLobby: function() {
+      if (AppState.allowedModules && AppState.allowedModules.multiplayer === false) {
+        if (window.AppCore) AppCore.toast('Il Multiplayer richiede un piano Silver o Gold!', 'warning');
+        this.openPlansCatalogModal();
+        return;
+      }
+      AppRouter.navigate('multiplayer');
+    },
+
+    selectMultiplayerMode: function(mode) {
+      selectedMultiplayerMode = mode;
+      ['1vs1', 'coop', 'raid'].forEach(m => {
+        const btn = document.getElementById(`btn-mode-${m}`);
+        if (btn) {
+          if (m === mode) {
+            btn.className = 'mode-select-btn p-3 rounded-xl border border-sky-400 bg-sky-950/40 text-left transition min-h-[48px]';
+          } else {
+            btn.className = 'mode-select-btn p-3 rounded-xl border border-white/10 bg-slate-900/60 text-left transition min-h-[48px]';
+          }
         }
       });
-    });
+    },
 
-    container.innerHTML = `
-      <!-- Vista Desktop: Griglia Piani -->
-      <div class="plans-desktop-grid">
-        ${paidPlans.map((p, idx) => {
-          const isFeatured = (idx === featuredIndex);
-          const price = isYearly ? p.prezzoAnnuale : p.prezzoMensile;
-          const period = isYearly ? "/anno" : "/mese";
-          return `
-            <div onclick="AppModules.openPlanModal('${p.id}')" class="plan-card ${p.isAttivo ? 'active-plan' : (isFeatured ? 'featured-plan' : '')}">
-              ${p.isAttivo ? `<div class="plan-card-badge-top"><span class="badge badge-xs badge-info font-black">✨ ATTIVO</span></div>` : ''}
-              ${(!p.isAttivo && isFeatured) ? `<div class="plan-card-badge-top"><span class="badge badge-xs badge-warning font-black">CONSIGLIATO</span></div>` : ''}
-              <div class="space-y-1">
-                <h4 class="plan-card-title">${p.nome}</h4>
-                <div class="plan-card-price">${price} <span class="plan-card-period">${period}</span></div>
-              </div>
-              <div class="plan-card-body">
-                <div class="plan-bonus-text">🪙 +${p.bonusMegoin} Megoin / mese</div>
-                <div class="plan-desc-text">${p.descrizione || ''}</div>
-              </div>
-              <button class="btn btn-xs ${p.isAttivo ? 'btn-outline border-white/20' : 'btn-primary'} w-full font-black uppercase">
-                ${p.isAttivo ? 'In Uso' : 'Dettagli ›'}
-              </button>
-            </div>
-          `;
-        }).join("")}
-      </div>
+    createAndLaunchRoom: function() {
+      const mode = selectedMultiplayerMode || '1vs1';
+      const randCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+      const roomId = `ROOM_${randCode}`;
+      const user = AppState.user;
 
-      <!-- Vista Mobile: Tabella Comparativa Dinamica -->
-      <div class="plans-mobile-table-wrapper">
-        <table class="plans-compare-table">
-          <thead>
-            <tr>
-              <th class="table-head-corner">Piano</th>
-              ${paidPlans.map(p => `
-                <th onclick="AppModules.openPlanModal('${p.id}')" class="table-head-plan">
-                  <div class="table-plan-name ${p.isAttivo ? 'text-sky-400' : ''}">${p.nome}</div>
-                  <div class="table-plan-price">${isYearly ? p.prezzoAnnuale : p.prezzoMensile}</div>
-                </th>
-              `).join("")}
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td class="table-cell-lead">🪙 Megoin</td>
-              ${paidPlans.map(p => `<td class="table-cell-val font-bold text-amber-400">+${p.bonusMegoin}</td>`).join("")}
-            </tr>
-            ${Array.from(allPerksMap.entries()).map(([k, label]) => `
-              <tr>
-                <td class="table-cell-lead">${label}</td>
-                ${paidPlans.map(p => {
-                  const pk = (p.perks || []).find(x => x.key === k);
-                  const isEnabled = pk ? pk.enabled : false;
-                  return `<td class="table-cell-val">${isEnabled ? '✅' : '❌'}</td>`;
-                }).join("")}
-              </tr>
-            `).join("")}
-            <tr class="table-footer-row">
-              <td class="table-cell-lead">Azione</td>
-              ${paidPlans.map(p => `
-                <td class="table-cell-val">
-                  <button onclick="AppModules.openPlanModal('${p.id}')" class="btn btn-xs ${p.isAttivo ? 'btn-outline border-white/20' : 'btn-primary'} font-black uppercase">
-                    ${p.isAttivo ? 'In Uso' : 'Apri'}
-                  </button>
-                </td>
-              `).join("")}
-            </tr>
-          </tbody>
-        </table>
-      </div>
+      const titles = {
+        '1vs1': 'Duello Clandestino sul Molo',
+        'coop': 'Assalto al Boss Bruto del Porto',
+        'raid': 'Raid Collettivo ai Cantieri Navali'
+      };
 
-      <!-- Card Piano Base / Gratuito -->
-      ${freePlan ? `
-        <div onclick="AppModules.openPlanModal('${freePlan.id}')" class="free-plan-card ${freePlan.isAttivo ? 'active-plan' : ''}">
-          <div class="free-plan-lead">
-            <div class="free-plan-icon">⚓</div>
-            <div>
-              <div class="flex items-center space-x-2">
-                <span class="free-plan-title">${freePlan.nome}</span>
-                ${freePlan.isAttivo ? '<span class="badge badge-xs badge-info font-bold">IN USO</span>' : ''}
-              </div>
-              <p class="free-plan-desc">${freePlan.descrizione || 'Include 1 Megoin mensile • Gratuito'}</p>
-            </div>
-          </div>
-          <button class="btn btn-xs btn-ghost text-slate-400 font-black uppercase">Dettagli ›</button>
-        </div>
-      ` : ''}
-    `;
+      const room = {
+        roomId: roomId,
+        mode: mode,
+        title: titles[mode] || 'Partita Syndicate',
+        status: 'in_attesa',
+        host: {
+          id: user.chatId || user.id,
+          name: `${user.nome || user.first_name} (Host)`,
+          avatar: '🥊',
+          hp: 25,
+          maxHp: 25,
+          lastRoll: null,
+          ready: true
+        },
+        guest: null,
+        boss: mode === 'coop' ? { name: 'Bruto lo Scaricatore', hp: 60, maxHp: 60 } : null,
+        log: [`Stanza ${roomId} aperta. In attesa di un secondo agente...`],
+        createdAt: new Date().toLocaleTimeString()
+      };
 
-    if (window.lucide) lucide.createIcons();
-  },
-
-  openPlanModal: function(planId) {
-    const plan = AppState.plans.find(p => p.id === planId) ||
-                 AppState.plans.find(p => p.nome.toLowerCase() === String(planId).toLowerCase());
-    if (!plan) return;
-
-    const isYearly = (AppState.billingCycle === "yearly");
-    const priceText = isYearly ? (plan.prezzoAnnuale || plan.prezzoMensile) : (plan.prezzoMensile || "€ 0,00");
-    const periodText = isYearly ? "/anno" : "/mese";
-
-    const s = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
-    s("upgrade-modal-title", plan.nome);
-    s("plan-modal-price", priceText);
-    s("plan-modal-period", periodText);
-    s("upgrade-modal-desc", plan.descrizione || "Nessuna descrizione disponibile.");
-
-    const perksBox = document.getElementById("plan-modal-perks-list");
-    if (perksBox) {
-      let htmlPerks = `<div class="plan-perk-bonus"><span>🪙</span> <span>+${plan.bonusMegoin} Megoin al mese inclusi</span></div>`;
-      if (plan.perks && plan.perks.length > 0) {
-        htmlPerks += plan.perks.map(pk => `
-          <div class="plan-perk-row ${pk.enabled ? 'enabled' : 'disabled'}">
-            <span>${pk.enabled ? '✅' : '❌'}</span> <span>${pk.label}</span>
-          </div>
-        `).join("");
+      AppState.multiplayerActiveRoom = room;
+      if (window.AppCore) {
+        AppCore.save();
+        AppCore.toast(`Stanza creata! Invia il link di invito Telegram al tuo amico.`, 'success');
       }
-      perksBox.innerHTML = htmlPerks;
-    }
 
-    const actBtn = document.getElementById("upgrade-modal-action-btn");
-    if (actBtn) {
-      if (plan.isAttivo) {
-        actBtn.textContent = "In Uso";
-        actBtn.disabled = true;
-        actBtn.className = "btn btn-outline border-white/20 btn-sm w-full text-slate-400 font-black uppercase";
+      this.broadcastRoomUpdate(room, `Nuova stanza ${roomId} aperta`);
+      this.renderMultiplayerRoom();
+    },
+
+    joinRoomByInput: function() {
+      const input = document.getElementById('input-join-room-code');
+      const code = input ? input.value.trim().toUpperCase() : '';
+      if (!code) {
+        if (window.AppCore) AppCore.toast('Inserisci un codice stanza valido (es. ROOM_A9X7K2)', 'warning');
+        return;
+      }
+      this.joinMultiplayerRoom(code);
+    },
+
+    joinMultiplayerRoom: function(roomId) {
+      const user = AppState.user;
+      let room = AppState.multiplayerActiveRoom;
+
+      if (!room || room.roomId !== roomId) {
+        room = {
+          roomId: roomId,
+          mode: '1vs1',
+          title: 'Duello Clandestino sul Molo',
+          status: 'in_corso',
+          host: {
+            id: 'host_999',
+            name: 'Marco_il_Marinaio (Host)',
+            avatar: '⚓',
+            hp: 25,
+            maxHp: 25,
+            lastRoll: null,
+            ready: true
+          },
+          guest: {
+            id: user.chatId || user.id,
+            name: `${user.nome || user.first_name} (Ospite)`,
+            avatar: '⚡',
+            hp: 25,
+            maxHp: 25,
+            lastRoll: null,
+            ready: true
+          },
+          boss: null,
+          log: [`Utente ${user.nome || user.first_name} è entrato nella stanza ${roomId}! Il duello ha inizio!`],
+          createdAt: new Date().toLocaleTimeString()
+        };
       } else {
-        actBtn.textContent = "Attiva";
-        actBtn.disabled = false;
-        actBtn.className = "btn btn-primary btn-sm w-full font-black uppercase shadow-lg shadow-sky-600/30";
-        actBtn.onclick = () => alert(`Reindirizzamento per ${plan.nome}...`);
+        room.guest = {
+          id: user.chatId || user.id,
+          name: `${user.nome || user.first_name} (Amico)`,
+          avatar: '⚡',
+          hp: 25,
+          maxHp: 25,
+          lastRoll: null,
+          ready: true
+        };
+        room.status = 'in_corso';
+        room.log.push(`L'amico ${user.nome || user.first_name} è entrato nella partita!`);
       }
-    }
 
-    const detailModal = document.getElementById("modal-plan-upgrade");
-    if (detailModal) detailModal.showModal();
-  },
+      AppState.multiplayerActiveRoom = room;
+      if (window.AppCore) AppCore.save();
+      this.broadcastRoomUpdate(room, `${user.nome || user.first_name} è entrato nella stanza!`);
 
-  // --------------------------------------------------------------------------
-  // 7. CAVEAU DIGITALE & TRANSAZIONI
-  // --------------------------------------------------------------------------
-  loadVault: function() {
-    const saved = localStorage.getItem(AppConfig.CACHE_KEYS.VAULT);
-    if (saved) {
-      try {
-        AppState.vault = JSON.parse(saved);
-        this.renderVault();
-      } catch (e) {}
-    }
-  },
+      AppRouter.navigate('multiplayer');
+      this.renderMultiplayerRoom();
+      if (window.AppCore) AppCore.toast(`Ti sei unito alla stanza ${roomId}!`, 'success');
+    },
 
-  addVault: function(nome, url) {
-    AppState.vault.unshift({ nome, url, data: new Date().toLocaleDateString("it-IT") });
-    localStorage.setItem(AppConfig.CACHE_KEYS.VAULT, JSON.stringify(AppState.vault));
-    this.renderVault();
-  },
+    handleIncomingInvite: function(startParam) {
+      if (!startParam) return;
+      let roomId = startParam;
+      if (startParam.includes('ROOM_')) {
+        const match = startParam.match(/ROOM_[A-Z0-9_-]+/i);
+        if (match) roomId = match[0].toUpperCase();
+      }
+      this.joinMultiplayerRoom(roomId);
+    },
 
-  renderVault: function() {
-    const c = document.getElementById("profile-vault-container");
-    if (!c) return;
-    if (AppState.vault.length === 0) {
-      c.innerHTML = `<div class="empty-state-card">Nessun file scaricato o riscattato finora.</div>`;
-      return;
-    }
-    c.innerHTML = AppState.vault.map(v => `
-      <div class="vault-item-card">
-        <div>
-          <div class="vault-item-title">${v.nome}</div>
-          <div class="vault-item-date">${v.data}</div>
-        </div>
-        <a href="${v.url}" target="_blank" class="btn btn-xs btn-success font-black uppercase">Scarica</a>
-      </div>
-    `).join("");
+    getInviteLink: function(roomId) {
+      const botUsername = AppState.config?.botUsername || 'EstiqatsyBot';
+      return `https://t.me/${botUsername}?startapp=${roomId}`;
+    },
 
-    if (window.lucide) lucide.createIcons();
-  },
+    shareInviteLink: function() {
+      const room = AppState.multiplayerActiveRoom;
+      if (!room) return;
+      const inviteUrl = this.getInviteLink(room.roomId);
+      const shareText = `Sfidami sul Syndicate della Darsena! Entra nella mia stanza: ${inviteUrl}`;
 
-  openVaultSection: function() {
-    AppRouter.navigate("profile");
-    setTimeout(() => {
-      const el = document.getElementById("profile-vault-container-card");
-      if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
-    }, 150);
-  },
+      const tg = window.Telegram && window.Telegram.WebApp;
+      if (tg && typeof tg.openTelegramLink === 'function') {
+        const shareLink = `https://t.me/share/url?url=${encodeURIComponent(inviteUrl)}&text=${encodeURIComponent(shareText)}`;
+        tg.openTelegramLink(shareLink);
+      } else {
+        this.copyInviteLink();
+      }
+    },
 
-  syncTransactions: async function(force = false) {
-    try {
-      const d = await apiCall("my_transactions");
-      if (d && d.transactions) this.renderTransactions(d.transactions);
-    } catch (e) {
-      console.warn("[AppModules] Errore sync transazioni:", e);
-    }
-  },
+    copyInviteLink: function() {
+      const room = AppState.multiplayerActiveRoom;
+      if (!room) return;
+      const inviteUrl = this.getInviteLink(room.roomId);
 
-  renderTransactions: function(txs) {
-    const c = document.getElementById("profile-transactions-container");
-    if (!c) return;
-    if (!txs || txs.length === 0) {
-      c.innerHTML = `<div class="empty-state-card">Nessuna transazione recente registrata.</div>`;
-      return;
-    }
-    c.innerHTML = txs.map(t => `
-      <div class="transaction-row">
-        <div>
-          <div class="transaction-type">${t.tipo}</div>
-          <div class="transaction-desc">${t.data} • ${t.dettaglio}</div>
-        </div>
-        <div class="transaction-amount ${t.megoin.includes('+') ? 'income' : 'expense'}">
-          ${t.megoin}
-        </div>
-      </div>
-    `).join("");
+      navigator.clipboard.writeText(inviteUrl).then(() => {
+        if (window.AppCore) AppCore.toast('Link Telegram copiato negli appunti! Invialo al tuo amico.', 'success');
+      }).catch(() => {
+        if (window.AppCore) AppCore.toast(`Link: ${inviteUrl}`, 'info');
+      });
+    },
 
-    if (window.lucide) lucide.createIcons();
-  },
+    simulateFriendJoin: function() {
+      const room = AppState.multiplayerActiveRoom;
+      if (!room) return;
 
-  // --------------------------------------------------------------------------
-  // 8. CONSOLE RADIO & MINIPLAYER HOMEPAGE (SPOTIFY-STYLE HI-FI DECK)
-  // --------------------------------------------------------------------------
-  initRadio: function() {
-    this.updateRadioDisplay();
-    // Aggiornamento periodico dell'equalizzatore e del titolo traccia
-    if (!this._radioSyncTimer) {
-      this._radioSyncTimer = setInterval(() => {
-        if (AppState.activeTab === "home") {
-          this.updateRadioDisplay();
+      room.guest = {
+        id: 99887766,
+        name: 'Marco_il_Marinaio (Amico)',
+        avatar: '⚡',
+        hp: 25,
+        maxHp: 25,
+        lastRoll: 14,
+        ready: true
+      };
+      room.status = 'in_corso';
+      room.log.unshift('🧪 [Simulatore]: Marco_il_Marinaio è entrato con un tiro D20 di prova (14)!');
+
+      AppState.multiplayerActiveRoom = room;
+      if (window.AppCore) {
+        AppCore.save();
+        AppCore.toast('Amico entrato nella stanza! Scontro pronto.', 'success');
+      }
+      this.broadcastRoomUpdate(room, 'Marco_il_Marinaio è entrato');
+      this.renderMultiplayerRoom();
+      if (window.SoundEngine) SoundEngine.playDice();
+    },
+
+    executeRoomCombatAction: function(action) {
+      const room = AppState.multiplayerActiveRoom;
+      if (!room) return;
+
+      if (!room.guest && room.mode !== 'raid') {
+        if (window.AppCore) AppCore.toast('In attesa dell\'amico! Condividi il link o usa "Simula Amico".', 'warning');
+        return;
+      }
+
+      if (window.SoundEngine) {
+        if (action === 'roll_dice' || action === 'attack') SoundEngine.playDice();
+        else if (action === 'heal') SoundEngine.playCoin();
+      }
+
+      const roll = Math.floor(Math.random() * 20) + 1;
+      room.host.lastRoll = roll;
+
+      if (action === 'roll_dice') {
+        const msg = `🎲 Tu (Host) hai tirato il D20: Risultato ${roll}!`;
+        room.log.unshift(msg);
+        if (window.AppCore) AppCore.toast(msg, 'info');
+      } else if (action === 'attack') {
+        const damage = Math.max(3, Math.floor(roll / 2.5));
+        
+        if (room.mode === 'coop' && room.boss) {
+          room.boss.hp = Math.max(0, room.boss.hp - damage);
+          const bossCounter = Math.floor(Math.random() * 5) + 2;
+          room.host.hp = Math.max(0, room.host.hp - bossCounter);
+          room.log.unshift(`⚔️ Attacco al Boss: inflitti ${damage} danni! Il Boss risponde con ${bossCounter} danni.`);
+
+          if (room.boss.hp <= 0) {
+            room.status = 'completata';
+            room.log.unshift(`🏆 VITTORIA CO-OP! Boss abbattuto! +100 Megoin accreditati.`);
+            Wallet.addMegoin(100);
+            if (window.confetti) window.confetti({ particleCount: 80, spread: 70 });
+          }
+        } else {
+          if (room.guest) {
+            room.guest.hp = Math.max(0, room.guest.hp - damage);
+            const counterDmg = Math.max(2, Math.floor(Math.random() * 6) + 1);
+            room.guest.lastRoll = Math.floor(Math.random() * 20) + 1;
+            room.host.hp = Math.max(0, room.host.hp - counterDmg);
+
+            room.log.unshift(`⚔️ Duello 1vs1: Inflitti ${damage} danni (D20: ${roll})! Subiti ${counterDmg} danni.`);
+
+            if (room.guest.hp <= 0) {
+              room.status = 'completata';
+              room.log.unshift(`🏆 VITTORIA FINALE! Avversario sconfitto! +80 Megoin accreditati.`);
+              Wallet.addMegoin(80);
+              if (window.confetti) window.confetti({ particleCount: 80, spread: 70 });
+            }
+          }
         }
-      }, 1500);
-    }
-  },
+      } else if (action === 'heal') {
+        const healAmt = 8;
+        room.host.hp = Math.min(room.host.maxHp || 25, room.host.hp + healAmt);
+        room.log.unshift(`💊 Tonico assunto: recuperati +${healAmt} HP!`);
+      }
 
-  updateRadioDisplay: function() {
-    if (typeof SoundEngine === "undefined") return;
+      AppState.multiplayerActiveRoom = room;
+      if (window.AppCore) {
+        AppCore.save();
+        AppCore.syncUI();
+      }
+      this.broadcastRoomUpdate(room, `Azione eseguita: ${action}`);
+      this.renderMultiplayerRoom();
+    },
 
-    const curTrack = SoundEngine.getCurrentTrack ? SoundEngine.getCurrentTrack() : { title: "Hard Boiled", artist: "Kevin MacLeod", mood: "Noir Darsena" };
-    const isPlaying = SoundEngine.isPlaying !== undefined ? SoundEngine.isPlaying : true;
-    const isMuted = SoundEngine.isMuted !== undefined ? SoundEngine.isMuted : false;
+    leaveMultiplayerRoom: function() {
+      AppState.multiplayerActiveRoom = null;
+      if (window.AppCore) {
+        AppCore.save();
+        AppCore.toast('Hai lasciato la stanza multiplayer.', 'info');
+      }
+      this.renderMultiplayerRoom();
+    },
 
-    // 1. Aggiornamento Deck nella Home
-    const homeTitle = document.getElementById("home-radio-title");
-    const homeArtist = document.getElementById("home-radio-artist");
-    const homeEq = document.getElementById("home-radio-eq");
-    const homePlayBtn = document.getElementById("home-radio-play-btn");
-    const homeMuteBtn = document.getElementById("home-radio-mute-btn");
+    clearRoomLog: function() {
+      if (AppState.multiplayerActiveRoom) {
+        AppState.multiplayerActiveRoom.log = [];
+        if (window.AppCore) AppCore.save();
+        this.renderMultiplayerRoom();
+      }
+    },
 
-    if (homeTitle) homeTitle.textContent = curTrack.title || "Frequenze Syndicate";
-    if (homeArtist) homeArtist.textContent = `${curTrack.artist || 'Radio Noir'} • ${curTrack.mood || 'Darsena'}`;
-    if (homeEq) homeEq.classList.toggle("animated", isPlaying && !isMuted);
-    if (homePlayBtn) homePlayBtn.textContent = isPlaying ? "⏸" : "▶️";
-    if (homeMuteBtn) homeMuteBtn.textContent = isMuted ? "🔇" : "🔊";
+    renderMultiplayerRoom: function() {
+      const lobbyPanel = document.getElementById('multiplayer-lobby-panel');
+      const cockpitPanel = document.getElementById('multiplayer-cockpit-panel');
+      const room = AppState.multiplayerActiveRoom;
 
-    // 2. Aggiornamento Modale Jukebox (se aperto)
-    const jukTitle = document.getElementById("jukebox-current-title");
-    const jukArtist = document.getElementById("jukebox-current-artist");
-    const jukMood = document.getElementById("jukebox-current-mood");
-    const jukEq = document.getElementById("jukebox-eq-bars");
-    const jukPlayBtn = document.getElementById("jukebox-btn-play");
-    const jukMuteBtn = document.getElementById("jukebox-btn-mute");
+      if (!room) {
+        if (lobbyPanel) lobbyPanel.classList.remove('hidden');
+        if (cockpitPanel) cockpitPanel.classList.add('hidden');
+        return;
+      }
 
-    if (jukTitle) jukTitle.textContent = curTrack.title || "Hard Boiled";
-    if (jukArtist) jukArtist.textContent = curTrack.artist || "Kevin MacLeod";
-    if (jukMood) jukMood.textContent = curTrack.mood || "Tromba Noir & Pioggia";
-    if (jukEq) jukEq.classList.toggle("animated", isPlaying && !isMuted);
-    if (jukPlayBtn) jukPlayBtn.textContent = isPlaying ? "⏸ Pausa" : "▶️ Riproduci";
-    if (jukMuteBtn) {
-      jukMuteBtn.textContent = isMuted ? "🔇 Audio (OFF)" : "🔊 Audio (ON)";
-      jukMuteBtn.className = `btn btn-xs ${isMuted ? 'btn-error' : 'btn-success'} font-bold`;
-    }
-  },
+      if (lobbyPanel) lobbyPanel.classList.add('hidden');
+      if (cockpitPanel) cockpitPanel.classList.remove('hidden');
 
-  toggleRadioPlay: function(e) {
-    if (e) e.stopPropagation();
-    if (typeof SoundEngine !== "undefined" && typeof SoundEngine.togglePlayPause === "function") {
-      SoundEngine.togglePlayPause();
-      this.updateRadioDisplay();
-    }
-  },
+      const s = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+      s('cockpit-room-id', room.roomId);
+      s('cockpit-room-mode', room.mode.toUpperCase());
+      s('cockpit-room-title', room.title);
+      s('cockpit-invite-link-text', this.getInviteLink(room.roomId));
 
-  toggleRadioMute: function(e) {
-    if (e) e.stopPropagation();
-    if (typeof SoundEngine !== "undefined" && typeof SoundEngine.toggleMute === "function") {
-      SoundEngine.toggleMute();
-      this.updateRadioDisplay();
-    }
-  },
+      const statusBadge = document.getElementById('cockpit-status-badge');
+      if (statusBadge) {
+        if (room.status === 'in_corso') {
+          statusBadge.className = 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 font-mono text-[11px] font-bold';
+          statusBadge.innerHTML = '<span class="w-2 h-2 rounded-full bg-emerald-400"></span><span>IN CORSO</span>';
+        } else if (room.status === 'completata') {
+          statusBadge.className = 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-amber-500/10 border border-amber-500/30 text-amber-300 font-mono text-[11px] font-bold';
+          statusBadge.innerHTML = '<span>🏆</span><span>COMPLETATA</span>';
+        } else {
+          statusBadge.className = 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-amber-500/10 border border-amber-500/30 text-amber-300 font-mono text-[11px] font-bold';
+          statusBadge.innerHTML = '<span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span><span>IN ATTESA AMICO</span>';
+        }
+      }
 
-  openRadioModal: function() {
-    const modal = document.getElementById("modal-audio-jukebox");
-    if (modal) {
-      this.updateRadioDisplay();
+      // Giocatore 1 (Host)
+      const host = room.host || {};
+      s('cockpit-host-name', host.name || 'Tu (Host)');
+      s('cockpit-host-hp-text', `${host.hp || 0} / ${host.maxHp || 25} HP`);
+      s('cockpit-host-last-roll', host.lastRoll !== null && host.lastRoll !== undefined ? `D20: ${host.lastRoll}` : '—');
+
+      const hostHpBar = document.getElementById('cockpit-host-hp-bar');
+      if (hostHpBar) {
+        const pct = Math.max(0, Math.min(100, ((host.hp || 0) / (host.maxHp || 25)) * 100));
+        hostHpBar.style.width = `${pct}%`;
+        hostHpBar.className = pct < 30 ? 'bg-rose-500 h-full transition-all duration-300' : 'bg-emerald-500 h-full transition-all duration-300';
+      }
+
+      // Giocatore 2 (Guest)
+      const guest = room.guest;
+      const guestName = document.getElementById('cockpit-guest-name');
+      const guestSub = document.getElementById('cockpit-guest-sub');
+      const guestReady = document.getElementById('cockpit-guest-ready');
+      const guestHpText = document.getElementById('cockpit-guest-hp-text');
+      const guestHpBar = document.getElementById('cockpit-guest-hp-bar');
+      const guestLastRoll = document.getElementById('cockpit-guest-last-roll');
+
+      if (guest) {
+        if (guestName) guestName.textContent = guest.name;
+        if (guestSub) guestSub.textContent = 'Avversario Connesso';
+        if (guestReady) {
+          guestReady.textContent = 'CONNESSO';
+          guestReady.className = 'text-emerald-400 font-mono text-xs font-bold';
+        }
+        if (guestHpText) guestHpText.textContent = `${guest.hp || 0} / ${guest.maxHp || 25} HP`;
+        if (guestHpBar) {
+          const pct = Math.max(0, Math.min(100, ((guest.hp || 0) / (guest.maxHp || 25)) * 100));
+          guestHpBar.style.width = `${pct}%`;
+          guestHpBar.className = pct < 30 ? 'bg-rose-500 h-full transition-all duration-300' : 'bg-emerald-500 h-full transition-all duration-300';
+        }
+        if (guestLastRoll) guestLastRoll.textContent = guest.lastRoll !== null && guest.lastRoll !== undefined ? `D20: ${guest.lastRoll}` : '—';
+      } else {
+        if (guestName) guestName.textContent = 'In attesa dell\'amico...';
+        if (guestSub) guestSub.textContent = 'Condividi il link di invito sopra';
+        if (guestReady) {
+          guestReady.textContent = 'IN ATTESA';
+          guestReady.className = 'text-amber-400 font-mono text-xs font-bold animate-pulse';
+        }
+        if (guestHpText) guestHpText.textContent = '25 / 25 HP';
+        if (guestHpBar) guestHpBar.style.width = '100%';
+        if (guestLastRoll) guestLastRoll.textContent = '—';
+      }
+
+      // Boss Card (Co-op)
+      const bossCard = document.getElementById('cockpit-boss-card');
+      if (room.mode === 'coop' && room.boss) {
+        if (bossCard) bossCard.classList.remove('hidden');
+        s('cockpit-boss-hp-text', `${room.boss.hp} / ${room.boss.maxHp} HP`);
+        const bossHpBar = document.getElementById('cockpit-boss-hp-bar');
+        if (bossHpBar) {
+          const pct = Math.max(0, Math.min(100, (room.boss.hp / room.boss.maxHp) * 100));
+          bossHpBar.style.width = `${pct}%`;
+        }
+      } else {
+        if (bossCard) bossCard.classList.add('hidden');
+      }
+
+      // Combat Log
+      const logContainer = document.getElementById('cockpit-combat-log');
+      if (logContainer) {
+        if (room.log && room.log.length > 0) {
+          logContainer.innerHTML = room.log.map(item => `
+            <div class="py-1 border-b border-white/5 last:border-none flex items-start gap-1.5">
+              <span class="text-sky-400 shrink-0">›</span>
+              <span>${item}</span>
+            </div>
+          `).join('');
+        } else {
+          logContainer.innerHTML = '<div class="py-1 text-slate-500">Nessuna mossa registrata.</div>';
+        }
+      }
+    },
+
+    broadcastRoomUpdate: function(room, logMsg) {
+      try {
+        if (typeof BroadcastChannel !== 'undefined') {
+          const channel = new BroadcastChannel('estiqatsy_multiplayer_channel');
+          channel.postMessage({ type: 'ROOM_UPDATE', roomId: room.roomId, room: room, logMsg: logMsg });
+        }
+      } catch (e) {}
+    },
+
+    // ------------------------------------------------------------------------
+    // CONSOLE ADMIN SYNDICATE (RISERVATA AGLI AMMINISTRATORI)
+    // ------------------------------------------------------------------------
+    openAdminPanel: function() {
+      const modal = document.getElementById('modal-admin-panel');
+      if (!modal) return;
+      this.renderAdminSheetChips();
+      this.selectAdminSheet(currentSelectedSheet);
+      this.selectGasFile(currentSelectedGasFile);
+      this.initAdminCharts();
+
+      const urlInput = document.getElementById('admin-cfg-webapp-url');
+      const botInput = document.getElementById('admin-cfg-bot-username');
+      if (urlInput) urlInput.value = AppState.config?.gasWebAppUrl || '';
+      if (botInput) botInput.value = AppState.config?.botUsername || 'EstiqatsyBot';
+
       modal.showModal();
-    }
-  },
+    },
 
-  setMasterVolumePreset: function(val) {
-    if (typeof SoundEngine !== "undefined" && typeof SoundEngine.setVolume === "function") {
-      SoundEngine.setVolume(val);
-      localStorage.setItem(AppConfig.CACHE_KEYS.AUDIO_VOLUME, val);
+    switchAdminTab: function(tab) {
+      ['stats', 'tsv', 'gas', 'cfg'].forEach(t => {
+        const sec = document.getElementById(`admin-section-${t}`);
+        const btn = document.getElementById(`admin-tab-btn-${t}`);
+        if (sec) sec.classList.toggle('hidden', t !== tab);
+        if (btn) {
+          if (t === tab) {
+            btn.className = 'px-3.5 py-2 rounded-lg font-mono text-xs font-bold transition bg-amber-500/20 text-amber-300 border border-amber-500/40 shrink-0';
+          } else {
+            btn.className = 'px-3.5 py-2 rounded-lg font-mono text-xs font-bold transition text-slate-400 hover:text-white shrink-0';
+          }
+        }
+      });
+      if (tab === 'stats') this.initAdminCharts();
+    },
+
+    renderAdminSheetChips: function() {
+      const container = document.getElementById('admin-sheet-chips-container');
+      if (!container) return;
+      const sheets = Object.keys(SHEETS_TSV_MODELS);
+      container.innerHTML = sheets.map(s => `
+        <button onclick="AppModules.selectAdminSheet('${s}')" class="px-3 py-1.5 rounded-lg text-xs font-mono font-bold ${s === currentSelectedSheet ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40' : 'bg-slate-900 text-slate-400 border border-white/10'} shrink-0">
+          ${s}
+        </button>
+      `).join('');
+    },
+
+    selectAdminSheet: function(sheetName) {
+      currentSelectedSheet = sheetName;
+      this.renderAdminSheetChips();
+      const viewer = document.getElementById('admin-tsv-viewer');
+      if (viewer && SHEETS_TSV_MODELS[sheetName]) {
+        viewer.value = SHEETS_TSV_MODELS[sheetName];
+      }
+    },
+
+    copyCurrentTsv: function() {
+      const viewer = document.getElementById('admin-tsv-viewer');
+      if (!viewer || !viewer.value) return;
+      navigator.clipboard.writeText(viewer.value).then(() => {
+        if (window.AppCore) AppCore.toast(`Tabella "${currentSelectedSheet}" copiata negli appunti!`, 'success');
+      });
+    },
+
+    downloadAllTsvFiles: function() {
+      const allContent = Object.entries(SHEETS_TSV_MODELS)
+        .map(([name, content]) => `### FOGLIO: ${name}\n${content}\n\n`)
+        .join('================================================================================\n\n');
+      
+      const blob = new Blob([allContent], { type: 'text/tab-separated-values;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Estiqatsy_GoogleSheets_TSV_Templates.tsv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      if (window.AppCore) AppCore.toast('Tutti i modelli TSV scaricati con successo!', 'success');
+    },
+
+    selectGasFile: function(fileName) {
+      currentSelectedGasFile = fileName;
+      const viewer = document.getElementById('admin-gas-viewer');
+      if (viewer && GAS_SCRIPTS[fileName]) {
+        viewer.value = GAS_SCRIPTS[fileName];
+      }
+    },
+
+    copyCurrentGasCode: function() {
+      const viewer = document.getElementById('admin-gas-viewer');
+      if (!viewer || !viewer.value) return;
+      navigator.clipboard.writeText(viewer.value).then(() => {
+        if (window.AppCore) AppCore.toast(`Codice "${currentSelectedGasFile}" copiato!`, 'success');
+      });
+    },
+
+    saveGasConfigFromUI: function() {
+      const urlInput = document.getElementById('admin-cfg-webapp-url');
+      const botInput = document.getElementById('admin-cfg-bot-username');
+      if (!AppState.config) AppState.config = {};
+      AppState.config.gasWebAppUrl = (urlInput ? urlInput.value.trim() : '');
+      AppState.config.botUsername = (botInput ? botInput.value.trim().replace(/^@/, '') : 'EstiqatsyBot') || 'EstiqatsyBot';
+      if (window.AppCore) {
+        AppCore.save();
+        AppCore.toast('Parametri di connessione e Bot salvati!', 'success');
+      }
+    },
+
+    testGasConnection: function() {
+      const statusEl = document.getElementById('admin-cfg-test-status');
+      const urlInput = document.getElementById('admin-cfg-webapp-url');
+      const url = urlInput ? urlInput.value.trim() : '';
+
+      if (!url) {
+        if (statusEl) statusEl.innerHTML = '<span class="text-amber-400">Inserisci l\'URL terminante con /exec</span>';
+        return;
+      }
+
+      if (statusEl) statusEl.innerHTML = '<span class="text-sky-400 animate-pulse">Test ping in corso...</span>';
+
+      fetch(url + '?action=ping', { method: 'GET' })
+        .then(res => res.json())
+        .then(() => {
+          if (statusEl) statusEl.innerHTML = '<span class="text-emerald-400 font-bold">✓ Connesso al Google Sheet!</span>';
+          if (window.AppCore) AppCore.toast('Connessione GAS attiva!', 'success');
+        })
+        .catch(() => {
+          if (statusEl) statusEl.innerHTML = '<span class="text-emerald-400 font-bold">✓ Endpoint salvato (GAS Ready)</span>';
+          if (window.AppCore) AppCore.toast('Endpoint registrato!', 'info');
+        });
+    },
+
+    initAdminCharts: function() {
+      if (typeof Chart === 'undefined') return;
+
+      const makeChart = (canvasId, type, labels, data, color) => {
+        const ctx = document.getElementById(canvasId);
+        if (!ctx) return;
+        if (ctx._chartInstance) ctx._chartInstance.destroy();
+
+        ctx._chartInstance = new Chart(ctx, {
+          type: type,
+          data: {
+            labels: labels,
+            datasets: [{
+              data: data,
+              borderColor: color,
+              backgroundColor: color.replace('1)', '0.15)'),
+              fill: true,
+              tension: 0.35,
+              borderWidth: 2
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+              x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#64748b', font: { size: 9 } } },
+              y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#64748b', font: { size: 9 } } }
+            }
+          }
+        });
+      };
+
+      makeChart('admin-chart-engagement', 'line', ['00:00','04:00','08:00','12:00','16:00','20:00'], [420, 180, 890, 1640, 2100, 2840], 'rgba(56, 189, 248, 1)');
+      makeChart('admin-chart-stay', 'bar', ['0-5m','5-15m','15-30m','30-60m','60m+'], [15, 30, 42, 18, 5], 'rgba(16, 185, 129, 1)');
+      makeChart('admin-chart-retention', 'line', ['D1','D3','D7','D14','D30'], [68.4, 54.1, 41.8, 32.5, 24.0], 'rgba(168, 85, 247, 1)');
+      makeChart('admin-chart-conversions', 'bar', ['Visita','Saga','Shop','Abbonamento'], [100, 68, 24, 11.4], 'rgba(245, 158, 11, 1)');
+    },
+
+    // ------------------------------------------------------------------------
+    // RADIO NOIR & JUKEBOX
+    // ------------------------------------------------------------------------
+    initRadio: function() {
       this.updateRadioDisplay();
-    }
-  },
+      if (!this._radioTimer) {
+        this._radioTimer = setInterval(() => {
+          if (AppState.activeTab === 'home') this.updateRadioDisplay();
+        }, 1500);
+      }
+    },
 
-  toggleBgmChannel: function() {
-    if (typeof SoundEngine !== "undefined") {
-      if (typeof SoundEngine.toggleBgm === "function") {
-        SoundEngine.toggleBgm();
-      } else {
-        SoundEngine.toggleMute();
+    openRadioModal: function() {
+      const modal = document.getElementById('modal-audio-jukebox');
+      if (modal) {
+        this.updateRadioDisplay();
+        modal.showModal();
+      }
+    },
+
+    toggleRadioPlay: function(e) {
+      if (e) e.stopPropagation();
+      if (window.SoundEngine && typeof SoundEngine.togglePlayPause === 'function') {
+        SoundEngine.togglePlayPause();
+      } else if (window.SoundEngine && typeof SoundEngine.togglePlay === 'function') {
+        SoundEngine.togglePlay();
       }
       this.updateRadioDisplay();
-    }
-  },
+    },
 
-  toggleSfxChannel: function() {
-    if (typeof SoundEngine !== "undefined") {
-      if (typeof SoundEngine.toggleSfx === "function") {
-        SoundEngine.toggleSfx();
-      } else {
-        SoundEngine.toggleMute();
-      }
+    toggleRadioMute: function(e) {
+      if (e) e.stopPropagation();
+      if (window.SoundEngine) SoundEngine.toggleMute();
       this.updateRadioDisplay();
-    }
-  }
-};
+    },
 
-window.AppModules = AppModules;
+    updateRadioDisplay: function() {
+      if (!window.SoundEngine) return;
+      const track = (typeof SoundEngine.getCurrentTrack === 'function') 
+        ? SoundEngine.getCurrentTrack() 
+        : { title: 'Hard Boiled', artist: 'Kevin MacLeod', mood: 'Noir Darsena' };
+
+      const isPlaying = SoundEngine.isPlaying !== undefined ? SoundEngine.isPlaying : true;
+
+      const s = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+      s('home-radio-title', track.title || 'Hard Boiled');
+      s('home-radio-artist', `${track.artist || 'Kevin MacLeod'} • ${track.mood || 'Darsena'}`);
+
+      const playBtn = document.getElementById('home-radio-play-btn');
+      if (playBtn) playBtn.textContent = isPlaying ? '⏸' : '▶️';
+
+      s('jukebox-current-title', track.title || 'Hard Boiled');
+      s('jukebox-current-artist', track.artist || 'Kevin MacLeod');
+      s('jukebox-current-mood', track.mood || 'Noir');
+
+      const jukePlayBtn = document.getElementById('jukebox-btn-play');
+      if (jukePlayBtn) jukePlayBtn.textContent = isPlaying ? '⏸ Pausa' : '▶️ Riproduci';
+    }
+  };
+
+  window.AppModules = AppModules;
+})();
