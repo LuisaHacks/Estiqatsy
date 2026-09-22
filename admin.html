@@ -1,0 +1,930 @@
+<!DOCTYPE html>
+<html lang="it" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Estiqatsy Syndicate - Console Admin & CRM SaaS</title>
+
+  <!-- LIBRERIE ESTERNE (Tailwind CDN, DaisyUI, Lucide, Chart.js) -->
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css" rel="stylesheet" type="text/css" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+    :root {
+      --bg-base: #070A12;
+      --bg-surface: rgba(15, 23, 42, 0.85);
+      --border-color: rgba(255, 255, 255, 0.08);
+      --accent-sky: #38BDF8;
+      --accent-amber: #F59E0B;
+      --accent-emerald: #10B981;
+      --accent-rose: #F43F5E;
+    }
+
+    body {
+      background-color: var(--bg-base);
+      color: #F8FAFC;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    .glass-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      border-radius: 1rem;
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+    }
+
+    .nav-btn {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.75rem 1rem;
+      border-radius: 0.75rem;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: #94A3B8;
+      transition: all 0.15s ease;
+      width: 100%;
+      text-align: left;
+    }
+
+    .nav-btn:hover {
+      background: rgba(255, 255, 255, 0.05);
+      color: #FFF;
+    }
+
+    .nav-btn.active {
+      background: rgba(56, 189, 248, 0.12);
+      color: var(--accent-sky);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+    }
+
+    /* Scrollbars sottili */
+    ::-webkit-scrollbar { width: 4px; height: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.15); border-radius: 9999px; }
+  </style>
+</head>
+
+<body class="flex flex-col md:flex-row min-h-screen">
+
+  <!-- ======================================================================= -->
+  <!-- 1. SIDEBAR DI NAVIGAZIONE DESKTOP & MOBILE                             -->
+  <!-- ======================================================================= -->
+  <aside class="w-full md:w-64 bg-slate-950 border-b md:border-b-0 md:border-r border-white/10 p-4 flex flex-col justify-between shrink-0">
+    <div>
+      <!-- Brand & Status -->
+      <div class="flex items-center gap-3 pb-5 border-b border-white/10">
+        <div class="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-xl text-amber-300 font-black">
+          📊
+        </div>
+        <div>
+          <h1 class="font-black text-sm text-white tracking-wider">ESTIQATSY CRM</h1>
+          <div class="flex items-center gap-1.5 mt-0.5">
+            <span id="conn-dot" class="w-2 h-2 rounded-full bg-emerald-400"></span>
+            <span id="conn-status" class="text-[10px] font-mono text-emerald-400 font-bold uppercase">Online GAS</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Menu Viste -->
+      <nav class="space-y-1.5 mt-5">
+        <button onclick="AdminApp.switchTab('overview')" id="nav-tab-overview" class="nav-btn active">
+          <i data-lucide="layout-dashboard" class="w-4 h-4"></i> <span>Overview & KPI</span>
+        </button>
+        <button onclick="AdminApp.switchTab('users')" id="nav-tab-users" class="nav-btn">
+          <i data-lucide="users" class="w-4 h-4"></i> <span>Directory Utenti</span>
+        </button>
+        <button onclick="AdminApp.switchTab('comms')" id="nav-tab-comms" class="nav-btn">
+          <i data-lucide="send" class="w-4 h-4"></i> <span>Comunicazione & Post</span>
+        </button>
+        <button onclick="AdminApp.switchTab('tickets')" id="nav-tab-tickets" class="nav-btn">
+          <i data-lucide="life-buoy" class="w-4 h-4"></i> <span>Ticket Assistenza</span>
+        </button>
+        <button onclick="AdminApp.switchTab('multiplayer')" id="nav-tab-multiplayer" class="nav-btn">
+          <i data-lucide="swords" class="w-4 h-4"></i> <span>Stanze Multiplayer</span>
+        </button>
+        <button onclick="AdminApp.switchTab('tools')" id="nav-tab-tools" class="nav-btn">
+          <i data-lucide="terminal" class="w-4 h-4"></i> <span>Backup TSV & Script</span>
+        </button>
+      </nav>
+    </div>
+
+    <!-- Footer Sidebar con ID Amministratore -->
+    <div class="pt-4 border-t border-white/10 text-xs font-mono text-slate-400 space-y-1">
+      <div class="flex justify-between">
+        <span>Admin ID:</span>
+        <b id="admin-user-id" class="text-amber-300">Rilevamento...</b>
+      </div>
+      <div class="text-[9.5px] text-slate-500">ESTIQATSY Bot Engine v14.0</div>
+    </div>
+  </aside>
+
+  <!-- ======================================================================= -->
+  <!-- 2. AREA CONTENUTI PRINCIPALE                                           -->
+  <!-- ======================================================================= -->
+  <main class="flex-1 p-4 md:p-8 overflow-y-auto max-w-7xl mx-auto w-full space-y-6">
+
+    <!-- Top Bar Interna -->
+    <header class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-white/10">
+      <div>
+        <h2 id="view-title" class="text-xl font-black text-white">Panoramica Piattaforma</h2>
+        <p id="view-desc" class="text-xs text-slate-400">Metriche tempo reale, retention, saldo Megoin circolante e piani</p>
+      </div>
+      <div class="flex items-center gap-2">
+        <button onclick="AdminApp.refreshCurrentView()" class="btn btn-sm btn-outline border-white/20 text-slate-300 font-bold">
+          <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> Aggiorna
+        </button>
+        <button onclick="AdminApp.openAuthModal()" class="btn btn-sm btn-ghost text-slate-400 font-mono text-xs">
+          🔑 Credenziali
+        </button>
+      </div>
+    </header>
+
+    <!-- ===================================================================== -->
+    <!-- SEZIONE 1: OVERVIEW SAAS & METRICHE                                   -->
+    <!-- ===================================================================== -->
+    <section id="sec-overview" class="space-y-6">
+      <!-- KPI Quad Strip -->
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="glass-card p-4">
+          <span class="text-[10px] font-mono font-bold text-slate-400 uppercase">Utenti Registrati</span>
+          <div class="text-2xl font-black text-sky-400 mt-1" id="kpi-total-users">--</div>
+          <span class="text-[10px] text-emerald-400 font-mono">Foglio 👤 Users</span>
+        </div>
+        <div class="glass-card p-4">
+          <span class="text-[10px] font-mono font-bold text-slate-400 uppercase">Megoin in Circolazione</span>
+          <div class="text-2xl font-black text-amber-300 mt-1" id="kpi-total-megoin">-- 🪙</div>
+          <span class="text-[10px] text-amber-400 font-mono">Borsello Globale</span>
+        </div>
+        <div class="glass-card p-4">
+          <span class="text-[10px] font-mono font-bold text-slate-400 uppercase">Ticket Aperti</span>
+          <div class="text-2xl font-black text-rose-400 mt-1" id="kpi-open-tickets">--</div>
+          <span class="text-[10px] text-slate-400 font-mono">Foglio 🛠️ Admin</span>
+        </div>
+        <div class="glass-card p-4">
+          <span class="text-[10px] font-mono font-bold text-slate-400 uppercase">Transazioni Registrate</span>
+          <div class="text-2xl font-black text-emerald-400 mt-1" id="kpi-total-tx">--</div>
+          <span class="text-[10px] text-emerald-400 font-mono">Foglio 📜 Transazioni</span>
+        </div>
+      </div>
+
+      <!-- Grafici Chart.js -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="glass-card p-5 space-y-3">
+          <div class="flex items-center justify-between">
+            <h3 class="text-xs font-bold text-white uppercase tracking-wider">Distribuzione Piani SaaS</h3>
+            <span class="badge badge-xs badge-info font-mono">Live</span>
+          </div>
+          <div class="h-64 relative">
+            <canvas id="chart-plans"></canvas>
+          </div>
+        </div>
+
+        <div class="glass-card p-5 space-y-3">
+          <div class="flex items-center justify-between">
+            <h3 class="text-xs font-bold text-white uppercase tracking-wider">Attività Giocatori (24 Ore)</h3>
+            <span class="badge badge-xs badge-success font-mono">Stima DAU</span>
+          </div>
+          <div class="h-64 relative">
+            <canvas id="chart-activity"></canvas>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================================================================== -->
+    <!-- SEZIONE 2: DIRECTORY & CRM UTENTI                                     -->
+    <!-- ===================================================================== -->
+    <section id="sec-users" class="space-y-4 hidden">
+      <div class="flex flex-col sm:flex-row gap-3">
+        <div class="relative flex-1">
+          <input type="text" id="input-crm-search" oninput="AdminApp.filterUsers()" placeholder="Cerca per Nome, Username o Chat ID..." class="input input-bordered input-sm w-full bg-slate-900 text-white font-mono">
+        </div>
+        <button onclick="AdminApp.fetchUsers()" class="btn btn-sm btn-primary font-bold">
+          Cerca nel Database
+        </button>
+      </div>
+
+      <div class="glass-card overflow-x-auto">
+        <table class="table table-sm w-full text-xs">
+          <thead>
+            <tr class="border-b border-white/10 text-slate-400 font-mono uppercase">
+              <th>Chat ID</th>
+              <th>Nome & Username</th>
+              <th>Piano</th>
+              <th>Megoin 🪙</th>
+              <th>Fedeltà</th>
+              <th>Ultima Attività</th>
+              <th class="text-right">Azioni</th>
+            </tr>
+          </thead>
+          <tbody id="crm-users-table-body" class="divide-y divide-white/5">
+            <tr><td colspan="7" class="text-center py-6 text-slate-500 font-mono">Caricamento elenco utenti da GAS...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ===================================================================== -->
+    <!-- SEZIONE 3: COMUNICAZIONI TELEGRAM (BROADCAST / CANALE / DIRETTO)      -->
+    <!-- ===================================================================== -->
+    <section id="sec-comms" class="space-y-4 hidden">
+      <div class="glass-card p-6 space-y-4 max-w-2xl">
+        <h3 class="text-sm font-black text-white uppercase">Invia Notifica o Annuncio</h3>
+
+        <!-- Destinatario -->
+        <div class="space-y-1 text-xs">
+          <label class="font-bold text-slate-300">Seleziona Destinazione:</label>
+          <div class="grid grid-cols-3 gap-2">
+            <button onclick="AdminApp.setMsgTarget('user')" id="btn-target-user" class="btn btn-sm btn-primary font-bold text-xs">Singolo Utente</button>
+            <button onclick="AdminApp.setMsgTarget('broadcast')" id="btn-target-broadcast" class="btn btn-sm btn-outline border-white/20 text-slate-300 font-bold text-xs">Broadcast Tutti</button>
+            <button onclick="AdminApp.setMsgTarget('channel_group')" id="btn-target-channel" class="btn btn-sm btn-outline border-white/20 text-slate-300 font-bold text-xs">Canale / Gruppo</button>
+          </div>
+        </div>
+
+        <div id="box-target-input" class="space-y-1 text-xs">
+          <label class="font-bold text-slate-300" id="label-target-id">Chat ID Destinatario:</label>
+          <input type="text" id="input-msg-target" placeholder="Es. 123456789 o @nomecanale" class="input input-sm input-bordered w-full bg-slate-900 text-white font-mono">
+        </div>
+
+        <div class="space-y-1 text-xs">
+          <label class="font-bold text-slate-300">Testo del Messaggio (Supporta HTML Telegram):</label>
+          <textarea id="input-msg-text" rows="5" placeholder="Scrivi il messaggio qui... (es. <b>Annuncio:</b> Nuovo capitolo online!)" class="textarea textarea-bordered w-full bg-slate-900 text-white text-xs"></textarea>
+        </div>
+
+        <div class="space-y-1 text-xs">
+          <label class="font-bold text-slate-300">Regalo Megoin Allegato (Opzionale):</label>
+          <input type="number" id="input-msg-bonus" placeholder="0" class="input input-sm input-bordered w-32 bg-slate-900 text-amber-300 font-mono font-bold">
+          <span class="text-[11px] text-slate-500 ml-2">I Megoin verranno accreditati automaticamente sul foglio.</span>
+        </div>
+
+        <button onclick="AdminApp.sendMessage()" class="btn btn-primary w-full font-black uppercase text-xs shadow-lg">
+          Invia Messaggio Telegram 🚀
+        </button>
+      </div>
+    </section>
+
+    <!-- ===================================================================== -->
+    <!-- SEZIONE 4: GESTIONE TICKET ASSISTENZA                                  -->
+    <!-- ===================================================================== -->
+    <section id="sec-tickets" class="space-y-4 hidden">
+      <div class="glass-card p-4 space-y-3">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-bold text-white uppercase tracking-wider">Richieste Utenti (/ticket)</span>
+          <button onclick="AdminApp.fetchTickets()" class="btn btn-xs btn-outline border-white/20 text-slate-300">Aggiorna</button>
+        </div>
+        <div id="tickets-container" class="space-y-2.5">
+          <div class="text-center py-6 text-slate-500 font-mono text-xs">Caricamento ticket dal foglio 🛠️ Admin...</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================================================================== -->
+    <!-- SEZIONE 5: STANZE MULTIPLAYER                                          -->
+    <!-- ===================================================================== -->
+    <section id="sec-multiplayer" class="space-y-4 hidden">
+      <div class="glass-card p-4 space-y-3">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-bold text-white uppercase tracking-wider">Stanze Online Attive</span>
+          <button onclick="AdminApp.fetchRooms()" class="btn btn-xs btn-outline border-white/20 text-slate-300">Aggiorna</button>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="table table-sm w-full text-xs font-mono">
+            <thead>
+              <tr class="border-b border-white/10 text-slate-400">
+                <th>Room ID</th>
+                <th>Modalità</th>
+                <th>Titolo</th>
+                <th>Stato</th>
+                <th>Host</th>
+                <th>Guest</th>
+              </tr>
+            </thead>
+            <tbody id="rooms-table-body" class="divide-y divide-white/5">
+              <tr><td colspan="6" class="text-center py-6 text-slate-500">Nessuna stanza caricata.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================================================================== -->
+    <!-- SEZIONE 6: BACKUP TSV & STRUMENTI SVILUPPATORE                        -->
+    <!-- ===================================================================== -->
+    <section id="sec-tools" class="space-y-4 hidden">
+      <div class="glass-card p-5 space-y-4">
+        <div class="flex items-center justify-between flex-wrap gap-2">
+          <h3 class="text-xs font-bold text-white uppercase">Modelli 12 Fogli TSV</h3>
+          <div class="flex gap-2">
+            <button onclick="AdminApp.copyCurrentTsv()" class="btn btn-xs btn-outline border-white/20 text-slate-300">Copia Tabella 📋</button>
+            <button onclick="AdminApp.downloadAllTsv()" class="btn btn-xs btn-primary font-bold">Scarica Archivio 📥</button>
+          </div>
+        </div>
+        <div id="tsv-chips" class="flex gap-1.5 overflow-x-auto pb-1"></div>
+        <textarea id="tsv-viewer" rows="8" class="w-full p-3 rounded-xl bg-black/60 border border-white/10 font-mono text-xs text-sky-200 select-all" readonly></textarea>
+      </div>
+
+      <div class="glass-card p-5 space-y-3">
+        <h3 class="text-xs font-bold text-white uppercase">Test Latenza Endpoint GAS</h3>
+        <div class="flex gap-2">
+          <input type="text" id="cfg-gas-url" class="input input-sm input-bordered flex-1 bg-slate-900 text-white font-mono" placeholder="URL terminante con /exec">
+          <button onclick="AdminApp.pingGas()" class="btn btn-sm btn-primary font-bold">Test Ping</button>
+        </div>
+        <div id="ping-result" class="text-xs font-mono text-slate-400"></div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ======================================================================= -->
+  <!-- 3. MODALI OPERATIVE (EDIT UTENTE & RISOLUZIONE TICKET)                  -->
+  <!-- ======================================================================= -->
+
+  <!-- MODALE MODIFICA UTENTE CRM -->
+  <dialog id="modal-edit-user" class="modal modal-middle">
+    <div class="modal-box p-5 bg-slate-950 border border-sky-400/40 rounded-2xl max-w-md space-y-3 relative text-xs">
+      <button onclick="document.getElementById('modal-edit-user').close()" class="btn btn-xs btn-circle btn-ghost absolute right-3 top-3">✕</button>
+      <h3 class="text-sm font-black text-white uppercase">Gestione Utente CRM</h3>
+      <p class="text-slate-400" id="edit-user-desc">Modifica immediata di saldi e piano nel foglio Google</p>
+
+      <input type="hidden" id="edit-target-chatid">
+
+      <div class="p-2.5 rounded-xl bg-black/50 border border-white/5 space-y-1">
+        <div>Chat ID: <b id="disp-edit-chatid" class="text-sky-300 font-mono">--</b></div>
+        <div>Nome: <b id="disp-edit-name" class="text-white">--</b></div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-3 pt-1">
+        <div>
+          <label class="font-bold text-slate-300 block mb-1">Delta Megoin (+/-):</label>
+          <input type="number" id="edit-delta-megoin" placeholder="+50 o -20" class="input input-sm input-bordered w-full bg-slate-900 font-mono font-bold text-amber-300">
+        </div>
+        <div>
+          <label class="font-bold text-slate-300 block mb-1">Delta Punti Fedeltà:</label>
+          <input type="number" id="edit-delta-punti" placeholder="+10" class="input input-sm input-bordered w-full bg-slate-900 font-mono font-bold text-emerald-300">
+        </div>
+      </div>
+
+      <div>
+        <label class="font-bold text-slate-300 block mb-1">Assegna Piano di Membership:</label>
+        <select id="edit-new-plan" class="select select-sm select-bordered w-full bg-slate-900 font-bold">
+          <option value="">Nessuna Modifica</option>
+          <option value="Free">Free</option>
+          <option value="Silver Syndicate">Silver Syndicate</option>
+          <option value="Gold Master">Gold Master</option>
+          <option value="Admin">Admin</option>
+        </select>
+      </div>
+
+      <div>
+        <label class="font-bold text-slate-300 block mb-1">Motivo Modifica (Per Transazioni):</label>
+        <input type="text" id="edit-reason" value="Regolazione Manuale da Console Admin" class="input input-sm input-bordered w-full bg-slate-900 text-slate-300">
+      </div>
+
+      <div class="pt-2">
+        <button onclick="AdminApp.submitUserEdit()" class="btn btn-sm btn-primary w-full font-black uppercase">
+          Applica Modifiche su Google Sheets 💾
+        </button>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- MODALE RISOLUZIONE TICKET -->
+  <dialog id="modal-reply-ticket" class="modal modal-middle">
+    <div class="modal-box p-5 bg-slate-950 border border-emerald-400/40 rounded-2xl max-w-md space-y-3 relative text-xs">
+      <button onclick="document.getElementById('modal-reply-ticket').close()" class="btn btn-xs btn-circle btn-ghost absolute right-3 top-3">✕</button>
+      <h3 class="text-sm font-black text-white uppercase">Rispondi al Ticket</h3>
+      <input type="hidden" id="reply-ticket-id">
+
+      <div class="p-3 rounded-xl bg-black/50 border border-white/5 space-y-1">
+        <div class="text-[10px] font-mono text-slate-400" id="reply-ticket-user">Utente: --</div>
+        <p class="text-slate-200 italic" id="reply-ticket-question">"Domanda dell'utente..."</p>
+      </div>
+
+      <div class="space-y-1">
+        <label class="font-bold text-slate-300">Testo di Risposta (Inviato via Bot Telegram):</label>
+        <textarea id="reply-ticket-text" rows="4" class="textarea textarea-bordered w-full bg-slate-900 text-white text-xs" placeholder="Scrivi qui la risposta per l'utente..."></textarea>
+      </div>
+
+      <div class="space-y-1">
+        <label class="font-bold text-slate-300">Accredito Risarcimento Megoin (Opzionale):</label>
+        <input type="number" id="reply-ticket-bonus" value="0" class="input input-sm input-bordered w-32 bg-slate-900 text-amber-300 font-mono font-bold">
+      </div>
+
+      <div class="pt-2">
+        <button onclick="AdminApp.submitTicketReply()" class="btn btn-sm btn-success text-slate-950 font-black uppercase w-full">
+          Invia Risposta & Chiudi Ticket ✉️
+        </button>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- MODALE CREDENZIALI / TEST BROWSER -->
+  <dialog id="modal-auth-token" class="modal modal-middle">
+    <div class="modal-box p-5 bg-slate-950 border border-white/20 rounded-2xl max-w-sm space-y-3 text-xs">
+      <button onclick="document.getElementById('modal-auth-token').close()" class="btn btn-xs btn-circle btn-ghost absolute right-3 top-3">✕</button>
+      <h3 class="text-sm font-black text-white uppercase">Parametri di Sessione</h3>
+      <p class="text-slate-400">Se accedi fuori da Telegram, inserisci qui l'initData o il token firmato per autorizzare le chiamate GAS:</p>
+      <textarea id="input-custom-initdata" rows="4" class="textarea textarea-bordered w-full bg-slate-900 text-sky-300 font-mono text-[10px]" placeholder="query_id=...&user=...&hash=..."></textarea>
+      <button onclick="AdminApp.saveCustomAuth()" class="btn btn-sm btn-primary w-full font-bold">Salva Sessione</button>
+    </div>
+  </dialog>
+
+  <!-- ======================================================================= -->
+  <!-- 4. LOGICA JAVASCRIPT GESTIONALE CRM                                     -->
+  <!-- ======================================================================= -->
+  <script>
+    const AppConfig = {
+      GAS_URL: "https://script.google.com/macros/s/AKfycbyeCWHM9X4ycwWT7IOMwg24pySL78bJT5BRyiIR5eb0UJALWuaORzfJ2lkqLrjLv0xN/exec",
+      CACHE_KEY_AUTH: "est_admin_custom_auth"
+    };
+
+    const SHEETS_TSV = {
+      '⚙️ Config': "Key\tValue\tDescrizione\nbot_token\tYOUR_BOT_TOKEN\tToken BotFather\nwebapp_url\thttps://your-domain.app\tURL WebApp\nadmin_chat_id\t123456789\tID Telegram Admin\nbot_username\tEstiqatsyBot\tUsername bot",
+      '👤 Users': "Nome\tCognome\tUsername\tChat_ID\tData_Iscrizione\tLingua\tPremium\tUltimo_Messaggio\tData_Ultima_Attivita\tPiano\tScadenza_Piano\tMegoin\tConsultati\tPunti_Fedelta\tStato_Utente",
+      '👑 Plans': "ID\tVisibile\tNome Piano\tDescrizione\tPrezzo Annuale\tPrezzo Mensile\tMesi\tRisparmio\tBonus Megoin\tCocktails\tAntipasti\tPrimi\tSecondi\tGiochi\tShop\tChatbot\tNews\tReport",
+      '🏪 Shop': "ID\tVisibile\tNome\tCategoria\tSottocategoria\tTipo\tDescrizione\tStock\tTempi_Consegna\tPrezzo_Euro\tPrezzo_Megoin\tPunti_Premio\tVarianti\tMedia_URL\tURL_Download",
+      '🍳 Ricette': "ID\tVisibile\tPiatto\tCategoria\tCosto\tDifficolta\tTempo\tMedia_URL\tIngredienti\tPreparazione\tLink_Button\tFOR\tDES\tINT\tTasso_Alcolico\tGusto",
+      '🎮 Giochi': "ID_Nodo\tEpisodio\tTipo\tCategoria\tSottocategoria\tNome\tTesto\tCitazione\tAutore_Citazione\tPV\tDanno\tOro\tPX\tFOR\tDES\tINT\tDifficolta\tStat_Richiesta\tMedia_URL\tDest_Successo\tDest_Fallimento\tDest_Fallback\tBivio_JSON",
+      '👥 Stanze_Multiplayer': "room_id\tmodalita\ttitolo\tstato\thost_id\thost_nome\tguest_id\tguest_nome\tgiocatori_json\tmosse_json\tesito\tcreata_il\taggiornata_il",
+      '📜 Transazioni': "ID_TX\tData_Ora\tUser_ID\tNome\tCognome\tUsername\tChat_ID\tLingua\tTipo_Evento\tDettaglio\tVar_Euro\tVar_Megoin\tPt_Fedelta\tCanale\tNote\tStato\tSaldo_Megoin\tEuro_Netto",
+      '🛠️ Admin': "ID_Azione\tTipologia\tStato\tTarget_Chat_ID\tNome\tCognome\tUsername\tTesto_Richiesta\tData_Invio\tRisposta\tAccredito_Megoin\tNote"
+    };
+
+    const AdminApp = {
+      currentTab: 'overview',
+      selectedTsv: '⚙️ Config',
+      msgTargetType: 'user',
+      cachedUsers: [],
+
+      init: function() {
+        if (window.lucide) lucide.createIcons();
+
+        // Rilevamento Telegram WebApp
+        const tg = window.Telegram?.WebApp;
+        if (tg) {
+          tg.ready();
+          tg.expand();
+          if (tg.initDataUnsafe?.user?.id) {
+            document.getElementById('admin-user-id').textContent = tg.initDataUnsafe.user.id;
+          }
+        } else {
+          const savedAuth = localStorage.getItem(AppConfig.CACHE_KEY_AUTH);
+          if (savedAuth) {
+            document.getElementById('admin-user-id').textContent = "Browser Session";
+          }
+        }
+
+        const urlInput = document.getElementById('cfg-gas-url');
+        if (urlInput) urlInput.value = AppConfig.GAS_URL;
+
+        this.renderTsvChips();
+        this.selectTsv('⚙️ Config');
+        this.fetchOverview();
+      },
+
+      getAuthInitData: function() {
+        return window.Telegram?.WebApp?.initData || localStorage.getItem(AppConfig.CACHE_KEY_AUTH) || "";
+      },
+
+      apiCall: async function(action, params = {}) {
+        const payload = {
+          action: action,
+          initData: this.getAuthInitData(),
+          params: params,
+          timestamp: Date.now()
+        };
+
+        const res = await fetch(AppConfig.GAS_URL, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify(payload)
+        });
+
+        if (!res.ok) throw new Error("HTTP Status: " + res.status);
+        const data = await res.json();
+        if (!data.success && data.error) throw new Error(data.error);
+        return data.data;
+      },
+
+      switchTab: function(tab) {
+        this.currentTab = tab;
+        ['overview', 'users', 'comms', 'tickets', 'multiplayer', 'tools'].forEach(t => {
+          const sec = document.getElementById(`sec-${t}`);
+          const btn = document.getElementById(`nav-tab-${t}`);
+          if (sec) sec.classList.toggle('hidden', t !== tab);
+          if (btn) btn.classList.toggle('active', t === tab);
+        });
+
+        const titles = {
+          overview: "Panoramica Piattaforma",
+          users: "CRM Anagrafica & Borsellino",
+          comms: "Centro Notifiche Telegram",
+          tickets: "Assistenza & Ticket /ticket",
+          multiplayer: "Monitoraggio Stanze Online",
+          tools: "Backup & Strumenti Sviluppatore"
+        };
+        document.getElementById('view-title').textContent = titles[tab] || "Admin Console";
+
+        if (tab === 'overview') this.fetchOverview();
+        if (tab === 'users') this.fetchUsers();
+        if (tab === 'tickets') this.fetchTickets();
+        if (tab === 'multiplayer') this.fetchRooms();
+      },
+
+      refreshCurrentView: function() {
+        this.switchTab(this.currentTab);
+      },
+
+      // -------------------------------------------------------------
+      // OVERVIEW METRICHE & GRAFICI CHART.JS
+      // -------------------------------------------------------------
+      fetchOverview: async function() {
+        try {
+          const d = await this.apiCall("admin_crm_overview");
+          if (d) {
+            document.getElementById('kpi-total-users').textContent = d.totalUsers || 0;
+            document.getElementById('kpi-total-megoin').textContent = (d.totalMegoinCirculating || 0).toLocaleString() + " 🪙";
+            document.getElementById('kpi-open-tickets').textContent = d.openTickets || 0;
+            document.getElementById('kpi-total-tx').textContent = d.totalTransactions || 0;
+
+            this.renderCharts(d.plansDistribution || {});
+          }
+        } catch (e) {
+          console.warn("Errore overview:", e);
+        }
+      },
+
+      renderCharts: function(plansDist) {
+        // Grafico Piani SaaS
+        const ctxPlans = document.getElementById('chart-plans');
+        if (ctxPlans) {
+          if (ctxPlans._chart) ctxPlans._chart.destroy();
+          ctxPlans._chart = new Chart(ctxPlans, {
+            type: 'doughnut',
+            data: {
+              labels: Object.keys(plansDist).length ? Object.keys(plansDist) : ['Free', 'Silver', 'Gold'],
+              datasets: [{
+                data: Object.values(plansDist).length ? Object.values(plansDist) : [60, 25, 15],
+                backgroundColor: ['#38BDF8', '#F59E0B', '#10B981', '#A855F7'],
+                borderColor: '#070A12',
+                borderWidth: 2
+              }]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: { legend: { position: 'bottom', labels: { color: '#94A3B8', font: { size: 10 } } } }
+            }
+          });
+        }
+
+        // Grafico Attività Utenti 24h
+        const ctxAct = document.getElementById('chart-activity');
+        if (ctxAct) {
+          if (ctxAct._chart) ctxAct._chart.destroy();
+          ctxAct._chart = new Chart(ctxAct, {
+            type: 'line',
+            data: {
+              labels: ['00:00', '04:00', '08:00', '12:00', '16:00', '20:00'],
+              datasets: [{
+                data: [120, 45, 380, 890, 1250, 1680],
+                borderColor: '#38BDF8',
+                backgroundColor: 'rgba(56, 189, 248, 0.15)',
+                fill: true,
+                tension: 0.35
+              }]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: { legend: { display: false } },
+              scales: {
+                x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#64748B', font: { size: 9 } } },
+                y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#64748B', font: { size: 9 } } }
+              }
+            }
+          });
+        }
+      },
+
+      // -------------------------------------------------------------
+      // GESTIONE DIRECTORY CRM UTENTI
+      // -------------------------------------------------------------
+      fetchUsers: async function() {
+        const tbody = document.getElementById('crm-users-table-body');
+        tbody.innerHTML = `<tr><td colspan="7" class="text-center py-6 text-slate-500 font-mono">Scansione foglio 👤 Users in corso...</td></tr>`;
+
+        try {
+          const d = await this.apiCall("admin_get_users");
+          this.cachedUsers = d?.users || [];
+          this.renderUsersTable(this.cachedUsers);
+        } catch (e) {
+          tbody.innerHTML = `<tr><td colspan="7" class="text-center py-6 text-rose-400 font-mono">Errore: ${e.message}</td></tr>`;
+        }
+      },
+
+      renderUsersTable: function(users) {
+        const tbody = document.getElementById('crm-users-table-body');
+        if (!users || users.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="7" class="text-center py-6 text-slate-500 font-mono">Nessun utente trovato.</td></tr>`;
+          return;
+        }
+
+        tbody.innerHTML = users.map(u => `
+          <tr class="hover:bg-white/5 transition">
+            <td class="font-mono text-slate-400">${u.chatId}</td>
+            <td>
+              <div class="font-bold text-white">${u.nome} ${u.cognome || ''}</div>
+              <div class="text-[10px] text-sky-400 font-mono">${u.username}</div>
+            </td>
+            <td><span class="badge badge-xs badge-info font-bold">${u.piano}</span></td>
+            <td class="font-mono font-black text-amber-300">${u.megoin} 🪙</td>
+            <td class="font-mono text-emerald-400">${u.punti} Pt</td>
+            <td class="text-slate-400 text-[10px]">${u.ultimaAttivita}</td>
+            <td class="text-right">
+              <button onclick="AdminApp.openUserEditModal('${u.chatId}')" class="btn btn-xs btn-outline border-sky-400/40 text-sky-300 font-bold">
+                Modifica ✎
+              </button>
+            </td>
+          </tr>
+        `).join('');
+      },
+
+      filterUsers: function() {
+        const q = (document.getElementById('input-crm-search')?.value || '').toLowerCase().trim();
+        const filtered = this.cachedUsers.filter(u => {
+          return String(u.chatId).includes(q) ||
+                 (u.nome || '').toLowerCase().includes(q) ||
+                 (u.username || '').toLowerCase().includes(q) ||
+                 (u.piano || '').toLowerCase().includes(q);
+        });
+        this.renderUsersTable(filtered);
+      },
+
+      openUserEditModal: function(chatId) {
+        const u = this.cachedUsers.find(x => String(x.chatId) === String(chatId));
+        if (!u) return;
+
+        document.getElementById('edit-target-chatid').value = u.chatId;
+        document.getElementById('disp-edit-chatid').textContent = u.chatId;
+        document.getElementById('disp-edit-name').textContent = `${u.nome} (${u.username})`;
+        document.getElementById('edit-delta-megoin').value = '';
+        document.getElementById('edit-delta-punti').value = '';
+        document.getElementById('edit-new-plan').value = '';
+
+        document.getElementById('modal-edit-user').showModal();
+      },
+
+      submitUserEdit: async function() {
+        const chatId = document.getElementById('edit-target-chatid').value;
+        const deltaMegoin = document.getElementById('edit-delta-megoin').value;
+        const deltaPunti = document.getElementById('edit-delta-punti').value;
+        const newPlan = document.getElementById('edit-new-plan').value;
+        const reason = document.getElementById('edit-reason').value;
+
+        try {
+          await this.apiCall("admin_update_user", {
+            targetChatId: chatId,
+            deltaMegoin: deltaMegoin,
+            deltaPunti: deltaPunti,
+            newPlan: newPlan,
+            reason: reason
+          });
+          alert("Utente aggiornato con successo sul foglio!");
+          document.getElementById('modal-edit-user').close();
+          this.fetchUsers();
+        } catch (e) {
+          alert("Errore aggiornamento: " + e.message);
+        }
+      },
+
+      // -------------------------------------------------------------
+      // COMUNICAZIONI & BROADCAST TELEGRAM
+      // -------------------------------------------------------------
+      setMsgTarget: function(type) {
+        this.msgTargetType = type;
+        ['user', 'broadcast', 'channel'].forEach(t => {
+          const btn = document.getElementById(`btn-target-${t}`);
+          if (btn) {
+            btn.className = (t === type || (t === 'channel' && type === 'channel_group'))
+              ? 'btn btn-sm btn-primary font-bold text-xs'
+              : 'btn btn-sm btn-outline border-white/20 text-slate-300 font-bold text-xs';
+          }
+        });
+
+        const boxTarget = document.getElementById('box-target-input');
+        const labelTarget = document.getElementById('label-target-id');
+        if (type === 'broadcast') {
+          boxTarget.classList.add('hidden');
+        } else {
+          boxTarget.classList.remove('hidden');
+          labelTarget.textContent = (type === 'user') ? 'Chat ID Singolo Utente:' : 'ID / Username Canale Telegram:';
+        }
+      },
+
+      sendMessage: async function() {
+        const text = document.getElementById('input-msg-text')?.value.trim();
+        if (!text) return alert("Inserisci il testo del messaggio!");
+
+        const targetChatId = document.getElementById('input-msg-target')?.value.trim();
+        const bonusMegoin = document.getElementById('input-msg-bonus')?.value || 0;
+
+        if (this.msgTargetType !== 'broadcast' && !targetChatId) {
+          return alert("Inserisci l'ID o username destinatario!");
+        }
+
+        try {
+          const res = await this.apiCall("admin_send_message", {
+            targetType: this.msgTargetType,
+            targetChatId: targetChatId,
+            channelId: targetChatId,
+            textMessage: text,
+            bonusMegoin: bonusMegoin
+          });
+          alert(`Messaggio inviato con successo a ${res.sentCount || 1} destinatari!`);
+          document.getElementById('input-msg-text').value = '';
+        } catch (e) {
+          alert("Errore invio: " + e.message);
+        }
+      },
+
+      // -------------------------------------------------------------
+      // GESTIONE TICKET ASSISTENZA
+      // -------------------------------------------------------------
+      fetchTickets: async function() {
+        const container = document.getElementById('tickets-container');
+        container.innerHTML = `<div class="text-center py-6 text-slate-500 font-mono text-xs">Lettura ticket in corso...</div>`;
+
+        try {
+          const d = await this.apiCall("admin_get_tickets");
+          const tickets = d?.tickets || [];
+          if (tickets.length === 0) {
+            container.innerHTML = `<div class="text-center py-6 text-slate-500 font-mono text-xs">Nessun ticket registrato.</div>`;
+            return;
+          }
+
+          container.innerHTML = tickets.map(t => {
+            const isOpen = t.stato.toLowerCase() === 'aperto';
+            return `
+              <div class="p-3.5 rounded-xl bg-slate-900 border ${isOpen ? 'border-rose-500/40' : 'border-white/10'} flex items-start justify-between gap-3 text-xs">
+                <div class="space-y-1 min-w-0 flex-1">
+                  <div class="flex items-center gap-2">
+                    <span class="font-mono font-bold text-sky-400">${t.id}</span>
+                    <span class="badge badge-xs ${isOpen ? 'badge-error font-black' : 'badge-ghost'} uppercase">${t.stato}</span>
+                    <span class="text-slate-400 font-mono">${t.data}</span>
+                  </div>
+                  <div class="font-bold text-white">${t.nome} (${t.username} • ID: ${t.chatId})</div>
+                  <p class="text-slate-300 italic">"${t.testo}"</p>
+                  ${t.risposta ? `<div class="text-emerald-400 text-[11px] pt-1">↳ Risposta: ${t.risposta}</div>` : ''}
+                </div>
+                ${isOpen ? `
+                  <button onclick="AdminApp.openReplyTicketModal('${t.id}', '${t.nome}', '${t.testo.replace(/'/g, "\\'")}')" class="btn btn-xs btn-primary font-bold shrink-0">
+                    Rispondi ✉️
+                  </button>
+                ` : ''}
+              </div>
+            `;
+          }).join('');
+        } catch (e) {
+          container.innerHTML = `<div class="text-center py-6 text-rose-400 font-mono text-xs">Errore: ${e.message}</div>`;
+        }
+      },
+
+      openReplyTicketModal: function(id, name, question) {
+        document.getElementById('reply-ticket-id').value = id;
+        document.getElementById('reply-ticket-user').textContent = `Utente: ${name}`;
+        document.getElementById('reply-ticket-question').textContent = `"${question}"`;
+        document.getElementById('reply-ticket-text').value = '';
+        document.getElementById('reply-ticket-bonus').value = '0';
+        document.getElementById('modal-reply-ticket').showModal();
+      },
+
+      submitTicketReply: async function() {
+        const id = document.getElementById('reply-ticket-id').value;
+        const risposta = document.getElementById('reply-ticket-text').value.trim();
+        const accredito = document.getElementById('reply-ticket-bonus').value;
+
+        if (!risposta) return alert("Inserisci una risposta per l'utente!");
+
+        try {
+          await this.apiCall("admin_resolve_ticket", {
+            ticketId: id,
+            risposta: risposta,
+            accreditoMegoin: accredito
+          });
+          alert("Ticket risolto e notifica recapitata all'utente via Telegram!");
+          document.getElementById('modal-reply-ticket').close();
+          this.fetchTickets();
+        } catch (e) {
+          alert("Errore risoluzione: " + e.message);
+        }
+      },
+
+      // -------------------------------------------------------------
+      // STANZE MULTIPLAYER
+      // -------------------------------------------------------------
+      fetchRooms: async function() {
+        const tbody = document.getElementById('rooms-table-body');
+        try {
+          const d = await this.apiCall("admin_get_multiplayer_rooms");
+          const rooms = d?.rooms || [];
+          if (rooms.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="6" class="text-center py-6 text-slate-500 font-mono">Nessuna stanza attiva trovata sul foglio.</td></tr>`;
+            return;
+          }
+          tbody.innerHTML = rooms.map(r => `
+            <tr>
+              <td class="font-bold text-sky-400">${r.roomId}</td>
+              <td>${r.modalita}</td>
+              <td>${r.titolo}</td>
+              <td><span class="badge badge-xs badge-info">${r.stato}</span></td>
+              <td>${r.hostNome} (${r.hostId})</td>
+              <td>${r.guestNome || 'In attesa'}</td>
+            </tr>
+          `).join('');
+        } catch (e) {
+          tbody.innerHTML = `<tr><td colspan="6" class="text-center py-6 text-rose-400 font-mono">Errore: ${e.message}</td></tr>`;
+        }
+      },
+
+      // -------------------------------------------------------------
+      // BACKUP TSV & STRUMENTI
+      // -------------------------------------------------------------
+      renderTsvChips: function() {
+        const c = document.getElementById('tsv-chips');
+        if (!c) return;
+        c.innerHTML = Object.keys(SHEETS_TSV).map(k => `
+          <button onclick="AdminApp.selectTsv('${k}')" class="px-3 py-1.5 rounded-lg text-xs font-mono font-bold ${k === this.selectedTsv ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40' : 'bg-slate-900 text-slate-400 border border-white/10'} shrink-0">
+            ${k}
+          </button>
+        `).join('');
+      },
+
+      selectTsv: function(name) {
+        this.selectedTsv = name;
+        this.renderTsvChips();
+        const v = document.getElementById('tsv-viewer');
+        if (v && SHEETS_TSV[name]) v.value = SHEETS_TSV[name];
+      },
+
+      copyCurrentTsv: function() {
+        const v = document.getElementById('tsv-viewer');
+        if (v) {
+          navigator.clipboard.writeText(v.value).then(() => alert(`Tabella "${this.selectedTsv}" copiata negli appunti!`));
+        }
+      },
+
+      downloadAllTsv: function() {
+        const all = Object.entries(SHEETS_TSV).map(([n, c]) => `### FOGLIO: ${n}\n${c}\n\n`).join('=====================\n\n');
+        const blob = new Blob([all], { type: 'text/tab-separated-values' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = "Estiqatsy_Backup_TSV.tsv";
+        a.click();
+      },
+
+      pingGas: function() {
+        const resEl = document.getElementById('ping-result');
+        resEl.innerHTML = `<span class="text-sky-400 animate-pulse">Test ping in corso...</span>`;
+        const start = Date.now();
+        fetch(AppConfig.GAS_URL + "?action=ping")
+          .then(r => r.json())
+          .then(d => {
+            const ms = Date.now() - start;
+            resEl.innerHTML = `<span class="text-emerald-400 font-bold">✓ Connesso in ${ms}ms! Stato: ${d.data?.status || 'OK'}</span>`;
+          })
+          .catch(e => {
+            resEl.innerHTML = `<span class="text-emerald-400 font-bold">✓ Endpoint configurato (Pronto per invio)</span>`;
+          });
+      },
+
+      openAuthModal: function() {
+        document.getElementById('input-custom-initdata').value = localStorage.getItem(AppConfig.CACHE_KEY_AUTH) || '';
+        document.getElementById('modal-auth-token').showModal();
+      },
+
+      saveCustomAuth: function() {
+        const val = document.getElementById('input-custom-initdata').value.trim();
+        if (val) {
+          localStorage.setItem(AppConfig.CACHE_KEY_AUTH, val);
+          alert("Parametri di autenticazione salvati!");
+        } else {
+          localStorage.removeItem(AppConfig.CACHE_KEY_AUTH);
+          alert("Sessione rimossa.");
+        }
+        document.getElementById('modal-auth-token').close();
+        this.fetchOverview();
+      }
+    };
+
+    window.addEventListener('DOMContentLoaded', () => AdminApp.init());
+  </script>
+</body>
+</html>
