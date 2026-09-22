@@ -1,8 +1,8 @@
 // ============================================================================
 // PROJECT: ESTIQATSY SYNDICATE & RPG PLATFORM
-// FILE: js/rules2engine.js (VERSIONE 5.0 - SERVER-AUTHORITATIVE & FULL CROSS-SAVE)
-// LAYER: GAMEPLAY LOOP, D20 COMBAT, ASSETTO LOADOUT, CRAFTING & FORFEIT ENGINE
-// NOTE: 100% DISACCOPPIATO DAL WALLET PIATTAFORMA - GESTIONE AUTONOMA DELL'ORO
+// FILE: js/rules2engine.js (VERSIONE 14.0 - FULL GAS REST & NATIVE HUD ALIGNED)
+// LAYER: GAMEPLAY LOOP, D20 COMBAT, ASSETTO TATTICO, CRAFTING & FORFEIT ENGINE
+// NOTE: 100% DISACCOPPIATO DAL WALLET PIATTAFORMA - GESTIONE AUTONOMA DELL'ORO 🟡
 // ============================================================================
 
 // ----------------------------------------------------------------------------
@@ -52,11 +52,14 @@ if (typeof tgHaptic === "undefined") {
   };
 }
 
-if (typeof tgAlert === "undefined") {
-  window.tgAlert = function(msg) {
-    if (window.Telegram?.WebApp?.showAlert) window.Telegram.WebApp.showAlert(msg);
-    else alert(msg);
-  };
+function rulesNotify(msg, type = "info") {
+  if (window.AppCore && typeof AppCore.toast === "function") {
+    AppCore.toast(msg, type);
+  } else if (window.Telegram?.WebApp?.showAlert) {
+    window.Telegram.WebApp.showAlert(msg);
+  } else {
+    alert(msg);
+  }
 }
 
 // ----------------------------------------------------------------------------
@@ -83,7 +86,7 @@ const Rules2Engine = {
   },
 
   // --------------------------------------------------------------------------
-  // GESTIONE AUTONOMA ORO DI GIOCO (DISACCOPPIATA DALLA PIATTAFORMA)
+  // GESTIONE AUTONOMA ORO DI GIOCO (DISACCOPPIATA DAL WALLET MEGOIN)
   // --------------------------------------------------------------------------
   getGold: function() {
     const h = AppState.activeSession?.hero;
@@ -102,7 +105,7 @@ const Rules2Engine = {
     const sheet = document.getElementById("sheet-hero-gold");
     if (sheet) sheet.textContent = `${num} 🟡`;
     const wiz = document.getElementById("wizard-shop-gold-display");
-    if (wiz) wiz.textContent = `💰 ${num} 🟡`;
+    if (wiz) wiz.innerHTML = `💰 <b>${num}</b> 🟡`;
   },
 
   addGold: function(amount) {
@@ -125,25 +128,25 @@ const Rules2Engine = {
     const activeBox = document.getElementById("arcade-active-game-box");
     const insertBox = document.getElementById("arcade-insert-coin-box");
 
-    // SE C'È UNA PARTITA ATTIVA E NON ABBANDONATA: Mostra opzione Riprendi o Sovrascrivi
+    // Se c'è una partita attiva su GAS: opzione Riprendi o Ricomincia
     if (saga && saga.hasActiveGame && saga.activePartitaId) {
       if (activeBox) activeBox.classList.remove("hidden");
       if (insertBox) insertBox.classList.add("hidden");
 
       activeBox.innerHTML = `
         <h3 class="arcade-title">${saga.serie || 'AVVENTURA'}</h3>
-        <p class="arcade-subtitle">Sessione attiva salvata (ID: ${saga.activePartitaId})</p>
-        <div class="arcade-actions-50-50">
-          <button id="btn-arcade-new" class="btn btn-outline border-amber-500/40 text-amber-300">Ricomincia (1 🪙)</button>
-          <button id="btn-arcade-resume" class="btn btn-success text-slate-950 font-black">Riprendi ▶️</button>
+        <p class="arcade-subtitle">Sessione attiva sul server (ID: ${saga.activePartitaId})</p>
+        <div class="grid grid-cols-2 gap-2 pt-2">
+          <button id="btn-arcade-new" class="btn btn-outline border-amber-500/40 text-amber-300 font-bold text-xs">Ricomincia (1 🪙)</button>
+          <button id="btn-arcade-resume" class="btn btn-success text-slate-950 font-black text-xs">Riprendi ▶️</button>
         </div>
       `;
 
       document.getElementById("btn-arcade-resume").onclick = () => {
         modal.close();
-        const activeFase = String(saga.activeFase || saga.fase || (saga.statoPartita && saga.statoPartita.fase) || "").toUpperCase();
+        const activeFase = String(saga.activeFase || "").toUpperCase();
 
-        // 🎯 SE SOSPESA DURANTE IL WIZARD: Riprende dallo Step esatto memorizzato sul server!
+        // Se era sospesa durante il Wizard, riprende dallo step salvato su GAS
         if (activeFase.indexOf("WIZARD_") !== -1) {
           if (typeof Rules2Wizard !== "undefined") {
             Rules2Wizard.resumeSession(gameKey, saga.activeEpisodio || epNum, saga);
@@ -151,7 +154,7 @@ const Rules2Engine = {
           return;
         }
 
-        // 🎯 SE IN GIOCO: Ripristina e naviga allo snodo narrativo attivo
+        // Se in gioco, naviga allo snodo attivo
         AppState.activeSession.engineKey = "Rules2";
         AppState.activeSession.gameKey = gameKey;
         AppState.activeSession.episodio = saga.activeEpisodio || epNum;
@@ -170,13 +173,12 @@ const Rules2Engine = {
         this._setupArcadeCoinScreen(gameKey, epNum, canContinueFree, savedHero, modal);
       };
     } else {
-      // PARTITA ABBANDONATA O NUOVA: Mostra ESCLUSIVAMENTE "Inserisci 1 🪙 e Gioca"
       if (activeBox) activeBox.classList.add("hidden");
       if (insertBox) insertBox.classList.remove("hidden");
       this._setupArcadeCoinScreen(gameKey, epNum, canContinueFree, savedHero, modal);
     }
 
-    if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("modal_open");
+    if (window.SoundEngine) SoundEngine.playClick();
     modal.showModal();
   },
 
@@ -187,12 +189,12 @@ const Rules2Engine = {
     s("arcade-user-balance", userBalance);
 
     if (canContinueFree || (savedHero && epNum > 1)) {
-      s("arcade-coin-title", "VETERANO");
+      s("arcade-coin-title", "EROE VETERANO");
       s("arcade-coin-desc", `Prosegui con l'Eroe veterano "${savedHero ? (savedHero.nomeEroe || savedHero.classe) : 'In Memoria'}".`);
       s("arcade-cost-badge", "GRATIS");
       const btnLaunch = document.getElementById("arcade-btn-launch");
       if (btnLaunch) {
-        btnLaunch.textContent = "Continua 🎖️";
+        btnLaunch.textContent = "Continua l'Inchiesta 🎖️";
         btnLaunch.onclick = () => {
           modal.close();
           if (typeof Rules2Wizard !== "undefined") {
@@ -201,7 +203,7 @@ const Rules2Engine = {
         };
       }
     } else {
-      s("arcade-coin-title", "INSERT MEGOIN");
+      s("arcade-coin-title", "INSERISCI GETTONE");
       s("arcade-coin-desc", "1 Megoin per creare e lanciare un nuovo eroe.");
       s("arcade-cost-badge", "1 🪙");
       const btnLaunch = document.getElementById("arcade-btn-launch");
@@ -210,8 +212,8 @@ const Rules2Engine = {
         btnLaunch.onclick = () => {
           if (userBalance < 1) {
             tgHaptic("error");
-            if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("unlucky");
-            return tgAlert("⚠️ Megoin insufficienti!");
+            if (window.SoundEngine) SoundEngine.playError();
+            return rulesNotify("Saldo Megoin insufficiente per avviare la sessione!", "error");
           }
           modal.close();
           if (typeof Rules2Wizard !== "undefined") {
@@ -225,19 +227,21 @@ const Rules2Engine = {
   executeStartGame: async function(payloadParams, avatarUrl = "") {
     try {
       tgHaptic("success");
-      if (typeof SoundEngine !== "undefined") {
-        SoundEngine.playSfx("insert_coin");
-        SoundEngine.playEpisodeBgm(payloadParams.gameKey, payloadParams.episodio, "explore");
+      if (window.SoundEngine) {
+        SoundEngine.playCoin();
+        if (typeof SoundEngine.playEpisodeBgm === "function") {
+          SoundEngine.playEpisodeBgm(payloadParams.gameKey, payloadParams.episodio, "explore");
+        }
       }
 
+      // Chiamata Server-Authoritative: avvio atomico su Modulo_WebApp.gs
       const res = await apiCall("game_start", payloadParams);
       if (res && res.success) {
         const wizardCatalog = (typeof Rules2Wizard !== "undefined" && Rules2Wizard.state.shopCatalog) || [];
-        const allGameItems = typeof deduplicateEntities === "function" ? deduplicateEntities([
+        const allGameItems = [
           ...(res.emporioItems || []),
-          ...(res.equipaggiamenti || []),
           ...wizardCatalog
-        ]) : (res.emporioItems || []);
+        ];
 
         AppState.activeSession.engineKey = "Rules2";
         AppState.activeSession.gameKey = payloadParams.gameKey;
@@ -277,16 +281,56 @@ const Rules2Engine = {
         if (res.nuovoSaldoMegoin !== undefined) {
           Wallet.setMegoin(res.nuovoSaldoMegoin);
         }
-        if (typeof AppModules !== "undefined" && typeof AppModules.renderProfile === "function") {
-          AppModules.renderProfile(AppState.user);
-        }
+        if (window.AppCore) AppCore.syncUI();
 
         this.renderNode(res.nodoIniziale, AppState.activeSession.hero);
         AppRouter.navigate("view-gameplay");
       }
     } catch (err) {
-      console.error("[Rules2Engine] Errore avvio partita:", err);
-      tgAlert("Errore avvio: " + err.message);
+      console.error("[Rules2Engine] Errore avvio partita su GAS:", err);
+      rulesNotify("Errore avvio: " + err.message, "error");
+    }
+  },
+
+  syncHUD: function() {
+    const hero = AppState.activeSession?.hero;
+    if (!hero) return;
+
+    const s = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+    const saga = (AppState.games.catalog || []).find(g => g.gameKey === AppState.activeSession.gameKey);
+
+    s("game-header-series", (saga ? saga.serie : "AVVENTURA NOIR").toUpperCase());
+    s("game-header-episode", `Episodio ${AppState.activeSession.episodio}`);
+
+    const avatarImg = document.getElementById("kpi-hero-avatar-img");
+    const avatarFallback = document.getElementById("kpi-hero-avatar-fallback");
+    const media = hero.mediaUrl;
+
+    if (avatarImg && avatarFallback) {
+      if (media && media !== "—" && media.startsWith("http")) {
+        avatarImg.src = media;
+        avatarImg.classList.remove("hidden");
+        avatarFallback.classList.add("hidden");
+      } else {
+        avatarImg.classList.add("hidden");
+        avatarFallback.classList.remove("hidden");
+      }
+    }
+
+    s("kpi-hero-name", hero.nomeEroe || "Avventuriero");
+    s("kpi-hero-gold", hero.oro || 0);
+    s("kpi-hero-pv-text", `${hero.pv || 0}/${hero.pvMax || 25}`);
+
+    const pvBar = document.getElementById("kpi-hero-pv-bar");
+    if (pvBar) {
+      pvBar.value = hero.pv || 0;
+      pvBar.max = hero.pvMax || 25;
+    }
+
+    if (hero.modificatori) {
+      s("kpi-mod-for", (hero.modificatori.FORZA >= 0 ? "+" : "") + hero.modificatori.FORZA);
+      s("kpi-mod-des", (hero.modificatori.DESTREZZA >= 0 ? "+" : "") + hero.modificatori.DESTREZZA);
+      s("kpi-mod-int", (hero.modificatori.INTELLIGENZA >= 0 ? "+" : "") + hero.modificatori.INTELLIGENZA);
     }
   },
 
@@ -303,13 +347,15 @@ const Rules2Engine = {
     const currentHero = AppState.activeSession.hero;
     if (!currentNode) return;
 
+    this.syncHUD();
+
     // Monitor Cardiaco Bassa Salute (PV <= 25%)
     if (currentHero && currentHero.pvMax) {
       const pvRatio = (currentHero.pv || 0) / currentHero.pvMax;
       if (pvRatio <= 0.25 && currentHero.pv > 0) {
-        if (typeof SoundEngine !== "undefined") SoundEngine.startHeartbeat();
+        if (window.SoundEngine && typeof SoundEngine.startHeartbeat === "function") SoundEngine.startHeartbeat();
       } else {
-        if (typeof SoundEngine !== "undefined") SoundEngine.stopHeartbeat();
+        if (window.SoundEngine && typeof SoundEngine.stopHeartbeat === "function") SoundEngine.stopHeartbeat();
       }
     }
 
@@ -317,20 +363,19 @@ const Rules2Engine = {
     const isVictory = (String(currentNode.id).includes("SND_END") || currentNode.sottocategoria === "gancio" || currentNode.sottocategoria === "conclusione");
     const actBox = document.getElementById("scene-actions-container");
 
-    // 1. ESITO MORTE: 50/50 [ Riprova (1 🪙) ] [ Esci ]
+    // 1. ESITO MORTE
     if (isDefeat) {
-      if (typeof SoundEngine !== "undefined") {
-        SoundEngine.stopHeartbeat();
-        SoundEngine.playSfx("zelda_death");
-        SoundEngine.playBgm("defeat");
+      if (window.SoundEngine) {
+        if (typeof SoundEngine.stopHeartbeat === "function") SoundEngine.stopHeartbeat();
+        SoundEngine.playError();
       }
       if (actBox) {
         actBox.innerHTML = `
-          <div class="arcade-actions-50-50">
-            <button onclick="Rules2Engine.launchSession('${AppState.activeSession.gameKey}', ${AppState.activeSession.episodio}, false, null)" class="btn btn-warning font-black">
+          <div class="grid grid-cols-2 gap-2 pt-1">
+            <button onclick="Rules2Engine.launchSession('${AppState.activeSession.gameKey}', ${AppState.activeSession.episodio}, false, null)" class="scene-action-btn action-danger font-black justify-center">
               Riprova (1 🪙) 🔄
             </button>
-            <button onclick="Rules2Engine.confirmAbandon()" class="btn btn-outline border-white/20 text-white font-bold">
+            <button onclick="Rules2Engine.confirmAbandon()" class="scene-action-btn font-bold justify-center">
               Esci 🚪
             </button>
           </div>
@@ -339,20 +384,22 @@ const Rules2Engine = {
       return;
     }
 
-    // 2. ESITO VITTORIA: 50/50 [ Rigioca Ep. ] [ Episodio Succ. › ]
+    // 2. ESITO VITTORIA
     if (isVictory) {
-      if (typeof SoundEngine !== "undefined") {
-        SoundEngine.stopHeartbeat();
-        SoundEngine.playSfx("lucky");
-        SoundEngine.playBgm("victory");
+      if (window.SoundEngine) {
+        if (typeof SoundEngine.stopHeartbeat === "function") SoundEngine.stopHeartbeat();
+        SoundEngine.playVictory();
+      }
+      if (window.confetti) {
+        try { window.confetti({ particleCount: 75, spread: 60 }); } catch (e) {}
       }
       if (actBox) {
         actBox.innerHTML = `
-          <div class="arcade-actions-50-50">
-            <button onclick="if(typeof Rules2Wizard !== 'undefined') Rules2Wizard.open('${AppState.activeSession.gameKey}', ${AppState.activeSession.episodio}, false, null)" class="btn btn-outline border-emerald-400 text-emerald-300 font-bold">
+          <div class="grid grid-cols-2 gap-2 pt-1">
+            <button onclick="Rules2Engine.launchSession('${AppState.activeSession.gameKey}', ${AppState.activeSession.episodio}, false, null)" class="scene-action-btn font-bold justify-center">
               Rigioca Ep. ${AppState.activeSession.episodio} 🔄
             </button>
-            <button onclick="if(typeof Rules2Wizard !== 'undefined') Rules2Wizard.open('${AppState.activeSession.gameKey}', ${AppState.activeSession.episodio + 1}, true, AppState.activeSession.hero)" class="btn btn-success text-slate-950 font-black">
+            <button onclick="Rules2Engine.launchSession('${AppState.activeSession.gameKey}', ${AppState.activeSession.episodio + 1}, true, AppState.activeSession.hero)" class="scene-action-btn font-black text-emerald-300 justify-center">
               Episodio ${AppState.activeSession.episodio + 1} ›
             </button>
           </div>
@@ -361,43 +408,7 @@ const Rules2Engine = {
       return;
     }
 
-    // Header & Info di Gioco
     const s = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
-    const saga = (AppState.games.catalog || []).find(g => g.gameKey === AppState.activeSession.gameKey);
-    s("game-header-series", (saga ? saga.serie : "AVVENTURA NOIR").toUpperCase());
-    s("game-header-episode", `Episodio ${AppState.activeSession.episodio}`);
-
-    if (currentHero) {
-      const avatarImg = document.getElementById("kpi-hero-avatar-img");
-      const avatarFallback = document.getElementById("kpi-hero-avatar-fallback");
-      const media = currentHero.mediaUrl;
-
-      if (avatarImg && avatarFallback) {
-        if (media && media !== "—" && media.startsWith("http")) {
-          avatarImg.src = media;
-          avatarImg.classList.remove("hidden");
-          avatarFallback.classList.add("hidden");
-        } else {
-          avatarImg.classList.add("hidden");
-          avatarFallback.classList.remove("hidden");
-        }
-      }
-
-      s("kpi-hero-name", currentHero.nomeEroe || "Avventuriero");
-      s("kpi-hero-gold", currentHero.oro || 0);
-      s("kpi-hero-pv-text", `${currentHero.pv || 0}/${currentHero.pvMax || 25}`);
-      const pvBar = document.getElementById("kpi-hero-pv-bar");
-      if (pvBar) {
-        pvBar.value = currentHero.pv || 0;
-        pvBar.max = currentHero.pvMax || 25;
-      }
-
-      if (currentHero.modificatori) {
-        s("kpi-mod-for", (currentHero.modificatori.FORZA >= 0 ? "+" : "") + currentHero.modificatori.FORZA);
-        s("kpi-mod-des", (currentHero.modificatori.DESTREZZA >= 0 ? "+" : "") + currentHero.modificatori.DESTREZZA);
-        s("kpi-mod-int", (currentHero.modificatori.INTELLIGENZA >= 0 ? "+" : "") + currentHero.modificatori.INTELLIGENZA);
-      }
-    }
 
     const img = document.getElementById("scene-image");
     if (img) {
@@ -425,48 +436,39 @@ const Rules2Engine = {
     const isBoss = isCombat && (String(currentNode.id).includes("BOSS") || String(currentNode.sottocategoria || "").toUpperCase().includes("BOSS"));
     const isEvento = (currentNode.tipo === "EVENTO" || (currentNode.id && currentNode.id.includes("EVT_")));
 
-    // CASO 1: COMBATTIMENTO
+    // CASO 1: COMBATTIMENTO D20
     if (isCombat) {
-      if (typeof SoundEngine !== "undefined") {
-        SoundEngine.playEpisodeBgm(AppState.activeSession.gameKey, AppState.activeSession.episodio, isBoss ? "boss" : "combat");
-      }
-
       if (AppState.activeSession.combatEnemyId !== currentNode.id) {
         AppState.activeSession.combatEnemyId = currentNode.id;
         AppState.activeSession.combatRound = 1;
-        if (typeof SoundEngine !== "undefined") SoundEngine.playSfx(isBoss ? "shock" : "hit");
+        if (window.SoundEngine) SoundEngine.playDice();
       }
 
       let bribeHtml = "";
       if (currentNode.corruption?.canCorrupt && currentNode.corruption.validDrugs?.length > 0) {
         bribeHtml = currentNode.corruption.validDrugs.map(d => `
-          <button onclick="Rules2Engine.combatBribe('${Rules2_SafeAttr(d.nome)}')" class="btn btn-sm btn-block btn-warning font-black uppercase">
-            Offri ${Rules2_SafeAttr(d.nome.split(" ")[0])} 💊
+          <button onclick="Rules2Engine.combatBribe('${Rules2_SafeAttr(d.nome)}')" class="scene-action-btn border-amber-400/40 text-amber-300">
+            <span>Offri ${Rules2_SafeAttr(d.nome.split(" ")[0])} 💊</span>
+            <span class="text-[10px] font-mono uppercase">Corrompi</span>
           </button>
         `).join("");
       }
 
       actBox.innerHTML = `
-        <div class="combat-actions-grid">
-          <button onclick="Rules2Engine.combatAction('attack_round')" class="btn btn-sm btn-error font-black btn-combat-attack">
+        <div class="grid grid-cols-2 gap-2">
+          <button onclick="Rules2Engine.combatAction('attack_round')" class="scene-action-btn action-danger font-black justify-center">
             ⚔️ Attacca
           </button>
-          <button onclick="Rules2Engine.combatAction('flee')" class="btn btn-sm btn-outline border-white/20 btn-combat-flee">
+          <button onclick="Rules2Engine.combatAction('flee')" class="scene-action-btn font-bold justify-center">
             Fuggi 🏃
           </button>
         </div>
         ${bribeHtml}
-        <div class="pt-0.5">
-          <button onclick="Rules2Engine.inspectCurrentEnemyDetail()" class="btn btn-xs btn-block btn-ghost btn-inspect-enemy font-black">
-            Fascicolo 🔍
-          </button>
-        </div>
+        <button onclick="Rules2Engine.inspectCurrentEnemyDetail()" class="scene-action-btn text-slate-300 justify-center text-xs">
+          Fascicolo Nemico 🔍
+        </button>
       `;
       return;
-    }
-
-    if (typeof SoundEngine !== "undefined") {
-      SoundEngine.playEpisodeBgm(AppState.activeSession.gameKey, AppState.activeSession.episodio, "explore");
     }
 
     // CASO 2: EVENTO D20
@@ -479,20 +481,21 @@ const Rules2Engine = {
 
       if (hasTool) {
         actBox.innerHTML = `
-          <div class="tactical-advantage-box">
-            <div class="text-[10px] font-bold text-emerald-300">🛡️ Vantaggio Tattico: possiedi ${bypassTool}!</div>
+          <div class="p-2.5 rounded-xl bg-emerald-950/40 border border-emerald-500/40 text-[11px] font-bold text-emerald-300 mb-1">
+            🛡️ Vantaggio Tattico: possiedi ${bypassTool}!
           </div>
-          <button onclick="Rules2Engine.executeEventRoll('${currentNode.id}', '${statReq}', ${cdVal})" class="btn btn-sm btn-block btn-success font-black h-11 uppercase">
-            Bypassa con ${bypassTool} ⚡
+          <button onclick="Rules2Engine.executeEventRoll('${currentNode.id}', '${statReq}', ${cdVal})" class="scene-action-btn border-emerald-500 text-emerald-300 font-black">
+            <span>Bypassa con ${bypassTool} ⚡</span>
+            <span>100% Successo</span>
           </button>
         `;
       } else {
         actBox.innerHTML = `
-          <div class="combat-actions-grid">
-            <button onclick="Rules2Engine.executeEventRoll('${currentNode.id}', '${statReq}', ${cdVal})" class="btn btn-sm btn-primary font-black h-11 uppercase">
+          <div class="grid grid-cols-2 gap-2">
+            <button onclick="Rules2Engine.executeEventRoll('${currentNode.id}', '${statReq}', ${cdVal})" class="scene-action-btn border-sky-400 text-sky-300 font-black justify-center">
               Tira D20 (${shortStat}) 🎲
             </button>
-            <button onclick="Rules2Engine.advanceToNode('${currentNode.destFallback || currentNode.destFallimento}')" class="btn btn-sm btn-outline border-white/20 h-11 font-black uppercase">
+            <button onclick="Rules2Engine.advanceToNode('${currentNode.destFallback || currentNode.destFallimento}')" class="scene-action-btn font-bold justify-center">
               Schiva 🏃
             </button>
           </div>
@@ -504,13 +507,11 @@ const Rules2Engine = {
     // CASO 3: ENIGMA
     if (currentNode.quiz) {
       actBox.innerHTML = `
-        <div class="quiz-box">
-          <div class="quiz-question">
-            <span>🔐</span> <span>${currentNode.quiz.domanda}</span>
-          </div>
-          <div class="quiz-options-grid">
+        <div class="p-3 bg-slate-900 rounded-xl border border-white/10 space-y-2">
+          <div class="text-xs font-bold text-sky-300">🔐 ${currentNode.quiz.domanda}</div>
+          <div class="grid grid-cols-2 gap-2 pt-1">
             ${currentNode.quiz.opzioni.map(opz => `
-              <button onclick="Rules2Engine.submitQuizAnswer('${Rules2_SafeAttr(opz)}')" class="btn btn-sm btn-outline border-white/20 text-[11px] font-bold truncate">
+              <button onclick="Rules2Engine.submitQuizAnswer('${Rules2_SafeAttr(opz)}')" class="scene-action-btn text-xs font-bold truncate">
                 ${opz}
               </button>
             `).join("")}
@@ -520,34 +521,19 @@ const Rules2Engine = {
       return;
     }
 
-    // CASO 4: BIVIO NARRATIVO STANDARD
-    const choices = (currentNode.choices || currentNode.parsedBivio || []).map(c => ({
-      testo: c.testo || c.text || "Avanza",
-      target: c.target || c.id || ""
-    })).filter(c => c.target);
+    // CASO 4: BIVIO NARRATIVO STANDARD (DAL NODO GAS)
+    const choices = (currentNode.choices || []).filter(c => c.target);
 
     if (choices.length > 0) {
-      if (choices.length === 2) {
-        actBox.innerHTML = `
-          <div class="combat-actions-grid">
-            <button onclick="Rules2Engine.advanceToNode('${choices[0].target}')" class="btn btn-sm btn-primary font-black truncate h-11 uppercase">
-              ${choices[0].testo}
-            </button>
-            <button onclick="Rules2Engine.advanceToNode('${choices[1].target}')" class="btn btn-sm btn-primary font-black truncate h-11 uppercase">
-              ${choices[1].testo}
-            </button>
-          </div>
-        `;
-      } else {
-        actBox.innerHTML = choices.map(c => `
-          <button onclick="Rules2Engine.advanceToNode('${c.target}')" class="btn btn-sm btn-block btn-primary font-black mb-1.5 truncate h-11 uppercase">
-            ${c.testo}
-          </button>
-        `).join("");
-      }
+      actBox.innerHTML = choices.map(c => `
+        <button onclick="Rules2Engine.advanceToNode('${c.target}')" class="scene-action-btn">
+          <span class="truncate">${c.testo}</span>
+          <span>›</span>
+        </button>
+      `).join("");
     } else {
       actBox.innerHTML = `
-        <button onclick="Rules2Engine.leaveGameToHub()" class="btn btn-sm btn-block btn-outline border-white/20 font-black h-11 uppercase">
+        <button onclick="Rules2Engine.leaveGameToHub()" class="scene-action-btn justify-center font-black">
           Torna all'Hub 🏠
         </button>
       `;
@@ -559,9 +545,9 @@ const Rules2Engine = {
     this._setBusy(true);
 
     tgHaptic("selection");
-    if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("card_flip");
+    if (window.SoundEngine) SoundEngine.playClick();
 
-    // Lavorazione sintesi chimica ad ogni snodo
+    // Progressione lavorazione sintesi chimica ad ogni snodo
     const h = AppState.activeSession.hero;
     if (h && h.sintesiInCorso && h.sintesiInCorso.length > 0) {
       const stillCrafting = [];
@@ -570,7 +556,7 @@ const Rules2Engine = {
         if (sc.turniMancanti <= 0) {
           h.inventario = h.inventario || [];
           h.inventario.push(sc.prodotto);
-          tgAlert(`⚗️ Sintesi completata: 1 dose di ${sc.icon || '💊'} ${sc.prodotto} aggiunta allo zaino!`);
+          rulesNotify(`⚗️ Sintesi completata: 1 dose di ${sc.icon || '💊'} ${sc.prodotto} pronta nello zaino!`, "success");
         } else {
           stillCrafting.push(sc);
         }
@@ -592,36 +578,9 @@ const Rules2Engine = {
       }
     } catch (e) {
       this._setBusy(false);
-      console.error("[Rules2Engine] Errore advanceToNode:", e);
-      tgAlert("Errore avanzamento: " + e.message);
+      console.error("[Rules2Engine] Errore advanceToNode su GAS:", e);
+      rulesNotify("Errore avanzamento: " + e.message, "error");
     }
-  },
-
-  showDiceRollSuspense: function(title, desc, durationMs, onComplete) {
-    const diceModal = document.getElementById("modal-dice-suspense");
-    const diceCube = document.getElementById("dice-visual-cube");
-    const s = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
-
-    s("dice-roll-title", title || "Lancio D20...");
-    s("dice-roll-result", "--");
-    s("dice-roll-desc", desc || "Il fato decide...");
-
-    if (diceCube) diceCube.classList.add("dice-rolling");
-    if (diceModal) diceModal.showModal();
-
-    if (typeof SoundEngine !== "undefined") {
-      SoundEngine.duck(0.08, (durationMs || 700) + 400);
-      SoundEngine.playSfx("dice");
-    }
-
-    setTimeout(() => {
-      if (diceCube) diceCube.classList.remove("dice-rolling");
-      if (typeof onComplete === "function") {
-        onComplete(diceModal, s);
-      } else {
-        if (diceModal) diceModal.close();
-      }
-    }, durationMs || 700);
   },
 
   // 🎯 RISOLUZIONE EVENTO D20 SERVER-AUTHORITATIVE
@@ -635,15 +594,12 @@ const Rules2Engine = {
 
     s("dice-roll-title", `Prova ${statName} vs CD ${cdVal}`);
     s("dice-roll-result", "--");
-    s("dice-roll-desc", "Verifica ostacolo con il server...");
+    s("dice-roll-desc", "Verifica tiro sul server...");
 
     if (diceCube) diceCube.classList.add("dice-rolling");
     if (diceModal) diceModal.showModal();
 
-    if (typeof SoundEngine !== "undefined") {
-      SoundEngine.duck(0.08, 900);
-      SoundEngine.playSfx("dice");
-    }
+    if (window.SoundEngine) SoundEngine.playDice();
 
     try {
       const res = await apiCall("game_action", {
@@ -662,16 +618,16 @@ const Rules2Engine = {
       const isFail = (r.d20 === 1);
 
       if (isBypassed) {
-        s("dice-roll-result", "⚡ VANTAGGIO TATTICO");
-        s("dice-roll-desc", `Bypassato al 100% grazie a ${r.itemId || r.allyId || 'equipaggiamento'}!`);
+        s("dice-roll-result", "⚡ BYPASS");
+        s("dice-roll-desc", `Superato grazie a ${r.itemId || r.allyId || 'equipaggiamento'}!`);
       } else {
-        s("dice-roll-result", `D20 (${r.d20 || '--'}) ${r.modStat >= 0 ? '+' : ''}${r.modStat || 0} = ${r.tot || '--'} vs CD ${r.cdD20 || cdVal}`);
-        s("dice-roll-desc", isSuccess ? "SUPERATO!" : `FALLITO! (-${res.dmgTaken || 0} PV)`);
+        s("dice-roll-result", `${r.tot || '--'} (CD ${r.cdD20 || cdVal})`);
+        s("dice-roll-desc", isSuccess ? "PROVA SUPERATA!" : `FALLITO! (-${res.dmgTaken || 0} PV)`);
       }
 
-      if (typeof SoundEngine !== "undefined") {
-        if (isSuccess) SoundEngine.playSfx(isCrit || isBypassed ? "lucky" : "success");
-        else SoundEngine.playSfx(isFail ? "unlucky" : "hurt");
+      if (window.SoundEngine) {
+        if (isSuccess) SoundEngine.playVictory();
+        else SoundEngine.playError();
       }
 
       setTimeout(() => {
@@ -679,10 +635,10 @@ const Rules2Engine = {
 
         if (isSuccess) {
           tgHaptic("success");
-          this.showFloatingDamage(isCrit ? "🌟 CRITICO!" : (isBypassed ? "⚡ Bypasso!" : "✅ Superato!"), isCrit, false);
+          this.showFloatingDamage(isCrit ? "🌟 CRITICO!" : "✅ Superato!", isCrit, false);
         } else {
           tgHaptic("error");
-          this.showFloatingDamage(isFail ? "💀 FUMBLE!" : `❌ Fallito! -${res.dmgTaken || 0} PV`, false, true);
+          this.showFloatingDamage(isFail ? "💀 FUMBLE!" : `💔 -${res.dmgTaken || 0} PV`, false, true);
         }
 
         if (res.nextView) {
@@ -694,7 +650,7 @@ const Rules2Engine = {
       if (diceModal) diceModal.close();
       this._setBusy(false);
       console.error("[Rules2Engine] Errore executeEventRoll:", e);
-      tgAlert("Errore prova evento: " + e.message);
+      rulesNotify("Errore prova evento: " + e.message, "error");
     }
   },
 
@@ -717,11 +673,11 @@ const Rules2Engine = {
 
       if (res?.correct) {
         tgHaptic("success");
-        if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("lucky");
+        if (window.SoundEngine) SoundEngine.playVictory();
         this.showFloatingDamage("✅ Esatto!", false, false);
       } else {
         tgHaptic("error");
-        if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("unlucky");
+        if (window.SoundEngine) SoundEngine.playError();
         this.showFloatingDamage(`❌ Errato! -${res.dmgTaken || 4} PV`, false, true);
       }
 
@@ -734,10 +690,11 @@ const Rules2Engine = {
     } catch (e) {
       this._setBusy(false);
       console.error("[Rules2Engine] Errore submitQuizAnswer:", e);
-      tgAlert("Errore verifica risposta: " + e.message);
+      rulesNotify("Errore verifica risposta: " + e.message, "error");
     }
   },
 
+  // 🎯 RISOLUZIONE COMBATTIMENTO ROUND D20
   combatAction: async function(subAction) {
     if (!AppState.activeSession.gameKey || this._isBusy) return;
     this._setBusy(true);
@@ -750,16 +707,11 @@ const Rules2Engine = {
     if (subAction === "attack_round") {
       s("dice-roll-title", `Attacco • Round ${curRound}`);
       s("dice-roll-result", "--");
-      s("dice-roll-desc", "Tiro di attacco...");
+      s("dice-roll-desc", "Tiro di attacco D20...");
       if (diceCube) diceCube.classList.add("dice-rolling");
       if (diceModal) diceModal.showModal();
 
-      if (typeof SoundEngine !== "undefined") {
-        SoundEngine.duck(0.08, 900);
-        SoundEngine.playSfx("dice");
-      }
-    } else if (subAction === "flee") {
-      if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("flee");
+      if (window.SoundEngine) SoundEngine.playDice();
     }
 
     try {
@@ -774,10 +726,10 @@ const Rules2Engine = {
         if (diceCube) diceCube.classList.remove("dice-rolling");
 
         if (log) {
-          s("dice-roll-result", `D20 (${log.d20Hero}) = ${log.totHero} vs CD ${log.cdTarget}`);
-          s("dice-roll-desc", log.isHit ? (log.isCrit ? "CRITICO!" : `COLPITO! -${log.dmgDealt} PV`) : "A VUOTO!");
+          s("dice-roll-result", `${log.totHero} (CD ${log.cdTarget})`);
+          s("dice-roll-desc", log.isHit ? (log.isCrit ? "COLPO CRITICO!" : `COLPITO! -${log.dmgDealt} PV`) : "COLPO A VUOTO!");
         } else {
-          s("dice-roll-result", res.status === "VICTORY" ? "VITTORIA!" : "FINE SCONTRO");
+          s("dice-roll-result", res.status === "VICTORY" ? "VITTORIA!" : "FINE");
         }
 
         setTimeout(() => {
@@ -787,17 +739,15 @@ const Rules2Engine = {
             if (log.isHit) {
               tgHaptic(log.isCrit ? "success" : "light");
               this.showFloatingDamage(`💥 -${log.dmgDealt} PV`, log.isCrit, false);
-              if (typeof SoundEngine !== "undefined") SoundEngine.playSfx(log.isCrit ? "crit_hit" : "hit");
             } else {
               this.showFloatingDamage("💨 A vuoto", false, false);
-              if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("flee");
             }
 
             if (log.dmgTaken > 0) {
               setTimeout(() => {
                 tgHaptic("error");
                 this.showFloatingDamage(`💔 -${log.dmgTaken} PV Squadra`, false, true);
-                if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("hurt");
+                if (window.SoundEngine) SoundEngine.playError();
               }, 250);
             }
           }
@@ -806,12 +756,13 @@ const Rules2Engine = {
             AppState.activeSession.combatRound = 1;
             AppState.activeSession.combatEnemyId = null;
 
-            if (typeof SoundEngine !== "undefined") {
-              SoundEngine.stopHeartbeat();
-              SoundEngine.playSfx("lucky");
-              SoundEngine.playBgm("victory");
+            if (window.SoundEngine) {
+              if (typeof SoundEngine.stopHeartbeat === "function") SoundEngine.stopHeartbeat();
+              SoundEngine.playVictory();
             }
-            if (window.confetti) confetti({ particleCount: 75, spread: 60 });
+            if (window.confetti) {
+              try { window.confetti({ particleCount: 75, spread: 60 }); } catch (e) {}
+            }
 
             const hero = AppState.activeSession.hero;
             const hasNecroAbl = (hero?.abilita?.includes("Necromanzia") && hero.pv > 1);
@@ -825,12 +776,7 @@ const Rules2Engine = {
           } else if (res.status === "DEFEAT") {
             AppState.activeSession.combatRound = 1;
             AppState.activeSession.combatEnemyId = null;
-
-            if (typeof SoundEngine !== "undefined") {
-              SoundEngine.stopHeartbeat();
-              SoundEngine.playSfx("zelda_death");
-              SoundEngine.playBgm("defeat");
-            }
+            if (window.SoundEngine) SoundEngine.playError();
             this.renderNode(res.nextView.nodo, res.nextView.statoEroe);
           } else {
             AppState.activeSession.combatRound = (log ? log.round + 1 : curRound + 1);
@@ -846,7 +792,7 @@ const Rules2Engine = {
       if (diceModal) diceModal.close();
       this._setBusy(false);
       console.error("[Rules2Engine] Errore combatAction:", e);
-      tgAlert("Errore azione: " + e.message);
+      rulesNotify("Errore azione: " + e.message, "error");
     }
   },
 
@@ -855,17 +801,15 @@ const Rules2Engine = {
     const actBox = document.getElementById("scene-actions-container");
     if (!actBox) return;
 
-    if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("evil_laugh");
-
     actBox.innerHTML = `
-      <div class="necromancy-prompt-box">
-        <div class="font-black text-purple-300">🧟 RIANIMAZIONE DISPONIBILE</div>
-        <div class="text-[10px] text-slate-300">Rianima <b>${deadEnemy ? deadEnemy.nome : 'nemico'}</b> come Zombi (Danno x2).</div>
-        <div class="combat-actions-grid pt-1">
-          <button onclick="Rules2Engine.executeResurrectZombie('${deadEnemy ? deadEnemy.id : ''}')" class="btn btn-sm btn-secondary font-black uppercase">
+      <div class="p-3 rounded-xl bg-purple-950/40 border border-purple-500/40 space-y-2">
+        <div class="font-black text-purple-300 text-xs">🧟 RIANIMAZIONE DISPONIBILE</div>
+        <div class="text-[11px] text-slate-300">Rianima <b>${deadEnemy ? deadEnemy.nome : 'nemico'}</b> come Zombi (Danno x2).</div>
+        <div class="grid grid-cols-2 gap-2 pt-1">
+          <button onclick="Rules2Engine.executeResurrectZombie('${deadEnemy ? deadEnemy.id : ''}')" class="scene-action-btn border-purple-400 text-purple-300 font-black justify-center">
             Rianima (-1 PV) 🧟
           </button>
-          <button onclick="Rules2Engine.skipNecromancy()" class="btn btn-sm btn-outline border-white/20 text-slate-300 font-bold uppercase">
+          <button onclick="Rules2Engine.skipNecromancy()" class="scene-action-btn text-slate-300 font-bold justify-center">
             Lascia Cadavere ›
           </button>
         </div>
@@ -887,7 +831,6 @@ const Rules2Engine = {
       });
       if (res?.success) {
         tgHaptic("success");
-        if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("zombie");
         this.showFloatingDamage("🧟 Risorto!", false, false);
         if (AppState.activeSession.engineState?.pendingVictory) {
           this.renderNode(AppState.activeSession.engineState.pendingVictory.nodo, res.statoEroe);
@@ -895,7 +838,7 @@ const Rules2Engine = {
         }
       }
     } catch (e) {
-      tgAlert("Rianimazione fallita: " + e.message);
+      rulesNotify("Rianimazione fallita: " + e.message, "warning");
       this.skipNecromancy();
     }
   },
@@ -921,13 +864,12 @@ const Rules2Engine = {
       });
       if (res?.success) {
         tgHaptic("success");
-        if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("bribe");
         this.showFloatingDamage("🟡 Corrotto!", false, false);
         this.renderNode(res.nextView.nodo, res.nextView.statoEroe);
       }
     } catch (e) {
       this._setBusy(false);
-      tgAlert("Corruzione fallita: " + e.message);
+      rulesNotify("Corruzione fallita: " + e.message, "error");
     }
   },
 
@@ -935,14 +877,14 @@ const Rules2Engine = {
     const box = document.getElementById("floating-damage-box");
     if (!box) return;
     const el = document.createElement("div");
-    el.className = `floating-damage ${isHeroDmg ? 'text-glow-rose' : (isCrit ? 'text-glow-amber' : '')}`;
+    el.className = `floating-damage ${isHeroDmg ? 'text-rose-400' : (isCrit ? 'text-amber-400' : 'text-sky-400')}`;
     el.textContent = text;
     box.appendChild(el);
     setTimeout(() => el.remove(), 1200);
   },
 
   // --------------------------------------------------------------------------
-  // 3. FASCICOLO APPROFONDITO UNIVERSALE (SCHEDA MONUMENTALE CENTRATA GLASSMORPHISM)
+  // 3. FASCICOLO APPROFONDITO UNIVERSALE
   // --------------------------------------------------------------------------
   inspectCurrentEnemyDetail: function() {
     const enemy = AppState.activeSession.currentNode;
@@ -953,7 +895,6 @@ const Rules2Engine = {
       nome: enemy.nome,
       tipo: "NEMICO",
       categoria: enemy.categoria || "Mazzu",
-      sottocategoria: enemy.sottocategoria || "Soldato",
       pv: enemy.pv,
       danno: enemy.danno,
       forza: enemy.forza,
@@ -961,10 +902,7 @@ const Rules2Engine = {
       intelligenza: enemy.intelligenza,
       difficolta: enemy.difficolta,
       statRichiesta: enemy.statRichiesta,
-      debolezze: enemy.debolezze,
       descrizione: enemy.testo,
-      citazione: enemy.citazione,
-      autoreCitazione: enemy.autoreCitazione,
       mediaUrl: enemy.mediaUrl,
       isEnemyInspection: true
     });
@@ -972,17 +910,15 @@ const Rules2Engine = {
 
   inspectEntityDetail: function(it) {
     if (!it) return;
-
     const modal = document.getElementById("modal-universal-detail");
     if (!modal) return;
 
     const s = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
     const h = (id, val) => { const el = document.getElementById(id); if (el) el.innerHTML = val; };
 
-    s("uni-detail-icon", it.emoji || (it.tipo === "NEMICO" ? "👾" : "📦"));
+    s("uni-detail-icon", it.tipo === "NEMICO" ? "👾" : "📦");
     s("uni-detail-title", it.nome);
     s("uni-detail-badge", `${(it.tipo || 'EQUIPAGGIAMENTO').toUpperCase()} • ${(it.categoria || 'GENERALE').toUpperCase()}`);
-    s("uni-detail-metrics-label", it.tipo === "NEMICO" ? "PARAMETRI BELLICI" : "PARAMETRI");
 
     const bonuses = [];
     if (it.pv) bonuses.push(`❤️ PV: <b>${it.pv}</b>`);
@@ -990,57 +926,30 @@ const Rules2Engine = {
     if (it.forza) bonuses.push(`🥊 FOR: <b>${it.forza}</b>`);
     if (it.destrezza) bonuses.push(`🤸 DES: <b>${it.destrezza}</b>`);
     if (it.intelligenza) bonuses.push(`🧠 INT: <b>${it.intelligenza}</b>`);
-    if (it.difficolta) bonuses.push(`🎯 Sfida: <b>${it.statRichiesta || 'FORZA'} (CD ${it.difficolta})</b>`);
     if (it.costoOro) bonuses.push(`💰 Prezzo: <b class="text-amber-300">${it.costoOro} 🟡</b>`);
 
-    let humanProps = typeof Rules2_FormatHumanEffect === "function" ? Rules2_FormatHumanEffect(it.requisitiCodificati || it.effettoCodificato || it.debolezze || "") : "";
-    h("uni-detail-metrics-value", bonuses.join(" • ") + (humanProps ? "<br>" + humanProps : ""));
+    h("uni-detail-metrics-value", bonuses.join(" • ") || "Nessun parametro");
+    s("uni-detail-lore", (it.descrizione || it.testo || "Nessun fascicolo allegato.").replace(/\s*\([A-Z]{3,4}_\d{4}_S\d+_E\d+\)/gi, ""));
 
-    let cleanLore = (it.descrizione || it.testo || "Nessun fascicolo allegato.").replace(/\s*\([A-Z]{3,4}_\d{4}_S\d+_E\d+\)/gi, "");
-    s("uni-detail-lore", cleanLore);
-
-    const mediaContainer = document.getElementById("uni-detail-media-container");
-    if (mediaContainer) {
-      if (it.mediaUrl && it.mediaUrl !== "—" && it.mediaUrl.startsWith("http")) {
-        document.getElementById("uni-detail-img").src = it.mediaUrl;
-        mediaContainer.classList.remove("hidden");
-      } else {
-        mediaContainer.classList.add("hidden");
-      }
-    }
-
-    // TASTO AZIONE CONTESTUALE COLLEGATO ALL'ASSETTO
     const btn = document.getElementById("uni-detail-action-btn");
     if (btn) {
       const cat = Rules2_ClassifyEntity(it);
       if (it.isEnemyInspection) {
         btn.textContent = "Attacca ⚔️";
         btn.className = "btn btn-error btn-sm flex-1 font-black uppercase";
-        btn.onclick = () => {
-          modal.close();
-          this.combatAction("attack_round");
-        };
+        btn.onclick = () => { modal.close(); this.combatAction("attack_round"); };
       } else if (cat === "ARMI") {
         btn.textContent = "Impugna 🗡️";
         btn.className = "btn btn-primary btn-sm flex-1 font-black uppercase";
-        btn.onclick = () => {
-          this.equipItem(it.nome, "weapon");
-          modal.close();
-        };
+        btn.onclick = () => { this.equipItem(it.nome, "weapon"); modal.close(); };
       } else if (cat === "VEICOLI") {
         btn.textContent = "Guida 🛴";
         btn.className = "btn btn-primary btn-sm flex-1 font-black uppercase";
-        btn.onclick = () => {
-          this.equipItem(it.nome, "vehicle");
-          modal.close();
-        };
+        btn.onclick = () => { this.equipItem(it.nome, "vehicle"); modal.close(); };
       } else if (cat === "DROGHE" || cat === "CURE") {
         btn.textContent = (cat === "DROGHE") ? "Assumi 💊" : "Usa ❤️";
         btn.className = "btn btn-success btn-sm flex-1 font-black uppercase";
-        btn.onclick = () => {
-          this.useBackpackItem(it.nome);
-          modal.close();
-        };
+        btn.onclick = () => { this.useBackpackItem(it.nome); modal.close(); };
       } else {
         btn.textContent = "Chiudi ✕";
         btn.className = "btn btn-ghost btn-sm flex-1 text-slate-400 font-bold uppercase";
@@ -1048,15 +957,15 @@ const Rules2Engine = {
       }
     }
 
-    if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("modal_open");
+    if (window.SoundEngine) SoundEngine.playClick();
     modal.showModal();
   },
 
   // --------------------------------------------------------------------------
-  // 4. I 4 PILASTRI TATTICI DEL COCKPIT FOOTER
+  // 4. PILASTRI TATTICI DEL COCKPIT (FOOTER RULES2)
   // --------------------------------------------------------------------------
 
-  // 1. PILASTRO EROE: MODALE A 4 TAB (Scheda, Zaino, Squadra, Dossier)
+  // 1. SCHEDA EROE A 4 TAB
   openHeroModal: function(tabName = "scheda") {
     this._activeHeroTab = tabName;
     const h = AppState.activeSession.hero;
@@ -1067,7 +976,6 @@ const Rules2Engine = {
 
     this.renderHeroModalContent();
     tgHaptic("selection");
-    if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("modal_open");
     modal.showModal();
   },
 
@@ -1082,37 +990,17 @@ const Rules2Engine = {
     const tab = this._activeHeroTab || "scheda";
     const s = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
 
-    // Attivazione visiva delle tab e pannelli
-    const tabKeys = ["scheda", "zaino", "squadra", "dossier"];
-    tabKeys.forEach(t => {
+    ["scheda", "zaino", "squadra", "dossier"].forEach(t => {
       const btn = document.getElementById(`hero-tab-btn-${t}`);
       const panel = document.getElementById(`hero-tab-content-${t}`);
       const isActive = (t === tab);
-      if (btn) {
-        btn.className = `btn btn-xs flex-1 font-bold ${isActive ? 'btn-primary' : 'btn-ghost text-slate-400'}`;
-      }
-      if (panel) {
-        panel.classList.toggle("hidden", !isActive);
-      }
+      if (btn) btn.className = `btn btn-xs flex-1 font-bold ${isActive ? 'btn-primary' : 'btn-ghost text-slate-400'}`;
+      if (panel) panel.classList.toggle("hidden", !isActive);
     });
 
-    // Dati Scheda Eroe
     s("sheet-hero-name", h.nomeEroe || "Avventuriero");
     s("sheet-hero-class", `${h.classe || "Avventuriero"} (${h.schieramentoPolitico || "Destra"})`);
     s("sheet-hero-gold", `${h.oro || 0} 🟡`);
-
-    const avatarImg = document.getElementById("sheet-hero-avatar-img");
-    const avatarFallback = document.getElementById("sheet-hero-avatar-fallback");
-    if (avatarImg && avatarFallback) {
-      if (h.mediaUrl && h.mediaUrl !== "—" && h.mediaUrl.startsWith("http")) {
-        avatarImg.src = h.mediaUrl;
-        avatarImg.classList.remove("hidden");
-        avatarFallback.classList.add("hidden");
-      } else {
-        avatarImg.classList.add("hidden");
-        avatarFallback.classList.remove("hidden");
-      }
-    }
 
     const stats = h.stats || { FORZA: 10, DESTREZZA: 10, INTELLIGENZA: 10 };
     const mods = h.modificatori || { FORZA: 0, DESTREZZA: 0, INTELLIGENZA: 0 };
@@ -1133,17 +1021,12 @@ const Rules2Engine = {
       const list = h.abilita || [];
       ablsBox.innerHTML = list.length > 0
         ? list.map(a => `<span class="badge badge-sm badge-info font-bold mr-1 mb-1">⚡ ${a}</span>`).join("")
-        : "Nessuna abilità attiva.";
+        : "Nessun talento attivo.";
     }
 
-    // Seleziona sotto-sezioni al cambio tab
-    if (tab === "zaino") {
-      this.filterBackpack(AppState.activeSession.engineState?.backpackFilter || "ALL");
-    } else if (tab === "squadra") {
-      this.renderSquadSubView();
-    } else if (tab === "dossier") {
-      this.renderDossierSubView();
-    }
+    if (tab === "zaino") this.filterBackpack(AppState.activeSession.engineState?.backpackFilter || "ALL");
+    else if (tab === "squadra") this.renderSquadSubView();
+    else if (tab === "dossier") this.renderDossierSubView();
   },
 
   renderSquadSubView: function() {
@@ -1153,22 +1036,13 @@ const Rules2Engine = {
 
     let html = "";
     const comp = h.compagni || [];
-    const compData = h.compagniData || {};
     const zombies = h.zombieSquad || [];
 
     if (comp.length === 0 && zombies.length === 0) {
-      html = `<div class="empty-state-card">In solitaria. Nessun alleato al seguito.</div>`;
+      html = `<div class="p-3 text-center text-xs text-slate-500 font-mono">In solitaria. Nessun alleato al seguito.</div>`;
     } else {
-      html += comp.map(a => {
-        const d = compData[a] || {};
-        const hpText = d.pv ? ` (❤️ ${d.pv}/${d.pvMax || 15} PV)` : "";
-        return `<div class="squad-member-card"><span>🤝 ${a}${hpText}</span> <span class="badge-human">Alleato</span></div>`;
-      }).join("");
-      html += zombies.map(z => `
-        <div class="squad-member-card zombie">
-          <span>🧟 ${z.nome}</span> <span class="badge-zombie">Danno x2 (❤️ ${z.pv}/${z.pvMax || 15})</span>
-        </div>
-      `).join("");
+      html += comp.map(a => `<div class="p-2.5 rounded-xl bg-slate-900 border border-white/5 flex items-center justify-between text-xs"><span>🤝 ${a}</span> <span class="badge badge-xs badge-info">Alleato</span></div>`).join("");
+      html += zombies.map(z => `<div class="p-2.5 rounded-xl bg-purple-950/40 border border-purple-500/40 flex items-center justify-between text-xs text-purple-300"><span>🧟 ${z.nome}</span> <span class="badge badge-xs badge-secondary">Danno x2</span></div>`).join("");
     }
     c.innerHTML = html;
   },
@@ -1179,35 +1053,28 @@ const Rules2Engine = {
     if (!c || !h) return;
 
     const inv = h.inventario || [];
-    const infoItems = inv.filter(it => {
-      const ent = this._findEntityData(it);
-      return Rules2_ClassifyEntity(ent) === "INFORMAZIONI";
-    });
+    const infoItems = inv.filter(it => Rules2_ClassifyEntity(this._findEntityData(it)) === "INFORMAZIONI");
 
     if (infoItems.length === 0) {
-      c.innerHTML = `<div class="empty-state-card">Nessun reperto d'inchiesta raccolto finora.</div>`;
+      c.innerHTML = `<div class="p-3 text-center text-xs text-slate-500 font-mono">Nessun reperto d'inchiesta raccolto finora.</div>`;
     } else {
       c.innerHTML = infoItems.map(p => {
         const ent = this._findEntityData(p);
-        const sub = String(ent?.sottocategoria || "").toLowerCase();
-        const isPermanent = (sub === "prove" || sub === "prova");
-
+        const isPermanent = String(ent?.sottocategoria || "").toLowerCase().includes("prov");
         return `
-          <div onclick="Rules2Engine.inspectEntityDetail(Rules2Engine._findEntityData('${Rules2_SafeAttr(p)}'))" class="dossier-evidence-card">
-            <div class="evidence-header">
-              <span class="evidence-name">📁 ${p}</span>
-              <span class="badge badge-xs badge-info">${ent?.categoria || 'Reperto'}</span>
+          <div onclick="Rules2Engine.inspectEntityDetail(Rules2Engine._findEntityData('${Rules2_SafeAttr(p)}'))" class="p-2.5 rounded-xl bg-slate-900 border border-white/10 flex items-center justify-between cursor-pointer">
+            <div>
+              <div class="font-bold text-xs text-white">📁 ${p}</div>
+              <div class="text-[10px] text-slate-400">${isPermanent ? '+1 INT permanente sull\'organigramma' : '+1 INT situazionale'}</div>
             </div>
-            <div class="evidence-desc">
-              ${isPermanent ? 'Organigramma: <b class="text-emerald-400">+1 INT permanente</b>' : `Inchiesta: <b class="text-amber-300">+1 INT situazionale</b>`}
-            </div>
+            <span class="badge badge-xs badge-info font-mono">${ent?.categoria || 'Reperto'}</span>
           </div>
         `;
       }).join("");
     }
   },
 
-  // 2. PILASTRO ASSETTO: PLANCIA OPERATIVA & BANCO DI SINTESI CLANDESTINA
+  // 2. ASSETTO TATTICO & SINTESI
   openAssettoModal: function() {
     const h = AppState.activeSession.hero;
     if (!h) return;
@@ -1221,89 +1088,46 @@ const Rules2Engine = {
     }
 
     const inv = h.inventario || [];
-
     const availableRecipes = [];
     for (let ingrKey in RULES2_SYNTHESIS_RECIPES) {
       const rec = RULES2_SYNTHESIS_RECIPES[ingrKey];
       const hasTool = inv.some(i => i.toLowerCase().includes(rec.toolName.toLowerCase()));
       const hasIngr = inv.some(i => i.toLowerCase().includes(ingrKey.toLowerCase()));
-      if (hasTool && hasIngr) {
-        availableRecipes.push(rec);
-      }
+      if (hasTool && hasIngr) availableRecipes.push(rec);
     }
 
-    const activeSyntheses = h.sintesiInCorso || [];
-
     modal.innerHTML = `
-      <div class="modal-box drawer-standard-box">
-        <div class="drawer-header-row">
-          <div class="flex items-center space-x-2">
-            <span class="text-lg">🔱</span>
-            <h3 class="drawer-title">Assetto Tattico & Sintesi</h3>
-          </div>
-          <button onclick="document.getElementById('modal-cockpit-assetto').close()" class="btn btn-xs btn-circle btn-ghost">✕</button>
+      <div class="modal-box p-5 bg-slate-950 border border-purple-500/40 rounded-2xl max-w-md space-y-3 relative">
+        <button onclick="document.getElementById('modal-cockpit-assetto').close()" class="modal-close-btn">✕</button>
+        <div class="flex items-center gap-2">
+          <span class="text-2xl">🔱</span>
+          <h3 class="text-sm font-black text-white uppercase">Assetto Tattico & Sintesi</h3>
         </div>
 
-        <div class="space-y-2">
-          <div class="text-[9.5px] font-bold text-sky-400 uppercase tracking-wider">Dotazione Operativa del Turno</div>
-          
-          <div class="assetto-slot-card">
-            <div>
-              <span class="text-xs font-bold text-white">🗡️ Arma in pugno:</span>
-              <span class="text-xs text-sky-300 ml-1 font-mono">${h.armaAttiva || 'Pugni nudi'}</span>
-            </div>
+        <div class="space-y-2 pt-1 text-xs">
+          <div class="p-2.5 rounded-xl bg-slate-900 border border-white/10 flex items-center justify-between">
+            <div><span class="text-slate-400">🗡️ Arma in pugno:</span> <b class="text-sky-300 ml-1 font-mono">${h.armaAttiva || 'Pugni nudi'}</b></div>
             <button onclick="Rules2Engine.openHeroModal('zaino')" class="btn btn-xs btn-outline border-white/20">Cambia</button>
           </div>
-
-          <div class="assetto-slot-card">
-            <div>
-              <span class="text-xs font-bold text-white">🛴 Veicolo attivo:</span>
-              <span class="text-xs text-sky-300 ml-1 font-mono">${h.veicoloAttivo || 'A piedi'}</span>
-            </div>
+          <div class="p-2.5 rounded-xl bg-slate-900 border border-white/10 flex items-center justify-between">
+            <div><span class="text-slate-400">🛴 Veicolo attivo:</span> <b class="text-sky-300 ml-1 font-mono">${h.veicoloAttivo || 'A piedi'}</b></div>
             <button onclick="Rules2Engine.openHeroModal('zaino')" class="btn btn-xs btn-outline border-white/20">Cambia</button>
           </div>
         </div>
 
-        <div class="assetto-crafting-box mt-2">
-          <div class="text-[9.5px] font-bold text-purple-300 uppercase tracking-wider">⚗️ Banco di Sintesi Clandestina</div>
-          
-          ${activeSyntheses.length > 0 ? `
-            <div class="space-y-1 py-1">
-              ${activeSyntheses.map(s => `
-                <div class="text-[11px] text-slate-300 flex justify-between">
-                  <span>⏳ Distillazione <b>${s.prodotto}</b></span>
-                  <span class="font-mono text-amber-300">${s.turniMancanti} snodi</span>
-                </div>
-              `).join('')}
+        <div class="p-3 rounded-xl bg-purple-950/20 border border-purple-500/30 space-y-2 mt-2">
+          <div class="text-[10px] font-mono font-bold text-purple-300 uppercase">⚗️ Banco di Sintesi Clandestina</div>
+          ${availableRecipes.length > 0 ? availableRecipes.map(r => `
+            <div class="flex items-center justify-between p-2 rounded-lg bg-black/40 text-xs">
+              <span>${r.icon} <b>${r.prodName}</b> (${r.turns} snodi)</span>
+              <button onclick="Rules2Engine.startSynthesis('${r.prodName}', '${r.toolName}')" class="btn btn-xs btn-secondary font-black">Distilla</button>
             </div>
-          ` : ''}
-
-          ${availableRecipes.length > 0 ? `
-            <div class="space-y-1.5 pt-1">
-              ${availableRecipes.map(r => `
-                <div class="flex items-center justify-between bg-black/40 p-2 rounded-lg">
-                  <div class="text-[11px] text-white">
-                    <span>${r.icon}</span> <b>${r.prodName}</b> (${r.turns} snodi)
-                  </div>
-                  <button onclick="Rules2Engine.startSynthesis('${r.prodName}', '${r.toolName}')" class="btn btn-xs btn-secondary font-black uppercase">
-                    Distilla
-                  </button>
-                </div>
-              `).join('')}
-            </div>
-          ` : `
-            <p class="text-[10.5px] text-slate-400 italic">Nessuna combinazione reagente/strumento pronta nello zaino.</p>
-          `}
+          `).join("") : '<div class="text-[11px] text-slate-400 italic">Nessun reagente combinabile nello zaino.</div>'}
         </div>
-
-        <button onclick="document.getElementById('modal-cockpit-assetto').close()" class="btn btn-sm btn-ghost text-slate-400 font-bold uppercase mt-2">
-          Chiudi ✕
-        </button>
       </div>
     `;
 
     tgHaptic("selection");
-    if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("modal_open");
     modal.showModal();
   },
 
@@ -1318,14 +1142,9 @@ const Rules2Engine = {
         if (idx !== -1) {
           h.inventario.splice(idx, 1);
           h.sintesiInCorso = h.sintesiInCorso || [];
-          h.sintesiInCorso.push({
-            prodotto: rec.prodName,
-            turniMancanti: rec.turns,
-            icon: rec.icon
-          });
+          h.sintesiInCorso.push({ prodotto: rec.prodName, turniMancanti: rec.turns, icon: rec.icon });
           tgHaptic("success");
-          if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("drug");
-          tgAlert(`⚗️ Avviata lavorazione di ${rec.prodName} (pronta tra ${rec.turns} snodi).`);
+          rulesNotify(`⚗️ Avviata lavorazione di ${rec.prodName} (pronta tra ${rec.turns} snodi).`, "success");
           this.openAssettoModal();
           return;
         }
@@ -1333,13 +1152,12 @@ const Rules2Engine = {
     }
   },
 
-  // 3. PILASTRO EMPORIO DI CICCIO (Acquisto, Vendita, Cambio)
+  // 3. EMPORIO DI CICCIO (ACQUISTO, VENDITA, CAMBIO)
   openEmporioDrawer: function() {
     const goldDisp = document.getElementById("emporio-gold-display");
     if (goldDisp) goldDisp.textContent = `${this.getGold()} 🟡`;
     this.setEmporioMode(AppState.activeSession.engineState?.emporioMode || "buy");
     tgHaptic("selection");
-    if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("modal_open");
     document.getElementById("drawer-emporio")?.showModal();
   },
 
@@ -1355,10 +1173,12 @@ const Rules2Engine = {
     if (btnBuy) btnBuy.className = `flex-1 btn btn-xs ${mode === 'buy' ? 'btn-primary font-black uppercase' : 'btn-ghost text-slate-400 font-bold uppercase'}`;
     if (btnSell) btnSell.className = `flex-1 btn btn-xs ${mode === 'sell' ? 'btn-primary font-black uppercase' : 'btn-ghost text-slate-400 font-bold uppercase'}`;
 
+    if (!container) return;
+
     if (mode === "sell") {
       const inv = h?.inventario || [];
       if (inv.length === 0) {
-        container.innerHTML = `<div class="empty-state-card col-span-full">Zaino vuoto.</div>`;
+        container.innerHTML = `<div class="p-4 text-center text-xs text-slate-500 font-mono col-span-full">Zaino vuoto.</div>`;
         return;
       }
       container.innerHTML = inv.map(it => {
@@ -1367,9 +1187,9 @@ const Rules2Engine = {
         const sellPrice = Math.max(1, Math.ceil(buyPrice * 0.25));
 
         return `
-          <div class="emporio-sell-row">
+          <div class="p-2.5 rounded-xl bg-slate-900 border border-white/5 flex items-center justify-between text-xs">
             <span class="font-bold text-white truncate pr-2">${it}</span>
-            <button onclick="Rules2Engine.sellToEmporio('${Rules2_SafeAttr(it)}', ${sellPrice})" class="btn btn-xs btn-warning font-black uppercase">
+            <button onclick="Rules2Engine.sellToEmporio('${Rules2_SafeAttr(it)}', ${sellPrice})" class="btn btn-xs btn-warning font-black uppercase shrink-0">
               Vendi (+${sellPrice} 🟡)
             </button>
           </div>
@@ -1378,7 +1198,7 @@ const Rules2Engine = {
     } else {
       const emporioItems = AppState.activeSession.shopCatalog || [];
       if (emporioItems.length === 0) {
-        container.innerHTML = `<div class="empty-state-card col-span-full">Banchi vuoti.</div>`;
+        container.innerHTML = `<div class="p-4 text-center text-xs text-slate-500 font-mono col-span-full">Banchi vuoti.</div>`;
         return;
       }
 
@@ -1387,23 +1207,14 @@ const Rules2Engine = {
         const canAfford = (this.getGold() >= price);
 
         return `
-          <div class="emporio-item-card group">
-            <div onclick="Rules2Engine.inspectEntityDetail(Rules2Engine._findEntityData('${Rules2_SafeAttr(item.nome)}'))" class="item-card-clickable">
-              <div class="item-card-header">
-                <span class="text-lg">${item.emoji || '📦'}</span>
-                <span class="item-card-price">${price} 🟡</span>
-              </div>
-              <div class="item-card-name">${item.nome}</div>
-              <div class="item-card-desc">${item.testo || item.descrizione || ''}</div>
+          <div class="p-3 rounded-xl bg-slate-900 border border-white/10 flex items-center justify-between gap-2">
+            <div class="min-w-0 pr-2">
+              <div class="font-bold text-xs text-white truncate">${item.emoji || '📦'} ${item.nome}</div>
+              <div class="text-[10px] text-amber-300 font-mono">${price} 🟡</div>
             </div>
-            <div class="item-card-actions">
-              <button onclick="Rules2Engine.inspectEntityDetail(Rules2Engine._findEntityData('${Rules2_SafeAttr(item.nome)}'))" class="btn btn-xs btn-outline border-white/10 text-slate-300">
-                Fascicolo
-              </button>
-              <button onclick="Rules2Engine.buyFromEmporio('${item.id}', ${price})" class="btn btn-xs ${canAfford ? 'btn-primary font-bold' : 'btn-outline border-white/10 text-slate-500 cursor-not-allowed'}" ${!canAfford ? 'disabled' : ''}>
-                ${canAfford ? 'Compra' : 'Oro Insuff.'}
-              </button>
-            </div>
+            <button onclick="Rules2Engine.buyFromEmporio('${item.id}', ${price})" class="btn btn-xs ${canAfford ? 'btn-primary font-bold' : 'btn-outline border-white/10 text-slate-500 cursor-not-allowed'} shrink-0" ${!canAfford ? 'disabled' : ''}>
+              ${canAfford ? 'Compra' : 'Oro Insuff.'}
+            </button>
           </div>
         `;
       }).join("");
@@ -1413,20 +1224,7 @@ const Rules2Engine = {
   buyFromEmporio: async function(itemId, goldCost) {
     if (this.getGold() < goldCost) {
       tgHaptic("error");
-      if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("unlucky");
-      return tgAlert("Oro insufficiente!");
-    }
-    const item = (AppState.activeSession.shopCatalog || []).find(i => i.id === itemId);
-    if (!item) return;
-
-    const hero = AppState.activeSession.hero;
-    if (Rules2_ClassifyEntity(item) === "VEICOLI") {
-      const hasVehicle = (hero?.inventario || []).some(x => Rules2_ClassifyEntity(this._findEntityData(x)) === "VEICOLI");
-      if (hasVehicle) {
-        tgHaptic("warning");
-        if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("unlucky");
-        return tgAlert("Massimo 1 Veicolo consentito!");
-      }
+      return rulesNotify("Monete d'oro insufficienti!", "error");
     }
 
     try {
@@ -1443,15 +1241,14 @@ const Rules2Engine = {
         this.setGold(res.statoEroe.oro);
       } else {
         this.setGold(this.getGold() - goldCost);
-        if (hero) hero.inventario.push(item.nome);
       }
 
       tgHaptic("success");
-      if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("cash_register");
+      if (window.SoundEngine) SoundEngine.playCoin();
       this.openEmporioDrawer();
       this.renderNode(AppState.activeSession.currentNode, AppState.activeSession.hero);
     } catch (e) {
-      tgAlert("Errore: " + e.message);
+      rulesNotify("Errore acquisto emporio: " + e.message, "error");
     }
   },
 
@@ -1473,17 +1270,15 @@ const Rules2Engine = {
           const idx = (hero.inventario || []).indexOf(itemName);
           if (idx !== -1) hero.inventario.splice(idx, 1);
           this.setGold(this.getGold() + (fallbackGain || 10));
-          if (hero.armaAttiva === itemName) hero.armaAttiva = "";
-          if (hero.veicoloAttivo === itemName) hero.veicoloAttivo = "";
         }
       }
 
       tgHaptic("success");
-      if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("cash_register");
+      if (window.SoundEngine) SoundEngine.playCoin();
       this.openEmporioDrawer();
       this.renderNode(AppState.activeSession.currentNode, AppState.activeSession.hero);
     } catch (e) {
-      tgAlert("Errore: " + e.message);
+      rulesNotify("Errore vendita: " + e.message, "error");
     }
   },
 
@@ -1491,7 +1286,6 @@ const Rules2Engine = {
     const balEl = document.getElementById("cambio-megoin-balance");
     if (balEl) balEl.textContent = Wallet.getMegoin();
     tgHaptic("selection");
-    if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("modal_open");
     document.getElementById("modal-banco-cambio")?.showModal();
   },
 
@@ -1499,8 +1293,7 @@ const Rules2Engine = {
     const currentMegoin = Wallet.getMegoin();
     if (currentMegoin < megoinCost) {
       tgHaptic("error");
-      if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("unlucky");
-      return tgAlert("Megoin insufficienti!");
+      return rulesNotify("Megoin insufficienti per il cambio!", "error");
     }
 
     try {
@@ -1512,11 +1305,7 @@ const Rules2Engine = {
 
       if (res?.success) {
         tgHaptic("success");
-        if (typeof SoundEngine !== "undefined") {
-          SoundEngine.playSfx("cash_register");
-          SoundEngine.playSfx("lucky");
-        }
-        if (window.confetti) confetti({ particleCount: 60, spread: 50 });
+        if (window.SoundEngine) SoundEngine.playCoin();
 
         const nuovoSaldo = res.nuovoSaldoMegoin !== undefined ? res.nuovoSaldoMegoin : (currentMegoin - megoinCost);
         Wallet.setMegoin(nuovoSaldo);
@@ -1527,68 +1316,21 @@ const Rules2Engine = {
         if (AppState.activeSession.hero) {
           this.renderNode(AppState.activeSession.currentNode, AppState.activeSession.hero);
         }
+        if (window.AppCore) AppCore.syncUI();
 
-        if (typeof AppModules !== "undefined" && typeof AppModules.renderProfile === "function") {
-          AppModules.renderProfile(AppState.user);
-        }
-
-        tgAlert(`Convertiti ${megoinCost} 🪙 in +${goldEarned} 🟡 Oro!`);
+        rulesNotify(`Convertiti ${megoinCost} 🪙 in +${goldEarned} 🟡 Oro!`, "success");
         document.getElementById("modal-banco-cambio")?.close();
       }
     } catch (e) {
-      tgAlert("Errore: " + e.message);
+      rulesNotify("Errore cambio valuta: " + e.message, "error");
     }
   },
 
-  // --------------------------------------------------------------------------
-  // 4. PILASTRO ESCI: MODALE TRIPARTITA (SOSPENDI vs ABBANDONA vs ANNULLA)
-  // --------------------------------------------------------------------------
+  // 4. ESCI / GESTIONE ABBANDONO SESSIONE
   openAbandonModal: function() {
     tgHaptic("warning");
-    if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("modal_open");
-
     const modal = document.getElementById("modal-abandon");
-    if (!modal) return;
-
-    const heroName = AppState.activeSession.hero?.nomeEroe || AppState.user?.nome || "Avventuriero";
-
-    modal.innerHTML = `
-      <div class="modal-box abandon-modal-box">
-        <button onclick="document.getElementById('modal-abandon').close()" class="modal-close-btn">✕</button>
-        <span class="text-3xl">🚪</span>
-        <h3 class="text-sm font-black text-white uppercase">Gestione Sessione</h3>
-        <p class="text-[11px] text-slate-300 leading-relaxed">
-          Hey <b>${heroName}</b>, come desideri procedere con la tua partita?
-        </p>
-        
-        <div class="space-y-2 pt-2 text-left">
-          <!-- 1. SOSPENDI ED ESCI ALL'APP (PARTITA SALVATA) -->
-          <button onclick="Rules2Engine.suspendAndExitToApp()" class="btn btn-sm btn-primary w-full font-black text-xs uppercase shadow-md flex items-center justify-between">
-            <span>⏸️ Sospendi e Vai all'App</span>
-            <span class="badge badge-xs badge-ghost text-[8px]">SALVA</span>
-          </button>
-          <div class="text-[9.5px] text-slate-400 px-1 -mt-1 mb-2">
-            La partita viene salvata e potrai riprenderla dal catalogo in qualsiasi momento.
-          </div>
-
-          <!-- 2. ABBANDONA DEFINITIVAMENTE (PARTITA CHIUSA) -->
-          <button onclick="Rules2Engine.confirmAbandon()" class="btn btn-sm btn-error w-full font-black text-xs uppercase shadow-lg flex items-center justify-between">
-            <span>🛑 Abbandona Definitivamente</span>
-            <span class="badge badge-xs bg-black/40 text-[8px]">CHIUDI</span>
-          </button>
-          <div class="text-[9.5px] text-rose-300/80 px-1 -mt-1">
-            La partita viene chiusa e archiviata. Non potrai più riprenderla.
-          </div>
-        </div>
-
-        <!-- 3. ANNULLA / TORNA AL GIOCO -->
-        <button onclick="document.getElementById('modal-abandon').close()" class="btn btn-sm btn-ghost w-full text-xs text-slate-400 font-bold uppercase mt-3">
-          Continua l'Avventura ›
-        </button>
-      </div>
-    `;
-
-    modal.showModal();
+    if (modal) modal.showModal();
   },
 
   suspendAndExitToApp: function() {
@@ -1613,10 +1355,9 @@ const Rules2Engine = {
         });
       }
     } catch (e) {
-      console.warn("[confirmAbandon] Errore notifica server:", e);
+      console.warn("[confirmAbandon] Errore archiviazione partita:", e);
     }
 
-    // CANCELLAZIONE STATO PARTITA ATTIVA: MAI PIÙ TASTO RIPRENDI
     const saga = (AppState.games.catalog || []).find(g => g.gameKey === gKey);
     if (saga) {
       saga.hasActiveGame = false;
@@ -1630,21 +1371,17 @@ const Rules2Engine = {
     AppState.activeSession.currentNode = null;
     AppState.activeSession.engineState = null;
 
-    if (typeof SoundEngine !== "undefined") SoundEngine.stopHeartbeat();
+    if (window.SoundEngine && typeof SoundEngine.stopHeartbeat === "function") SoundEngine.stopHeartbeat();
     this.leaveGameToHub();
   },
 
-  // Sospensione Sessione
   leaveGameToHub: function() {
-    if (typeof SoundEngine !== "undefined") {
-      SoundEngine.stopHeartbeat();
-      SoundEngine.playBgm("hub");
-    }
+    if (window.SoundEngine && typeof SoundEngine.stopHeartbeat === "function") SoundEngine.stopHeartbeat();
     AppRouter.navigate("games");
   },
 
   // --------------------------------------------------------------------------
-  // UTILITY INVENTARIO ED EQUIPAGGIAMENTO
+  // UTILITY INVENTARIO & ASSETTO
   // --------------------------------------------------------------------------
   _findEntityData: function(itemName) {
     if (!itemName) return null;
@@ -1665,17 +1402,14 @@ const Rules2Engine = {
 
     let inv = h.inventario || [];
     if (inv.length === 0) {
-      c.innerHTML = `<div class="empty-state-card">Zaino vuoto.</div>`;
+      c.innerHTML = `<div class="p-3 text-center text-xs text-slate-500 font-mono">Zaino vuoto.</div>`;
       return;
     }
 
     if (cat && cat !== "ALL") {
-      inv = inv.filter(itemName => {
-        const ent = this._findEntityData(itemName);
-        return Rules2_ClassifyEntity(ent) === cat;
-      });
+      inv = inv.filter(itemName => Rules2_ClassifyEntity(this._findEntityData(itemName)) === cat);
       if (inv.length === 0) {
-        c.innerHTML = `<div class="empty-state-card">Nessun articolo per <b>${cat}</b>.</div>`;
+        c.innerHTML = `<div class="p-3 text-center text-xs text-slate-500 font-mono">Nessun articolo per <b>${cat}</b>.</div>`;
         return;
       }
     }
@@ -1687,14 +1421,14 @@ const Rules2Engine = {
       const category = Rules2_ClassifyEntity(ent);
 
       return `
-        <div class="backpack-slot-card">
-          <div onclick="Rules2Engine.inspectEntityDetail({ ...Rules2Engine._findEntityData('${Rules2_SafeAttr(it)}'), isFromBackpack: true })" class="slot-info-clickable">
-            <div class="slot-name">${it}</div>
-            <div class="slot-tag ${isArma || isVeicolo ? 'active-gear' : ''}">
-              ${isArma ? '🗡️ [IN PUGNO]' : (isVeicolo ? '🛴 [IN USO]' : category)}
+        <div class="p-2.5 rounded-xl bg-slate-900 border border-white/10 flex items-center justify-between text-xs">
+          <div onclick="Rules2Engine.inspectEntityDetail({ ...Rules2Engine._findEntityData('${Rules2_SafeAttr(it)}'), isFromBackpack: true })" class="cursor-pointer pr-2 truncate">
+            <div class="font-bold text-white truncate">${it}</div>
+            <div class="text-[10px] ${isArma || isVeicolo ? 'text-amber-300 font-bold' : 'text-slate-400'}">
+              ${isArma ? '🗡️ [IN PUGNO]' : (isVeicolo ? '🛴 [IN GUIDA]' : category)}
             </div>
           </div>
-          <button onclick="Rules2Engine.inspectEntityDetail({ ...Rules2Engine._findEntityData('${Rules2_SafeAttr(it)}'), isFromBackpack: true })" class="btn btn-xs btn-outline border-white/20 text-slate-300 font-bold">
+          <button onclick="Rules2Engine.inspectEntityDetail({ ...Rules2Engine._findEntityData('${Rules2_SafeAttr(it)}'), isFromBackpack: true })" class="btn btn-xs btn-outline border-white/20 text-slate-300 font-bold shrink-0">
             Fascicolo
           </button>
         </div>
@@ -1706,13 +1440,20 @@ const Rules2Engine = {
     const h = AppState.activeSession.hero;
     if (!h) return;
 
-    if (type === "weapon") h.armaAttiva = itemName;
-    if (type === "vehicle") h.veicoloAttivo = itemName;
+    if (type === "weapon") h.armaAttiva = (h.armaAttiva === itemName) ? "" : itemName;
+    if (type === "vehicle") h.veicoloAttivo = (h.veicoloAttivo === itemName) ? "" : itemName;
 
     tgHaptic("selection");
-    if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("click");
     this.renderNode(AppState.activeSession.currentNode, h);
-    tgAlert(`Equipaggiato: ${itemName}`);
+    rulesNotify(`Assetto aggiornato: ${itemName}`, "info");
+
+    apiCall("game_action", {
+      subAction: "equip",
+      item: itemName,
+      type: type,
+      gameKey: AppState.activeSession.gameKey,
+      episodio: AppState.activeSession.episodio
+    }).catch(() => {});
   },
 
   useBackpackItem: function(itemName) {
@@ -1723,15 +1464,21 @@ const Rules2Engine = {
     const idx = (h.inventario || []).indexOf(itemName);
     if (idx !== -1) {
       h.inventario.splice(idx, 1);
-      if (ent.pv) {
+      if (ent && ent.pv) {
         h.pv = Math.min(h.pvMax || 25, (h.pv || 0) + ent.pv);
-        tgAlert(`Hai usato ${itemName} (+${ent.pv} PV)!`);
+        rulesNotify(`Hai usato ${itemName} (+${ent.pv} PV)!`, "success");
       } else {
-        tgAlert(`Hai assunto ${itemName}!`);
+        rulesNotify(`Hai assunto ${itemName}!`, "info");
       }
       tgHaptic("success");
-      if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("drug");
       this.renderNode(AppState.activeSession.currentNode, h);
+
+      apiCall("game_action", {
+        subAction: "use_item",
+        item: itemName,
+        gameKey: AppState.activeSession.gameKey,
+        episodio: AppState.activeSession.episodio
+      }).catch(() => {});
     }
   }
 };
