@@ -1,10 +1,11 @@
 // ============================================================================
-// PROJECT: ESTIQATSY BOT & WEBAPP
-// FILE: audio.js (VERSIONE 6.6 - ZERO CSS INJECTED / 100% SEMANTICO)
-// DESCRIZIONE: Motore sonoro per Piattaforma Core & Motore Rules2 RPG.
-//              - Player Jukebox ("Radio Darsena Syndicate") integrato con core.css
-//              - Modalità Shuffle, Playlist selettiva, Play/Pause e Muto rapido
-//              - Sblocco AudioContext via silent buffer per iOS Safari & Android
+// PROJECT: ESTIQATSY BOT & RPG PLATFORM
+// FILE: js/audio.js (VERSIONE 7.0 - MULTI-EPISODE MATRIX & IOS BULLETPROOF)
+// DESCRIZIONE: Motore sonoro per Core Hub, Cabinati Arcade & Rules2 RPG.
+//              - Doppio sblocco audio sincrono per iOS Safari & Telegram WebApp
+//              - Matrice musicale scalabile per singolo Episodio (Noir & 8-bit)
+//              - Campionamento arcade secco: D20 Lucky/Unlucky, Zelda, Colpi duri
+//              - Monitor del battito cardiaco (PV < 25%) e Ducking cinematografico
 // ============================================================================
 
 const SoundEngine = (function() {
@@ -12,6 +13,7 @@ const SoundEngine = (function() {
   let isShuffle = localStorage.getItem("estiqatsy_audio_shuffle") === "true";
   let currentBgmKey = "hard_boiled";
   let currentBgmHowl = null;
+  let heartbeatHowl = null;
   let isUnlocked = false;
   let isPlayingManual = false;
 
@@ -19,20 +21,21 @@ const SoundEngine = (function() {
   let fadeTimer = null;
 
   const DEFAULT_BGM_VOLUME = 0.30;
-  const DEFAULT_SFX_VOLUME = 0.68;
+  const DEFAULT_SFX_VOLUME = 0.75;
   let currentBgmVolume = parseFloat(localStorage.getItem("estiqatsy_bgm_volume")) || DEFAULT_BGM_VOLUME;
 
   // ==========================================================================
-  // 1. CATALOGO BRANI BGM (ROYALTY-FREE WIKIMEDIA COMMONS)
+  // 1. CATALOGO BRANI BGM (DIFFERENZIATI PER EPISODIO & SALA GIOCHI)
   // ==========================================================================
   const playlist = [
+    // --- TEMI UNIVERSALI CABINATO & HUB ---
     {
       id: "hard_boiled",
-      alias: ["intro", "core_hub"],
+      alias: ["intro", "core_hub", "hub"],
       title: "Hard Boiled",
       artist: "Kevin MacLeod",
       mood: "Tromba Noir & Pioggia Salmastra",
-      tag: "HUB / NOIR",
+      tag: "HUB NOIR",
       src: "https://commons.wikimedia.org/wiki/Special:FilePath/Hard_Boiled_(ISRC_USUAN1700076).mp3"
     },
     {
@@ -45,58 +48,95 @@ const SoundEngine = (function() {
       src: "https://commons.wikimedia.org/wiki/Special:FilePath/Bass_Walker_(ISRC_USUAN1200071).mp3"
     },
     {
-      id: "covert_affair",
-      alias: ["exploration", "rules2_explore"],
+      id: "chiptune_arcade",
+      alias: ["arcade_cabinet", "retro_hub"],
+      title: "Chiptune2 (NES Core)",
+      artist: "Mysid",
+      mood: "Puro Cabinato 8-Bit Anni '80",
+      tag: "ARCADE 8-BIT",
+      src: "https://commons.wikimedia.org/wiki/Special:FilePath/Chiptune2.ogg"
+    },
+
+    // --- EPISODIO 1: LA NOTTE DEI MOLI (INFILTRAZIONE & DARSENA) ---
+    {
+      id: "ep1_explore",
+      alias: ["exploration", "rules2_explore", "ep1_esplorazione"],
       title: "Covert Affair",
       artist: "Kevin MacLeod",
       mood: "Infiltrazione Notturna sui Moli",
-      tag: "ESPLORAZIONE",
+      tag: "EP1 ESPLORA",
       src: "https://commons.wikimedia.org/wiki/Special:FilePath/Covert_Affair_(ISRC_USUAN1100795).mp3"
     },
     {
-      id: "dark_walk",
-      alias: ["rules2_ambient"],
-      title: "Dark Walk",
-      artist: "Kevin MacLeod",
-      mood: "Tensione Cupa nel Padule",
-      tag: "TENSIONE",
-      src: "https://commons.wikimedia.org/wiki/Special:FilePath/Dark_Walk_(ISRC_USUAN1100468).mp3"
-    },
-    {
-      id: "aggressor",
-      alias: ["combat", "rules2_combat"],
+      id: "ep1_combat",
+      alias: ["combat", "rules2_combat", "ep1_combattimento"],
       title: "Aggressor",
       artist: "Kevin MacLeod",
       mood: "Rissa da Banchina & Duello D20",
-      tag: "COMBATTIMENTO",
+      tag: "EP1 DUELLO",
       src: "https://commons.wikimedia.org/wiki/Special:FilePath/Aggressor_(ISRC_USUAN1700051).mp3"
+    },
+
+    // --- EPISODIO 2: IL PADULE DELLE OMBRE (TENSIONE & PALUDE) ---
+    {
+      id: "ep2_explore",
+      alias: ["ep2_esplorazione", "padule"],
+      title: "Dark Walk",
+      artist: "Kevin MacLeod",
+      mood: "Tensione Cupa nel Padule",
+      tag: "EP2 ESPLORA",
+      src: "https://commons.wikimedia.org/wiki/Special:FilePath/Dark_Walk_(ISRC_USUAN1100468).mp3"
+    },
+    {
+      id: "ep2_suspense",
+      alias: ["ep2_combattimento", "horror_suspense"],
+      title: "Horror Suspense",
+      artist: "Rafael Krux",
+      mood: "Brivido Notturno & Agguato",
+      tag: "EP2 TENSIONE",
+      src: "https://commons.wikimedia.org/wiki/Special:FilePath/Rafael_Krux_-_Horror_Suspense.ogg"
+    },
+
+    // --- EPISODIO 3: IL CAVEAU SOTTERRANEO (DUNGEON 8-BIT & BOSS) ---
+    {
+      id: "ep3_dungeon",
+      alias: ["ep3_esplorazione", "roguelike"],
+      title: "Pixel Dungeon Roguelike",
+      artist: "Watabou",
+      mood: "Esplorazione Sotterranea 8-Bit",
+      tag: "EP3 DUNGEON",
+      src: "https://commons.wikimedia.org/wiki/Special:FilePath/Pixel_Dungeon_soundtrack.ogg"
     },
     {
       id: "deadly_roulette",
-      alias: ["rules2_boss"],
+      alias: ["rules2_boss", "boss", "ep3_combattimento"],
       title: "Deadly Roulette",
       artist: "Kevin MacLeod",
       mood: "Scontro con i Capifazione",
       tag: "BOSS FIGHT",
       src: "https://commons.wikimedia.org/wiki/Special:FilePath/Deadly_Roulette_(ISRC_USUAN1600033).mp3"
     },
+
+    // --- EPISODIO SEGRETO: AVVENTURA RETRO ---
+    {
+      id: "retro_story",
+      alias: ["secret_level", "chiptune_story"],
+      title: "An 8 Bit Story",
+      artist: "James Magnus",
+      mood: "Epopea Elettronica Sintetizzata",
+      tag: "CHIPTUNE EPIC",
+      src: "https://commons.wikimedia.org/wiki/Special:FilePath/An_8_Bit_Story.ogg"
+    },
+
+    // --- TRANSIZIONI & FINALI ---
     {
       id: "backbay_lounge",
       alias: ["core_shop", "emporio"],
       title: "Backbay Lounge",
       artist: "Kevin MacLeod",
       mood: "Smoky Lounge Jazz da Bisca",
-      tag: "BOTTEGA",
+      tag: "EMPORIO",
       src: "https://commons.wikimedia.org/wiki/Special:FilePath/Backbay_Lounge_(ISRC_USUAN1700068).mp3"
-    },
-    {
-      id: "airport_lounge",
-      alias: ["core_recipes"],
-      title: "Airport Lounge",
-      artist: "Kevin MacLeod",
-      mood: "Cocktail Bar & Sofisticatezza",
-      tag: "RICETTARIO",
-      src: "https://commons.wikimedia.org/wiki/Special:FilePath/Airport_Lounge_(ISRC_USUAN1100806).mp3"
     },
     {
       id: "opportunity_walks",
@@ -119,85 +159,132 @@ const SoundEngine = (function() {
   ];
 
   // ==========================================================================
-  // 2. EFFETTI SONORI SFX (MIXKIT VERIFICATI)
+  // 2. EFFETTI SONORI SFX VERIFICATI (COLPO SECCO, ZELDA & FORTUNA/SFORTUNA)
   // ==========================================================================
   const sfxUrls = {
+    // Navigazione & Tattica
     click: "https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3",
-    coin: "https://assets.mixkit.co/active_storage/sfx/2019/2019-preview.mp3",
-    cash_register: "https://assets.mixkit.co/active_storage/sfx/2870/2870-preview.mp3",
-    success: "https://assets.mixkit.co/active_storage/sfx/2013/2013-preview.mp3",
-    modal_open: "https://assets.mixkit.co/active_storage/sfx/3115/3115-preview.mp3",
-    tab_switch: "https://assets.mixkit.co/active_storage/sfx/166/166-preview.mp3",
-    dice: "https://assets.mixkit.co/active_storage/sfx/1070/1070-preview.mp3",
-    insert_coin: "https://assets.mixkit.co/active_storage/sfx/2602/2602-preview.mp3",
-    combat_start: "https://assets.mixkit.co/active_storage/sfx/2908/2908-preview.mp3",
-    hit: "https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3",
-    crit_hit: "https://assets.mixkit.co/active_storage/sfx/1143/1143-preview.mp3",
+    card_flip: "https://assets.mixkit.co/active_storage/sfx/166/166-preview.mp3",
     flee: "https://assets.mixkit.co/active_storage/sfx/166/166-preview.mp3",
-    zombie: "https://assets.mixkit.co/active_storage/sfx/2608/2608-preview.mp3",
-    drug: "https://assets.mixkit.co/active_storage/sfx/2586/2586-preview.mp3",
+    modal_open: "https://assets.mixkit.co/active_storage/sfx/3115/3115-preview.mp3",
+
+    // Economia & Cabinato
+    coin: "https://assets.mixkit.co/active_storage/sfx/2019/2019-preview.mp3",
+    insert_coin: "https://assets.mixkit.co/active_storage/sfx/2602/2602-preview.mp3",
+    cash_register: "https://assets.mixkit.co/active_storage/sfx/2870/2870-preview.mp3",
     bribe: "https://assets.mixkit.co/active_storage/sfx/2005/2005-preview.mp3",
-    clue_found: "https://assets.mixkit.co/active_storage/sfx/1133/1133-preview.mp3"
+
+    // Dadi & Sospensione
+    dice: "https://assets.mixkit.co/active_storage/sfx/1070/1070-preview.mp3",
+    shock: "https://commons.wikimedia.org/wiki/Special:FilePath/Dun_dun_duuun!.ogg",
+
+    // Eventi Fortunati vs Sfortunati (8-Bit & Iconic)
+    lucky: "https://commons.wikimedia.org/wiki/Special:FilePath/Typical_introduction_piece_to_a_video_game_-_Bertrof.ogg",
+    success: "https://assets.mixkit.co/active_storage/sfx/2013/2013-preview.mp3",
+    d20_crit: "https://commons.wikimedia.org/wiki/Special:FilePath/Typical_introduction_piece_to_a_video_game_-_Bertrof.ogg",
+    
+    unlucky: "https://commons.wikimedia.org/wiki/Special:FilePath/Sad_Trombone-Joe_Lamb-665429450.ogg",
+    sad_trombone: "https://commons.wikimedia.org/wiki/Special:FilePath/Sad_Trombone-Joe_Lamb-665429450.ogg",
+    zelda_death: "https://commons.wikimedia.org/wiki/Special:FilePath/The_Legend_of_Zelda_-_Death_sound.ogg",
+    d20_fail: "https://commons.wikimedia.org/wiki/Special:FilePath/Sad_Trombone-Joe_Lamb-665429450.ogg",
+
+    // Combattimento Secco & Danni
+    hit: "https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3",
+    crit_hit: "https://assets.mixkit.co/active_storage/sfx/2908/2908-preview.mp3", // Colpo secco contundente confermato
+    hurt: "https://commons.wikimedia.org/wiki/Special:FilePath/Hurt2.wav",
+
+    // Occulto, Droghe & Dossier
+    drug: "https://assets.mixkit.co/active_storage/sfx/2586/2586-preview.mp3", // Ingoio / pozione confermato
+    zombie: "https://assets.mixkit.co/active_storage/sfx/2608/2608-preview.mp3",
+    evil_laugh: "https://commons.wikimedia.org/wiki/Special:FilePath/Evil_laugh.ogg",
+    clue_found: "https://assets.mixkit.co/active_storage/sfx/1133/1133-preview.mp3",
+
+    // Allarme Ansia Battito Cardiaco
+    heartbeat: "https://commons.wikimedia.org/wiki/Special:FilePath/Heart_beats_sounds_-_Glaneur_de_sons.ogg"
   };
 
   const sfxPlayers = {};
   const bgmPlayers = {};
 
   // ==========================================================================
-  // 3. SBLOCCO AUDIO CON SILENT BUFFER (APPLE IOS & ANDROID)
+  // 3. MOTORE SBLOCCO IOS BULLETPROOF & TELEGRAM LIFECYCLE
   // ==========================================================================
-  function playSilentBuffer() {
-    if (!window.Howler || !Howler.ctx) return;
+  function unlockEngine() {
+    if (isUnlocked) return;
+
+    // 1. Sblocco WebAudio Context
+    if (window.Howler && Howler.ctx) {
+      if (Howler.ctx.state === "suspended") {
+        Howler.ctx.resume().then(() => {
+          triggerSilentBuffer();
+        }).catch(() => {});
+      } else {
+        triggerSilentBuffer();
+      }
+    }
+
+    // 2. Priming HTML5 Audio sincrono su iOS
+    try {
+      const dummy = new Audio();
+      dummy.src = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=";
+      const p = dummy.play();
+      if (p !== undefined) {
+        p.then(() => {
+          dummy.pause();
+          dummy.remove();
+        }).catch(() => {});
+      }
+    } catch (e) {}
+
+    isUnlocked = true;
+    cleanupListeners();
+  }
+
+  function triggerSilentBuffer() {
+    if (!Howler.ctx) return;
     try {
       const buffer = Howler.ctx.createBuffer(1, 1, 22050);
       const source = Howler.ctx.createBufferSource();
       source.buffer = buffer;
       source.connect(Howler.ctx.destination);
       source.start(0);
-      isUnlocked = true;
     } catch (e) {}
   }
 
-  function unlockAudioContext() {
-    if (isUnlocked) return;
-    if (window.Howler && Howler.ctx) {
-      if (Howler.ctx.state === "suspended") {
-        Howler.ctx.resume().then(() => {
-          playSilentBuffer();
-          cleanupUnlockListeners();
-        }).catch(() => {});
-      } else {
-        playSilentBuffer();
-        cleanupUnlockListeners();
-      }
-    }
-  }
-
-  function cleanupUnlockListeners() {
-    window.removeEventListener("touchstart", unlockAudioContext, true);
-    window.removeEventListener("touchend", unlockAudioContext, true);
-    window.removeEventListener("click", unlockAudioContext, true);
+  function cleanupListeners() {
+    window.removeEventListener("touchstart", unlockEngine, true);
+    window.removeEventListener("touchend", unlockEngine, true);
+    window.removeEventListener("click", unlockEngine, true);
   }
 
   // ==========================================================================
-  // 4. INIZIALIZZAZIONE & GESTIONE VISIBILITÀ MOBILE
+  // 4. INIZIALIZZAZIONE & STATE OBSERVER TELEGRAM
   // ==========================================================================
   function init() {
-    window.addEventListener("touchstart", unlockAudioContext, true);
-    window.addEventListener("touchend", unlockAudioContext, true);
-    window.addEventListener("click", unlockAudioContext, true);
+    window.addEventListener("touchstart", unlockEngine, true);
+    window.addEventListener("touchend", unlockEngine, true);
+    window.addEventListener("click", unlockEngine, true);
 
-    ["click", "coin", "insert_coin", "dice", "cash_register"].forEach(k => getOrCreateSfx(k));
-
+    // Watchdog per ripristino audio quando la Telegram WebApp torna in primo piano
     document.addEventListener("visibilitychange", () => {
       if (document.hidden) {
         if (currentBgmHowl && currentBgmHowl.playing()) currentBgmHowl.pause();
+        if (heartbeatHowl && heartbeatHowl.playing()) heartbeatHowl.pause();
       } else {
+        if (window.Howler && Howler.ctx && Howler.ctx.state === "suspended") {
+          Howler.ctx.resume().catch(() => {});
+        }
         if (!isMuted && currentBgmHowl && !currentBgmHowl.playing() && isPlayingManual) {
           currentBgmHowl.play();
         }
+        if (!isMuted && heartbeatHowl && !heartbeatHowl.playing()) {
+          heartbeatHowl.play();
+        }
       }
     });
+
+    // Precarica i suoni tattici frequenti
+    ["click", "insert_coin", "dice", "hit", "crit_hit", "cash_register"].forEach(k => getOrCreateSfx(k));
 
     populatePlaylistDOM();
     updateMuteUI();
@@ -210,7 +297,7 @@ const SoundEngine = (function() {
     try {
       sfxPlayers[name] = new Howl({
         src: [sfxUrls[name]],
-        format: ["mp3"],
+        format: ["mp3", "ogg", "wav"],
         volume: DEFAULT_SFX_VOLUME,
         preload: true
       });
@@ -230,14 +317,37 @@ const SoundEngine = (function() {
   }
 
   // ==========================================================================
-  // 5. RIPRODUZIONE BGM, SHUFFLE & AUDIO DUCKING
+  // 5. RIPRODUZIONE, DUCKING & MATRICE EPISODI
   // ==========================================================================
   function playSfx(name) {
     if (isMuted) return;
     const player = getOrCreateSfx(name);
     if (player) {
-      try { player.play(); } catch (e) {}
+      try { 
+        player.play(); 
+      } catch (e) {
+        // Se Safari blocca la riproduzione, forza lo sblocco immediato
+        unlockEngine();
+      }
     }
+  }
+
+  // Risolve automaticamente la traccia in base all'episodio in corso
+  function playEpisodeBgm(gameKey, episodeNum, mood = "explore", fadeDuration = 1000) {
+    const ep = parseInt(episodeNum, 10) || 1;
+    const m = String(mood).toLowerCase();
+
+    let targetKey = "ep1_explore";
+
+    if (ep === 1) {
+      targetKey = (m === "combat" || m === "duello") ? "ep1_combat" : "ep1_explore";
+    } else if (ep === 2) {
+      targetKey = (m === "combat" || m === "duello") ? "ep2_suspense" : "ep2_explore";
+    } else if (ep >= 3) {
+      targetKey = (m === "combat" || m === "boss") ? "deadly_roulette" : "ep3_dungeon";
+    }
+
+    playBgm(targetKey, fadeDuration);
   }
 
   function playBgm(identifier, fadeDuration = 1000) {
@@ -266,8 +376,8 @@ const SoundEngine = (function() {
     if (!bgmPlayers[track.id]) {
       bgmPlayers[track.id] = new Howl({
         src: [track.src],
-        format: ["mp3"],
-        html5: true,
+        format: ["mp3", "ogg"],
+        html5: false, // Disattivato per garantire la riproduzione continua su iOS via WebAudio
         loop: !isShuffle,
         volume: 0,
         onend: function() {
@@ -283,7 +393,9 @@ const SoundEngine = (function() {
       try {
         currentBgmHowl.play();
         currentBgmHowl.fade(0, currentBgmVolume, fadeDuration);
-      } catch (e) {}
+      } catch (e) {
+        unlockEngine();
+      }
     }
 
     updateJukeboxUI();
@@ -324,6 +436,42 @@ const SoundEngine = (function() {
     updateJukeboxUI();
   }
 
+  // Audio Ducking cinematografico (abbassa la musica per far risaltare il dado o il colpo)
+  function duck(targetVol = 0.08, duration = 1200) {
+    if (isMuted || !currentBgmHowl || !currentBgmHowl.playing()) return;
+    if (duckTimer) clearTimeout(duckTimer);
+
+    currentBgmHowl.fade(currentBgmHowl.volume(), targetVol, 150);
+    duckTimer = setTimeout(() => {
+      if (!isMuted && currentBgmHowl && currentBgmHowl.playing()) {
+        currentBgmHowl.fade(currentBgmHowl.volume(), currentBgmVolume, 400);
+      }
+      duckTimer = null;
+    }, duration);
+  }
+
+  // Monitor Battito Cardiaco (Allarme Salute < 25%)
+  function startHeartbeat() {
+    if (isMuted) return;
+    if (!heartbeatHowl) {
+      heartbeatHowl = new Howl({
+        src: [sfxUrls.heartbeat],
+        format: ["ogg", "mp3"],
+        loop: true,
+        volume: 0.45
+      });
+    }
+    if (!heartbeatHowl.playing()) {
+      heartbeatHowl.play();
+    }
+  }
+
+  function stopHeartbeat() {
+    if (heartbeatHowl && heartbeatHowl.playing()) {
+      heartbeatHowl.stop();
+    }
+  }
+
   function playNextTrack() {
     const curIdx = playlist.findIndex(t => t.id === currentBgmKey);
     let nextIdx;
@@ -358,19 +506,6 @@ const SoundEngine = (function() {
     if (currentBgmHowl) {
       currentBgmHowl.volume(currentBgmVolume);
     }
-  }
-
-  function duck(targetVol = 0.08, duration = 1200) {
-    if (isMuted || !currentBgmHowl || !currentBgmHowl.playing()) return;
-    if (duckTimer) clearTimeout(duckTimer);
-
-    currentBgmHowl.fade(currentBgmHowl.volume(), targetVol, 150);
-    duckTimer = setTimeout(() => {
-      if (!isMuted && currentBgmHowl && currentBgmHowl.playing()) {
-        currentBgmHowl.fade(currentBgmHowl.volume(), currentBgmVolume, 400);
-      }
-      duckTimer = null;
-    }, duration);
   }
 
   function toggleMute() {
@@ -465,7 +600,6 @@ const SoundEngine = (function() {
     });
   }
 
-  // Popola la lista brani all'interno del contenitore presente in index.html
   function populatePlaylistDOM() {
     const container = document.getElementById("jukebox-playlist-items");
     if (!container) return;
@@ -499,12 +633,15 @@ const SoundEngine = (function() {
     playCoreSfx: playSfx,
     playRulesSfx: playSfx,
     playBgm: playBgm,
+    playEpisodeBgm: playEpisodeBgm,
     playCoreBgm: (k) => playBgm(k),
     playRulesBgm: (k) => playBgm(k),
     pauseBgm: pauseBgm,
     resumeBgm: resumeBgm,
     stopBgm: stopBgm,
     duck: duck,
+    startHeartbeat: startHeartbeat,
+    stopHeartbeat: stopHeartbeat,
     openJukeboxModal: openJukeboxModal,
     openPlayerModal: openJukeboxModal,
     closeJukeboxModal: closeJukeboxModal,
