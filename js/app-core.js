@@ -1,8 +1,7 @@
 // ============================================================================
 // PROJECT: ESTIQATSY SYNDICATE & RPG PLATFORM
-// FILE: js/app-core.js (VERSIONE 12.0 - POST ATOMIC GATEWAY & TELEGRAM 8.0 FIT)
-// LAYER 1: SISTEMA OPERATIVO CLIENT-SIDE, ROUTER SPA, STATO & MEGOIN WALLET
-// NOTE: 100% DISACCOPPIATO DALLE REGOLE DI GIOCO - GESTIONE RETE ATOMICA
+// FILE: js/app-core.js (VERSIONE 13.0 - MULTIPLAYER, ATOMIC GAS & TELEGRAM 8.0)
+// LAYER 1: SPA ROUTER, STATO UNIFICATO, MEGOIN WALLET, TOAST SYSTEM & DEEP LINK
 // ============================================================================
 
 // ----------------------------------------------------------------------------
@@ -11,60 +10,87 @@
 const AppConfig = {
   GAS_URL: "https://script.google.com/macros/s/AKfycbyeCWHM9X4ycwWT7IOMwg24pySL78bJT5BRyiIR5eb0UJALWuaORzfJ2lkqLrjLv0xN/exec",
   CACHE_KEYS: {
+    APP_STATE: "est_app_state_v13",
     VAULT: "est_cache_vault",
     AUDIO_MUTED: "estiqatsy_audio_muted",
     AUDIO_VOLUME: "estiqatsy_audio_volume",
     LAST_SERIES: "est_last_series",
-    WIZARD_DRAFT: "est_wizard_draft"
+    CONFIG: "est_admin_config"
   },
   THEME: {
-    BG_COLOR: "#090D16",
-    HEADER_COLOR: "#090D16"
+    BG_COLOR: "#070A12",
+    HEADER_COLOR: "#070A12"
   },
-  TIMEOUT_MS: 12000 // 12 secondi di timeout per chiamate di rete GAS
+  TIMEOUT_MS: 12000
 };
 
 // ----------------------------------------------------------------------------
-// 2. STATO UNIFICATO DELLA PIATTAFORMA (APPSTATE)
+// 2. STATO CENTRALE UNIFICATO DELLA PIATTAFORMA (APPSTATE)
 // ----------------------------------------------------------------------------
 const AppState = {
-  // Dati Utente & Account Piattaforma
-  user: null,
-  allowedModules: { home: true, shop: true, games: true, recipes: true, profile: true },
+  // Profilo Utente & Parametri Combattimento
+  user: {
+    id: 123456789,
+    first_name: "Avventuriero",
+    username: "@anonimo",
+    megoin: 100,
+    loyalty_points: 25,
+    plan: "PIANO BASE",
+    avatar: "⚓",
+    combatStats: {
+      wins: 3,
+      losses: 1,
+      attack: 16,
+      defense: 13,
+      hacking: 12,
+      readiness: 15,
+      rank: "Agente Syndicate Lvl 2"
+    }
+  },
+
+  // Moduli attivi e permessi SaaS
+  allowedModules: {
+    home: true,
+    games: true,
+    shop: true,
+    recipes: true,
+    profile: true,
+    multiplayer: true
+  },
+
   plans: [],
   billingCycle: "monthly",
   activeTab: "home",
 
-  // Moduli di Piattaforma SaaS / E-commerce Megoin / Ricette
+  // Moduli di Piattaforma
   shop: { items: [], categories: [], activeCategory: "tutti", searchQuery: "" },
   recipes: { items: [], categories: [], activeCategory: "tutti", searchQuery: "" },
   carousel: { timer: null, index: 0, count: 0, isPaused: false },
-  vault: [],
+  digitalVault: [],
+  transactions: [],
 
-  // Catalogo Globale Saghe di Gioco
+  // Catalogo Saghe e Sessione Gioco Narrativo
   games: {
     catalog: [],
     activeGameKey: null,
     activeEpisode: 1
   },
+  activeSeriesId: "saga-paul-sindaco",
+  activeEpisodeId: "ep-1",
+  activeGameSession: null,
 
-  // Contenitore Dati della Sessione Runtime Attiva
-  activeSession: {
-    engineKey: null,      // Identificativo motore (es. "Rules2")
-    gameKey: null,
-    episodio: 1,
-    partitaId: null,
-    hero: null,           // Payload eroe agnostico
-    combatRound: 1,
-    combatEnemyId: null,
-    currentNode: null,
-    shopCatalog: [],
-    engineState: null
+  // Stanza Multiplayer Real-time
+  multiplayerActiveRoom: null,
+
+  // Parametri di configurazione (modificabili anche da Admin Panel)
+  config: {
+    gasWebAppUrl: AppConfig.GAS_URL,
+    botUsername: "EstiqatsyBot"
   }
 };
 
 // ----------------------------------------------------------------------------
-// 3. INTEGRAZIONE TELEGRAM WEBAPP SDK & SAFE-AREA NATIVE
+// 3. INTEGRAZIONE TELEGRAM WEBAPP SDK & SAFE-AREA HARDWARE
 // ----------------------------------------------------------------------------
 const tg = (window.Telegram && window.Telegram.WebApp) ? window.Telegram.WebApp : null;
 
@@ -77,15 +103,26 @@ if (tg) {
     tg.setHeaderColor(AppConfig.THEME.HEADER_COLOR);
     tg.setBackgroundColor(AppConfig.THEME.BG_COLOR);
 
-    // Propagazione safe-area hardware alle variabili CSS (SDK 7.0+ / 8.0)
+    // Dati reali Telegram Utente
+    if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
+      const u = tg.initDataUnsafe.user;
+      AppState.user.id = u.id || AppState.user.id;
+      AppState.user.first_name = u.first_name || u.username || AppState.user.first_name;
+      AppState.user.username = u.username ? `@${u.username}` : AppState.user.username;
+      if (u.photo_url) AppState.user.photo_url = u.photo_url;
+    }
+
+    // Propagazione safe-area hardware per iPhone con isola dinamica / notch
     const updateSafeArea = () => {
       const topInset = tg.safeAreaInset?.top || tg.contentSafeAreaInset?.top || 0;
       const bottomInset = tg.safeAreaInset?.bottom || tg.contentSafeAreaInset?.bottom || 0;
       const rightInset = tg.safeAreaInset?.right || tg.contentSafeAreaInset?.right || 0;
+      const leftInset = tg.safeAreaInset?.left || tg.contentSafeAreaInset?.left || 0;
 
       document.documentElement.style.setProperty("--tg-safe-area-inset-top", `${topInset}px`);
       document.documentElement.style.setProperty("--tg-safe-area-inset-bottom", `${bottomInset}px`);
       document.documentElement.style.setProperty("--tg-safe-area-inset-right", `${rightInset}px`);
+      document.documentElement.style.setProperty("--tg-safe-area-inset-left", `${leftInset}px`);
     };
 
     updateSafeArea();
@@ -99,7 +136,7 @@ if (tg) {
 }
 
 // ----------------------------------------------------------------------------
-// GESTIONE DEL PULSANTE 'INDIETRO' NATIVO DI TELEGRAM
+// GESTIONE PULSANTE 'INDIETRO' NATIVO DI TELEGRAM
 // ----------------------------------------------------------------------------
 let telegramBackButtonHandler = null;
 
@@ -117,11 +154,12 @@ function setupTelegramBackButton(targetScreenId) {
     targetScreenId === "subview-game-detail"
   );
   const isGameplayView = (targetScreenId === "view-gameplay" || targetScreenId === "view-wizard");
+  const isMultiplayerView = (targetScreenId === "view-multiplayer");
 
-  if (isSubView || isGameplayView) {
+  if (isSubView || isGameplayView || isMultiplayerView) {
     tg.BackButton.show();
     telegramBackButtonHandler = () => {
-      if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("click");
+      if (window.SoundEngine) SoundEngine.playClick();
 
       if (targetScreenId === "subview-shop-detail") {
         AppRouter.navigate("shop");
@@ -130,18 +168,15 @@ function setupTelegramBackButton(targetScreenId) {
       } else if (targetScreenId === "subview-game-detail") {
         AppRouter.navigate("games");
       } else if (targetScreenId === "view-wizard") {
-        // Torna alla scheda di dettaglio del gioco preservando il draft
         AppRouter.navigate("subview-game-detail");
       } else if (targetScreenId === "view-gameplay") {
-        // Mostra la modale tripartita (Sospendi / Abbandona / Annulla) per evitare chiusure accidentali
-        const currentEngine = EngineRegistry.get(AppState.activeSession.engineKey);
-        if (currentEngine && typeof currentEngine.openAbandonModal === "function") {
-          currentEngine.openAbandonModal();
-        } else if (currentEngine && typeof currentEngine.leaveGameToHub === "function") {
-          currentEngine.leaveGameToHub();
+        if (window.Rules2Engine && typeof Rules2Engine.openAbandonModal === "function") {
+          Rules2Engine.openAbandonModal();
         } else {
           AppRouter.navigate("games");
         }
+      } else if (targetScreenId === "view-multiplayer") {
+        AppRouter.navigate("games");
       } else {
         AppRouter.navigate("home");
       }
@@ -153,50 +188,60 @@ function setupTelegramBackButton(targetScreenId) {
 }
 
 // ----------------------------------------------------------------------------
-// 4. REGISTRO DEI MOTORI DI GIOCO (ENGINE REGISTRY)
+// 4. REGISTRO MOTORI DI GIOCO (ENGINE REGISTRY)
 // ----------------------------------------------------------------------------
 const EngineRegistry = {
   _engines: {},
-
   register: function(ruleKey, engineInstance) {
     if (!ruleKey || !engineInstance) return;
     const cleanKey = String(ruleKey).trim().toLowerCase().replace(/\s+/g, '');
     this._engines[cleanKey] = engineInstance;
-    console.log(`[EngineRegistry] Motore registrato con successo: ${cleanKey}`);
   },
-
   get: function(ruleKey) {
     if (!ruleKey) return this._engines["rules2"] || null;
     const cleanKey = String(ruleKey).trim().toLowerCase().replace(/\s+/g, '');
     return this._engines[cleanKey] || this._engines["rules2"] || null;
   }
 };
-
 window.EngineRegistry = EngineRegistry;
 
 // ----------------------------------------------------------------------------
-// 5. ROUTER SPA (APPROUTER) - CONTROLLO ATOMICO DEI 3 FOOTER
+// 5. ROUTER SPA (APPROUTER) CON GESTIONE A TRE FOOTER E HEADER ATOMICI
 // ----------------------------------------------------------------------------
 const AppRouter = {
-  navigate: function(screenName) {
-    if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("click");
+  navigate: function(screenName, subScreenName = null) {
+    if (window.SoundEngine) SoundEngine.playClick();
     if (tg && tg.HapticFeedback) tg.HapticFeedback.selectionChanged();
 
-    let targetId = screenName;
+    let targetId = subScreenName || screenName;
+
+    // Normalizzazione alias schermi
     if (targetId === "games" || targetId === "view-games") {
       targetId = "view-hub";
-      if (typeof AppModules !== "undefined" && typeof AppModules.renderGamesCatalog === "function") {
+      if (window.AppModules && typeof AppModules.renderGamesCatalog === "function") {
         AppModules.renderGamesCatalog();
       }
+    } else if (targetId === "multiplayer" || targetId === "view-multiplayer") {
+      targetId = "view-multiplayer";
+      if (window.AppModules && typeof AppModules.renderMultiplayerRoom === "function") {
+        AppModules.renderMultiplayerRoom();
+      }
+    } else if (targetId === "gameplay" || targetId === "view-gameplay") {
+      targetId = "view-gameplay";
+      if (window.Rules2Engine && typeof Rules2Engine.syncHUD === "function") {
+        Rules2Engine.syncHUD();
+      }
+    } else if (targetId === "wizard" || targetId === "view-wizard") {
+      targetId = "view-wizard";
     } else if (!targetId.startsWith("view-") && !targetId.startsWith("subview-")) {
-      targetId = "view-" + screenName;
+      targetId = "view-" + targetId;
     }
 
     // Hard-Locking dei moduli SaaS
     const baseModule = targetId.replace("view-", "").replace("subview-", "").split("-")[0];
     if (AppState.allowedModules && AppState.allowedModules[baseModule] === false) {
       this.navigate("home");
-      if (typeof AppModules !== "undefined" && typeof AppModules.openPlansCatalogModal === "function") {
+      if (window.AppModules && typeof AppModules.openPlansCatalogModal === "function") {
         AppModules.openPlansCatalogModal();
       }
       return;
@@ -205,25 +250,13 @@ const AppRouter = {
     const scrollContainer = document.getElementById("app-main-scroll");
     if (scrollContainer) scrollContainer.scrollTop = 0;
 
-    // Reset viste di ricerca
-    if (targetId === "view-shop" && typeof AppModules !== "undefined") {
-      AppState.shop.activeCategory = "tutti";
-      AppState.shop.searchQuery = "";
-      const sInput = document.getElementById("shop-search-input");
-      if (sInput) sInput.value = "";
-      AppModules.renderShop();
-    } else if (targetId === "view-recipes" && typeof AppModules !== "undefined") {
-      AppState.recipes.activeCategory = "tutti";
-      AppState.recipes.searchQuery = "";
-      const rInput = document.getElementById("recipes-search-input");
-      if (rInput) rInput.value = "";
-      AppModules.renderRecipes();
-    }
-
+    // Switch di visibilità schermi
     const allScreens = [
-      "view-home", "view-shop", "view-recipes", "view-profile",
-      "subview-shop-detail", "subview-recipe-detail",
-      "view-hub", "subview-game-detail", "view-wizard", "view-gameplay"
+      "view-home", "view-hub", "subview-game-detail",
+      "view-wizard", "view-gameplay", "view-multiplayer",
+      "view-shop", "subview-shop-detail",
+      "view-recipes", "subview-recipe-detail",
+      "view-profile"
     ];
 
     allScreens.forEach(id => {
@@ -231,7 +264,7 @@ const AppRouter = {
       if (el) el.classList.toggle("hidden", id !== targetId);
     });
 
-    // Controllo atomico Header & Switch a Tre Footer
+    // Controllo Atomico Header & Switch a Tre Footer
     const isGameplay = (targetId === "view-gameplay");
     const isWizard = (targetId === "view-wizard");
 
@@ -242,7 +275,7 @@ const AppRouter = {
     const wizardFooter = document.getElementById("main-wizard-footer");
     const gameFooter = document.getElementById("main-game-cockpit-footer");
 
-    // 1. Gestione Header
+    // Gestione Header
     if (isGameplay) {
       if (appHeader) appHeader.classList.add("hidden");
       if (gameHeader) gameHeader.classList.remove("hidden");
@@ -251,7 +284,7 @@ const AppRouter = {
       if (gameHeader) gameHeader.classList.add("hidden");
     }
 
-    // 2. Gestione Esclusiva a Tre Footer (Mai sovrapposti)
+    // Gestione Esclusiva a Tre Footer
     if (isGameplay) {
       if (appFooter) appFooter.classList.add("hidden");
       if (wizardFooter) wizardFooter.classList.add("hidden");
@@ -266,7 +299,7 @@ const AppRouter = {
       if (gameFooter) gameFooter.classList.add("hidden");
     }
 
-    // Calcolo del Tab Attivo
+    // Calcolo Tab Attivo
     const activeTabKey = targetId.replace("view-", "").replace("subview-", "").split("-")[0];
     AppState.activeTab = (activeTabKey === "hub") ? "games" : activeTabKey;
 
@@ -289,19 +322,18 @@ const AppRouter = {
 };
 
 // ----------------------------------------------------------------------------
-// 6. COMUNICAZIONE API BACKEND ATOMICA (POST JSON SU GOOGLE APPS SCRIPT)
+// 6. APICALL POST VERSO GOOGLE APPS SCRIPT (GAS)
 // ----------------------------------------------------------------------------
 let _isApiInProgress = false;
 
 async function apiCall(action, extraParams = {}) {
   const isCritical = ["shop_buy", "currency_exchange", "game_start", "game_action", "game_node"].includes(action);
   if (isCritical && _isApiInProgress) {
-    console.warn(`[apiCall] Richiesta "${action}" bloccata: transazione già in corso.`);
     throw new Error("Operazione in corso. Attendi un istante...");
   }
-
   if (isCritical) _isApiInProgress = true;
 
+  const endpointUrl = AppState.config?.gasWebAppUrl || AppConfig.GAS_URL;
   const initData = (tg && tg.initData) ? tg.initData : "";
   const payload = {
     action: action,
@@ -314,13 +346,9 @@ async function apiCall(action, extraParams = {}) {
   const timeoutId = setTimeout(() => controller.abort(), AppConfig.TIMEOUT_MS);
 
   try {
-    // POST con 'text/plain;charset=utf-8' per compatibilità assoluta con Google Apps Script
-    // ed evitare blocchi CORS preflight OPTIONS.
-    const response = await fetch(AppConfig.GAS_URL, {
+    const response = await fetch(endpointUrl, {
       method: "POST",
-      headers: {
-        "Content-Type": "text/plain;charset=utf-8"
-      },
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
       body: JSON.stringify(payload),
       redirect: "follow",
       signal: controller.signal
@@ -328,32 +356,26 @@ async function apiCall(action, extraParams = {}) {
 
     clearTimeout(timeoutId);
 
-    if (!response.ok) {
-      throw new Error(`Errore di rete HTTP: ${response.status}`);
-    }
-
+    if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
     const rawText = await response.text();
+
     let result;
     try {
       result = JSON.parse(rawText);
-    } catch (jsonErr) {
+    } catch (e) {
       if (rawText.includes("<!DOCTYPE") || rawText.includes("<html")) {
-        throw new Error("Il server Google ha restituito una risposta HTML non valida (errore script).");
+        throw new Error("Il server Google ha restituito un errore HTML.");
       }
       throw new Error("Formato risposta del server non valido.");
     }
 
-    if (!result.success && result.error) {
-      throw new Error(result.error);
-    }
+    if (!result.success && result.error) throw new Error(result.error);
     return result.data;
   } catch (err) {
     clearTimeout(timeoutId);
     if (err.name === "AbortError") {
-      console.error(`[API Timeout] Azione "${action}" scaduta dopo ${AppConfig.TIMEOUT_MS}ms.`);
-      throw new Error("Il server impiega troppo tempo a rispondere. Verifica la connessione e riprova.");
+      throw new Error("Timeout: Il server GAS impiega troppo tempo a rispondere.");
     }
-    console.error(`[API Error] Azione "${action}":`, err);
     throw err;
   } finally {
     if (isCritical) _isApiInProgress = false;
@@ -365,58 +387,154 @@ async function apiCall(action, extraParams = {}) {
 // ----------------------------------------------------------------------------
 const Wallet = {
   getMegoin: function() {
-    if (!AppState.user) return 0;
-    return (AppState.user.saldoMegoin !== undefined) ? AppState.user.saldoMegoin : (AppState.user.megoin || 0);
+    return AppState.user?.megoin || 0;
   },
-
   setMegoin: function(val) {
     const num = Math.max(0, parseInt(val, 10) || 0);
     if (!AppState.user) AppState.user = {};
-    AppState.user.saldoMegoin = num;
     AppState.user.megoin = num;
 
-    // Aggiornamento sincronizzato di tutti i KPI grafici, incluso il cabinato arcade
     ["home-megoin-card", "user-megoin-desk", "profile-card-megoin", "cambio-megoin-balance", "arcade-user-balance"].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.textContent = (id === "cambio-megoin-balance" || id === "arcade-user-balance") ? num : `${num} 🪙`;
     });
   },
-
   addMegoin: function(amount) {
     this.setMegoin(this.getMegoin() + amount);
   }
 };
 
 // ----------------------------------------------------------------------------
-// 8. UTILITY CONDIVISE
+// 8. APPCORE: BRIDGE PERSISTENZA, UI SYNC & NOTIFICHE TOAST NATIVE
 // ----------------------------------------------------------------------------
-function deduplicateEntities(list) {
-  if (!Array.isArray(list)) return [];
-  const seen = new Set();
-  return list.filter(item => {
-    if (!item) return false;
-    const key = String(item.id || item.nome || item.name || JSON.stringify(item)).toLowerCase().trim();
-    if (seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  });
-}
+const AppCore = {
+  // Toast Non-Bloccante Glassmorphism
+  toast: function(message, type = "info") {
+    let container = document.getElementById("app-toast-container");
+    if (!container) {
+      container = document.createElement("div");
+      container.id = "app-toast-container";
+      container.style.cssText = "position:fixed;top:calc(var(--safe-top, 0px) + 56px);left:50%;transform:translateX(-50%);z-index:9999;display:flex;flex-direction:column;gap:8px;pointer-events:none;width:90%;max-width:380px;";
+      document.body.appendChild(container);
+    }
 
-function cleanNumber(v, defaultVal = 0) {
-  if (v === null || v === undefined || v === "" || v === "—" || v === "-") return defaultVal;
-  const n = Number(String(v).replace(",", "."));
-  return isNaN(n) ? defaultVal : n;
-}
+    const toast = document.createElement("div");
+    const colors = {
+      success: "border-emerald-500/50 text-emerald-300 bg-emerald-950/90",
+      error: "border-rose-500/50 text-rose-300 bg-rose-950/90",
+      warning: "border-amber-500/50 text-amber-300 bg-amber-950/90",
+      info: "border-sky-500/50 text-sky-300 bg-slate-900/95"
+    };
 
-function escapeHTML(str) {
-  if (!str) return "";
-  return String(str)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
-}
+    toast.className = `p-3 rounded-xl border shadow-2xl backdrop-blur-md text-xs font-mono font-bold flex items-center justify-between pointer-events-auto transition-all duration-300 transform translate-y-[-10px] opacity-0 ${colors[type] || colors.info}`;
+    toast.innerHTML = `<span>${message}</span><span style="cursor:pointer;margin-left:8px;opacity:0.6;">✕</span>`;
+
+    toast.onclick = () => {
+      toast.style.opacity = "0";
+      setTimeout(() => toast.remove(), 200);
+    };
+
+    container.appendChild(toast);
+
+    requestAnimationFrame(() => {
+      toast.style.opacity = "1";
+      toast.style.transform = "translateY(0)";
+    });
+
+    if (tg && tg.HapticFeedback) {
+      if (type === "success") tg.HapticFeedback.notificationOccurred("success");
+      else if (type === "error") tg.HapticFeedback.notificationOccurred("error");
+      else if (type === "warning") tg.HapticFeedback.notificationOccurred("warning");
+      else tg.HapticFeedback.impactOccurred("light");
+    }
+
+    setTimeout(() => {
+      if (toast.parentNode) {
+        toast.style.opacity = "0";
+        toast.style.transform = "translateY(-8px)";
+        setTimeout(() => toast.remove(), 250);
+      }
+    }, 3200);
+  },
+
+  // Persistenza LocalStorage
+  save: function() {
+    try {
+      const stateToSave = {
+        user: AppState.user,
+        transactions: AppState.transactions,
+        digitalVault: AppState.digitalVault,
+        activeSeriesId: AppState.activeSeriesId,
+        activeEpisodeId: AppState.activeEpisodeId,
+        activeGameSession: AppState.activeGameSession,
+        multiplayerActiveRoom: AppState.multiplayerActiveRoom,
+        config: AppState.config
+      };
+      localStorage.setItem(AppConfig.CACHE_KEYS.APP_STATE, JSON.stringify(stateToSave));
+    } catch (e) {
+      console.warn("[AppCore.save] Impossibile salvare in LocalStorage:", e);
+    }
+  },
+
+  load: function() {
+    try {
+      const raw = localStorage.getItem(AppConfig.CACHE_KEYS.APP_STATE);
+      if (raw) {
+        const saved = JSON.parse(raw);
+        if (saved.user) AppState.user = { ...AppState.user, ...saved.user };
+        if (saved.transactions) AppState.transactions = saved.transactions;
+        if (saved.digitalVault) AppState.digitalVault = saved.digitalVault;
+        if (saved.activeSeriesId) AppState.activeSeriesId = saved.activeSeriesId;
+        if (saved.activeEpisodeId) AppState.activeEpisodeId = saved.activeEpisodeId;
+        if (saved.activeGameSession) AppState.activeGameSession = saved.activeGameSession;
+        if (saved.multiplayerActiveRoom) AppState.multiplayerActiveRoom = saved.multiplayerActiveRoom;
+        if (saved.config) AppState.config = { ...AppState.config, ...saved.config };
+      }
+    } catch (e) {
+      console.warn("[AppCore.load] Dati cache non validi:", e);
+    }
+  },
+
+  // Sincronizzazione Elementi Grafici Comuni
+  syncUI: function() {
+    const u = AppState.user;
+    if (!u) return;
+
+    const s = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+    const megoinVal = Wallet.getMegoin();
+
+    s("home-username", u.first_name || "Avventuriero");
+    s("home-rank-points", u.loyalty_points || 0);
+    s("home-plan-badge", (u.plan || "PIANO BASE").toUpperCase());
+    s("home-megoin-card", `${megoinVal} 🪙`);
+    s("home-punti-card", `${u.loyalty_points || 0} Pt`);
+
+    s("user-name-desk", u.first_name || "Avventuriero");
+    s("user-plan-desk", (u.plan || "PIANO BASE").toUpperCase());
+    s("user-megoin-desk", `${megoinVal} 🪙`);
+    s("user-points-desk", `${u.loyalty_points || 0} Pt`);
+
+    s("profile-card-name", u.first_name || "Avventuriero");
+    s("profile-card-username", u.username || "@anonimo");
+    s("profile-card-plan", (u.plan || "PIANO BASE").toUpperCase());
+    s("profile-card-id", `ID: ${u.id || "-"}`);
+    s("profile-card-megoin", `${megoinVal} 🪙`);
+    s("profile-card-points", `${u.loyalty_points || 0} Pt`);
+
+    // Avatar
+    const renderAvatarBox = (boxId) => {
+      const el = document.getElementById(boxId);
+      if (!el) return;
+      if (u.photo_url) {
+        el.innerHTML = `<img src="${u.photo_url}" class="avatar-img" alt="Avatar">`;
+      } else {
+        el.textContent = (u.avatar || u.first_name || "U").charAt(0).toUpperCase();
+      }
+    };
+    renderAvatarBox("user-avatar-desk");
+    renderAvatarBox("profile-card-avatar");
+  }
+};
 
 // ----------------------------------------------------------------------------
 // 9. ESPOSIZIONE GLOBALE SU WINDOW
@@ -425,20 +543,39 @@ window.AppConfig = AppConfig;
 window.AppState = AppState;
 window.AppRouter = AppRouter;
 window.Wallet = Wallet;
+window.AppCore = AppCore;
 window.apiCall = apiCall;
-window.deduplicateEntities = deduplicateEntities;
-window.cleanNumber = cleanNumber;
-window.escapeHTML = escapeHTML;
 
 // ----------------------------------------------------------------------------
-// 10. BOOTSTRAP DELL'APPLICAZIONE ALL'AVVIO
+// 10. BOOTSTRAP APPLICAZIONE ALL'AVVIO
 // ----------------------------------------------------------------------------
 window.addEventListener("DOMContentLoaded", () => {
+  AppCore.load();
+  AppCore.syncUI();
+
   if (window.lucide) lucide.createIcons();
 
-  if (typeof AppModules !== "undefined" && typeof AppModules.init === "function") {
-    AppModules.init();
-  } else {
-    console.log("[app-core] In attesa del caricamento dei moduli di piattaforma...");
+  // Inizializzazione Moduli di Piattaforma
+  if (window.AppModules) {
+    if (typeof AppModules.renderHome === "function") AppModules.renderHome();
+    if (typeof AppModules.renderShopCatalog === "function") AppModules.renderShopCatalog();
+    if (typeof AppModules.renderRecipesCatalog === "function") AppModules.renderRecipesCatalog();
+    if (typeof AppModules.renderGamesCatalog === "function") AppModules.renderGamesCatalog();
+    if (typeof AppModules.renderProfile === "function") AppModules.renderProfile();
+  }
+
+  // Rilevamento Invito Deep Link Telegram (es. ?startapp=ROOM_ABC123)
+  if (tg && tg.initDataUnsafe && tg.initDataUnsafe.start_param) {
+    const param = tg.initDataUnsafe.start_param;
+    if (param.startsWith("ROOM_") && window.AppModules && typeof AppModules.handleIncomingInvite === "function") {
+      setTimeout(() => AppModules.handleIncomingInvite(param), 400);
+    }
+  }
+
+  // Rimozione animata schermata di caricamento
+  const loader = document.getElementById("app-loading");
+  if (loader) {
+    loader.classList.add("fade-out");
+    setTimeout(() => loader.remove(), 260);
   }
 });
