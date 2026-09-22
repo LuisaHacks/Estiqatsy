@@ -1,11 +1,11 @@
 /* ============================================================================
    PROJECT: ESTIQATSY SYNDICATE & RPG PLATFORM
-   FILE: css/rules2.css (VERSIONE 13.0 - MULTI-DEVICE 9-LINES LORE & FULL GLASS MODALS)
-   LAYER: ENGINE RULES2, 3D WIZARD, RESPONSIVE COCKPIT & 4-PILLAR GLASS DRAWERS
+   FILE: css/rules2.css (VERSIONE 14.0 - MULTI-DEVICE 9-LINES LORE & 4-PILLAR GLASS COCKPIT)
+   LAYER: ENGINE RULES2, 3D WIZARD, RESPONSIVE COCKPIT & GLASSMORPHISM MODALS
    ============================================================================ */
 
 /* ----------------------------------------------------------------------------
-   1. COCKPIT HEADER (TELEGRAM SAFE-ZONE) & 4-PILLAR STICKY FOOTER
+   1. COCKPIT HEADER (TELEGRAM SAFE-ZONE) & FOOTER A 4 PILASTRI TATTICI
    ---------------------------------------------------------------------------- */
 .universal-top-bar {
   flex: none;
@@ -14,7 +14,7 @@
   height: calc(var(--safe-top, 0px) + 48px);
   padding-top: var(--safe-top, 0px);
   padding-left: 0.75rem;
-  padding-right: 85px; /* SAFE-ZONE: Spazio intoccabile riservato ai tasti nativi Telegram (✕ e •••) */
+  padding-right: 85px; /* SAFE-ZONE: Spazio intoccabile per i tasti nativi Telegram (✕ e •••) */
   background: rgba(9, 13, 22, 0.98);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
@@ -58,7 +58,7 @@
   }
 }
 
-/* Footer Cockpit Sticky (I 4 Pilastri Tattici) */
+/* Footer Cockpit Sticky: I 4 Pilastri Strategici */
 .cockpit-footer {
   flex: none;
   z-index: 40;
@@ -167,7 +167,7 @@
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9);
 }
 
-/* Floating Damage & Tumble Dice */
+/* Layer Danni Fluttuanti & Dado D20 */
 .floating-damage-layer {
   position: absolute;
   inset: 0;
@@ -203,7 +203,7 @@
    3. WIZARD: HEADER COMPATTO & GEOMETRIA RIGIDA ABOVE-THE-FOLD (ZERO-SCROLL)
    ---------------------------------------------------------------------------- */
 body[data-active-screen="view-wizard"] .app-scroll-area {
-  overflow: hidden !important; /* Disattiva qualsiasi scrollbar verticale parassita */
+  overflow: hidden !important; /* Zero scrollbar nel Wizard: tutto calcolato nel viewport */
   overscroll-behavior-y: none;
 }
 body[data-active-screen="view-wizard"] .app-content-wrapper {
@@ -1041,7 +1041,7 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
   text-transform: uppercase;
 }
 
-/* Modale Abbandono Diegetico */
+/* Modale Abbandono Diegetico Tripartito */
 .abandon-modal-box {
   background: linear-gradient(180deg, #1E1B4B 0%, #090D16 100%);
   border: 1px solid rgba(244, 63, 94, 0.5);
@@ -1286,7 +1286,7 @@ dialog.modal:not([open]) {
   display: none !important;
 }
 
-/* Modale Fascicolo Universale */
+/* Modale Fascicolo Universale (Singola Carta Monumentale) */
 .modal-dossier .dossier-box {
   background: var(--tg-sec-bg, #0F172A);
   border: 1px solid rgba(56, 189, 248, 0.4);
