@@ -1,26 +1,17 @@
 /* ============================================================================
    PROJECT: ESTIQATSY SYNDICATE & RPG PLATFORM
-   FILE: css/rules2.css (VERSIONE 15.0 - UNIFIED UEC & CONSTANT ACTION DECK)
+   FILE: css/rules2.css (VERSIONE 16.0 - UNIFIED UEC & HARDWARE-SAFE COCKPIT)
    LAYER: ENGINE RULES2, UNIVERSAL ENTITY CARD, RESPONSIVE COCKPIT & MODALS
    ============================================================================ */
 
 /* ----------------------------------------------------------------------------
-   1. COCKPIT HEADER (TELEGRAM SAFE-ZONE) & FOOTER FISSO A 42px (ZERO GAP TOP)
+   1. COCKPIT HEADER & FOOTER DI GIOCO (HARDWARE SAFE-ZONE)
    ---------------------------------------------------------------------------- */
-.universal-top-bar {
-  flex: none;
-  z-index: 40;
-  width: 100%;
-  height: calc(var(--safe-top, 0px) + var(--tg-header-height, 44px));
-  padding-top: var(--safe-top, 0px);
-  padding-left: 0.75rem;
-  padding-right: calc(var(--safe-right, 0px) + 85px); /* SAFE-ZONE CAPSULA TELEGRAM (✕ e •••) */
-  background: #090D16;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  position: relative;
+
+/* Header Cockpit di Gioco */
+#main-game-header.universal-top-bar {
+  background: rgba(9, 13, 22, 0.98);
+  border-bottom: 1px solid var(--tg-border, rgba(255, 255, 255, 0.08));
 }
 
 .game-header-titles {
@@ -32,105 +23,108 @@
   min-width: 0;
 }
 .game-header-tag {
-  font-size: 8.5px;
+  font-size: 10px;
   font-weight: 900;
   color: var(--tg-amber, #F59E0B);
   text-transform: uppercase;
-  letter-spacing: 0.15em;
+  letter-spacing: 0.14em;
   line-height: 1;
 }
 .game-header-sub {
-  font-size: 0.78rem;
+  font-size: 0.82rem;
   font-weight: 900;
   color: #FFFFFF;
-  line-height: 1.2;
+  line-height: 1.25;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 160px;
+  max-width: 170px;
+  margin-top: 0.1rem;
 }
 @media (min-width: 640px) {
   .game-header-sub {
-    max-width: 280px;
-    font-size: 0.88rem;
+    max-width: 320px;
+    font-size: 0.95rem;
   }
 }
 
-/* HUD di Stato (Fase & Saldo): ZERO GAP con la Top Bar */
+/* HUD di Stato (Fase & Saldo): Agganciato direttamente alla Top Bar senza spazi morti */
 .stage-hud-strip {
   flex: none;
-  height: 30px;
-  margin-top: 0 !important; /* ZERO GAP: agganciato direttamente alla barra sopra */
-  margin-bottom: 4px;       /* Micro-stacco di 4px con la card */
-  padding: 0 0.75rem;
-  background: #0D131F;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  height: 32px;
+  margin-top: 0 !important;
+  margin-bottom: 0.35rem;
+  padding: 0 0.85rem;
+  background: var(--tg-sec-bg, #0D131F);
+  border-bottom: 1px solid var(--tg-border, rgba(255, 255, 255, 0.08));
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-size: 11px;
+  font-size: 11.5px;
+  font-family: monospace;
+  font-weight: 800;
 }
 
-/* Footer Cockpit di Gioco: ESATTAMENTE 42px a Filo Schermo (Zero Spazio Morto) */
+/* Footer Cockpit di Gioco: Rispetto assoluto per la Safe-Area di iOS (Home Indicator) */
 .cockpit-footer {
   flex: none;
-  z-index: 40;
+  z-index: 50;
   width: 100%;
-  max-width: 440px;
+  max-width: 500px;
   margin: 0 auto;
-  height: 42px !important; /* 42px FISSI: Nessuna safe area a vuoto che spinge in alto */
+  
+  /* Altezza dinamica: 46px ergonomici + Safe Area inferiore hardware */
+  height: calc(46px + var(--safe-bottom, 0px)) !important;
+  padding-bottom: var(--safe-bottom, 0px);
+  
   background: rgba(13, 19, 31, 0.98);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-top: 1px solid var(--tg-border-light, rgba(255, 255, 255, 0.12));
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   align-items: center;
-  gap: 4px;
-  padding: 0 6px;
+  gap: 6px;
+  padding-left: 8px;
+  padding-right: 8px;
+  padding-top: 4px;
 }
 
-/* Pulsanti Cockpit Compatto a Riga Singola (Icona + Testo Affiancati) */
+/* Pulsanti Cockpit: Area Touch Ergonomica (36px di altezza) */
 .cockpit-btn {
   display: flex;
   flex-direction: row;
   align-items: center;
   justify-content: center;
-  gap: 0.3rem;
-  height: 32px;
-  padding: 0 0.35rem;
+  gap: 0.35rem;
+  height: 36px;
+  padding: 0 0.4rem;
   background: rgba(255, 255, 255, 0.04);
-  border-radius: 0.4rem;
+  border-radius: 0.5rem;
   border: 1px solid transparent;
   cursor: pointer;
-  transition: transform 0.15s ease, background 0.15s ease;
+  transition: transform 0.12s ease, background 0.15s ease, border-color 0.15s ease;
   width: 100%;
 }
 .cockpit-btn:active {
   transform: scale(0.95);
   background: rgba(56, 189, 248, 0.15);
+  border-color: rgba(56, 189, 248, 0.4);
 }
 .cockpit-btn svg,
 .cockpit-btn i {
-  width: 14px !important;
-  height: 14px !important;
+  width: 15px !important;
+  height: 15px !important;
   flex-shrink: 0;
 }
 .cockpit-btn-label {
-  font-size: 9.5px;
+  font-size: 10.5px;
   font-weight: 800;
   text-transform: uppercase;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.03em;
   margin: 0;
   line-height: 1;
   white-space: nowrap;
-}
-
-/* Gutter Esatto di 6px tra Carta e Footer Cockpit */
-.viewport-spacer-6px {
-  flex: none;
-  height: 6px;
-  width: 100%;
 }
 
 /* ----------------------------------------------------------------------------
@@ -139,19 +133,25 @@
 .cinema-frame-rigid {
   position: relative;
   width: 100%;
-  height: clamp(150px, 22dvh, 220px);
-  border-radius: 0.95rem;
+  height: clamp(155px, 23dvh, 230px);
+  border-radius: 1rem;
   overflow: hidden;
   background: #090D16;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--tg-border, rgba(255, 255, 255, 0.08));
   flex-shrink: 0;
+}
+.cinema-frame-rigid img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
 }
 
 .scene-badge {
   position: absolute;
-  top: 0.55rem;
-  left: 0.55rem;
-  font-size: 9px;
+  top: 0.65rem;
+  left: 0.65rem;
+  font-size: 9.5px;
   font-weight: 900;
   text-transform: uppercase;
   z-index: 15;
@@ -163,7 +163,7 @@
   left: 0;
   right: 0;
   background: linear-gradient(180deg, transparent 0%, rgba(9, 13, 22, 0.85) 35%, rgba(9, 13, 22, 0.98) 100%);
-  padding: 0.4rem 0.75rem 0.35rem 0.75rem;
+  padding: 0.5rem 0.85rem 0.45rem 0.85rem;
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
@@ -171,10 +171,10 @@
   z-index: 10;
 }
 .quote-text {
-  font-size: clamp(10.5px, 1.35dvh, 11.5px);
+  font-size: clamp(11px, 1.45dvh, 12.5px);
   color: #F1F5F9;
   font-style: italic;
-  line-height: 1.3;
+  line-height: 1.35;
   text-align: right;
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -183,13 +183,13 @@
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.95);
 }
 .quote-author {
-  font-size: 8.5px;
+  font-size: 9.5px;
   font-weight: 800;
   color: var(--tg-amber, #F59E0B);
   text-transform: uppercase;
   letter-spacing: 0.08em;
   text-align: right;
-  margin-top: 0.1rem;
+  margin-top: 0.15rem;
 }
 
 /* Layer Danni Fluttuanti & Dado D20 */
@@ -204,7 +204,7 @@
 }
 .floating-damage {
   font-weight: 900;
-  font-size: 1.5rem;
+  font-size: 1.6rem;
   color: var(--tg-sky, #38BDF8);
   animation: floatDamage 1.2s ease-out forwards;
 }
@@ -225,7 +225,7 @@
 }
 
 /* ----------------------------------------------------------------------------
-   3. WIZARD: HEADER COMPATTO & GEOMETRIA RIGIDA ABOVE-THE-FOLD (ZERO-SCROLL)
+   3. WIZARD: GEOMETRIA RIGIDA ABOVE-THE-FOLD (ZERO-SCROLL)
    ---------------------------------------------------------------------------- */
 body[data-active-screen="view-wizard"] .app-scroll-area {
   overflow: hidden !important;
@@ -235,7 +235,7 @@ body[data-active-screen="view-wizard"] .app-content-wrapper {
   height: 100% !important;
   max-height: 100% !important;
   min-height: 100% !important;
-  padding: 0.15rem 0.4rem 0.25rem 0.4rem !important;
+  padding: 0.25rem 0.5rem 0.35rem 0.5rem !important;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -263,38 +263,38 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  gap: 0.15rem;
+  gap: 0.25rem;
   min-height: 0;
 }
 
 .wizard-single-header {
   flex: none;
-  min-height: 32px;
+  min-height: 34px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.1rem 0.25rem;
+  padding: 0.15rem 0.35rem;
   border-bottom: 1px solid var(--tg-border, rgba(255, 255, 255, 0.08));
-  gap: 0.35rem;
+  gap: 0.4rem;
 }
 
 .wizard-step-badge {
   background: var(--tg-amber, #F59E0B);
   color: #090D16;
-  font-size: 8.5px;
+  font-size: 9.5px;
   font-weight: 900;
-  padding: 0.15rem 0.4rem;
+  padding: 0.2rem 0.5rem;
   border-radius: 9999px;
   line-height: 1;
   flex-shrink: 0;
 }
 
 .wizard-step-title {
-  font-size: 0.78rem;
+  font-size: 0.84rem;
   font-weight: 900;
   color: #FFFFFF;
   margin: 0;
-  line-height: 1.1;
+  line-height: 1.15;
 }
 
 #wizard-shop-gold-display {
@@ -303,10 +303,10 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
   gap: 0.25rem;
   white-space: nowrap;
   font-family: monospace;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 800;
   line-height: 1;
-  padding: 0.15rem 0.4rem;
+  padding: 0.2rem 0.5rem;
 }
 
 .wizard-view-toggle-pill {
@@ -320,9 +320,9 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
   flex-shrink: 0;
 }
 .toggle-pill-btn {
-  padding: 0.15rem 0.45rem;
+  padding: 0.2rem 0.55rem;
   border-radius: 9999px;
-  font-size: 8.5px;
+  font-size: 9.5px;
   font-weight: 800;
   color: var(--tg-text-muted, #94A3B8);
   background: transparent;
@@ -383,7 +383,7 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
 .coverflow-stage-wrapper .coverflow-card,
 .universal-card {
   position: absolute;
-  border-radius: 1rem;
+  border-radius: 1.15rem;
   background: #0D131F;
   border: 1px solid rgba(255, 255, 255, 0.18);
   overflow: hidden;
@@ -394,14 +394,16 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
   transform: translateZ(0);
+  transform-style: preserve-3d;
+  contain: layout style paint;
   transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.35s ease, box-shadow 0.35s ease, border-color 0.35s ease;
   will-change: transform, opacity;
 
   /* Geometria Dinamica */
-  width: clamp(285px, 86vw, 340px) !important;
+  width: clamp(285px, 86vw, 350px) !important;
   height: 100% !important;
   max-height: calc(100% - 6px) !important;
-  margin-bottom: 6px !important; /* Esattamente 6px di distacco dal footer menu */
+  margin-bottom: 6px !important;
 
   box-shadow: 0 0 1px rgba(255, 255, 255, 0.4), 0 0 12px rgba(255, 255, 255, 0.08);
 }
@@ -443,16 +445,16 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
   pointer-events: none;
 }
 
-/* 1. Header Carta (30px Fisso) */
+/* 1. Header Carta (32px Fisso) */
 .coverflow-header-bar,
 .uec-meta-bar {
   position: relative;
   z-index: 15;
-  height: 30px;
+  height: 32px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 0.65rem;
+  padding: 0 0.75rem;
   background: rgba(9, 13, 22, 0.95);
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
@@ -460,47 +462,47 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
 .uec-title-group {
   display: flex;
   align-items: center;
-  gap: 0.35rem;
-  max-width: 68%;
+  gap: 0.4rem;
+  max-width: 70%;
 }
 .coverflow-title,
 .uec-title {
-  font-size: 0.82rem;
+  font-size: 0.85rem;
   font-weight: 900;
   color: #FFFFFF;
-  line-height: 1.1;
+  line-height: 1.15;
   margin: 0;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 .coverflow-badge-faction {
-  font-size: 0.65rem;
+  font-size: 9.5px;
   font-weight: 900;
-  letter-spacing: 0.05em;
-  padding: 0.15rem 0.45rem;
+  letter-spacing: 0.06em;
+  padding: 0.2rem 0.5rem;
   border-radius: 9999px;
   line-height: 1;
 }
 .coverflow-badge-faction[data-faction="destra"],
 .badge-faction-destra {
-  background: #38BDF8;
+  background: var(--tg-sky, #38BDF8);
   color: #090D16;
 }
 .coverflow-badge-faction[data-faction="sinistra"],
 .badge-faction-sinistra {
-  background: #F43F5E;
+  background: var(--tg-rose, #F43F5E);
   color: #FFFFFF;
 }
 
-/* 2. Media Frame MASSIMO: Riempie tutto lo spazio verticale */
+/* 2. Media Frame: Riempie lo spazio verticale in modo flessibile */
 .coverflow-media-frame,
 .card-media-box {
   position: relative;
   width: 100%;
-  flex: 1 1 auto; /* PRENDE TUTTO IL RESIDUO: Immagine enorme e dominante */
-  min-height: 140px;
-  max-height: 240px;
+  flex: 1 1 auto;
+  min-height: 130px;
+  max-height: 250px;
   background: #090D16;
   overflow: hidden;
 }
@@ -509,15 +511,15 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: center center;
+  object-position: center;
 }
 
-/* 3. Trittico KPI Tattici (24px) */
+/* 3. Trittico KPI Tattici (26px) */
 .coverflow-stats-row,
 .uec-kpi-strip {
   width: 100%;
-  height: 24px !important;
-  min-height: 24px !important;
+  height: 26px !important;
+  min-height: 26px !important;
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 1px;
@@ -526,7 +528,7 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   align-items: center;
   font-family: monospace;
-  font-size: 10px !important;
+  font-size: 11px !important;
   font-weight: 800;
   margin: 0 !important;
   flex-shrink: 0;
@@ -536,21 +538,20 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.15rem;
+  gap: 0.2rem;
   background: #0D131F;
   height: 100%;
 }
 
-/* 4. Area Narrativa: ESATTAMENTE 9 RIGHE MASSIME (Scroll Interno Isolato) */
+/* 4. Area Narrativa: Max 9 righe con scroll isolato */
 .coverflow-lore,
 .card-lore-box {
   flex: none;
   width: 100%;
-  font-size: 11px !important;
-  line-height: 1.35 !important;
-  /* 9 RIGHE ESATTE = 11px * 1.35 * 9 = 133.65px */
-  max-height: calc(11px * 1.35 * 9) !important;
-  padding: 0.35rem 0.65rem !important;
+  font-size: 11.5px !important;
+  line-height: 1.4 !important;
+  max-height: calc(11.5px * 1.4 * 9) !important;
+  padding: 0.45rem 0.75rem !important;
   color: #CBD5E1;
   text-align: left;
   overflow-y: auto;
@@ -564,21 +565,21 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
   display: none;
 }
 
-/* 5. ACTION DECK COSTANTE (~46px FISSI IN PRIMO PIANO) */
+/* 5. ACTION DECK DINAMICO & ERGONOMICO (Touch Targets >= 36px) */
 .card-action-deck,
 .uec-action-surface {
   flex: none;
   width: 100%;
-  height: 46px !important;
-  padding: 3px 6px;
+  min-height: 48px;
+  padding: 4px 8px;
   background: rgba(9, 13, 22, 0.98);
   border-top: 1px solid rgba(255, 255, 255, 0.08);
   display: grid;
-  gap: 3px;
+  gap: 4px;
   align-items: center;
 }
 
-/* CASO 1 & 2 SCELTE: Bottoni Standard da 38px */
+/* Caso 1 & 2 Scelte: Bottoni Standard da 38px */
 .card-action-deck[data-choices="1"],
 .uec-action-surface[data-grid="1"] {
   grid-template-columns: 1fr;
@@ -593,23 +594,41 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
 .uec-action-surface[data-grid="2"] .btn {
   height: 38px !important;
   min-height: 38px !important;
-  font-size: 11px !important;
+  font-size: 11.5px !important;
   font-weight: 900;
   text-transform: uppercase;
 }
 
-/* CASO 4 SCELTE (QUIZ): Altezza Dimezzata a 19px */
+/* Caso 3 Scelte: 2 Sopra (36px) + 1 Sotto a Tutta Larghezza (36px) */
+.card-action-deck[data-choices="3"],
+.uec-action-surface[data-grid="3"] {
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 36px 36px;
+}
+.card-action-deck[data-choices="3"] .btn,
+.uec-action-surface[data-grid="3"] .btn {
+  height: 36px !important;
+  min-height: 36px !important;
+  font-size: 10.5px !important;
+  font-weight: 800;
+}
+.card-action-deck[data-choices="3"] .btn:nth-child(3),
+.uec-action-surface[data-grid="3"] .btn:nth-child(3) {
+  grid-column: span 2;
+}
+
+/* Caso 4 Scelte (Quiz): Griglia 2x2 con Touch Targets Reali da 36px */
 .card-action-deck[data-choices="4"],
 .uec-action-surface[data-grid="4"] {
   grid-template-columns: 1fr 1fr;
-  grid-template-rows: 19px 19px;
+  grid-template-rows: 36px 36px;
 }
 .card-action-deck[data-choices="4"] .btn,
 .uec-action-surface[data-grid="4"] .btn {
-  height: 19px !important;
-  min-height: 19px !important;
-  padding: 0 4px !important;
-  font-size: 9.5px !important;
+  height: 36px !important;
+  min-height: 36px !important;
+  padding: 0 6px !important;
+  font-size: 10px !important;
   font-weight: 800;
   line-height: 1;
   white-space: nowrap;
@@ -617,56 +636,42 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
   text-overflow: ellipsis;
 }
 
-/* CASO 3 SCELTE: 2 Sopra (19px) + 1 Sotto Largo a Due Slot (19px) */
-.card-action-deck[data-choices="3"],
-.uec-action-surface[data-grid="3"] {
-  grid-template-columns: 1fr 1fr;
-  grid-template-rows: 19px 19px;
-}
-.card-action-deck[data-choices="3"] .btn,
-.uec-action-surface[data-grid="3"] .btn {
-  height: 19px !important;
-  min-height: 19px !important;
-  padding: 0 4px !important;
-  font-size: 9.5px !important;
-}
-.card-action-deck[data-choices="3"] .btn:nth-child(3),
-.uec-action-surface[data-grid="3"] .btn:nth-child(3) {
-  grid-column: span 2; /* Largo quanto i due superiori affiancati */
-}
-
-/* Cluster Navigazione Compatto a 5 / 11 */
+/* Cluster Navigazione Compatto */
 .coverflow-nav-cluster {
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 0.55rem;
+  gap: 0.65rem;
   margin-top: 4px !important;
   margin-bottom: 2px !important;
-  height: 20px;
+  height: 22px;
   flex-shrink: 0;
 }
 .coverflow-counter-pill {
   font-family: monospace;
-  font-size: 10px;
+  font-size: 10.5px;
   font-weight: 800;
   color: var(--tg-sky, #38BDF8);
-  padding: 0.1rem 0.4rem;
-  background: rgba(0, 0, 0, 0.4);
+  padding: 0.15rem 0.5rem;
+  background: rgba(0, 0, 0, 0.45);
   border-radius: 9999px;
 }
 .coverflow-btn-side {
-  width: 20px;
-  height: 20px;
+  width: 22px;
+  height: 22px;
   border-radius: 9999px;
   background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.16);
   color: #FFFFFF;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 10px;
+  font-size: 11px;
   cursor: pointer;
+  transition: background 0.15s ease;
+}
+.coverflow-btn-side:active {
+  background: rgba(56, 189, 248, 0.25);
 }
 
 /* ----------------------------------------------------------------------------
@@ -674,13 +679,13 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
    ---------------------------------------------------------------------------- */
 .chips-scroll-bar {
   flex: none;
-  height: 34px;
+  height: 36px;
   display: flex;
   align-items: center;
-  gap: 0.45rem;
+  gap: 0.5rem;
   overflow-x: auto;
   scrollbar-width: none;
-  padding: 0 0.25rem;
+  padding: 0 0.35rem;
   mask-image: linear-gradient(to right, black 85%, transparent 100%);
 }
 .chips-scroll-bar::-webkit-scrollbar { display: none; }
@@ -693,9 +698,9 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
   min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 0.35rem 0.25rem 4.5rem 0.25rem;
+  padding: 0.4rem 0.35rem 4.5rem 0.35rem;
   display: grid;
-  gap: 0.55rem;
+  gap: 0.65rem;
   -webkit-overflow-scrolling: touch;
 }
 
@@ -707,7 +712,7 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
   .wizard-list-scroll-grid,
   .abilities-scroll-grid {
     grid-template-columns: repeat(2, 1fr);
-    gap: 0.75rem;
+    gap: 0.85rem;
   }
 }
 
@@ -717,66 +722,72 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
 @media (min-width: 640px) {
   .shop-cards-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 0.75rem;
+    gap: 0.85rem;
   }
 }
 
 .class-list-card {
   background: var(--tg-surface, #111827);
   border: 1px solid var(--tg-border, rgba(255, 255, 255, 0.08));
-  border-radius: 0.85rem;
-  padding: 0.55rem 0.75rem;
+  border-radius: 0.95rem;
+  padding: 0.65rem 0.85rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 0.65rem;
+  gap: 0.75rem;
   cursor: pointer;
+  transition: transform 0.12s ease;
+}
+.class-list-card:active {
+  transform: scale(0.98);
 }
 .class-list-card.selected {
   border-color: var(--tg-sky, #38BDF8) !important;
-  background: rgba(56, 189, 248, 0.12) !important;
+  background: rgba(56, 189, 248, 0.14) !important;
   box-shadow: 0 0 16px rgba(56, 189, 248, 0.35) !important;
 }
 
 .wizard-shop-card {
   background: var(--tg-surface, #111827);
-  border-radius: 0.85rem;
+  border-radius: 0.95rem;
   border: 1px solid var(--tg-border, rgba(255, 255, 255, 0.08));
-  padding: 0.55rem 0.65rem;
+  padding: 0.65rem 0.75rem;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  gap: 0.35rem;
+  gap: 0.45rem;
 }
 
 /* ----------------------------------------------------------------------------
-   6. FOOTER WIZARD STICKY & TASTI CTA
+   6. FOOTER WIZARD STICKY
    ---------------------------------------------------------------------------- */
 .wizard-sticky-footer {
   flex: none;
-  z-index: 40;
+  z-index: 50;
   width: 100%;
-  max-width: 440px;
+  max-width: 480px;
   margin: 0 auto;
   background: rgba(9, 13, 22, 0.98);
   border-top: 1px solid rgba(255, 255, 255, 0.12);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 0.5rem;
-  height: 42px !important; /* 42px a filo schermo */
+  padding-left: 0.65rem;
+  padding-right: 0.65rem;
+  padding-bottom: var(--safe-bottom, 0px);
+  height: calc(44px + var(--safe-bottom, 0px)) !important;
 }
 
 .wizard-footer-step-controls {
   width: 100%;
   display: flex;
   align-items: center;
-  gap: 0.4rem;
+  gap: 0.5rem;
 }
 .wizard-footer-step-controls .btn {
-  height: 32px;
-  min-height: 32px;
-  font-size: 0.75rem;
+  height: 34px;
+  min-height: 34px;
+  font-size: 0.8rem;
   font-weight: 900;
   text-transform: uppercase;
 }
@@ -791,35 +802,19 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
 /* ----------------------------------------------------------------------------
    7. MODALI DI SISTEMA, BANCO CAMBIO & CASSETTI
    ---------------------------------------------------------------------------- */
-dialog.modal,
-dialog.modal.modal-middle {
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  position: fixed !important;
-  inset: 0 !important;
-  background: rgba(9, 13, 22, 0.88) !important;
-  backdrop-filter: blur(16px) !important;
-  -webkit-backdrop-filter: blur(16px) !important;
-  padding: 0.75rem !important;
-  z-index: 60 !important;
-}
-dialog.modal:not([open]) {
-  display: none !important;
-}
 
 /* Drawer Cockpit Standard */
 .drawer-standard-box {
   background: var(--tg-sec-bg, #0F172A);
   border: 1px solid var(--tg-border-light, rgba(255, 255, 255, 0.15));
-  padding: 1rem 1.15rem;
-  border-radius: 1.15rem;
+  padding: 1.15rem;
+  border-radius: 1.25rem;
   display: flex;
   flex-direction: column;
-  gap: 0.65rem;
-  max-width: 30rem;
+  gap: 0.75rem;
+  max-width: 32rem;
   width: 100%;
-  max-height: 86dvh;
+  max-height: 88dvh;
   overflow-y: auto;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.95);
   position: relative;
@@ -828,24 +823,24 @@ dialog.modal:not([open]) {
 /* Modale Banco Cambio */
 .modal-cambio-box {
   background: linear-gradient(180deg, #0F172A 0%, #090D16 100%);
-  border: 1px solid rgba(245, 158, 11, 0.5);
-  padding: 1.15rem 1.25rem 1.4rem 1.25rem;
+  border: 1px solid rgba(245, 158, 11, 0.55);
+  padding: 1.25rem 1.35rem;
   border-radius: 1.25rem;
   text-align: center;
   display: flex;
   flex-direction: column;
-  gap: 0.55rem;
-  max-width: 20rem;
+  gap: 0.65rem;
+  max-width: 22rem;
   width: 100%;
   position: relative;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.95);
 }
 .cambio-balance-box {
-  padding: 0.4rem;
-  border-radius: 0.5rem;
-  background: rgba(0, 0, 0, 0.5);
+  padding: 0.5rem;
+  border-radius: 0.65rem;
+  background: rgba(0, 0, 0, 0.55);
   font-family: monospace;
-  font-size: 0.78rem;
+  font-size: 0.85rem;
   color: #FDE047;
 }
 
@@ -853,30 +848,32 @@ dialog.modal:not([open]) {
 .emporio-drawer-box {
   background: var(--tg-sec-bg, #0F172A);
   border: 1px solid var(--tg-border-light, rgba(255, 255, 255, 0.15));
-  padding: 1rem;
-  border-radius: 1.15rem;
+  padding: 1.15rem;
+  border-radius: 1.25rem;
   display: flex;
   flex-direction: column;
-  gap: 0.65rem;
+  gap: 0.75rem;
   max-width: 44rem;
   width: 100%;
-  max-height: 86dvh;
+  max-height: 88dvh;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.95);
 }
 .emporio-gold-bar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.45rem 0.65rem;
-  border-radius: 0.55rem;
-  background: rgba(0, 0, 0, 0.45);
-  font-size: 11px;
+  padding: 0.55rem 0.75rem;
+  border-radius: 0.65rem;
+  background: rgba(0, 0, 0, 0.5);
+  font-size: 12px;
+  font-family: monospace;
+  font-weight: 800;
 }
 .emporio-items-scroll-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.5rem;
-  max-height: 18rem;
+  gap: 0.6rem;
+  max-height: 19rem;
   overflow-y: auto;
   padding: 0.2rem;
 }
@@ -884,11 +881,11 @@ dialog.modal:not([open]) {
 /* Modale Abbandono Diegetico */
 .abandon-modal-box {
   background: linear-gradient(180deg, #1E1B4B 0%, #090D16 100%);
-  border: 1px solid rgba(244, 63, 94, 0.5);
-  padding: 1.25rem 1.15rem;
+  border: 1px solid rgba(244, 63, 94, 0.55);
+  padding: 1.35rem 1.25rem;
   border-radius: 1.25rem;
   text-align: center;
-  max-width: 20rem;
+  max-width: 22rem;
   width: 100%;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.95);
   position: relative;
@@ -898,30 +895,30 @@ dialog.modal:not([open]) {
 .modal-dossier .dossier-box {
   background: var(--tg-sec-bg, #0F172A);
   border: 1px solid rgba(56, 189, 248, 0.4);
-  padding: 1rem;
-  border-radius: 1.15rem;
-  max-width: 30rem;
+  padding: 1.15rem;
+  border-radius: 1.25rem;
+  max-width: 32rem;
   width: 100%;
-  max-height: 86dvh;
+  max-height: 88dvh;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 0.55rem;
+  gap: 0.65rem;
   position: relative;
   text-align: left;
 }
 
 /* Dado Suspense */
 .dice-modal-box {
-  background: rgba(13, 19, 31, 0.96);
+  background: rgba(13, 19, 31, 0.97);
   border: 1px solid rgba(56, 189, 248, 0.4);
-  padding: 1.15rem;
-  border-radius: 1.15rem;
+  padding: 1.25rem;
+  border-radius: 1.25rem;
   text-align: center;
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
-  max-width: 16rem;
+  gap: 0.85rem;
+  max-width: 17rem;
 }
 .dice-wrapper {
   width: 3.5rem;
@@ -948,7 +945,7 @@ dialog.modal:not([open]) {
 @media (min-width: 1024px) {
   .wizard-stage-container,
   .gameplay-container {
-    max-width: 900px;
+    max-width: 920px;
     margin: 0 auto;
   }
   .coverflow-stage-wrapper {
