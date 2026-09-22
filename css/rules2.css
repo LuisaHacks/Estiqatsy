@@ -1,17 +1,37 @@
 /* ============================================================================
    PROJECT: ESTIQATSY SYNDICATE & RPG PLATFORM
-   FILE: css/rules2.css (VERSIONE 12.0 - ABOVE-THE-FOLD ZERO-SCROLL, FACTION GLOW & ZERO-BLEEDING)
-   LAYER: ENGINE RULES2, WIZARD FULL-STAGE, COCKPIT & CASSETTI TATTICI
+   FILE: css/rules2.css (VERSIONE 13.0 - MULTI-DEVICE 9-LINES LORE & FULL GLASS MODALS)
+   LAYER: ENGINE RULES2, 3D WIZARD, RESPONSIVE COCKPIT & 4-PILLAR GLASS DRAWERS
    ============================================================================ */
 
 /* ----------------------------------------------------------------------------
-   1. COCKPIT HEADER DI GIOCO & FOOTER STICKY
+   1. COCKPIT HEADER (TELEGRAM SAFE-ZONE) & 4-PILLAR STICKY FOOTER
    ---------------------------------------------------------------------------- */
+.universal-top-bar {
+  flex: none;
+  z-index: 40;
+  width: 100%;
+  height: calc(var(--safe-top, 0px) + 48px);
+  padding-top: var(--safe-top, 0px);
+  padding-left: 0.75rem;
+  padding-right: 85px; /* SAFE-ZONE: Spazio intoccabile riservato ai tasti nativi Telegram (✕ e •••) */
+  background: rgba(9, 13, 22, 0.98);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--tg-border, rgba(255, 255, 255, 0.08));
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: relative;
+}
+
 .game-header-titles {
   display: flex;
   flex-direction: column;
   align-items: center;
   text-align: center;
+  flex: 1 1 auto;
+  min-width: 0;
 }
 .game-header-tag {
   font-size: 8.5px;
@@ -22,78 +42,67 @@
   line-height: 1;
 }
 .game-header-sub {
-  font-size: 0.75rem;
+  font-size: 0.78rem;
   font-weight: 900;
   color: #FFFFFF;
   line-height: 1.2;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 170px;
+  max-width: 160px;
 }
 @media (min-width: 640px) {
   .game-header-sub {
     max-width: 280px;
-    font-size: 0.85rem;
+    font-size: 0.88rem;
   }
 }
-.btn-back-text {
-  font-size: 9.5px;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  margin-left: 0.15rem;
-}
-.game-header-actions {
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-}
 
-/* Footer Cockpit Sticky (5 Tasti Navigazione Permanente) */
+/* Footer Cockpit Sticky (I 4 Pilastri Tattici) */
 .cockpit-footer {
   flex: none;
   z-index: 40;
   width: 100%;
-  background: rgba(13, 19, 31, 0.96);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border-top: 1px solid var(--tg-border-light, rgba(255, 255, 255, 0.08));
-  display: flex;
-  justify-content: space-around;
+  background: rgba(13, 19, 31, 0.98);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-top: 1px solid var(--tg-border-light, rgba(255, 255, 255, 0.12));
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   align-items: center;
   padding-top: 0.35rem;
-  padding-bottom: max(var(--safe-bottom, 0px), 0.75rem);
-  height: calc(56px + max(var(--safe-bottom, 0px), 0px));
+  padding-bottom: max(var(--safe-bottom, 0px), 1.25rem); /* Safe Area iOS */
+  height: calc(58px + max(var(--safe-bottom, 0px), 0px));
 }
+
 .cockpit-btn {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 0.2rem 0.5rem;
+  padding: 0.2rem 0.25rem;
   background: transparent;
   border: none;
   cursor: pointer;
-  transition: transform 0.15s ease;
-  min-width: 3.2rem;
+  transition: transform 0.15s ease, color 0.15s ease;
+  width: 100%;
 }
 .cockpit-btn:active { transform: scale(0.92); }
 .cockpit-btn-label {
-  font-size: 8.5px;
+  font-size: 9px;
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  margin-top: 0.15rem;
+  margin-top: 0.2rem;
 }
 
 /* ----------------------------------------------------------------------------
-   2. SNODI NARRATIVI BORDERLESS (MASSIMA LARGHEZZA, NESSUN BORDO CARTA)
+   2. SNODI NARRATIVI BORDERLESS (CINEMA FRAME 16:9)
    ---------------------------------------------------------------------------- */
 .cinema-frame-rigid {
   position: relative;
   width: 100%;
-  height: clamp(165px, 23dvh, 220px);
+  height: clamp(160px, 24dvh, 215px);
   border-radius: 0.95rem;
   overflow: hidden;
   background: #090D16;
@@ -102,7 +111,7 @@
 }
 @media (min-width: 768px) {
   .cinema-frame-rigid {
-    height: clamp(200px, 27dvh, 260px);
+    height: clamp(210px, 28dvh, 270px);
   }
 }
 .cinema-frame-rigid img {
@@ -116,7 +125,7 @@
   position: absolute;
   top: 0.65rem;
   left: 0.65rem;
-  font-size: 9.5px;
+  font-size: 9px;
   font-weight: 900;
   text-transform: uppercase;
   z-index: 15;
@@ -127,7 +136,7 @@
   bottom: 0;
   left: 0;
   right: 0;
-  background: linear-gradient(180deg, transparent 0%, rgba(9, 13, 22, 0.78) 25%, rgba(9, 13, 22, 0.98) 100%);
+  background: linear-gradient(180deg, transparent 0%, rgba(9, 13, 22, 0.82) 30%, rgba(9, 13, 22, 0.98) 100%);
   padding: 0.5rem 0.85rem 0.4rem 0.85rem;
   display: flex;
   flex-direction: column;
@@ -136,19 +145,19 @@
   z-index: 10;
 }
 .quote-text {
-  font-size: clamp(11px, 1.35dvh, 12px);
+  font-size: clamp(10.5px, 1.35dvh, 12px);
   color: #F1F5F9;
   font-style: italic;
   line-height: 1.35;
   text-align: right;
   display: -webkit-box;
-  -webkit-line-clamp: 3;
+  -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.95);
 }
 .quote-author {
-  font-size: 9.5px;
+  font-size: 9px;
   font-weight: 800;
   color: var(--tg-amber, #F59E0B);
   text-transform: uppercase;
@@ -158,7 +167,7 @@
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9);
 }
 
-/* Layer Danni Fluttuanti & Dado D20 */
+/* Floating Damage & Tumble Dice */
 .floating-damage-layer {
   position: absolute;
   inset: 0;
@@ -194,7 +203,7 @@
    3. WIZARD: HEADER COMPATTO & GEOMETRIA RIGIDA ABOVE-THE-FOLD (ZERO-SCROLL)
    ---------------------------------------------------------------------------- */
 body[data-active-screen="view-wizard"] .app-scroll-area {
-  overflow: hidden !important; /* Disattiva lo scrollbar nel Wizard: tutto fisso nel viewport */
+  overflow: hidden !important; /* Disattiva qualsiasi scrollbar verticale parassita */
   overscroll-behavior-y: none;
 }
 body[data-active-screen="view-wizard"] .app-content-wrapper {
@@ -242,13 +251,6 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
   padding: 0.1rem 0.25rem;
   border-bottom: 1px solid var(--tg-border, rgba(255, 255, 255, 0.08));
   gap: 0.35rem;
-}
-
-@media (max-width: 480px) {
-  .wizard-single-header {
-    flex-wrap: nowrap;
-    min-height: 34px;
-  }
 }
 
 .wizard-step-badge {
@@ -323,7 +325,7 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
 }
 
 /* ----------------------------------------------------------------------------
-   4. PALCOSCENICO CILINDRICO 3D (FIT PROPORZIONALE, FACTION GLOW & ZERO BLEEDING)
+   4. PALCOSCENICO CILINDRICO 3D, CARD SCHEDA & LORE A 9 RIGHE
    ---------------------------------------------------------------------------- */
 .coverflow-stage-outer {
   position: relative;
@@ -337,6 +339,7 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
   min-height: 0;
 }
 
+/* Wrapper 3D Proporzionato */
 .coverflow-stage-wrapper {
   position: relative;
   width: 100%;
@@ -347,8 +350,8 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
   perspective-origin: center center;
   user-select: none;
   touch-action: pan-y;
-  /* Altezza ricalcolata proporzionalmente per evitare scrollbar */
-  height: clamp(375px, 53dvh, 440px) !important;
+  /* MOBILE DEFAULT */
+  height: clamp(400px, 57dvh, 465px) !important;
 }
 
 /* Scheda Collezionabile: 3D Hardware Accelerated & Above-The-Fold Fit */
@@ -367,9 +370,9 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
   transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.35s ease, box-shadow 0.35s ease, border-color 0.35s ease;
   will-change: transform, opacity;
 
-  /* Proporzioni compatte calibrate */
-  width: clamp(280px, 84vw, 330px) !important;
-  height: clamp(370px, 52dvh, 435px) !important;
+  /* MOBILE SIZE */
+  width: clamp(285px, 85vw, 335px) !important;
+  height: clamp(395px, 56dvh, 460px) !important;
 
   box-shadow: 0 0 1px rgba(255, 255, 255, 0.4), 0 0 12px rgba(255, 255, 255, 0.08);
 }
@@ -380,15 +383,15 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
   border-color: rgba(56, 189, 248, 0.6) !important;
 }
 .coverflow-stage-wrapper .coverflow-card.glow-active[data-faction="destra"] {
-  box-shadow: 0 0 2px rgba(56, 189, 248, 0.9), 0 0 22px rgba(56, 189, 248, 0.4) !important;
-  border-color: rgba(56, 189, 248, 0.7) !important;
+  box-shadow: 0 0 2px rgba(56, 189, 248, 0.9), 0 0 24px rgba(56, 189, 248, 0.45) !important;
+  border-color: rgba(56, 189, 248, 0.75) !important;
 }
 .coverflow-stage-wrapper .coverflow-card.glow-active[data-faction="sinistra"] {
-  box-shadow: 0 0 2px rgba(244, 63, 94, 0.9), 0 0 22px rgba(244, 63, 94, 0.4) !important;
-  border-color: rgba(244, 63, 94, 0.7) !important;
+  box-shadow: 0 0 2px rgba(244, 63, 94, 0.9), 0 0 24px rgba(244, 63, 94, 0.45) !important;
+  border-color: rgba(244, 63, 94, 0.75) !important;
 }
 
-/* ZERO-BLEEDING: SILENZIAMENTO TESTUALE TOTALE SULLE CARTE LATERALI */
+/* ZERO-BLEEDING: SILENZIAMENTO TOTALE TESTI SULLE CARTE LATERALI RUOTATE */
 .coverflow-stage-wrapper .coverflow-card:not(.glow-active) .coverflow-lore,
 .coverflow-stage-wrapper .coverflow-card:not(.glow-active) .watermark-cover-banner,
 .coverflow-stage-wrapper .coverflow-card:not(.glow-active) .coverflow-stats-row,
@@ -399,44 +402,53 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
   transition: opacity 0.2s ease;
 }
 
-/* Maschera oscurante profonda per le carte laterali */
 .coverflow-stage-wrapper .coverflow-card:not(.glow-active) .coverflow-media-frame::after {
   content: "";
   position: absolute;
   inset: 0;
-  background: rgba(9, 13, 22, 0.75);
+  background: rgba(9, 13, 22, 0.85); /* Maschera oscurante profonda per le carte secondarie */
   pointer-events: none;
 }
 
-/* Responsive Tablet & Desktop tuning */
+/* ----------------------------------------------------------------------------
+   CALIBRAZIONE RESPONSIVE: TABLET (640px - 1023px) & DESKTOP (≥ 1024px)
+   ---------------------------------------------------------------------------- */
 @media (min-width: 640px) and (max-width: 1023px) {
   .coverflow-stage-wrapper {
-    height: clamp(430px, 56dvh, 480px) !important;
+    height: clamp(470px, 60dvh, 525px) !important;
   }
   .coverflow-stage-wrapper .coverflow-card {
-    width: 330px !important;
-    height: clamp(420px, 55dvh, 470px) !important;
+    width: 340px !important;
+    height: clamp(460px, 59dvh, 515px) !important;
   }
-}
-@media (min-width: 1024px) {
-  .wizard-stage-container {
-    max-width: 820px;
-    margin: 0 auto;
-  }
-  .coverflow-stage-wrapper {
-    height: clamp(460px, 58dvh, 510px) !important;
-  }
-  .coverflow-stage-wrapper .coverflow-card {
-    width: 350px !important;
-    height: clamp(450px, 57dvh, 500px) !important;
+  .coverflow-media-frame {
+    height: clamp(170px, 22dvh, 205px) !important;
   }
 }
 
-/* Media Frame (Immagine Compatta) */
+@media (min-width: 1024px) {
+  .wizard-stage-container {
+    max-width: 860px;
+    margin: 0 auto;
+  }
+  .coverflow-stage-wrapper {
+    perspective: 1400px;
+    height: clamp(510px, 63dvh, 565px) !important;
+  }
+  .coverflow-stage-wrapper .coverflow-card {
+    width: 360px !important;
+    height: clamp(500px, 62dvh, 555px) !important;
+  }
+  .coverflow-media-frame {
+    height: clamp(190px, 24dvh, 225px) !important;
+  }
+}
+
+/* Media Frame (Cornice Ritratto) */
 .coverflow-media-frame {
   position: relative;
   width: 100%;
-  height: clamp(160px, 23dvh, 195px) !important;
+  height: clamp(150px, 21dvh, 180px);
   background: #090D16;
   flex-shrink: 0;
   overflow: hidden;
@@ -507,7 +519,7 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
   box-shadow: 0 0 8px 1px rgba(244, 63, 94, 0.6);
 }
 
-/* Riga Bianca Speculare */
+/* Riga Bianca Divisoria */
 .coverflow-header-divider {
   position: absolute;
   top: 38px;
@@ -518,18 +530,22 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
   z-index: 15;
 }
 
-/* Area Lore & Dati Compatta */
+/* Area Lore & Dati: Ancorata Rigidamento in Alto a Sinistra */
 .coverflow-details-box {
   padding: 0.35rem 0.75rem 0.45rem 0.75rem !important;
   flex: 1 1 auto;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
+  justify-content: flex-start; /* ANCORAGGIO FISSO IN ALTO */
+  align-items: flex-start;
   background: #0D131F;
+  gap: 0.25rem;
+  min-height: 0;
 }
 
 /* Trittico Caratteristiche: FONT UNIFORMI (10.5px MONO) */
 .coverflow-stats-row {
+  width: 100%;
   min-height: 1.9rem !important;
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -542,7 +558,8 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
   font-family: monospace;
   font-size: 10.5px !important;
   font-weight: 800;
-  margin: 0 0 0.15rem 0 !important;
+  margin: 0 !important;
+  flex-shrink: 0;
 }
 .coverflow-stats-row > div {
   display: flex;
@@ -554,25 +571,30 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
 .coverflow-stats-row > div:last-child { border-right: none; }
 .stat-mod { font-size: 9px; color: #94A3B8; font-weight: 700; }
 
-/* Testo Narrativo Lore Calibrato */
+/* TESTO NARRATIVO LORE: 9 RIGHE REALI ANCORATE IN ALTO A SX */
 .coverflow-lore {
   display: block;
-  text-align: left;
+  text-align: left !important; /* ANCORATO A SINISTRA */
+  align-self: flex-start !important;
+  width: 100%;
   font-size: 11px !important;
+  line-height: 1.38 !important; /* ~15.2px a riga -> 9 righe = ~137px */
   color: #CBD5E1;
-  line-height: 1.35 !important;
   margin: 0.1rem 0 !important;
   word-break: break-word;
-  min-height: clamp(55px, 9dvh, 75px) !important;
-  max-height: clamp(65px, 11dvh, 85px) !important;
+  /* SPAZIO FISSO PER 9 RIGHE SENZA TRONCAMENTI */
+  min-height: 135px !important;
+  max-height: 148px !important;
   overflow-y: auto;
   scrollbar-width: none;
   -ms-overflow-style: none;
+  flex: 1 1 auto;
 }
 .coverflow-lore::-webkit-scrollbar { display: none; }
 
 /* Piede Scheda: DOTAZIONE A LARGHEZZA 65% (NON TRONCATA) */
 .coverflow-footer-row {
+  width: 100%;
   min-height: 1.9rem !important;
   padding-top: 0.25rem !important;
   border-top: 1px solid rgba(255, 255, 255, 0.18);
@@ -580,11 +602,12 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
   align-items: center;
   justify-content: space-between;
   gap: 0.35rem !important;
+  flex-shrink: 0;
 }
 .coverflow-gear-label {
   font-size: 10px !important;
   color: #CBD5E1;
-  max-width: 65% !important; /* Esteso dal 55% per eliminare troncamenti */
+  max-width: 65% !important; /* Esteso per non troncare armi composte */
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -610,14 +633,14 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
 .pill-pv { color: #FDA4AF; }
 .pill-gold { color: #FDE047; }
 
-/* CONTROLLI INFERIORI: CLUSTER PALLINI AD ALTEZZA ZERO SOTTO */
+/* CLUSTER NAVIGAZIONE PALLINI: RESPIRO PERFETTO (+8px DA CARTA E TASTO) */
 .coverflow-nav-cluster {
   display: flex;
   justify-content: center;
   align-items: center;
   gap: 0.55rem;
-  margin-top: 2px !important;
-  margin-bottom: 2px !important;
+  margin-top: 8px !important;    /* Respiro garantito dall'alone inferiore della carta */
+  margin-bottom: 6px !important; /* Respiro dal tasto CTA sticky */
   height: 24px;
   flex-shrink: 0;
 }
@@ -635,7 +658,7 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
   transition: all 0.2s ease;
 }
 .coverflow-dot.active {
-  width: 0.9rem;
+  width: 0.95rem;
   background: var(--tg-sky, #38BDF8);
 }
 .coverflow-btn-side {
@@ -655,7 +678,7 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
 .coverflow-btn-side:active { background: #38BDF8; color: #090D16; }
 
 /* ----------------------------------------------------------------------------
-   5. MENU FILTRI E VISTE LISTA / GRIGLIA (CON GLOW DI FAZIONE)
+   5. MENU FILTRI E VISTE LISTA / GRIGLIA (CON FACTION GLOW)
    ---------------------------------------------------------------------------- */
 .chips-scroll-bar {
   flex: none;
@@ -694,6 +717,13 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
     gap: 0.75rem;
   }
 }
+@media (min-width: 1024px) {
+  .wizard-list-scroll-grid,
+  .abilities-scroll-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+  }
+}
 
 .shop-cards-grid {
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -702,6 +732,12 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
   .shop-cards-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 0.75rem;
+  }
+}
+@media (min-width: 1024px) {
+  .shop-cards-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 1rem;
   }
 }
 
@@ -856,14 +892,13 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
   z-index: 40;
   width: 100%;
   background: rgba(9, 13, 22, 0.98);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   border-top: 1px solid rgba(255, 255, 255, 0.12);
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 0.35rem 0.75rem;
-  /* Minimo 20px garantito per evitare collisioni con la Home Bar di iOS */
   padding-bottom: max(var(--safe-bottom, 0px), 1.25rem) !important;
   height: calc(56px + max(var(--safe-bottom, 0px), 0px)) !important;
 }
@@ -882,7 +917,7 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
   text-transform: uppercase;
 }
 
-/* CLASSE DEDICATA PER IL TASTO PRIMARIO (SKY BLUE DARSENA) */
+/* Tasto Primario Sky Blue Darsena */
 .btn-wizard-cta {
   background: var(--tg-sky, #38BDF8) !important;
   color: #090D16 !important;
@@ -907,8 +942,8 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
   flex: 1 1 auto;
 }
 .hero-launch-card {
-  width: clamp(280px, 84vw, 330px) !important;
-  height: clamp(370px, 52dvh, 435px) !important;
+  width: clamp(285px, 85vw, 335px) !important;
+  height: clamp(395px, 56dvh, 460px) !important;
   border-radius: 1.15rem;
   background: #0D131F;
   border: 1px solid rgba(255, 255, 255, 0.2);
@@ -920,7 +955,7 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
 }
 
 /* ----------------------------------------------------------------------------
-   8. MODALI CABINATO & ESITI PARTITA (GRIGLIE 50/50 COMPATTE)
+   8. MODALI CABINATO ARCADE & ABBANDONO (WIDESCREEN RESPONSIVE)
    ---------------------------------------------------------------------------- */
 .arcade-coin-modal-box {
   background: linear-gradient(180deg, #0F172A 0%, #090D16 100%);
@@ -928,9 +963,9 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
   padding: 1.35rem 1.25rem 1.65rem 1.25rem;
   border-radius: 1.35rem;
   text-align: center;
-  max-width: 20rem;
+  max-width: 22rem;
   width: 100%;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.9), 0 0 20px rgba(245, 158, 11, 0.2);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.9), 0 0 24px rgba(245, 158, 11, 0.25);
   position: relative;
 }
 
@@ -951,7 +986,6 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
   animation: pulseArcadeCoin 2s ease-in-out infinite;
   filter: drop-shadow(0 0 12px rgba(245, 158, 11, 0.6));
 }
-
 @keyframes pulseArcadeCoin {
   0%, 100% { transform: scale(1) rotate(0deg); }
   50% { transform: scale(1.12) rotate(6deg); }
@@ -964,7 +998,6 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
   color: var(--tg-amber, #F59E0B);
   text-transform: uppercase;
 }
-
 .arcade-title {
   font-size: 1.15rem;
   font-weight: 900;
@@ -973,7 +1006,6 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
-
 .arcade-subtitle {
   font-size: 11.5px;
   color: #CBD5E1;
@@ -1009,25 +1041,26 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
   text-transform: uppercase;
 }
 
-/* Modale Modifica Nome Eroe */
-.modal-hero-name-box {
-  background: #0F172A;
-  border: 1px solid rgba(56, 189, 248, 0.5);
-  border-radius: 1.25rem;
-  padding: 1.25rem;
+/* Modale Abbandono Diegetico */
+.abandon-modal-box {
+  background: linear-gradient(180deg, #1E1B4B 0%, #090D16 100%);
+  border: 1px solid rgba(244, 63, 94, 0.5);
+  padding: 1.35rem 1.25rem 1.65rem 1.25rem;
+  border-radius: 1.35rem;
   text-align: center;
-  max-width: 20rem;
+  max-width: 22rem;
   width: 100%;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.9);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.95), 0 0 24px rgba(244, 63, 94, 0.25);
+  position: relative;
 }
 
 /* ----------------------------------------------------------------------------
-   9. COCKPIT GAMEPLAY BORDERLESS (SCATOLA NARRATIVA & PULSANTI SOTTO)
+   9. COCKPIT GAMEPLAY BORDERLESS
    ---------------------------------------------------------------------------- */
 .gameplay-container {
   display: flex;
   flex-direction: column;
-  gap: 0.55rem;
+  gap: 0.45rem;
   width: 100%;
 }
 
@@ -1035,10 +1068,10 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
   background: rgba(17, 24, 39, 0.95);
   border: 1px solid var(--tg-border-light, rgba(255, 255, 255, 0.12));
   border-radius: 0.95rem;
-  padding: 0.5rem 0.75rem;
+  padding: 0.45rem 0.75rem;
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
+  gap: 0.3rem;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
@@ -1092,15 +1125,15 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
   align-items: center;
   justify-content: space-between;
   gap: 0.65rem;
-  padding-top: 0.3rem;
+  padding-top: 0.25rem;
   border-top: 1px solid var(--tg-border, rgba(255, 255, 255, 0.08));
 }
 .hud-vitals-box {
   display: flex;
   align-items: center;
   gap: 0.35rem;
-  flex: 0 0 42%;
-  max-width: 44%;
+  flex: 0 0 44%;
+  max-width: 46%;
 }
 .heart-icon { font-size: 0.85rem; flex-shrink: 0; }
 .progress-bar-container { flex: 1 1 0%; }
@@ -1117,7 +1150,7 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 0.3rem;
+  gap: 0.25rem;
   flex: 1 1 0%;
 }
 .d20-chip {
@@ -1125,7 +1158,7 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
   border-radius: 0.45rem;
   background: rgba(0, 0, 0, 0.6);
   border: 1px solid var(--tg-border, rgba(255, 255, 255, 0.08));
-  font-size: 9.5px;
+  font-size: 9px;
   font-family: monospace;
   white-space: nowrap;
 }
@@ -1138,7 +1171,7 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
   background: rgba(17, 24, 39, 0.45);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 0.95rem;
-  padding: 0.85rem 1rem;
+  padding: 0.75rem 0.95rem;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
@@ -1158,7 +1191,6 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
   margin: 0;
 }
 
-/* Plancia Scelte Posizionata Sotto il Testo */
 .scene-actions-area {
   flex: none;
   display: flex;
@@ -1233,38 +1265,41 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
 }
 
 /* ----------------------------------------------------------------------------
-   10. MODALI UNIVERSALI & CASSETTI COCKPIT
+   10. MODALI UNIVERSALI & CASSETTI COCKPIT (FULL GLASSMORPHISM CENTERED)
    ---------------------------------------------------------------------------- */
+/* ELIMINAZIONE DEI BOTTOM-SHEETS: TUTTO A SCHERMO CENTRATO CON GLASS BLUR 16px */
+dialog.modal,
 dialog.modal.modal-middle,
-dialog.modal:not(.modal-bottom) {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  position: fixed;
-  inset: 0;
-  background: rgba(9, 13, 22, 0.85);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  padding: 1rem;
-  z-index: 60;
+dialog.modal.modal-bottom {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  position: fixed !important;
+  inset: 0 !important;
+  background: rgba(9, 13, 22, 0.88) !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
+  padding: 0.75rem !important;
+  z-index: 60 !important;
 }
 dialog.modal:not([open]) {
   display: none !important;
 }
 
+/* Modale Fascicolo Universale */
 .modal-dossier .dossier-box {
   background: var(--tg-sec-bg, #0F172A);
   border: 1px solid rgba(56, 189, 248, 0.4);
-  padding: 1.15rem 1.15rem 1.35rem 1.15rem;
+  padding: 1.15rem;
   border-radius: 1.25rem;
-  max-width: 30rem;
+  max-width: 32rem;
   width: 100%;
   max-height: 88dvh;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: 0.65rem;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.85);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.95);
   position: relative;
   text-align: left;
   -webkit-overflow-scrolling: touch;
@@ -1277,7 +1312,7 @@ dialog.modal:not([open]) {
   gap: 0.75rem;
   padding-bottom: 0.45rem;
   border-bottom: 1px solid var(--tg-border, rgba(255, 255, 255, 0.08));
-  padding-right: 2.75rem;
+  padding-right: 2.5rem;
 }
 .dossier-icon { font-size: 1.65rem; flex-shrink: 0; }
 .dossier-title {
@@ -1319,7 +1354,7 @@ dialog.modal:not([open]) {
 }
 
 .dossier-lore-prose {
-  font-size: 12.5px;
+  font-size: 12px;
   color: #CBD5E1;
   line-height: 1.5;
   margin: 0;
@@ -1329,7 +1364,7 @@ dialog.modal:not([open]) {
 
 /* Dado Suspense */
 .dice-modal-box {
-  background: rgba(13, 19, 31, 0.95);
+  background: rgba(13, 19, 31, 0.96);
   border: 1px solid rgba(56, 189, 248, 0.4);
   padding: 1.35rem;
   border-radius: 1.25rem;
@@ -1338,7 +1373,7 @@ dialog.modal:not([open]) {
   flex-direction: column;
   gap: 0.85rem;
   max-width: 17rem;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.85);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.9);
 }
 .dice-wrapper {
   width: 4rem;
@@ -1379,18 +1414,28 @@ dialog.modal:not([open]) {
   margin: 0.2rem 0 0 0;
 }
 
-/* Cassetti Cockpit */
+/* Cassetti Cockpit: Nuova Scatola Centrata Glassmorphism */
 .drawer-standard-box {
   background: var(--tg-sec-bg, #0F172A);
-  border: 1px solid var(--tg-border-light, rgba(255, 255, 255, 0.12));
-  padding: 1.15rem 1.25rem 1.65rem 1.25rem;
+  border: 1px solid var(--tg-border-light, rgba(255, 255, 255, 0.15));
+  padding: 1.15rem 1.25rem 1.5rem 1.25rem;
   border-radius: 1.25rem;
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
-  max-width: 28rem;
+  max-width: 30rem;
   width: 100%;
+  max-height: 88dvh;
+  overflow-y: auto;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.95);
+  position: relative;
 }
+@media (min-width: 1024px) {
+  .drawer-standard-box {
+    max-width: 44rem; /* Respiro widescreen su desktop */
+  }
+}
+
 .drawer-header-row {
   display: flex;
   align-items: center;
@@ -1399,7 +1444,7 @@ dialog.modal:not([open]) {
   border-bottom: 1px solid var(--tg-border, rgba(255, 255, 255, 0.08));
 }
 .drawer-title {
-  font-size: 0.82rem;
+  font-size: 0.85rem;
   font-weight: 900;
   color: #FFFFFF;
   text-transform: uppercase;
@@ -1412,7 +1457,7 @@ dialog.modal:not([open]) {
   line-height: 1.45;
 }
 
-/* 1. Scheda Eroe */
+/* Modale Eroe (4 Tab Interni: Scheda, Zaino, Squadra, Dossier) */
 .hero-sheet-profile-card {
   padding: 0.75rem 0.85rem;
   border-radius: 0.85rem;
@@ -1471,8 +1516,8 @@ dialog.modal:not([open]) {
 .stat-val { font-size: 0.88rem; font-weight: 900; font-family: monospace; color: var(--tg-sky, #38BDF8); }
 .stat-pure { font-size: 8.5px; font-family: monospace; color: #64748B; }
 
-/* 2. Zaino */
-.backpack-slot-card {
+/* Modale Assetto Tattico & Laboratorio */
+.assetto-slot-card {
   padding: 0.65rem 0.8rem;
   border-radius: 0.75rem;
   background: var(--tg-surface, #111827);
@@ -1480,35 +1525,30 @@ dialog.modal:not([open]) {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 0.45rem;
 }
-.slot-info-clickable {
-  overflow: hidden;
-  flex: 1 1 0%;
-  cursor: pointer;
+.assetto-crafting-box {
+  padding: 0.75rem;
+  border-radius: 0.85rem;
+  background: rgba(88, 28, 135, 0.35);
+  border: 1px solid rgba(168, 85, 247, 0.3);
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
 }
-.slot-name {
-  font-size: 0.78rem;
-  font-weight: 800;
-  color: #FFFFFF;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.slot-tag { font-size: 9px; color: var(--tg-text-muted, #94A3B8); margin-top: 0.1rem; }
-.slot-tag.active-gear { color: var(--tg-emerald, #10B981); font-weight: 800; }
 
-/* 3. Emporio Ciccio & Co. */
+/* Modale Emporio Ciccio */
 .emporio-drawer-box {
   background: var(--tg-sec-bg, #0F172A);
-  border: 1px solid var(--tg-border-light, rgba(255, 255, 255, 0.12));
-  padding: 1.15rem 1.25rem 1.65rem 1.25rem;
+  border: 1px solid var(--tg-border-light, rgba(255, 255, 255, 0.15));
+  padding: 1.15rem 1.25rem 1.5rem 1.25rem;
   border-radius: 1.25rem;
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
   max-width: 44rem;
   width: 100%;
+  max-height: 88dvh;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.95);
 }
 .emporio-gold-bar {
   display: flex;
@@ -1525,7 +1565,7 @@ dialog.modal:not([open]) {
   gap: 0.55rem;
   max-height: 18rem;
   overflow-y: auto;
-  padding: 0.2rem 0.2rem 0.4rem 0.1rem;
+  padding: 0.2rem;
 }
 @media (min-width: 640px) {
   .emporio-items-scroll-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.75rem; }
@@ -1533,6 +1573,7 @@ dialog.modal:not([open]) {
 @media (min-width: 1024px) {
   .emporio-items-scroll-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 }
+
 .emporio-item-card {
   background: var(--tg-surface, #111827);
   border-radius: 0.85rem;
@@ -1542,17 +1583,6 @@ dialog.modal:not([open]) {
   flex-direction: column;
   justify-content: space-between;
   gap: 0.45rem;
-}
-.item-card-clickable {
-  cursor: pointer;
-  display: flex;
-  flex-direction: column;
-  gap: 0.2rem;
-}
-.item-card-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
 }
 .item-card-price {
   font-family: monospace;
@@ -1595,7 +1625,31 @@ dialog.modal:not([open]) {
   font-size: 0.78rem;
 }
 
-/* 4 & 5. Squadra & Dossier */
+/* Modale Banco Cambio */
+.modal-cambio-box {
+  background: linear-gradient(180deg, #0F172A 0%, #090D16 100%);
+  border: 1px solid rgba(245, 158, 11, 0.5);
+  padding: 1.35rem 1.25rem 1.65rem 1.25rem;
+  border-radius: 1.35rem;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  max-width: 20rem;
+  width: 100%;
+  position: relative;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.95);
+}
+.cambio-balance-box {
+  padding: 0.45rem;
+  border-radius: 0.55rem;
+  background: rgba(0, 0, 0, 0.5);
+  font-family: monospace;
+  font-size: 0.78rem;
+  color: #FDE047;
+}
+
+/* Squadra & Dossier Reperti */
 .squad-member-card {
   padding: 0.7rem 0.85rem;
   border-radius: 0.75rem;
@@ -1637,29 +1691,4 @@ dialog.modal:not([open]) {
   font-size: 10.5px;
   color: #CBD5E1;
   line-height: 1.4;
-}
-
-/* Modali Secondarie (Banco Cambio & Abbandono) */
-.modal-cambio-box, .abandon-modal-box {
-  background: var(--tg-sec-bg, #0F172A);
-  border: 1px solid var(--tg-border-light, rgba(255, 255, 255, 0.12));
-  padding: 1.25rem 1.35rem 1.5rem 1.35rem;
-  border-radius: 1.25rem;
-  text-align: center;
-  display: flex;
-  flex-direction: column;
-  gap: 0.65rem;
-  max-width: 19rem;
-  width: 100%;
-  position: relative;
-}
-.modal-cambio-box { border-color: rgba(245, 158, 11, 0.4); }
-.abandon-modal-box { border-color: rgba(244, 63, 94, 0.4); }
-.cambio-balance-box {
-  padding: 0.45rem;
-  border-radius: 0.55rem;
-  background: rgba(0, 0, 0, 0.5);
-  font-family: monospace;
-  font-size: 0.78rem;
-  color: #FDE047;
 }
