@@ -1,6 +1,6 @@
 // ============================================================================
 // PROJECT: ESTIQATSY SYNDICATE & RPG PLATFORM
-// FILE: js/rules2wizard.js (VERSIONE 5.0 - ATOMIC CROSS-SAVE & RESUME ENGINE)
+// FILE: js/rules2wizard.js (VERSIONE 6.0 - SYNCHRONIZED GOLD & UEC ENGINE)
 // LAYER: WIZARD FULL-STAGE, 3D DYNAMIC STAGE, STAT CALCULATOR & DIEGETIC NAMING
 // ============================================================================
 
@@ -41,10 +41,10 @@ function Rules2_FormatHumanEffect(rawEffect, faction = "") {
     if (!tag || tag === "—") continue;
 
     if (tag === "TASTO:ZOMBI_ABILITA") out.push("🧟 <b>Necromanzia:</b> Costa 1 PV per rianimare un nemico caduto come Zombi (Danno x2).");
-    else if (tag === "TASTO:ZOMBI_DROGA") out.push("🧟 <b>Risveglio Chimico:</b> Usa 1 dose di droga idonea per rianimare uno Zombi.");
+    else if (tag === "TASTO:ZOMBI_DROGA") out.push("🧟 <b>Risveglio Chimico:</b> Usa 1 dose di droga per rianimare uno Zombi.");
     else if (tag === "CLASSE:Destra") out.push("⚖️ <b>Orientamento Destra:</b> +1 Danno fisso vs Mazzu e Ideologi.");
     else if (tag === "CLASSE:Sinistra") out.push("⚖️ <b>Orientamento Sinistra:</b> +1 Danno fisso vs Camorristi e Burocrati.");
-    else if (tag === "PASSIVO:STAT_FORTUNA_1") out.push("🍀 <b>Buona Sorte:</b> +1 a tutti i tiri D20 ed Eventi.");
+    else if (tag === "PASSIVO:STAT_FORTUNA_1") out.push("🍀 <b>Buona Sorte:</b> +1 costante a tutti i tiri D20 ed Eventi.");
     else if (tag.startsWith("PASSIVO:INT_VS_")) out.push(`📂 <b>Dossier Mirato:</b> +1 INT contro la fazione ${tag.replace("PASSIVO:INT_VS_", "")}.`);
     else if (tag === "PASSIVO:PROVE" || tag === "PASSIVO:DOSSIER") out.push("📁 <b>Organigramma del Potere:</b> +1 INT permanente sull'inchiesta.");
     else if (tag.startsWith("SINTESI:")) out.push(`⚗️ <b>Laboratorio Clandestino:</b> Sintetizza sostanze (${tag.replace("SINTESI:", "")}).`);
@@ -100,7 +100,7 @@ const Rules2Store = {
 };
 
 // ----------------------------------------------------------------------------
-// 3. WIZARD PERSONAGGIO (MACCHINA A STATI CON RESUME COMPLETO)
+// 3. WIZARD PERSONAGGIO (MACCHINA A STATI CON RESUME COMPLETO & SYNC ORO)
 // ----------------------------------------------------------------------------
 const Rules2Wizard = {
   state: {
@@ -131,6 +131,49 @@ const Rules2Wizard = {
     _touchStartX: 0
   },
 
+  // --------------------------------------------------------------------------
+  // GESTIONE SINCRONIZZATA DELL'ORO (RISOLVE IL BUG "ORO INSUFF.")
+  // --------------------------------------------------------------------------
+  syncGold: function() {
+    if (typeof Rules2Engine !== "undefined" && typeof Rules2Engine.getGold === "function") {
+      const engineGold = Rules2Engine.getGold();
+      if (engineGold !== undefined && !isNaN(engineGold)) {
+        if (engineGold > this.state.currentGold) {
+          const diff = engineGold - this.state.currentGold;
+          this.state.startingGold += diff;
+          this.state.currentGold = engineGold;
+        }
+      }
+    }
+    this._syncGoldDisplay();
+  },
+
+  setGold: function(val) {
+    const num = Math.max(0, parseInt(val, 10) || 0);
+    const diff = num - this.state.currentGold;
+    this.state.currentGold = num;
+    this.state.startingGold += diff;
+    if (typeof Rules2Engine !== "undefined" && typeof Rules2Engine.setGold === "function") {
+      Rules2Engine.setGold(num);
+    }
+    this._syncGoldDisplay();
+    if (this.state.step === 3) {
+      this.filterShop(this.state.shopCategory);
+    }
+  },
+
+  addGold: function(amount) {
+    this.setGold(this.state.currentGold + (parseInt(amount, 10) || 0));
+  },
+
+  _syncGoldDisplay: function() {
+    const goldDisp = document.getElementById("wizard-shop-gold-display");
+    if (goldDisp) goldDisp.textContent = `💰 ${this.state.currentGold} 🟡`;
+  },
+
+  // --------------------------------------------------------------------------
+  // APERTURA E RIPRISTINO SESSIONE
+  // --------------------------------------------------------------------------
   open: async function(gameKey, epNum, isVeteran = false, savedHero = null) {
     try {
       if (typeof SoundEngine !== "undefined") SoundEngine.playBgm("wizard");
@@ -155,9 +198,6 @@ const Rules2Wizard = {
       this.state.activeAbilityIndex = 0;
       this.state.activeShopIndex = 0;
 
-      // ----------------------------------------------------------------------
-      // GESTIONE DIFFERENZIATA: EROE VETERANO vs NUOVO EROE
-      // ----------------------------------------------------------------------
       if (this.state.isVeteran && savedHero) {
         const matchingClass = this.state.classes.find(c => c.id === savedHero.classeId || c.nome === savedHero.classe) || this.state.classes[0];
         this.state.chosenClass = matchingClass;
@@ -167,7 +207,7 @@ const Rules2Wizard = {
         this.state.remainingPx = Number(savedHero.px !== undefined ? savedHero.px : 100);
         this.state.chosenAbilities = [...(savedHero.abilitaIds || savedHero.abilita || [])];
 
-        // VETERANO: Salto netto di Passo 1 e apertura immediata al Passo 2 (Talenti)
+        this.syncGold();
         this.renderStep2();
         this.showStep(2);
       } else {
@@ -178,7 +218,7 @@ const Rules2Wizard = {
         this.state.currentGold = this.state.startingGold;
         this.state.heroName = AppState.user?.nome || "Avventuriero";
 
-        // NUOVO GIOCATORE: Apertura ordinaria al Passo 1
+        this.syncGold();
         this.renderStep1();
         this.showStep(1);
       }
@@ -193,7 +233,6 @@ const Rules2Wizard = {
 
   resumeSession: async function(gameKey, epNum, sessionData) {
     try {
-      // 1. Carica i cataloghi dal server
       let wizData = Rules2Store.loadCachedWizardData(gameKey);
       if (!wizData) {
         wizData = await apiCall("game_wizard_data", { gameKey: gameKey });
@@ -209,7 +248,6 @@ const Rules2Wizard = {
       const fase = String(sessionData.activeFase || sessionData.fase || "WIZARD_CLASSE").toUpperCase();
       const hero = sessionData.statoEroe || sessionData.hero || {};
 
-      // 2. Ripristino Classe
       if (hero.classeId || hero.classe) {
         const found = this.state.classes.find(c => c.id === hero.classeId || c.nome === hero.classe) || this.state.classes[0];
         if (found) {
@@ -222,10 +260,8 @@ const Rules2Wizard = {
         this.state.startingGold = this.state.chosenClass ? Number(this.state.chosenClass.oro || 40) : 40;
       }
 
-      // 3. Ripristino Nome
       this.state.heroName = hero.nomeEroe || AppState.user?.nome || "Avventuriero";
 
-      // 4. Ripristino Abilità e PX
       this.state.chosenAbilities = [];
       if (hero.abilita && Array.isArray(hero.abilita)) {
         hero.abilita.forEach(aName => {
@@ -235,7 +271,6 @@ const Rules2Wizard = {
       }
       this.state.remainingPx = hero.px !== undefined ? Number(hero.px) : (100 - (this.state.chosenAbilities.length * 100));
 
-      // 5. Ripristino Carrello Emporio e Oro
       this.state.boughtItems = [];
       if (hero.inventario && Array.isArray(hero.inventario)) {
         hero.inventario.forEach(iName => {
@@ -244,8 +279,8 @@ const Rules2Wizard = {
         });
       }
       this.state.currentGold = hero.oro !== undefined ? Number(hero.oro) : this.state.startingGold;
+      this.syncGold();
 
-      // 6. Navigazione e rendering allo Step esatto
       this.bindModalBackdropClose();
       AppRouter.navigate("view-wizard");
 
@@ -268,7 +303,6 @@ const Rules2Wizard = {
     }
   },
 
-  // Sincronizzazione con il server ad ogni avanzamento di step
   _syncStepToServer: function(faseName) {
     if (!this.state.gameKey) return;
     const heroPayload = {
@@ -334,7 +368,6 @@ const Rules2Wizard = {
       if (footer) footer.classList.toggle("hidden", n !== stepNum);
     });
 
-    // CONTROLLI DINAMICI FOOTER PER VETERANO
     if (stepNum === 2 && this.state.isVeteran) {
       const prevClassBtn = document.querySelector("#wiz-footer-step-2 button:first-child");
       if (prevClassBtn) prevClassBtn.classList.add("hidden");
@@ -420,7 +453,7 @@ const Rules2Wizard = {
   },
 
   // --------------------------------------------------------------------------
-  // STEP 1: CLASSI COSTIERE (FACTION GLOW & 3D COVERFLOW)
+  // STEP 1: CLASSI COSTIERE (ZERO VORAGINE NERA & UEC PERFETTA)
   // --------------------------------------------------------------------------
   renderStep1: function() {
     const stage = document.getElementById("wizard-classes-stage");
@@ -437,28 +470,25 @@ const Rules2Wizard = {
 
       return `
         <div id="coverflow-card-${idx}" data-faction="${pol}" onclick="Rules2Wizard.coverflowSelectIndex(${idx})" class="coverflow-card">
+          <div class="coverflow-header-bar">
+            <div class="coverflow-title-group">
+              <span class="coverflow-title-icon">${cls.emoji || '🥋'}</span>
+              <h4 class="coverflow-title">${cls.nome}</h4>
+            </div>
+            <span class="coverflow-badge-faction" data-faction="${pol}">
+              ${pol.toUpperCase()}
+            </span>
+          </div>
+
           <div class="coverflow-media-frame">
             <img src="${cls.mediaUrl}" class="coverflow-img" alt="${Rules2_SafeAttr(cls.nome)}" loading="lazy">
-            
-            <div class="coverflow-header-bar">
-              <div class="coverflow-title-group">
-                <span class="coverflow-title-icon">${cls.emoji || '🥋'}</span>
-                <h4 class="coverflow-title">${cls.nome}</h4>
-              </div>
-              <span class="coverflow-badge-faction" data-faction="${pol}">
-                ${pol.toUpperCase()}
-              </span>
-            </div>
-
-            <div class="coverflow-header-divider"></div>
-
             <div class="watermark-cover-banner">
               <div class="quote-text">“${cleanQuote}”</div>
               <div class="quote-author">${cls.autoreCitazione || 'Darsena'}</div>
             </div>
           </div>
 
-          <div id="coverflow-details-${idx}" class="coverflow-details-box">
+          <div class="coverflow-details-box">
             <div class="coverflow-stats-row">
               <div>🥊 FOR <b>${forVal}</b></div>
               <div>🤸 DES <b>${desVal}</b></div>
@@ -470,9 +500,7 @@ const Rules2Wizard = {
             </div>
 
             <div class="coverflow-footer-row">
-              <span class="coverflow-gear-label truncate">
-                🎒 <b>${cls.equipLoot || 'Pugni nudi'}</b>
-              </span>
+              <span class="coverflow-gear-label truncate">🎒 <b>${cls.equipLoot || 'Pugni nudi'}</b></span>
               <div class="coverflow-kpi-pill">
                 <span class="pill-pv">❤️ ${cls.pv} PV</span>
                 <span class="pill-gold">🟡 ${cls.oro} ORO</span>
@@ -487,11 +515,7 @@ const Rules2Wizard = {
       dotsBox.innerHTML = `
         <div class="coverflow-nav-cluster">
           <button onclick="event.stopPropagation(); Rules2Wizard.coverflowPrev();" class="coverflow-btn-side" aria-label="Precedente">‹</button>
-          <div class="coverflow-dots">
-            ${classes.map((_, i) => `
-              <span onclick="Rules2Wizard.coverflowSelectIndex(${i})" class="coverflow-dot ${i === this.state.activeClassIndex ? 'active' : ''}"></span>
-            `).join("")}
-          </div>
+          <div class="coverflow-counter-pill">${this.state.activeClassIndex + 1} / ${classes.length}</div>
           <button onclick="event.stopPropagation(); Rules2Wizard.coverflowNext();" class="coverflow-btn-side" aria-label="Successivo">›</button>
         </div>
       `;
@@ -525,12 +549,6 @@ const Rules2Wizard = {
         else onPrev();
       }
     }, { passive: true });
-
-    window.addEventListener("keydown", (e) => {
-      if (this.state.step > 3) return;
-      if (e.key === "ArrowRight") onNext();
-      else if (e.key === "ArrowLeft") onPrev();
-    });
   },
 
   updateCoverflowStage: function() {
@@ -573,12 +591,11 @@ const Rules2Wizard = {
     if (!this.state.isVeteran) {
       this.state.startingGold = Number(classes[activeIdx].oro || 40);
       this.state.currentGold = this.state.startingGold;
+      this.syncGold();
     }
 
-    const dotsContainer = document.querySelector("#wizard-coverflow-dots .coverflow-dots");
-    if (dotsContainer) {
-      dotsContainer.querySelectorAll(".coverflow-dot").forEach((d, i) => d.classList.toggle("active", i === activeIdx));
-    }
+    const pill = document.querySelector("#wizard-coverflow-dots .coverflow-counter-pill");
+    if (pill) pill.textContent = `${activeIdx + 1} / ${total}`;
   },
 
   coverflowSelectIndex: function(idx) {
@@ -628,11 +645,9 @@ const Rules2Wizard = {
               </div>
             </div>
           </div>
-          <div>
-            <button class="btn btn-xs ${isSelected ? 'btn-success font-black' : 'btn-outline border-white/20 text-slate-300'}">
-              ${isSelected ? 'Attivo ✓' : 'Seleziona'}
-            </button>
-          </div>
+          <button class="btn btn-xs ${isSelected ? 'btn-success font-black' : 'btn-outline border-white/20 text-slate-300'}">
+            ${isSelected ? 'Attivo ✓' : 'Seleziona'}
+          </button>
         </div>
       `;
     }).join("");
@@ -644,6 +659,7 @@ const Rules2Wizard = {
     if (!this.state.isVeteran) {
       this.state.startingGold = Number(this.state.chosenClass.oro || 40);
       this.state.currentGold = this.state.startingGold;
+      this.syncGold();
     }
     if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("click");
     this.updateCoverflowStage();
@@ -651,7 +667,7 @@ const Rules2Wizard = {
   },
 
   // --------------------------------------------------------------------------
-  // STEP 2: ABILITÀ & TALENTI CLANDESTINI
+  // STEP 2: ABILITÀ & TALENTI CLANDESTINI (NESSUNA COLLISIONE TASTI)
   // --------------------------------------------------------------------------
   renderStep2: function() {
     const is3D = (this.state.globalViewMode === "3d");
@@ -688,23 +704,30 @@ const Rules2Wizard = {
 
       return `
         <div id="abilities-card-${idx}" data-faction="${userFaction}" onclick="Rules2Wizard.selectAbilityIndex(${idx})" class="coverflow-card">
+          <div class="coverflow-header-bar">
+            <div class="coverflow-title-group">
+              <span class="coverflow-title-icon">${abl.emoji || '⚡'}</span>
+              <h4 class="coverflow-title">${abl.nome}</h4>
+            </div>
+            <span class="coverflow-badge-faction" data-faction="${userFaction}">
+              ${abl.costoPX || 100} PX
+            </span>
+          </div>
+
           <div class="coverflow-media-frame">
             <img src="${abl.mediaUrl && abl.mediaUrl !== '—' ? abl.mediaUrl : 'https://image.pollinations.ai/prompt/cyberpunk-noir-skill-icon?width=800&height=450&nologo=true'}" class="coverflow-img" alt="${Rules2_SafeAttr(abl.nome)}" loading="lazy">
-            
-            <div class="coverflow-header-bar">
-              <div class="coverflow-title-group">
-                <span class="coverflow-title-icon">${abl.emoji || '⚡'}</span>
-                <h4 class="coverflow-title">${abl.nome}</h4>
-              </div>
-              <span class="badge badge-xs coverflow-badge-faction badge-info font-mono">
-                100 PX
-              </span>
+            <div class="watermark-cover-banner">
+              <div class="quote-text">${abl.descrizione || 'Abilità Clandestina'}</div>
             </div>
-
-            <div class="coverflow-header-divider"></div>
           </div>
 
           <div class="coverflow-details-box">
+            <div class="coverflow-stats-row">
+              <div>⚡ TALENTO</div>
+              <div>✨ ${abl.costoPX || 100} PX</div>
+              <div>${isCompatible ? '✅ IDONEO' : '🔒 INCOMPATIBILE'}</div>
+            </div>
+
             <div class="coverflow-lore">
               ${perkText}
             </div>
@@ -724,11 +747,7 @@ const Rules2Wizard = {
       dotsBox.innerHTML = `
         <div class="coverflow-nav-cluster">
           <button onclick="event.stopPropagation(); Rules2Wizard.cylinderAbilitiesPrev();" class="coverflow-btn-side" aria-label="Precedente">‹</button>
-          <div class="coverflow-dots">
-            ${abilities.map((_, i) => `
-              <span onclick="Rules2Wizard.selectAbilityIndex(${i})" class="coverflow-dot ${i === this.state.activeAbilityIndex ? 'active' : ''}"></span>
-            `).join("")}
-          </div>
+          <div class="coverflow-counter-pill">${this.state.activeAbilityIndex + 1} / ${abilities.length}</div>
           <button onclick="event.stopPropagation(); Rules2Wizard.cylinderAbilitiesNext();" class="coverflow-btn-side" aria-label="Successivo">›</button>
         </div>
       `;
@@ -774,10 +793,8 @@ const Rules2Wizard = {
       el.classList.toggle("glow-active", isCenter);
     });
 
-    const dotsContainer = document.querySelector("#wizard-abilities-dots .coverflow-dots");
-    if (dotsContainer) {
-      dotsContainer.querySelectorAll(".coverflow-dot").forEach((d, i) => d.classList.toggle("active", i === activeIdx));
-    }
+    const pill = document.querySelector("#wizard-abilities-dots .coverflow-counter-pill");
+    if (pill) pill.textContent = `${activeIdx + 1} / ${total}`;
   },
 
   selectAbilityIndex: function(idx) {
@@ -825,11 +842,9 @@ const Rules2Wizard = {
             </div>
             <div class="text-[11px] text-slate-300 mt-1">${abl.effettoCodificato || abl.descrizione || ''}</div>
           </div>
-          <div>
-            <span class="badge badge-sm ${isSelected ? 'badge-primary font-black' : (isCompatible ? 'badge-ghost font-mono' : 'badge-neutral')}">
-              ${isSelected ? 'Appreso ✓' : (isCompatible ? '100 PX' : '🔒')}
-            </span>
-          </div>
+          <button class="btn btn-xs ${isSelected ? 'btn-primary font-black' : (isCompatible ? 'btn-outline border-white/20' : 'btn-disabled')}">
+            ${isSelected ? 'Appreso ✓' : (isCompatible ? '100 PX' : '🔒')}
+          </button>
         </div>
       `;
     }).join("");
@@ -858,13 +873,15 @@ const Rules2Wizard = {
   },
 
   // --------------------------------------------------------------------------
-  // STEP 3: MERCATO NERO DI CICCIO (GESTIONE ORO & VEICOLI)
+  // STEP 3: MERCATO NERO DI CICCIO (SALDO SINCRONIZZATO & COMPRA ATTIVO)
   // --------------------------------------------------------------------------
   renderStep3: function() {
+    this.syncGold();
     this.filterShop(this.state.shopCategory || "ARMI");
   },
 
   filterShop: function(cat) {
+    this.syncGold();
     this.state.shopCategory = cat;
     const is3D = (this.state.globalViewMode === "3d");
 
@@ -872,12 +889,9 @@ const Rules2Wizard = {
     if (chipsBox) {
       chipsBox.querySelectorAll(".rpg-category-chip").forEach(btn => {
         const isAct = btn.textContent.toUpperCase().includes(cat.toUpperCase());
-        btn.className = `rpg-category-chip badge ${isAct ? 'badge-info active' : 'badge-ghost'}`;
+        btn.classList.toggle("active", isAct);
       });
     }
-
-    const goldDisp = document.getElementById("wizard-shop-gold-display");
-    if (goldDisp) goldDisp.textContent = `💰 ${this.state.currentGold} 🟡`;
 
     const v3D = document.getElementById("wizard-shop-view-3d");
     const vList = document.getElementById("wizard-shop-view-list");
@@ -905,35 +919,47 @@ const Rules2Wizard = {
 
     stage.innerHTML = filtered.map((it, idx) => {
       const price = Math.abs(Number(it.costoOro || it.costo || 15));
-      const canAfford = this.state.currentGold >= price;
+      const canAfford = (this.state.currentGold >= price);
+      const cartCount = (this.state.boughtItems || []).filter(b => b.id === it.id || b.nome === it.nome).length;
+
+      const bonusTag = Rules2_FormatHumanEffect(it.requisitiCodificati || it.effettoCodificato, userFaction);
 
       return `
         <div id="shop-card-${idx}" data-faction="${userFaction}" onclick="Rules2Wizard.selectShopIndex(${idx})" class="coverflow-card">
+          <div class="coverflow-header-bar">
+            <div class="coverflow-title-group">
+              <span class="coverflow-title-icon">${it.emoji || '📦'}</span>
+              <h4 class="coverflow-title">${it.nome}</h4>
+            </div>
+            <span class="coverflow-badge-faction badge-warning">
+              ${price} 🟡
+            </span>
+          </div>
+
           <div class="coverflow-media-frame">
             <img src="${it.mediaUrl && it.mediaUrl !== '—' ? it.mediaUrl : 'https://image.pollinations.ai/prompt/black-market-crate?width=800&height=450&nologo=true'}" class="coverflow-img" alt="${Rules2_SafeAttr(it.nome)}" loading="lazy">
-            
-            <div class="coverflow-header-bar">
-              <div class="coverflow-title-group">
-                <span class="coverflow-title-icon">${it.emoji || '📦'}</span>
-                <h4 class="coverflow-title">${it.nome}</h4>
-              </div>
-              <span class="badge badge-xs coverflow-badge-faction badge-warning font-mono">
-                ${price} 🟡
-              </span>
+            <div class="watermark-cover-banner">
+              <div class="quote-text">${it.nome} (${this.state.shopCategory})</div>
             </div>
-
-            <div class="coverflow-header-divider"></div>
           </div>
 
           <div class="coverflow-details-box">
+            <div class="coverflow-stats-row">
+              <div>${it.danno ? '💥 Danno ' + it.danno : '🛡️ DOTAZIONE'}</div>
+              <div>${it.pv ? '❤️ ' + it.pv + ' PV' : '📦 MERCATO'}</div>
+              <div>💰 ${price} 🟡</div>
+            </div>
+
             <div class="coverflow-lore">
-              <p>${it.descrizione || it.testo || ''}</p>
+              <p>${it.descrizione || it.testo || bonusTag}</p>
             </div>
 
             <div class="coverflow-footer-row">
-              <span class="coverflow-gear-label">Prezzo: <b>${price} ORO</b></span>
-              <button onclick="event.stopPropagation(); Rules2Wizard.buyItem('${it.id}', ${price})" class="btn btn-xs ${canAfford ? 'btn-primary font-bold' : 'btn-outline border-white/10 opacity-40'}" ${!canAfford ? 'disabled' : ''}>
-                ${canAfford ? 'Compra' : 'Oro Insuff.'}
+              <span class="coverflow-gear-label">
+                ${cartCount > 0 ? `🎒 Nello zaino (x${cartCount})` : `Prezzo: <b>${price} ORO</b>`}
+              </span>
+              <button onclick="event.stopPropagation(); Rules2Wizard.buyItem('${it.id}', ${price})" class="btn btn-xs ${canAfford ? 'btn-primary font-bold' : 'btn-disabled opacity-40'}" ${!canAfford ? 'disabled' : ''}>
+                ${canAfford ? `Compra (${price} 🟡)` : 'Oro Insuff.'}
               </button>
             </div>
           </div>
@@ -945,11 +971,7 @@ const Rules2Wizard = {
       dotsBox.innerHTML = `
         <div class="coverflow-nav-cluster">
           <button onclick="event.stopPropagation(); Rules2Wizard.cylinderShopPrev();" class="coverflow-btn-side" aria-label="Precedente">‹</button>
-          <div class="coverflow-dots">
-            ${filtered.map((_, i) => `
-              <span onclick="Rules2Wizard.selectShopIndex(${i})" class="coverflow-dot ${i === this.state.activeShopIndex ? 'active' : ''}"></span>
-            `).join("")}
-          </div>
+          <div class="coverflow-counter-pill">${this.state.activeShopIndex + 1} / ${filtered.length}</div>
           <button onclick="event.stopPropagation(); Rules2Wizard.cylinderShopNext();" class="coverflow-btn-side" aria-label="Successivo">›</button>
         </div>
       `;
@@ -995,10 +1017,8 @@ const Rules2Wizard = {
       el.classList.toggle("glow-active", isCenter);
     });
 
-    const dotsContainer = document.querySelector("#wizard-shop-dots .coverflow-dots");
-    if (dotsContainer) {
-      dotsContainer.querySelectorAll(".coverflow-dot").forEach((d, i) => d.classList.toggle("active", i === activeIdx));
-    }
+    const pill = document.querySelector("#wizard-shop-dots .coverflow-counter-pill");
+    if (pill) pill.textContent = `${activeIdx + 1} / ${total}`;
   },
 
   selectShopIndex: function(idx) {
@@ -1035,7 +1055,7 @@ const Rules2Wizard = {
     const filtered = (this.state.shopCatalog || []).filter(i => Rules2_ClassifyEntity(i) === this.state.shopCategory);
     container.innerHTML = filtered.map(it => {
       const price = Math.abs(Number(it.costoOro || it.costo || 15));
-      const canAfford = this.state.currentGold >= price;
+      const canAfford = (this.state.currentGold >= price);
 
       return `
         <div class="wizard-shop-card">
@@ -1047,11 +1067,9 @@ const Rules2Wizard = {
             <div class="shop-card-title">${it.nome}</div>
             <div class="shop-card-desc">${it.descrizione || it.testo || ''}</div>
           </div>
-          <div class="shop-card-actions">
-            <button onclick="Rules2Wizard.buyItem('${it.id}', ${price})" class="btn btn-xs ${canAfford ? 'btn-primary font-bold' : 'btn-outline border-white/10 opacity-40'}" ${!canAfford ? 'disabled' : ''}>
-              ${canAfford ? 'Compra' : 'Oro Insuff.'}
-            </button>
-          </div>
+          <button onclick="Rules2Wizard.buyItem('${it.id}', ${price})" class="btn btn-xs ${canAfford ? 'btn-primary font-bold' : 'btn-disabled opacity-40'}" ${!canAfford ? 'disabled' : ''}>
+            ${canAfford ? `Compra (${price} 🟡)` : 'Oro Insuff.'}
+          </button>
         </div>
       `;
     }).join("");
@@ -1061,7 +1079,7 @@ const Rules2Wizard = {
     const it = (this.state.shopCatalog || []).find(i => i.id === itemId);
     if (!it) return;
     const price = Math.abs(Number(it.costoOro || it.costo || 15));
-    const canAfford = this.state.currentGold >= price;
+    const canAfford = (this.state.currentGold >= price);
 
     document.getElementById("uni-detail-icon").textContent = it.emoji || "📦";
     document.getElementById("uni-detail-title").textContent = it.nome;
@@ -1069,7 +1087,7 @@ const Rules2Wizard = {
 
     const btn = document.getElementById("uni-detail-action-btn");
     if (btn) {
-      btn.textContent = canAfford ? `Compra (${price} ORO)` : "Oro Insufficiente";
+      btn.textContent = canAfford ? `Compra (${price} 🟡)` : "Oro Insufficiente";
       btn.className = canAfford ? "btn btn-sm btn-primary font-black w-full" : "btn btn-sm btn-disabled w-full";
       btn.onclick = canAfford ? () => this.buyItem(it.id, price) : null;
     }
@@ -1079,6 +1097,7 @@ const Rules2Wizard = {
   },
 
   buyItem: function(itemId, price) {
+    this.syncGold();
     if (this.state.currentGold < price) {
       tgHaptic("error");
       return tgAlert("Oro insufficiente!");
@@ -1096,6 +1115,9 @@ const Rules2Wizard = {
     }
 
     this.state.currentGold -= price;
+    if (typeof Rules2Engine !== "undefined" && typeof Rules2Engine.setGold === "function") {
+      Rules2Engine.setGold(this.state.currentGold);
+    }
     this.state.boughtItems.push(item);
     tgHaptic("success");
 
@@ -1105,8 +1127,16 @@ const Rules2Wizard = {
   },
 
   resetShop: function() {
-    this.state.currentGold = this.state.startingGold;
+    // Rimborsa tutti gli acquisti fatti nel Wizard
+    (this.state.boughtItems || []).forEach(item => {
+      const p = Math.abs(Number(item.costoOro || item.costo || 0));
+      this.state.currentGold += p;
+    });
     this.state.boughtItems = [];
+    if (typeof Rules2Engine !== "undefined" && typeof Rules2Engine.setGold === "function") {
+      Rules2Engine.setGold(this.state.currentGold);
+    }
+    this._syncGoldDisplay();
     tgHaptic("selection");
     if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("click");
     this.filterShop(this.state.shopCategory);
@@ -1126,6 +1156,7 @@ const Rules2Wizard = {
   // --------------------------------------------------------------------------
   renderStep4: function() {
     this.stopAutoplay();
+    this.syncGold();
     const cls = this.state.chosenClass;
     if (!cls) return;
 
@@ -1133,16 +1164,19 @@ const Rules2Wizard = {
     const heroName = this.state.heroName || AppState.user?.nome || "Avventuriero";
     const startingGear = cls.equipLoot || "Pugni nudi";
 
-    // Calcolo dinamico caratteristiche effettive con bonus acquisti
     let effFor = Number(cls.forza || 10);
     let effDes = Number(cls.destrezza || 10);
     let effInt = Number(cls.intelligenza || 10);
+    let bonusPV = 0;
 
     this.state.boughtItems.forEach(item => {
       if (item.forza) effFor += Number(item.forza);
       if (item.destrezza) effDes += Number(item.destrezza);
       if (item.intelligenza) effInt += Number(item.intelligenza);
+      if (item.pv) bonusPV += Number(item.pv);
     });
+
+    const totPV = Number(cls.pv || 25) + bonusPV;
 
     const ablNames = (this.state.chosenAbilities || []).map(id => {
       const a = (this.state.abilities || []).find(x => x.id === id);
@@ -1160,21 +1194,18 @@ const Rules2Wizard = {
     container.innerHTML = `
       <div class="hero-launch-stage">
         <div data-faction="${pol}" class="coverflow-card hero-launch-card glow-active">
+          <div class="coverflow-header-bar">
+            <div onclick="Rules2Wizard.openNameEditModal()" class="coverflow-title-group cursor-pointer" title="Tocca per modificare il nome">
+              <span class="coverflow-title-icon">${cls.emoji || '🥋'}</span>
+              <h4 id="hero-display-name" class="coverflow-title">${heroName} ✏️</h4>
+            </div>
+            <span class="coverflow-badge-faction" data-faction="${pol}">
+              ${pol.toUpperCase()}
+            </span>
+          </div>
+
           <div class="coverflow-media-frame">
             <img src="${cls.mediaUrl}" class="coverflow-img" alt="${heroName}">
-            
-            <div class="coverflow-header-bar">
-              <div onclick="Rules2Wizard.openNameEditModal()" class="coverflow-title-group cursor-pointer" title="Tocca per modificare il nome">
-                <span class="coverflow-title-icon">${cls.emoji || '🥋'}</span>
-                <h4 id="hero-display-name" class="coverflow-title">${heroName} ✏️</h4>
-              </div>
-              <span class="coverflow-badge-faction" data-faction="${pol}">
-                ${pol.toUpperCase()}
-              </span>
-            </div>
-
-            <div class="coverflow-header-divider"></div>
-
             <div class="watermark-cover-banner">
               <div class="quote-text">Classe: <b>${cls.nome}</b></div>
             </div>
@@ -1194,7 +1225,7 @@ const Rules2Wizard = {
             <div class="coverflow-footer-row">
               <span class="coverflow-gear-label">Status: <b>Pronto al Duello</b></span>
               <div class="coverflow-kpi-pill">
-                <span class="pill-pv">❤️ ${cls.pv || 25} PV</span>
+                <span class="pill-pv">❤️ ${totPV} PV</span>
                 <span class="pill-gold">🟡 ${this.state.currentGold} ORO</span>
               </div>
             </div>
