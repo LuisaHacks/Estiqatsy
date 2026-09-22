@@ -1,7 +1,7 @@
 // ============================================================================
 // PROJECT: ESTIQATSY SYNDICATE & RPG PLATFORM
-// FILE: js/app-core.js (VERSIONE 13.0 - MULTIPLAYER, ATOMIC GAS & TELEGRAM 8.0)
-// LAYER 1: SPA ROUTER, STATO UNIFICATO, MEGOIN WALLET, TOAST SYSTEM & DEEP LINK
+// FILE: js/app-core.js (VERSIONE 14.0 - FULL REAL GAS DATA & TELEGRAM 8.0)
+// LAYER 1: SPA ROUTER, STATO REALE, MEGOIN WALLET, TOAST SYSTEM & DEEP LINK
 // ============================================================================
 
 // ----------------------------------------------------------------------------
@@ -10,7 +10,7 @@
 const AppConfig = {
   GAS_URL: "https://script.google.com/macros/s/AKfycbyeCWHM9X4ycwWT7IOMwg24pySL78bJT5BRyiIR5eb0UJALWuaORzfJ2lkqLrjLv0xN/exec",
   CACHE_KEYS: {
-    APP_STATE: "est_app_state_v13",
+    APP_STATE: "est_app_state_v14",
     VAULT: "est_cache_vault",
     AUDIO_MUTED: "estiqatsy_audio_muted",
     AUDIO_VOLUME: "estiqatsy_audio_volume",
@@ -28,32 +28,41 @@ const AppConfig = {
 // 2. STATO CENTRALE UNIFICATO DELLA PIATTAFORMA (APPSTATE)
 // ----------------------------------------------------------------------------
 const AppState = {
-  // Profilo Utente & Parametri Combattimento
+  // Profilo Utente Reale (Inizializzato a zero/neutro, popolato da Modulo_WebApp.gs)
   user: {
-    id: 123456789,
+    chatId: "",
+    id: "",
+    nome: "Avventuriero",
     first_name: "Avventuriero",
+    cognome: "",
     username: "@anonimo",
-    megoin: 100,
-    loyalty_points: 25,
-    plan: "PIANO BASE",
+    saldoMegoin: 0,
+    megoin: 0,
+    puntiFedelta: 0,
+    loyalty_points: 0,
+    piano: "Free",
+    plan: "Free",
+    isAdmin: false,
+    prodottiAcquistati: 0,
     avatar: "⚓",
+    photo_url: null,
     combatStats: {
-      wins: 3,
-      losses: 1,
-      attack: 16,
-      defense: 13,
-      hacking: 12,
-      readiness: 15,
-      rank: "Agente Syndicate Lvl 2"
+      wins: 0,
+      losses: 0,
+      attack: 14,
+      defense: 12,
+      hacking: 10,
+      readiness: 12,
+      rank: "Agente Syndicate"
     }
   },
 
-  // Moduli attivi e permessi SaaS
+  // Moduli attivi e permessi calcolati dinamicamente dal foglio 👑 Plans
   allowedModules: {
     home: true,
-    games: true,
-    shop: true,
-    recipes: true,
+    games: false,
+    shop: false,
+    recipes: false,
     profile: true,
     multiplayer: true
   },
@@ -62,27 +71,39 @@ const AppState = {
   billingCycle: "monthly",
   activeTab: "home",
 
-  // Moduli di Piattaforma
+  // Cataloghi popolati in tempo reale dalle API GAS
   shop: { items: [], categories: [], activeCategory: "tutti", searchQuery: "" },
   recipes: { items: [], categories: [], activeCategory: "tutti", searchQuery: "" },
   carousel: { timer: null, index: 0, count: 0, isPaused: false },
   digitalVault: [],
   transactions: [],
 
-  // Catalogo Saghe e Sessione Gioco Narrativo
+  // Catalogo Saghe e Sessione Gioco Runtime
   games: {
     catalog: [],
     activeGameKey: null,
     activeEpisode: 1
   },
-  activeSeriesId: "saga-paul-sindaco",
-  activeEpisodeId: "ep-1",
+  activeSeriesId: null,
+  activeEpisodeId: 1,
+  activeSession: {
+    engineKey: "Rules2",
+    gameKey: null,
+    episodio: 1,
+    partitaId: null,
+    hero: null,
+    combatRound: 1,
+    combatEnemyId: null,
+    currentNode: null,
+    shopCatalog: [],
+    engineState: null
+  },
   activeGameSession: null,
 
   // Stanza Multiplayer Real-time
   multiplayerActiveRoom: null,
 
-  // Parametri di configurazione (modificabili anche da Admin Panel)
+  // Parametri di connessione
   config: {
     gasWebAppUrl: AppConfig.GAS_URL,
     botUsername: "EstiqatsyBot"
@@ -106,9 +127,12 @@ if (tg) {
     // Dati reali Telegram Utente
     if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
       const u = tg.initDataUnsafe.user;
-      AppState.user.id = u.id || AppState.user.id;
-      AppState.user.first_name = u.first_name || u.username || AppState.user.first_name;
-      AppState.user.username = u.username ? `@${u.username}` : AppState.user.username;
+      AppState.user.id = String(u.id);
+      AppState.user.chatId = String(u.id);
+      AppState.user.first_name = u.first_name || "Avventuriero";
+      AppState.user.nome = u.first_name || "Avventuriero";
+      AppState.user.cognome = u.last_name || "";
+      AppState.user.username = u.username ? `@${u.username}` : "@anonimo";
       if (u.photo_url) AppState.user.photo_url = u.photo_url;
     }
 
@@ -170,8 +194,9 @@ function setupTelegramBackButton(targetScreenId) {
       } else if (targetScreenId === "view-wizard") {
         AppRouter.navigate("subview-game-detail");
       } else if (targetScreenId === "view-gameplay") {
-        if (window.Rules2Engine && typeof Rules2Engine.openAbandonModal === "function") {
-          Rules2Engine.openAbandonModal();
+        const engine = EngineRegistry.get(AppState.activeSession.engineKey);
+        if (engine && typeof engine.openAbandonModal === "function") {
+          engine.openAbandonModal();
         } else {
           AppRouter.navigate("games");
         }
@@ -237,7 +262,7 @@ const AppRouter = {
       targetId = "view-" + targetId;
     }
 
-    // Hard-Locking dei moduli SaaS
+    // Hard-Locking dei moduli SaaS (rispetta i permessi restituiti dal server GAS)
     const baseModule = targetId.replace("view-", "").replace("subview-", "").split("-")[0];
     if (AppState.allowedModules && AppState.allowedModules[baseModule] === false) {
       this.navigate("home");
@@ -284,7 +309,7 @@ const AppRouter = {
       if (gameHeader) gameHeader.classList.add("hidden");
     }
 
-    // Gestione Esclusiva a Tre Footer
+    // Gestione Esclusiva a Tre Footer (Mai sovrapposti)
     if (isGameplay) {
       if (appFooter) appFooter.classList.add("hidden");
       if (wizardFooter) wizardFooter.classList.add("hidden");
@@ -299,7 +324,7 @@ const AppRouter = {
       if (gameFooter) gameFooter.classList.add("hidden");
     }
 
-    // Calcolo Tab Attivo
+    // Calcolo Tab Attivo per desktop e mobile
     const activeTabKey = targetId.replace("view-", "").replace("subview-", "").split("-")[0];
     AppState.activeTab = (activeTabKey === "hub") ? "games" : activeTabKey;
 
@@ -322,7 +347,7 @@ const AppRouter = {
 };
 
 // ----------------------------------------------------------------------------
-// 6. APICALL POST VERSO GOOGLE APPS SCRIPT (GAS)
+// 6. APICALL POST VERSO GOOGLE APPS SCRIPT (CONFORME A MODULO_WEBAPP.GS)
 // ----------------------------------------------------------------------------
 let _isApiInProgress = false;
 
@@ -335,6 +360,8 @@ async function apiCall(action, extraParams = {}) {
 
   const endpointUrl = AppState.config?.gasWebAppUrl || AppConfig.GAS_URL;
   const initData = (tg && tg.initData) ? tg.initData : "";
+
+  // Payload perfettamente allineato con handleWebAppPostRequest() di Modulo_WebApp.gs
   const payload = {
     action: action,
     initData: initData,
@@ -364,7 +391,7 @@ async function apiCall(action, extraParams = {}) {
       result = JSON.parse(rawText);
     } catch (e) {
       if (rawText.includes("<!DOCTYPE") || rawText.includes("<html")) {
-        throw new Error("Il server Google ha restituito un errore HTML.");
+        throw new Error("Il server Google Apps Script ha restituito un errore HTML.");
       }
       throw new Error("Formato risposta del server non valido.");
     }
@@ -387,11 +414,15 @@ async function apiCall(action, extraParams = {}) {
 // ----------------------------------------------------------------------------
 const Wallet = {
   getMegoin: function() {
-    return AppState.user?.megoin || 0;
+    if (!AppState.user) return 0;
+    return (AppState.user.saldoMegoin !== undefined) 
+      ? AppState.user.saldoMegoin 
+      : (AppState.user.megoin || 0);
   },
   setMegoin: function(val) {
     const num = Math.max(0, parseInt(val, 10) || 0);
     if (!AppState.user) AppState.user = {};
+    AppState.user.saldoMegoin = num;
     AppState.user.megoin = num;
 
     ["home-megoin-card", "user-megoin-desk", "profile-card-megoin", "cambio-megoin-balance", "arcade-user-balance"].forEach(id => {
@@ -457,15 +488,12 @@ const AppCore = {
     }, 3200);
   },
 
-  // Persistenza LocalStorage
+  // Persistenza LocalStorage sicura (non memorizza dati fake o obsoleti)
   save: function() {
     try {
       const stateToSave = {
         user: AppState.user,
-        transactions: AppState.transactions,
         digitalVault: AppState.digitalVault,
-        activeSeriesId: AppState.activeSeriesId,
-        activeEpisodeId: AppState.activeEpisodeId,
         activeGameSession: AppState.activeGameSession,
         multiplayerActiveRoom: AppState.multiplayerActiveRoom,
         config: AppState.config
@@ -481,11 +509,14 @@ const AppCore = {
       const raw = localStorage.getItem(AppConfig.CACHE_KEYS.APP_STATE);
       if (raw) {
         const saved = JSON.parse(raw);
-        if (saved.user) AppState.user = { ...AppState.user, ...saved.user };
-        if (saved.transactions) AppState.transactions = saved.transactions;
+        if (saved.user) {
+          // Preserva solo chatId e preferenze, lasciando che il saldo reale arrivi da GAS
+          AppState.user.chatId = saved.user.chatId || AppState.user.chatId;
+          AppState.user.id = saved.user.id || AppState.user.id;
+          AppState.user.nome = saved.user.nome || AppState.user.nome;
+          AppState.user.first_name = saved.user.first_name || AppState.user.first_name;
+        }
         if (saved.digitalVault) AppState.digitalVault = saved.digitalVault;
-        if (saved.activeSeriesId) AppState.activeSeriesId = saved.activeSeriesId;
-        if (saved.activeEpisodeId) AppState.activeEpisodeId = saved.activeEpisodeId;
         if (saved.activeGameSession) AppState.activeGameSession = saved.activeGameSession;
         if (saved.multiplayerActiveRoom) AppState.multiplayerActiveRoom = saved.multiplayerActiveRoom;
         if (saved.config) AppState.config = { ...AppState.config, ...saved.config };
@@ -495,31 +526,36 @@ const AppCore = {
     }
   },
 
-  // Sincronizzazione Elementi Grafici Comuni
+  // Sincronizzazione Elementi Grafici con i campi REALI di Modulo_WebApp.gs
   syncUI: function() {
     const u = AppState.user;
     if (!u) return;
 
     const s = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
     const megoinVal = Wallet.getMegoin();
+    const puntiVal = (u.puntiFedelta !== undefined) ? u.puntiFedelta : (u.loyalty_points || 0);
+    const pianoVal = (u.piano || u.plan || "Free").toUpperCase();
+    const nomeVal = u.nome || u.first_name || "Avventuriero";
+    const chatIdVal = u.chatId || u.id || "-";
 
-    s("home-username", u.first_name || "Avventuriero");
-    s("home-rank-points", u.loyalty_points || 0);
-    s("home-plan-badge", (u.plan || "PIANO BASE").toUpperCase());
+    s("home-username", nomeVal);
+    s("home-rank-points", puntiVal);
+    s("home-plan-badge", `PIANO ${pianoVal}`);
     s("home-megoin-card", `${megoinVal} 🪙`);
-    s("home-punti-card", `${u.loyalty_points || 0} Pt`);
+    s("home-punti-card", `${puntiVal} Pt`);
+    s("home-purchases-count", u.prodottiAcquistati || 0);
 
-    s("user-name-desk", u.first_name || "Avventuriero");
-    s("user-plan-desk", (u.plan || "PIANO BASE").toUpperCase());
+    s("user-name-desk", nomeVal);
+    s("user-plan-desk", `PIANO ${pianoVal}`);
     s("user-megoin-desk", `${megoinVal} 🪙`);
-    s("user-points-desk", `${u.loyalty_points || 0} Pt`);
+    s("user-points-desk", `${puntiVal} Pt`);
 
-    s("profile-card-name", u.first_name || "Avventuriero");
+    s("profile-card-name", nomeVal);
     s("profile-card-username", u.username || "@anonimo");
-    s("profile-card-plan", (u.plan || "PIANO BASE").toUpperCase());
-    s("profile-card-id", `ID: ${u.id || "-"}`);
+    s("profile-card-plan", `PIANO ${pianoVal}`);
+    s("profile-card-id", `ID: ${chatIdVal}`);
     s("profile-card-megoin", `${megoinVal} 🪙`);
-    s("profile-card-points", `${u.loyalty_points || 0} Pt`);
+    s("profile-card-points", `${puntiVal} Pt`);
 
     // Avatar
     const renderAvatarBox = (boxId) => {
@@ -528,7 +564,7 @@ const AppCore = {
       if (u.photo_url) {
         el.innerHTML = `<img src="${u.photo_url}" class="avatar-img" alt="Avatar">`;
       } else {
-        el.textContent = (u.avatar || u.first_name || "U").charAt(0).toUpperCase();
+        el.textContent = nomeVal.charAt(0).toUpperCase();
       }
     };
     renderAvatarBox("user-avatar-desk");
@@ -547,21 +583,17 @@ window.AppCore = AppCore;
 window.apiCall = apiCall;
 
 // ----------------------------------------------------------------------------
-// 10. BOOTSTRAP APPLICAZIONE ALL'AVVIO
+// 10. BOOTSTRAP APPLICAZIONE ALL'AVVIO: CARICAMENTO DATI REALI DA GAS
 // ----------------------------------------------------------------------------
-window.addEventListener("DOMContentLoaded", () => {
+window.addEventListener("DOMContentLoaded", async () => {
   AppCore.load();
   AppCore.syncUI();
 
   if (window.lucide) lucide.createIcons();
 
-  // Inizializzazione Moduli di Piattaforma
-  if (window.AppModules) {
-    if (typeof AppModules.renderHome === "function") AppModules.renderHome();
-    if (typeof AppModules.renderShopCatalog === "function") AppModules.renderShopCatalog();
-    if (typeof AppModules.renderRecipesCatalog === "function") AppModules.renderRecipesCatalog();
-    if (typeof AppModules.renderGamesCatalog === "function") AppModules.renderGamesCatalog();
-    if (typeof AppModules.renderProfile === "function") AppModules.renderProfile();
+  // Inizializzazione con FETCH REALE da Google Apps Script
+  if (window.AppModules && typeof AppModules.init === "function") {
+    await AppModules.init();
   }
 
   // Rilevamento Invito Deep Link Telegram (es. ?startapp=ROOM_ABC123)
@@ -570,12 +602,5 @@ window.addEventListener("DOMContentLoaded", () => {
     if (param.startsWith("ROOM_") && window.AppModules && typeof AppModules.handleIncomingInvite === "function") {
       setTimeout(() => AppModules.handleIncomingInvite(param), 400);
     }
-  }
-
-  // Rimozione animata schermata di caricamento
-  const loader = document.getElementById("app-loading");
-  if (loader) {
-    loader.classList.add("fade-out");
-    setTimeout(() => loader.remove(), 260);
   }
 });
