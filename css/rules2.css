@@ -1,14 +1,14 @@
 /* ============================================================================
    PROJECT: ESTIQATSY SYNDICATE & RPG PLATFORM
-   FILE: css/rules2.css (VERSIONE 16.0 - UNIFIED UEC & HARDWARE-SAFE COCKPIT)
-   LAYER: ENGINE RULES2, UNIVERSAL ENTITY CARD, RESPONSIVE COCKPIT & MODALS
+   FILE: css/rules2.css (VERSIONE 17.0 - COMPLETE GAMING HUD & UEC ENGINE)
+   LAYER: ENGINE RULES2, HUD COCKPIT, UNIVERSAL CARD, TACTICAL DRAWERS & WIZARD
    ============================================================================ */
 
 /* ----------------------------------------------------------------------------
-   1. COCKPIT HEADER & FOOTER DI GIOCO (HARDWARE SAFE-ZONE)
+   1. TOP BAR & HUD DI GIOCO (SCREENSHOT 6: NESSUNA IMMAGINE ESPLOSA)
    ---------------------------------------------------------------------------- */
 
-/* Header Cockpit di Gioco */
+/* Header Cockpit */
 #main-game-header.universal-top-bar {
   background: rgba(9, 13, 22, 0.98);
   border-bottom: 1px solid var(--tg-border, rgba(255, 255, 255, 0.08));
@@ -48,24 +48,269 @@
   }
 }
 
-/* HUD di Stato (Fase & Saldo): Agganciato direttamente alla Top Bar senza spazi morti */
-.stage-hud-strip {
+/* HUD Cockpit Unificato (Sopra la Scena) */
+.hud-cockpit {
   flex: none;
-  height: 32px;
-  margin-top: 0 !important;
-  margin-bottom: 0.35rem;
-  padding: 0 0.85rem;
   background: var(--tg-sec-bg, #0D131F);
-  border-bottom: 1px solid var(--tg-border, rgba(255, 255, 255, 0.08));
+  border: 1px solid var(--tg-border, rgba(255, 255, 255, 0.08));
+  border-radius: 1rem;
+  padding: 0.55rem 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  margin-bottom: 0.45rem;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+}
+
+.hud-row-identity {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-size: 11.5px;
-  font-family: monospace;
-  font-weight: 800;
+  gap: 0.5rem;
+  min-width: 0;
 }
 
-/* Footer Cockpit di Gioco: Rispetto assoluto per la Safe-Area di iOS (Home Indicator) */
+/* 🔒 FIX AVATAR HUD: Dimensioni fisse rigide, mai più immagini giganti deformed */
+.hud-avatar-box {
+  width: 36px !important;
+  height: 36px !important;
+  min-width: 36px !important;
+  min-height: 36px !important;
+  max-width: 36px !important;
+  max-height: 36px !important;
+  border-radius: 0.65rem;
+  background: #000000;
+  border: 1.5px solid rgba(56, 189, 248, 0.4);
+  overflow: hidden !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.hud-avatar-img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  object-position: center 15% !important; /* Inquadra il volto e non il petto */
+  display: block;
+}
+.hud-avatar-fallback {
+  font-size: 1.1rem;
+  line-height: 1;
+}
+.hud-hero-name {
+  font-size: 0.88rem;
+  font-weight: 900;
+  color: #FFFFFF;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 160px;
+}
+.hud-gold-display {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-family: monospace;
+  font-size: 11.5px;
+  font-weight: 900;
+  color: #FDE047;
+  background: rgba(0, 0, 0, 0.45);
+  padding: 0.2rem 0.55rem;
+  border-radius: 9999px;
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  flex-shrink: 0;
+}
+.gold-suffix {
+  color: var(--tg-text-muted);
+  font-size: 9.5px;
+}
+
+/* Riga Vitals (Barra Salute & D20 Trio) */
+.hud-row-vitals {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem;
+}
+.hud-vitals-box {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.heart-icon {
+  font-size: 11px;
+  flex-shrink: 0;
+}
+.progress-bar-container {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.hud-pv-number {
+  font-family: monospace;
+  font-size: 11px;
+  font-weight: 900;
+  color: #F43F5E;
+  flex-shrink: 0;
+}
+.hud-d20-trio {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  flex-shrink: 0;
+}
+.d20-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15rem;
+  font-family: monospace;
+  font-size: 10px;
+  font-weight: 800;
+  color: #CBD5E1;
+  background: rgba(0, 0, 0, 0.45);
+  padding: 0.15rem 0.35rem;
+  border-radius: 0.45rem;
+  border: 1px solid var(--tg-border);
+}
+.d20-chip b {
+  color: var(--tg-sky);
+}
+
+/* ----------------------------------------------------------------------------
+   2. SCENA DI GIOCO & AZIONI NARRATIVE
+   ---------------------------------------------------------------------------- */
+.cinema-frame-rigid {
+  position: relative;
+  width: 100%;
+  height: clamp(150px, 22dvh, 220px);
+  border-radius: 1rem;
+  overflow: hidden;
+  background: #000000;
+  border: 1px solid var(--tg-border, rgba(255, 255, 255, 0.08));
+  flex-shrink: 0;
+}
+.cinema-frame-rigid img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+
+.scene-badge {
+  position: absolute;
+  top: 0.65rem;
+  left: 0.65rem;
+  font-size: 9.5px;
+  font-weight: 900;
+  text-transform: uppercase;
+  z-index: 15;
+}
+
+.watermark-cover-banner {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(180deg, transparent 0%, rgba(9, 13, 22, 0.85) 40%, #090D16 100%);
+  padding: 0.45rem 0.85rem 0.4rem 0.85rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  text-align: right;
+  z-index: 10;
+}
+.quote-text {
+  font-size: clamp(10.5px, 1.4dvh, 12px);
+  color: #F1F5F9;
+  font-style: italic;
+  line-height: 1.35;
+  text-align: right;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.95);
+}
+.quote-author {
+  font-size: 9.5px;
+  font-weight: 800;
+  color: var(--tg-amber, #F59E0B);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  text-align: right;
+  margin-top: 0.15rem;
+}
+
+/* Scatola Narrativa Flessibile */
+.narrative-box-flexible {
+  background: var(--tg-surface);
+  border: 1px solid var(--tg-border);
+  border-radius: 1rem;
+  padding: 0.75rem 0.85rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  max-height: 28dvh;
+  overflow-y: auto;
+}
+.narrative-title {
+  font-size: 0.95rem;
+  font-weight: 900;
+  color: #FFFFFF;
+}
+.narrative-prose {
+  font-size: 0.82rem;
+  color: #CBD5E1;
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* Area Azioni & Bivi */
+.scene-actions-area {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  margin-top: 0.45rem;
+}
+.combat-actions-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+}
+.arcade-actions-50-50 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+}
+
+/* Danni Fluttuanti */
+.floating-damage-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 25;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.floating-damage {
+  font-weight: 900;
+  font-size: 1.6rem;
+  color: var(--tg-sky, #38BDF8);
+  animation: floatDamage 1.2s ease-out forwards;
+}
+@keyframes floatDamage {
+  0% { opacity: 0; transform: translateY(10px) scale(0.8); }
+  20% { opacity: 1; transform: translateY(-5px) scale(1.15); }
+  80% { opacity: 1; transform: translateY(-22px) scale(1); }
+  100% { opacity: 0; transform: translateY(-38px) scale(0.9); }
+}
+
+/* ----------------------------------------------------------------------------
+   3. FOOTER COCKPIT (RISPETTO ASSOLUTO PER L'HOME INDICATOR DI iOS)
+   ---------------------------------------------------------------------------- */
 .cockpit-footer {
   flex: none;
   z-index: 50;
@@ -90,7 +335,6 @@
   padding-top: 4px;
 }
 
-/* Pulsanti Cockpit: Area Touch Ergonomica (36px di altezza) */
 .cockpit-btn {
   display: flex;
   flex-direction: row;
@@ -128,104 +372,7 @@
 }
 
 /* ----------------------------------------------------------------------------
-   2. SNODI NARRATIVI BORDERLESS (CINEMA FRAME 16:9 & DAMAGE LAYER)
-   ---------------------------------------------------------------------------- */
-.cinema-frame-rigid {
-  position: relative;
-  width: 100%;
-  height: clamp(155px, 23dvh, 230px);
-  border-radius: 1rem;
-  overflow: hidden;
-  background: #090D16;
-  border: 1px solid var(--tg-border, rgba(255, 255, 255, 0.08));
-  flex-shrink: 0;
-}
-.cinema-frame-rigid img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: center;
-}
-
-.scene-badge {
-  position: absolute;
-  top: 0.65rem;
-  left: 0.65rem;
-  font-size: 9.5px;
-  font-weight: 900;
-  text-transform: uppercase;
-  z-index: 15;
-}
-
-.watermark-cover-banner {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  background: linear-gradient(180deg, transparent 0%, rgba(9, 13, 22, 0.85) 35%, rgba(9, 13, 22, 0.98) 100%);
-  padding: 0.5rem 0.85rem 0.45rem 0.85rem;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-  text-align: right;
-  z-index: 10;
-}
-.quote-text {
-  font-size: clamp(11px, 1.45dvh, 12.5px);
-  color: #F1F5F9;
-  font-style: italic;
-  line-height: 1.35;
-  text-align: right;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.95);
-}
-.quote-author {
-  font-size: 9.5px;
-  font-weight: 800;
-  color: var(--tg-amber, #F59E0B);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  text-align: right;
-  margin-top: 0.15rem;
-}
-
-/* Layer Danni Fluttuanti & Dado D20 */
-.floating-damage-layer {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  z-index: 25;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.floating-damage {
-  font-weight: 900;
-  font-size: 1.6rem;
-  color: var(--tg-sky, #38BDF8);
-  animation: floatDamage 1.2s ease-out forwards;
-}
-@keyframes floatDamage {
-  0% { opacity: 0; transform: translateY(10px) scale(0.8); }
-  20% { opacity: 1; transform: translateY(-5px) scale(1.15); }
-  80% { opacity: 1; transform: translateY(-22px) scale(1); }
-  100% { opacity: 0; transform: translateY(-38px) scale(0.9); }
-}
-
-.dice-rolling {
-  animation: tumbleDice 0.65s cubic-bezier(0.25, 1, 0.5, 1) infinite;
-}
-@keyframes tumbleDice {
-  0% { transform: rotate(0deg) scale(0.9); }
-  50% { transform: rotate(180deg) scale(1.15); }
-  100% { transform: rotate(360deg) scale(0.9); }
-}
-
-/* ----------------------------------------------------------------------------
-   3. WIZARD: GEOMETRIA RIGIDA ABOVE-THE-FOLD (ZERO-SCROLL)
+   4. WIZARD: HEADER COLLISION-PROOF & CHIPS ORIZZONTALI (SCREENSHOTS 2, 3, 4)
    ---------------------------------------------------------------------------- */
 body[data-active-screen="view-wizard"] .app-scroll-area {
   overflow: hidden !important;
@@ -267,15 +414,23 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
   min-height: 0;
 }
 
+/* 🔒 FIX HEADER WIZARD: Distribuzione solida che impedisce ai badge di sormontare i pulsanti 3D */
 .wizard-single-header {
   flex: none;
-  min-height: 34px;
+  min-height: 38px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.15rem 0.35rem;
+  padding: 0.2rem 0.35rem;
   border-bottom: 1px solid var(--tg-border, rgba(255, 255, 255, 0.08));
+  gap: 0.35rem;
+}
+.wizard-single-header > div:first-child {
+  display: flex;
+  align-items: center;
   gap: 0.4rem;
+  min-width: 0;
+  flex: 1 1 auto;
 }
 
 .wizard-step-badge {
@@ -283,7 +438,7 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
   color: #090D16;
   font-size: 9.5px;
   font-weight: 900;
-  padding: 0.2rem 0.5rem;
+  padding: 0.2rem 0.45rem;
   border-radius: 9999px;
   line-height: 1;
   flex-shrink: 0;
@@ -295,8 +450,13 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
   color: #FFFFFF;
   margin: 0;
   line-height: 1.15;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
+/* Badge Budget PX & Oro sonante nell'header */
+#wizard-px-budget,
 #wizard-shop-gold-display {
   display: inline-flex;
   align-items: center;
@@ -304,9 +464,16 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
   white-space: nowrap;
   font-family: monospace;
   font-size: 11px;
-  font-weight: 800;
+  font-weight: 900;
   line-height: 1;
   padding: 0.2rem 0.5rem;
+  border-radius: 9999px;
+  flex-shrink: 0;
+}
+#wizard-shop-gold-display {
+  color: #FDE047;
+  background: rgba(0, 0, 0, 0.55);
+  border: 1px solid rgba(245, 158, 11, 0.35);
 }
 
 .wizard-view-toggle-pill {
@@ -340,6 +507,31 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
   font-weight: 900;
 }
 
+/* 🔒 FIX CHIPS MERCATO NERO (SCREENSHOT 3 & 4): Nessuna icona tagliata */
+.rpg-category-chip {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 0.3rem !important;
+  height: 28px !important;
+  min-height: 28px !important;
+  padding: 0 0.75rem !important;
+  border-radius: 9999px !important;
+  font-size: 11px !important;
+  font-weight: 800 !important;
+  white-space: nowrap !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  background: rgba(17, 24, 39, 0.7) !important;
+  color: #CBD5E1 !important;
+  cursor: pointer;
+}
+.rpg-category-chip.active,
+.rpg-category-chip.badge-info {
+  background: var(--tg-sky, #38BDF8) !important;
+  color: #090D16 !important;
+  border-color: var(--tg-sky) !important;
+}
+
 .wizard-content-fill {
   flex: 1 1 auto;
   min-height: 0;
@@ -350,7 +542,7 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
 }
 
 /* ----------------------------------------------------------------------------
-   4. UNIVERSAL ENTITY CARD (UEC): MASSIMA IMMAGINE & 9 RIGHE LORE
+   5. UNIVERSAL ENTITY CARD (UEC): ELIMINATO IL VUOTO NERO (SCREENSHOTS 2, 3, 4, 5)
    ---------------------------------------------------------------------------- */
 .coverflow-stage-outer {
   position: relative;
@@ -383,9 +575,9 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
 .coverflow-stage-wrapper .coverflow-card,
 .universal-card {
   position: absolute;
-  border-radius: 1.15rem;
+  border-radius: 1.25rem;
   background: #0D131F;
-  border: 1px solid rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.16);
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -405,27 +597,27 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
   max-height: calc(100% - 6px) !important;
   margin-bottom: 6px !important;
 
-  box-shadow: 0 0 1px rgba(255, 255, 255, 0.4), 0 0 12px rgba(255, 255, 255, 0.08);
+  box-shadow: 0 0 1px rgba(255, 255, 255, 0.4), 0 0 14px rgba(255, 255, 255, 0.08);
 }
 
 /* Bagliore Fazione Politica */
 .coverflow-stage-wrapper .coverflow-card.glow-active,
 .universal-card.glow-active {
-  box-shadow: 0 0 2px rgba(56, 189, 248, 0.8), 0 0 20px rgba(56, 189, 248, 0.35) !important;
+  box-shadow: 0 0 2px rgba(56, 189, 248, 0.8), 0 0 22px rgba(56, 189, 248, 0.35) !important;
   border-color: rgba(56, 189, 248, 0.6) !important;
 }
 .coverflow-stage-wrapper .coverflow-card.glow-active[data-faction="destra"],
 .universal-card.glow-active[data-faction="destra"] {
-  box-shadow: 0 0 2px rgba(56, 189, 248, 0.9), 0 0 24px rgba(56, 189, 248, 0.45) !important;
+  box-shadow: 0 0 2px rgba(56, 189, 248, 0.9), 0 0 26px rgba(56, 189, 248, 0.45) !important;
   border-color: rgba(56, 189, 248, 0.75) !important;
 }
 .coverflow-stage-wrapper .coverflow-card.glow-active[data-faction="sinistra"],
 .universal-card.glow-active[data-faction="sinistra"] {
-  box-shadow: 0 0 2px rgba(244, 63, 94, 0.9), 0 0 24px rgba(244, 63, 94, 0.45) !important;
+  box-shadow: 0 0 2px rgba(244, 63, 94, 0.9), 0 0 26px rgba(244, 63, 94, 0.45) !important;
   border-color: rgba(244, 63, 94, 0.75) !important;
 }
 
-/* Silenziamento Testi sulle Carte Laterali non attive */
+/* Silenziamento Testi sulle Carte Laterali */
 .coverflow-stage-wrapper .coverflow-card:not(.glow-active) .coverflow-lore,
 .coverflow-stage-wrapper .coverflow-card:not(.glow-active) .card-lore-box,
 .coverflow-stage-wrapper .coverflow-card:not(.glow-active) .watermark-cover-banner,
@@ -441,7 +633,7 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
   content: "";
   position: absolute;
   inset: 0;
-  background: rgba(9, 13, 22, 0.85);
+  background: rgba(9, 13, 22, 0.88);
   pointer-events: none;
 }
 
@@ -455,7 +647,7 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
   align-items: center;
   justify-content: space-between;
   padding: 0 0.75rem;
-  background: rgba(9, 13, 22, 0.95);
+  background: rgba(9, 13, 22, 0.96);
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 .coverflow-title-group,
@@ -495,15 +687,14 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
   color: #FFFFFF;
 }
 
-/* 2. Media Frame: Riempie lo spazio verticale in modo flessibile */
+/* 🔒 FIX VORAGINE NERA: L'immagine si espande elasticamente per riempire lo spazio vuoto */
 .coverflow-media-frame,
 .card-media-box {
   position: relative;
   width: 100%;
-  flex: 1 1 auto;
-  min-height: 130px;
-  max-height: 250px;
-  background: #090D16;
+  flex: 1 1 0% !important; /* Riempie tutto il vuoto verticale */
+  min-height: 180px !important;
+  background: #000000;
   overflow: hidden;
 }
 .coverflow-img,
@@ -514,7 +705,15 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
   object-position: center;
 }
 
-/* 3. Trittico KPI Tattici (26px) */
+.coverflow-details-box {
+  flex: none;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  background: #0D131F;
+}
+
+/* 3. Trittico KPI Tattici */
 .coverflow-stats-row,
 .uec-kpi-strip {
   width: 100%;
@@ -551,7 +750,7 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
   font-size: 11.5px !important;
   line-height: 1.4 !important;
   max-height: calc(11.5px * 1.4 * 9) !important;
-  padding: 0.45rem 0.75rem !important;
+  padding: 0.5rem 0.75rem !important;
   color: #CBD5E1;
   text-align: left;
   overflow-y: auto;
@@ -565,201 +764,238 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
   display: none;
 }
 
-/* 5. ACTION DECK DINAMICO & ERGONOMICO (Touch Targets >= 36px) */
-.card-action-deck,
-.uec-action-surface {
+/* 🔒 FIX FOOTER CARTA: Mai più testo che sbatte contro il pulsante (Screenshot 2) */
+.coverflow-footer-row {
   flex: none;
   width: 100%;
-  min-height: 48px;
-  padding: 4px 8px;
-  background: rgba(9, 13, 22, 0.98);
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 0.5rem !important;
+  padding: 0.45rem 0.75rem !important;
+  background: rgba(9, 13, 22, 0.95);
   border-top: 1px solid rgba(255, 255, 255, 0.08);
-  display: grid;
-  gap: 4px;
-  align-items: center;
 }
-
-/* Caso 1 & 2 Scelte: Bottoni Standard da 38px */
-.card-action-deck[data-choices="1"],
-.uec-action-surface[data-grid="1"] {
-  grid-template-columns: 1fr;
-}
-.card-action-deck[data-choices="2"],
-.uec-action-surface[data-grid="2"] {
-  grid-template-columns: 1fr 1fr;
-}
-.card-action-deck[data-choices="1"] .btn,
-.card-action-deck[data-choices="2"] .btn,
-.uec-action-surface[data-grid="1"] .btn,
-.uec-action-surface[data-grid="2"] .btn {
-  height: 38px !important;
-  min-height: 38px !important;
-  font-size: 11.5px !important;
-  font-weight: 900;
-  text-transform: uppercase;
-}
-
-/* Caso 3 Scelte: 2 Sopra (36px) + 1 Sotto a Tutta Larghezza (36px) */
-.card-action-deck[data-choices="3"],
-.uec-action-surface[data-grid="3"] {
-  grid-template-columns: 1fr 1fr;
-  grid-template-rows: 36px 36px;
-}
-.card-action-deck[data-choices="3"] .btn,
-.uec-action-surface[data-grid="3"] .btn {
-  height: 36px !important;
-  min-height: 36px !important;
-  font-size: 10.5px !important;
-  font-weight: 800;
-}
-.card-action-deck[data-choices="3"] .btn:nth-child(3),
-.uec-action-surface[data-grid="3"] .btn:nth-child(3) {
-  grid-column: span 2;
-}
-
-/* Caso 4 Scelte (Quiz): Griglia 2x2 con Touch Targets Reali da 36px */
-.card-action-deck[data-choices="4"],
-.uec-action-surface[data-grid="4"] {
-  grid-template-columns: 1fr 1fr;
-  grid-template-rows: 36px 36px;
-}
-.card-action-deck[data-choices="4"] .btn,
-.uec-action-surface[data-grid="4"] .btn {
-  height: 36px !important;
-  min-height: 36px !important;
-  padding: 0 6px !important;
-  font-size: 10px !important;
-  font-weight: 800;
-  line-height: 1;
+.coverflow-gear-label {
+  font-size: 11px;
+  color: #CBD5E1;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.coverflow-kpi-pill {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-shrink: 0;
+}
+.pill-pv {
+  color: #F43F5E;
+  font-weight: 800;
+  font-size: 11px;
+  font-family: monospace;
+}
+.pill-gold {
+  color: #FDE047;
+  font-weight: 800;
+  font-size: 11px;
+  font-family: monospace;
 }
 
-/* Cluster Navigazione Compatto */
+/* 🔒 FIX FRECCE CILINDRO 3D: Controlli touch evidenti e cliccabili */
 .coverflow-nav-cluster {
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 0.65rem;
-  margin-top: 4px !important;
+  gap: 0.75rem;
+  margin-top: 6px !important;
   margin-bottom: 2px !important;
-  height: 22px;
+  height: 26px;
   flex-shrink: 0;
 }
 .coverflow-counter-pill {
   font-family: monospace;
-  font-size: 10.5px;
+  font-size: 11px;
   font-weight: 800;
   color: var(--tg-sky, #38BDF8);
-  padding: 0.15rem 0.5rem;
-  background: rgba(0, 0, 0, 0.45);
+  padding: 0.15rem 0.55rem;
+  background: rgba(0, 0, 0, 0.55);
   border-radius: 9999px;
+  border: 1px solid rgba(56, 189, 248, 0.3);
 }
 .coverflow-btn-side {
-  width: 22px;
-  height: 22px;
+  width: 26px;
+  height: 26px;
   border-radius: 9999px;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
   color: #FFFFFF;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 11px;
+  font-size: 12px;
   cursor: pointer;
-  transition: background 0.15s ease;
+  transition: all 0.15s ease;
 }
 .coverflow-btn-side:active {
-  background: rgba(56, 189, 248, 0.25);
+  background: var(--tg-sky, #38BDF8);
+  color: #090D16;
+  transform: scale(0.92);
+}
+
+/* Step 4: Lancio Eroe */
+.hero-launch-stage {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
+  padding: 0.25rem 0;
+}
+.hero-launch-card {
+  position: relative !important;
+  transform: none !important;
+  opacity: 1 !important;
 }
 
 /* ----------------------------------------------------------------------------
-   5. MENU FILTRI E VISTE LISTA / GRIGLIA
+   6. MODALE FASCICOLO AGENTE & RISORSE (SCREENSHOT 7 RISOLTO)
    ---------------------------------------------------------------------------- */
-.chips-scroll-bar {
-  flex: none;
-  height: 36px;
+.hero-sheet-profile-card {
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--tg-border-light);
+  border-radius: 1rem;
+  padding: 0.75rem;
+}
+.hero-sheet-avatar-box {
+  width: 52px !important;
+  height: 52px !important;
+  min-width: 52px !important;
+  min-height: 52px !important;
+  border-radius: 0.85rem;
+  background: #000000;
+  border: 2px solid rgba(56, 189, 248, 0.4);
+  overflow: hidden !important;
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  overflow-x: auto;
-  scrollbar-width: none;
-  padding: 0 0.35rem;
-  mask-image: linear-gradient(to right, black 85%, transparent 100%);
+  justify-content: center;
+  flex-shrink: 0;
 }
-.chips-scroll-bar::-webkit-scrollbar { display: none; }
-
-.wizard-list-scroll-grid,
-.abilities-scroll-grid,
-.shop-cards-grid {
-  flex: 1 1 auto;
+.hero-sheet-avatar-box img {
+  width: 100%;
   height: 100%;
-  min-height: 0;
-  overflow-y: auto;
-  overflow-x: hidden;
-  padding: 0.4rem 0.35rem 4.5rem 0.35rem;
-  display: grid;
-  gap: 0.65rem;
-  -webkit-overflow-scrolling: touch;
+  object-fit: cover;
+  object-position: center 15%;
+}
+.hero-sheet-name {
+  font-size: 1rem;
+  font-weight: 900;
+  color: #FFFFFF;
+  margin: 0;
+  line-height: 1.2;
+}
+.hero-sheet-class-badge {
+  font-size: 11px;
+  color: var(--tg-sky);
+  font-weight: 800;
+  margin-top: 0.15rem;
 }
 
-.wizard-list-scroll-grid,
-.abilities-scroll-grid {
-  grid-template-columns: 1fr;
-}
-@media (min-width: 640px) {
-  .wizard-list-scroll-grid,
-  .abilities-scroll-grid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 0.85rem;
-  }
-}
-
-.shop-cards-grid {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-@media (min-width: 640px) {
-  .shop-cards-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 0.85rem;
-  }
-}
-
-.class-list-card {
-  background: var(--tg-surface, #111827);
-  border: 1px solid var(--tg-border, rgba(255, 255, 255, 0.08));
-  border-radius: 0.95rem;
+.hero-sheet-wallet-box {
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid var(--tg-border);
+  border-radius: 0.85rem;
   padding: 0.65rem 0.85rem;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-  cursor: pointer;
-  transition: transform 0.12s ease;
-}
-.class-list-card:active {
-  transform: scale(0.98);
-}
-.class-list-card.selected {
-  border-color: var(--tg-sky, #38BDF8) !important;
-  background: rgba(56, 189, 248, 0.14) !important;
-  box-shadow: 0 0 16px rgba(56, 189, 248, 0.35) !important;
 }
 
-.wizard-shop-card {
-  background: var(--tg-surface, #111827);
-  border-radius: 0.95rem;
-  border: 1px solid var(--tg-border, rgba(255, 255, 255, 0.08));
-  padding: 0.65rem 0.75rem;
+/* 🔒 FIX GRIGLIA STATISTICHE (SCREENSHOT 7): Disposizione compatta a 3 colonne affiancate */
+.hero-sheet-stats-grid {
+  display: grid !important;
+  grid-template-columns: repeat(3, 1fr) !important;
+  gap: 0.5rem !important;
+  width: 100%;
+}
+.sheet-stat-card {
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid var(--tg-border);
+  border-radius: 0.75rem;
+  padding: 0.5rem 0.35rem;
+  text-align: center;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
-  gap: 0.45rem;
+  align-items: center;
+  gap: 0.15rem;
+}
+.stat-icon {
+  font-size: 1.2rem;
+  line-height: 1;
+}
+.stat-label {
+  font-size: 9.5px;
+  color: var(--tg-text-muted);
+  font-weight: 800;
+  text-transform: uppercase;
+}
+.stat-val {
+  font-size: 1.15rem;
+  font-weight: 900;
+  color: var(--tg-sky);
+  font-family: monospace;
+  line-height: 1;
+}
+.stat-pure {
+  font-size: 10px;
+  color: var(--tg-text-subtle);
+  font-family: monospace;
 }
 
 /* ----------------------------------------------------------------------------
-   6. FOOTER WIZARD STICKY
+   7. MODALE ASSETTO TATTICO & SINTESI (SCREENSHOT 8 RISOLTO)
+   ---------------------------------------------------------------------------- */
+.drawer-header-row {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  width: 100%;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--tg-border);
+}
+.drawer-title {
+  font-size: 0.95rem;
+  font-weight: 900;
+  color: #FFFFFF;
+  margin: 0;
+}
+
+/* 🔒 FIX SLOT OPERATIVI (SCREENSHOT 8): Tasto "Cambia" perfettamente allineato a destra */
+.assetto-slot-card {
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--tg-border);
+  border-radius: 0.75rem;
+  padding: 0.65rem 0.85rem;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 0.65rem;
+  width: 100%;
+}
+.assetto-slot-card > div {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+.assetto-crafting-box {
+  background: rgba(17, 24, 39, 0.6);
+  border: 1px solid rgba(168, 85, 247, 0.3);
+  border-radius: 0.85rem;
+  padding: 0.75rem;
+}
+
+/* ----------------------------------------------------------------------------
+   8. FOOTER WIZARD STICKY
    ---------------------------------------------------------------------------- */
 .wizard-sticky-footer {
   flex: none;
@@ -785,13 +1021,12 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
   gap: 0.5rem;
 }
 .wizard-footer-step-controls .btn {
-  height: 34px;
-  min-height: 34px;
-  font-size: 0.8rem;
+  height: 36px;
+  min-height: 36px;
+  font-size: 0.82rem;
   font-weight: 900;
   text-transform: uppercase;
 }
-
 .btn-wizard-cta {
   background: var(--tg-sky, #38BDF8) !important;
   color: #090D16 !important;
@@ -800,147 +1035,7 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
 }
 
 /* ----------------------------------------------------------------------------
-   7. MODALI DI SISTEMA, BANCO CAMBIO & CASSETTI
-   ---------------------------------------------------------------------------- */
-
-/* Drawer Cockpit Standard */
-.drawer-standard-box {
-  background: var(--tg-sec-bg, #0F172A);
-  border: 1px solid var(--tg-border-light, rgba(255, 255, 255, 0.15));
-  padding: 1.15rem;
-  border-radius: 1.25rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-  max-width: 32rem;
-  width: 100%;
-  max-height: 88dvh;
-  overflow-y: auto;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.95);
-  position: relative;
-}
-
-/* Modale Banco Cambio */
-.modal-cambio-box {
-  background: linear-gradient(180deg, #0F172A 0%, #090D16 100%);
-  border: 1px solid rgba(245, 158, 11, 0.55);
-  padding: 1.25rem 1.35rem;
-  border-radius: 1.25rem;
-  text-align: center;
-  display: flex;
-  flex-direction: column;
-  gap: 0.65rem;
-  max-width: 22rem;
-  width: 100%;
-  position: relative;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.95);
-}
-.cambio-balance-box {
-  padding: 0.5rem;
-  border-radius: 0.65rem;
-  background: rgba(0, 0, 0, 0.55);
-  font-family: monospace;
-  font-size: 0.85rem;
-  color: #FDE047;
-}
-
-/* Modale Emporio Ciccio */
-.emporio-drawer-box {
-  background: var(--tg-sec-bg, #0F172A);
-  border: 1px solid var(--tg-border-light, rgba(255, 255, 255, 0.15));
-  padding: 1.15rem;
-  border-radius: 1.25rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-  max-width: 44rem;
-  width: 100%;
-  max-height: 88dvh;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.95);
-}
-.emporio-gold-bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0.55rem 0.75rem;
-  border-radius: 0.65rem;
-  background: rgba(0, 0, 0, 0.5);
-  font-size: 12px;
-  font-family: monospace;
-  font-weight: 800;
-}
-.emporio-items-scroll-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.6rem;
-  max-height: 19rem;
-  overflow-y: auto;
-  padding: 0.2rem;
-}
-
-/* Modale Abbandono Diegetico */
-.abandon-modal-box {
-  background: linear-gradient(180deg, #1E1B4B 0%, #090D16 100%);
-  border: 1px solid rgba(244, 63, 94, 0.55);
-  padding: 1.35rem 1.25rem;
-  border-radius: 1.25rem;
-  text-align: center;
-  max-width: 22rem;
-  width: 100%;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.95);
-  position: relative;
-}
-
-/* Fascicolo Universale Dossier */
-.modal-dossier .dossier-box {
-  background: var(--tg-sec-bg, #0F172A);
-  border: 1px solid rgba(56, 189, 248, 0.4);
-  padding: 1.15rem;
-  border-radius: 1.25rem;
-  max-width: 32rem;
-  width: 100%;
-  max-height: 88dvh;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 0.65rem;
-  position: relative;
-  text-align: left;
-}
-
-/* Dado Suspense */
-.dice-modal-box {
-  background: rgba(13, 19, 31, 0.97);
-  border: 1px solid rgba(56, 189, 248, 0.4);
-  padding: 1.25rem;
-  border-radius: 1.25rem;
-  text-align: center;
-  display: flex;
-  flex-direction: column;
-  gap: 0.85rem;
-  max-width: 17rem;
-}
-.dice-wrapper {
-  width: 3.5rem;
-  height: 3.5rem;
-  margin: 0 auto;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.dice-cube {
-  width: 3rem;
-  height: 3rem;
-  border-radius: 0.75rem;
-  background: linear-gradient(135deg, #0284C7, #4F46E5, #D97706);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.5rem;
-}
-
-/* ----------------------------------------------------------------------------
-   8. RESPONSIVE DESKTOP & WIDESCREEN (>= 1024px)
+   9. RESPONSIVE DESKTOP & WIDESCREEN (>= 1024px)
    ---------------------------------------------------------------------------- */
 @media (min-width: 1024px) {
   .wizard-stage-container,
