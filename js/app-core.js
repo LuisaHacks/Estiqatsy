@@ -1,8 +1,8 @@
 // ============================================================================
 // PROJECT: ESTIQATSY SYNDICATE & RPG PLATFORM
-// FILE: js/app-core.js (VERSIONE 9.0 - THREE-FOOTER ROUTING & ENGINE NORMALIZER)
-// LAYER 1: SISTEMA OPERATIVO CLIENT-SIDE, ROUTER SPA, STATO & API ENGINE
-// NOTE: 100% DISACCOPPIATO DA TAILWIND - GESTIONE SEMANTICA CSS (core.css)
+// FILE: js/app-core.js (VERSIONE 11.0 - PURE AGNOSTIC PLATFORM LAYER)
+// LAYER 1: SISTEMA OPERATIVO CLIENT-SIDE, ROUTER SPA, STATO & MEGOIN WALLET
+// NOTE: 100% DISACCOPPIATO DALLE REGOLE DI GIOCO - NESSUN RIFERIMENTO ALL'ORO
 // ============================================================================
 
 // ----------------------------------------------------------------------------
@@ -13,27 +13,28 @@ const AppConfig = {
   CACHE_KEYS: {
     VAULT: "est_cache_vault",
     AUDIO_MUTED: "estiqatsy_audio_muted",
+    AUDIO_VOLUME: "estiqatsy_audio_volume",
     LAST_SERIES: "est_last_series"
   },
   THEME: {
     BG_COLOR: "#090D16",
     HEADER_COLOR: "#090D16"
-  }
+  },
+  TIMEOUT_MS: 12000 // 12 secondi di timeout per chiamate di rete GAS
 };
 
 // ----------------------------------------------------------------------------
 // 2. STATO UNIFICATO DELLA PIATTAFORMA (APPSTATE)
-// Separazione netta tra account Syndicate (Megoin) e sessione RPG attiva (Oro)
 // ----------------------------------------------------------------------------
 const AppState = {
-  // Dati utente & Account Piattaforma
+  // Dati Utente & Account Piattaforma
   user: null,
   allowedModules: { home: true, shop: true, games: true, recipes: true, profile: true },
   plans: [],
   billingCycle: "monthly",
   activeTab: "home",
 
-  // Moduli di Piattaforma (SaaS / E-commerce Megoin / Ricette)
+  // Moduli di Piattaforma SaaS / E-commerce Megoin / Ricette
   shop: { items: [], categories: [], activeCategory: "tutti", searchQuery: "" },
   recipes: { items: [], categories: [], activeCategory: "tutti", searchQuery: "" },
   carousel: { timer: null, index: 0, count: 0, isPaused: false },
@@ -46,23 +47,23 @@ const AppState = {
     activeEpisode: 1
   },
 
-  // Sessione di Gioco Runtime Attiva
+  // Contenitore Dati della Sessione Runtime Attiva
   activeSession: {
-    engineKey: null,      // es. "Rules2", "Rules1"
+    engineKey: null,      // Identificativo motore (es. "Rules2")
     gameKey: null,
     episodio: 1,
     partitaId: null,
-    hero: null,           // { nomeEroe, classe, mediaUrl, pv, pvMax, oro, px, stats, ... }
-    combatRound: 1,       // Contatore round duello attivo
-    combatEnemyId: null,  // ID del nemico ingaggiato
-    currentNode: null,    // Nodo narrativo o duello corrente
-    shopCatalog: [],      // Merci dell'Emporio di Ciccio RPG (EQP/OBJ)
-    engineState: null     // Dati specifici del motore
+    hero: null,           // Payload eroe agnostico
+    combatRound: 1,
+    combatEnemyId: null,
+    currentNode: null,
+    shopCatalog: [],
+    engineState: null
   }
 };
 
 // ----------------------------------------------------------------------------
-// 3. INTEGRAZIONE TELEGRAM WEBAPP SDK & SAFE AREA
+// 3. INTEGRAZIONE TELEGRAM WEBAPP SDK & SAFE-AREA NATIVE
 // ----------------------------------------------------------------------------
 const tg = (window.Telegram && window.Telegram.WebApp) ? window.Telegram.WebApp : null;
 
@@ -75,17 +76,27 @@ if (tg) {
     tg.setHeaderColor(AppConfig.THEME.HEADER_COLOR);
     tg.setBackgroundColor(AppConfig.THEME.BG_COLOR);
 
-    // Propagazione safe-area native alle variabili CSS
-    if (tg.safeAreaInset) {
-      document.documentElement.style.setProperty("--tg-safe-area-inset-top", `${tg.safeAreaInset.top}px`);
-      document.documentElement.style.setProperty("--tg-safe-area-inset-bottom", `${tg.safeAreaInset.bottom}px`);
+    // Propagazione safe-area hardware alle variabili CSS (SDK 7.0+)
+    const updateSafeArea = () => {
+      const topInset = tg.safeAreaInset?.top || tg.contentSafeAreaInset?.top || 0;
+      const bottomInset = tg.safeAreaInset?.bottom || tg.contentSafeAreaInset?.bottom || 0;
+      document.documentElement.style.setProperty("--tg-safe-area-inset-top", `${topInset}px`);
+      document.documentElement.style.setProperty("--tg-safe-area-inset-bottom", `${bottomInset}px`);
+    };
+
+    updateSafeArea();
+    if (typeof tg.onEvent === "function") {
+      tg.onEvent("safeAreaChanged", updateSafeArea);
+      tg.onEvent("contentSafeAreaChanged", updateSafeArea);
     }
   } catch (e) {
     console.warn("[app-core] Inizializzazione Telegram WebApp parziale:", e);
   }
 }
 
-// Gestione del pulsante 'Indietro' nativo di Telegram
+// ----------------------------------------------------------------------------
+// GESTIONE DEL PULSANTE 'INDIETRO' NATIVO DI TELEGRAM
+// ----------------------------------------------------------------------------
 let telegramBackButtonHandler = null;
 
 function setupTelegramBackButton(targetScreenId) {
@@ -115,11 +126,13 @@ function setupTelegramBackButton(targetScreenId) {
       } else if (targetScreenId === "subview-game-detail") {
         AppRouter.navigate("games");
       } else if (targetScreenId === "view-wizard") {
+        // Sospensione del Wizard: torna alla scheda gioco preservando i dati
         AppRouter.navigate("subview-game-detail");
       } else if (targetScreenId === "view-gameplay") {
+        // SOSPENSIONE MORBIDA: Sospende la partita attiva senza abbandonare!
         const currentEngine = EngineRegistry.get(AppState.activeSession.engineKey);
-        if (currentEngine && typeof currentEngine.openAbandonModal === "function") {
-          currentEngine.openAbandonModal();
+        if (currentEngine && typeof currentEngine.leaveGameToHub === "function") {
+          currentEngine.leaveGameToHub();
         } else {
           AppRouter.navigate("games");
         }
@@ -134,14 +147,13 @@ function setupTelegramBackButton(targetScreenId) {
 }
 
 // ----------------------------------------------------------------------------
-// 4. REGISTRO DEI MOTORI DI GIOCO (ENGINE REGISTRY - RESILIENTE AD OGNI SPAZIO)
+// 4. REGISTRO DEI MOTORI DI GIOCO (ENGINE REGISTRY)
 // ----------------------------------------------------------------------------
 const EngineRegistry = {
   _engines: {},
 
   register: function(ruleKey, engineInstance) {
     if (!ruleKey || !engineInstance) return;
-    // Normalizzazione forzata: lowercase e rimozione di qualsiasi spazio
     const cleanKey = String(ruleKey).trim().toLowerCase().replace(/\s+/g, '');
     this._engines[cleanKey] = engineInstance;
     console.log(`[EngineRegistry] Motore registrato con successo: ${cleanKey}`);
@@ -174,7 +186,7 @@ const AppRouter = {
       targetId = "view-" + screenName;
     }
 
-    // Controllo permessi SaaS (Hard-Locking)
+    // Hard-Locking dei moduli SaaS
     const baseModule = targetId.replace("view-", "").replace("subview-", "").split("-")[0];
     if (AppState.allowedModules && AppState.allowedModules[baseModule] === false) {
       this.navigate("home");
@@ -208,7 +220,6 @@ const AppRouter = {
       "view-hub", "subview-game-detail", "view-wizard", "view-gameplay"
     ];
 
-    // Toggle visibilità schermi
     allScreens.forEach(id => {
       const el = document.getElementById(id);
       if (el) el.classList.toggle("hidden", id !== targetId);
@@ -234,7 +245,7 @@ const AppRouter = {
       if (gameHeader) gameHeader.classList.add("hidden");
     }
 
-    // 2. Gestione Esclusiva a Tre Footer (Mai sovrapposizioni)
+    // 2. Gestione Esclusiva a Tre Footer (Mai sovrapposti)
     if (isGameplay) {
       if (appFooter) appFooter.classList.add("hidden");
       if (wizardFooter) wizardFooter.classList.add("hidden");
@@ -253,11 +264,9 @@ const AppRouter = {
     const activeTabKey = targetId.replace("view-", "").replace("subview-", "").split("-")[0];
     AppState.activeTab = (activeTabKey === "hub") ? "games" : activeTabKey;
 
-    // Aggancio dei Data Attributes sul BODY per styling dichiarativo via CSS
     document.body.dataset.activeScreen = targetId;
     document.body.dataset.activeTab = AppState.activeTab;
 
-    // Toggle classi attive di navigazione
     document.querySelectorAll(".nav-tab").forEach(btn => {
       const isCurrent = (btn.dataset.tab === AppState.activeTab);
       btn.classList.toggle("active", isCurrent);
@@ -274,15 +283,15 @@ const AppRouter = {
 };
 
 // ----------------------------------------------------------------------------
-// 6. COMUNICAZIONE API BACKEND (APICALL) CON DEBOUNCE ANTI-SPAM
+// 6. COMUNICAZIONE API BACKEND (APICALL) CON TIMEOUT E DEBOUNCE
 // ----------------------------------------------------------------------------
 let _isApiInProgress = false;
 
 async function apiCall(action, extraParams = {}) {
   const isCritical = ["shop_buy", "currency_exchange", "game_start", "game_action"].includes(action);
   if (isCritical && _isApiInProgress) {
-    console.warn(`[apiCall] Richiesta "${action}" bloccata: transazione già in corso.`);
-    throw new Error("Transazione in corso. Attendi un istante...");
+    console.warn(`[apiCall] Richiesta "${action}" bloccata: operazione già in corso.`);
+    throw new Error("Operazione in corso. Attendi un istante...");
   }
 
   if (isCritical) _isApiInProgress = true;
@@ -296,18 +305,33 @@ async function apiCall(action, extraParams = {}) {
     }
   }
 
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), AppConfig.TIMEOUT_MS);
+
   try {
-    const response = await fetch(url, { method: "GET", redirect: "follow" });
+    const response = await fetch(url, {
+      method: "GET",
+      redirect: "follow",
+      signal: controller.signal
+    });
+
+    clearTimeout(timeoutId);
+
     if (!response.ok) {
       throw new Error(`Errore di rete HTTP: ${response.status}`);
     }
+
     const result = await response.json();
     if (!result.success && result.error) {
-      // Propagazione dell'errore server originale (es. SESSION_EXPIRED)
       throw new Error(result.error);
     }
     return result.data;
   } catch (err) {
+    clearTimeout(timeoutId);
+    if (err.name === "AbortError") {
+      console.error(`[API Timeout] Azione "${action}" scaduta dopo ${AppConfig.TIMEOUT_MS}ms.`);
+      throw new Error("Il server impiega troppo tempo a rispondere. Verifica la connessione e riprova.");
+    }
     console.error(`[API Error] Azione "${action}":`, err);
     throw err;
   } finally {
@@ -316,10 +340,10 @@ async function apiCall(action, extraParams = {}) {
 }
 
 // ----------------------------------------------------------------------------
-// 7. GESTIONE CENTRALIZZATA VALUTE (WALLET)
+// 7. GESTIONE CENTRALIZZATA MEGOIN (WALLET DI PIATTAFORMA)
+// Gestisce ESCLUSIVAMENTE la valuta di piattaforma. Nessuna logica di gioco.
 // ----------------------------------------------------------------------------
 const Wallet = {
-  // Megoin Account (SaaS / E-commerce Piattaforma / Ingressi Gioco)
   getMegoin: function() {
     if (!AppState.user) return 0;
     return (AppState.user.saldoMegoin !== undefined) ? AppState.user.saldoMegoin : (AppState.user.megoin || 0);
@@ -339,30 +363,6 @@ const Wallet = {
 
   addMegoin: function(amount) {
     this.setMegoin(this.getMegoin() + amount);
-  },
-
-  // Oro di Gioco dell'Eroe (In-Game Session)
-  getGold: function() {
-    if (!AppState.activeSession || !AppState.activeSession.hero) return 0;
-    return parseInt(AppState.activeSession.hero.oro, 10) || 0;
-  },
-
-  setGold: function(val) {
-    const num = Math.max(0, parseInt(val, 10) || 0);
-    if (AppState.activeSession && AppState.activeSession.hero) {
-      AppState.activeSession.hero.oro = num;
-    }
-
-    const kpiGold = document.getElementById("kpi-hero-gold");
-    if (kpiGold) kpiGold.textContent = num;
-    const empGold = document.getElementById("emporio-gold-display");
-    if (empGold) empGold.textContent = `${num} 🟡`;
-    const wizGold = document.getElementById("wizard-shop-gold-display");
-    if (wizGold) wizGold.textContent = `💰 ${num} 🟡`;
-  },
-
-  addGold: function(amount) {
-    this.setGold(this.getGold() + amount);
   }
 };
 
