@@ -1,36 +1,40 @@
 /* ============================================================================
    PROJECT: ESTIQATSY SYNDICATE & RPG PLATFORM
-   FILE: css/core.css (VERSIONE 8.0 - PIATTAFORMA NATIVA TELEGRAM & ULTRA-FIT)
+   FILE: css/core.css (VERSIONE 9.0 - DESIGN SYSTEM PIATTAFORMA & TELEGRAM NATIVE)
    LAYER: DESIGN SYSTEM DI PIATTAFORMA, VIEWPORT FIT, SAAS, SHOP & PROFILO
    ============================================================================ */
 
 /* ----------------------------------------------------------------------------
-   1. VARIABILI, RESET & CATENA FLEXBOX RIGIDA (ANTI-OVERFLOW)
+   1. DESIGN TOKENS, RESET & CATENA FLEXBOX RIGIDA (ANTI-OVERFLOW)
    ---------------------------------------------------------------------------- */
 :root {
-  /* Palette Colori Syndicate */
-  --tg-bg: #090D16;
-  --tg-sec-bg: #0D131F;
-  --tg-surface: rgba(17, 24, 39, 0.85);
+  /* Palette Colori Syndicate Coerente */
+  --tg-bg: #090D16;                /* Canvas principale nero-blu notte */
+  --tg-sec-bg: #0D131F;            /* Superficie secondaria elevata */
+  --tg-surface: rgba(17, 24, 39, 0.88);  /* Card / Glass base */
   --tg-surface-hover: rgba(26, 36, 56, 0.95);
   --tg-text: #F9FAFB;
   --tg-text-muted: #94A3B8;
   --tg-text-subtle: #64748B;
   --tg-border: rgba(255, 255, 255, 0.08);
-  --tg-border-light: rgba(255, 255, 255, 0.15);
-  --tg-sky: #38BDF8;
-  --tg-amber: #F59E0B;
-  --tg-emerald: #10B981;
-  --tg-rose: #F43F5E;
-  --tg-purple: #A855F7;
+  --tg-border-light: rgba(255, 255, 255, 0.16);
+
+  /* Accenti Funzionali & Identità */
+  --tg-sky: #38BDF8;               /* Cyan Syndicate (Brand / Primario) */
+  --tg-amber: #F59E0B;             /* Oro / Gettoni / Attenzione */
+  --tg-emerald: #10B981;           /* Successo / Punti / Sbloccato */
+  --tg-rose: #F43F5E;              /* Pericolo / Morte / Fazione Sinistra */
+  --tg-purple: #A855F7;            /* Voodoo / Reagenti / Caveau */
 
   /* Geometria Hardware & Safe-Zones Native Telegram SDK 7.0+ / 8.0 */
   --safe-top: var(--tg-safe-area-inset-top, env(safe-area-inset-top, 0px));
   --safe-bottom: var(--tg-safe-area-inset-bottom, env(safe-area-inset-bottom, 0px));
   --safe-right: var(--tg-safe-area-inset-right, env(safe-area-inset-right, 0px));
+  --safe-left: var(--tg-safe-area-inset-left, env(safe-area-inset-left, 0px));
 
-  /* Altezza Barra Nativa: 44px (iOS) con fallback dinamico a 56px (Android) */
-  --tg-header-height: 44px;
+  /* Altezza Header Standard Telegram Mini App */
+  --tg-header-height: 48px;
+  --tg-footer-height: 50px;
 }
 
 *, *::before, *::after {
@@ -46,13 +50,16 @@ html, body.rpg-app-body {
   height: 100dvh;
   max-height: 100dvh;
   width: 100vw;
+  max-width: 100vw;
   margin: 0;
   padding: 0;
-  overflow: hidden; /* Blocca il rimbalzo elastico parassita di iOS */
+  overflow: hidden; /* Blocca il rimbalzo elastico (rubber-band) di iOS */
+  overscroll-behavior: none;
   display: flex;
   flex-direction: column;
   user-select: none;
   -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .hidden {
@@ -60,15 +67,17 @@ html, body.rpg-app-body {
 }
 
 .app-screen {
-  animation: screenFade 0.15s ease-out forwards;
+  animation: screenFade 0.16s ease-out forwards;
 }
 
 @keyframes screenFade {
-  from { opacity: 0; transform: scale(0.99); }
+  from { opacity: 0; transform: scale(0.995); }
   to { opacity: 1; transform: scale(1); }
 }
 
-/* Scrollbar ultra-sottile e classi no-scrollbar */
+/* ----------------------------------------------------------------------------
+   2. SCROLLBARS & UTILITY GRAFICHE
+   ---------------------------------------------------------------------------- */
 ::-webkit-scrollbar {
   width: 3px;
   height: 3px;
@@ -77,8 +86,8 @@ html, body.rpg-app-body {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.15);
-  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.18);
+  border-radius: 9999px;
 }
 .no-scrollbar::-webkit-scrollbar {
   display: none;
@@ -88,21 +97,24 @@ html, body.rpg-app-body {
   scrollbar-width: none;
 }
 
-/* Glow testuali neon */
+/* Glow neon controllati */
 .text-glow-amber {
-  text-shadow: 0 0 12px rgba(245, 158, 11, 0.55);
+  text-shadow: 0 0 10px rgba(245, 158, 11, 0.55);
 }
 .text-glow-rose {
-  text-shadow: 0 0 12px rgba(244, 63, 94, 0.65);
+  text-shadow: 0 0 10px rgba(244, 63, 94, 0.60);
+}
+.text-glow-sky {
+  text-shadow: 0 0 10px rgba(56, 189, 248, 0.55);
 }
 
 /* ----------------------------------------------------------------------------
-   2. SCHERMATA LOADER D'AVVIO
+   3. SCHERMATA LOADER D'AVVIO
    ---------------------------------------------------------------------------- */
 .app-loader-screen {
   position: fixed;
   inset: 0;
-  z-index: 99;
+  z-index: 999;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -118,15 +130,15 @@ html, body.rpg-app-body {
 }
 .loader-spinner-box {
   position: relative;
-  margin-bottom: 1rem;
+  margin-bottom: 1.25rem;
 }
 .loader-spinner {
   width: 3.5rem;
   height: 3.5rem;
-  border: 4px solid rgba(56, 189, 248, 0.2);
+  border: 3.5px solid rgba(56, 189, 248, 0.18);
   border-top-color: var(--tg-sky);
   border-radius: 9999px;
-  animation: spin 0.8s linear infinite;
+  animation: spin 0.75s linear infinite;
 }
 @keyframes spin {
   to { transform: rotate(360deg); }
@@ -137,30 +149,30 @@ html, body.rpg-app-body {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.25rem;
+  font-size: 1.35rem;
 }
 .loader-title {
-  font-size: 0.875rem;
+  font-size: 0.95rem;
   font-weight: 900;
-  letter-spacing: 0.15em;
+  letter-spacing: 0.16em;
   color: #FFFFFF;
   text-transform: uppercase;
-  margin: 0 0 0.25rem 0;
+  margin: 0 0 0.35rem 0;
 }
 .loader-status {
-  font-size: 0.75rem;
+  font-size: 0.78rem;
   color: var(--tg-text-muted);
   animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
   margin: 0;
 }
 @keyframes pulse {
   0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
+  50% { opacity: 0.45; }
 }
 .loader-error-box {
   margin-top: 1rem;
-  padding: 0.75rem;
-  background: rgba(136, 19, 55, 0.8);
+  padding: 0.85rem;
+  background: rgba(136, 19, 55, 0.85);
   border: 1px solid var(--tg-rose);
   border-radius: 0.75rem;
   font-size: 0.75rem;
@@ -171,27 +183,26 @@ html, body.rpg-app-body {
 }
 
 /* ----------------------------------------------------------------------------
-   3. TOP BAR PIATTAFORMA (CENTRAGGIO ASSOLUTO & ZERO DISALLINEAMENTI)
+   4. TOP BAR UNIVERSALE (SICUREZZA TELEGRAM CAPSULE & CENTRAGGIO ASSOLUTO)
    ---------------------------------------------------------------------------- */
 .universal-top-bar {
   flex: none;
-  z-index: 40;
+  z-index: 50;
   width: 100%;
   
-  /* Altezza dinamica: Safe Area Top Hardware + Altezza Nativa Telegram */
-  height: calc(var(--safe-top, 0px) + var(--tg-header-height, 44px));
+  /* Altezza dinamica: Safe Area Hardware + Barra Standard */
+  height: calc(var(--safe-top, 0px) + var(--tg-header-height, 48px));
   padding-top: var(--safe-top, 0px);
-  padding-left: 0.75rem;
+  padding-left: calc(var(--safe-left, 0px) + 0.75rem);
   
   /* DEAD-ZONE CAPSULA TELEGRAM: Rispetto assoluto per i tasti nativi (••• e ✕) */
   padding-right: calc(var(--safe-right, 0px) + 85px);
   
-  background: rgba(9, 13, 22, 0.98);
+  background: rgba(9, 13, 22, 0.96);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border-bottom: 1px solid var(--tg-border);
   
-  /* Layout di ancoraggio: Tasto sinistro allineato, Logo libero al centro */
   position: relative;
   display: flex;
   align-items: center;
@@ -199,47 +210,48 @@ html, body.rpg-app-body {
 }
 
 .top-bar-placeholder, .top-bar-back-btn {
-  width: 2.5rem;
-  height: var(--tg-header-height, 44px);
+  width: 2.25rem;
+  height: var(--tg-header-height, 48px);
   display: inline-flex;
   align-items: center;
   justify-content: flex-start;
   z-index: 10;
 }
 
-/* CENTRAGGIO ASSOLUTO PERFETTO (Non risente degli 85px a destra né del tasto a sinistra) */
+/* Centraggio Ottico Assoluto: non risente dell'offset destro dei tasti Telegram */
 .top-bar-title-box {
   position: absolute;
   top: var(--safe-top, 0px);
   left: 0;
   right: 0;
-  height: var(--tg-header-height, 44px);
+  height: var(--tg-header-height, 48px);
   display: flex;
-  align-items: center;     /* Centro Verticale Perfetto */
-  justify-content: center; /* Centro Orizzontale Perfetto */
-  pointer-events: none;    /* Lascia passare i tocchi ai controlli laterali */
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
   z-index: 5;
 }
 
 .top-bar-brand {
-  font-size: 0.85rem;
+  font-size: 0.9rem;
   font-weight: 900;
   letter-spacing: 0.20em;
-  color: rgba(255, 255, 255, 0.95);
+  color: rgba(255, 255, 255, 0.96);
   text-transform: uppercase;
-  line-height: 1; /* Elimina qualsiasi disallineamento ottico dovuto ai font */
+  line-height: 1;
 }
 
 .top-bar-actions {
-  display: none; /* Rimosso volume/controlli ridondanti per pulizia nativa */
+  display: none;
 }
 
 /* ----------------------------------------------------------------------------
-   4. STRUTTURA CENTRALE & SCROLL VIEWPORT RIGIDAMENTE ANCORATO
+   5. STRUTTURA CENTRALE & SCROLL VIEWPORT RIGIDAMENTE ANCORATO
    ---------------------------------------------------------------------------- */
 .app-layout-container {
   flex: 1 1 0%;
   min-height: 0;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -255,10 +267,10 @@ html, body.rpg-app-body {
 .app-main-viewport {
   flex: 1 1 0%;
   min-height: 0;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   height: 100%;
-  min-width: 0;
   overflow: hidden;
   position: relative;
   width: 100%;
@@ -275,40 +287,39 @@ html, body.rpg-app-body {
 }
 
 .app-content-wrapper {
-  padding: 0.75rem;
-  padding-bottom: 1.5rem;
-  max-width: 1500px;
+  padding: 0.65rem 0.65rem 1.5rem 0.65rem;
+  max-width: 1400px;
   margin: 0 auto;
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
+  min-width: 0;
 }
 @media (min-width: 768px) {
   .app-content-wrapper {
-    padding: 1.5rem;
-    padding-bottom: 2rem;
+    padding: 1.25rem 1.5rem 2rem 1.5rem;
+    gap: 1rem;
   }
 }
 
 /* ----------------------------------------------------------------------------
-   5. FOOTER PIATTAFORMA MOBILE (COMPATTO & A FILO SCHERMO)
+   6. FOOTER PIATTAFORMA MOBILE (THUMB-FRIENDLY & FILO SCHERMO)
    ---------------------------------------------------------------------------- */
 .main-app-footer {
   flex: none;
-  z-index: 40;
+  z-index: 50;
   width: 100%;
-  background: rgba(9, 13, 22, 0.98);
+  background: rgba(9, 13, 22, 0.97);
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
   border-top: 1px solid var(--tg-border);
   display: flex;
   justify-content: space-around;
   align-items: center;
-  padding-top: 2px;
   
-  /* Assorbimento pulito della Safe Area: Nessun moltiplicatore forzato! */
+  /* Assorbimento hardware pulito: Safe bottom + altezza minima 50px */
   padding-bottom: var(--safe-bottom, 0px);
-  height: calc(44px + var(--safe-bottom, 0px));
+  height: calc(var(--tg-footer-height, 50px) + var(--safe-bottom, 0px));
 }
 
 .nav-tab {
@@ -316,56 +327,58 @@ html, body.rpg-app-body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 0.2rem 0.5rem;
+  padding: 0.3rem 0.5rem;
   color: var(--tg-text-muted);
   background: transparent;
   border: none;
   cursor: pointer;
-  transition: color 0.15s ease, transform 0.15s ease;
+  transition: color 0.15s ease, transform 0.12s ease;
   position: relative;
-  min-width: 3.2rem;
+  min-width: 3.5rem;
+  height: var(--tg-footer-height, 50px);
 }
 .nav-tab:active {
-  transform: scale(0.92);
+  transform: scale(0.93);
 }
 .nav-tab.active {
   color: var(--tg-sky) !important;
 }
 .nav-tab-label {
-  font-size: 8.5px;
+  font-size: 10px;
   font-weight: 800;
   text-transform: uppercase;
-  margin-top: 0.1rem;
+  margin-top: 0.15rem;
   letter-spacing: 0.04em;
+  line-height: 1;
 }
 .nav-tab-dot {
-  width: 4px;
-  height: 4px;
+  width: 5px;
+  height: 5px;
   background: var(--tg-sky);
   border-radius: 9999px;
   position: absolute;
-  top: 2px;
+  top: 6px;
   right: 14px;
 }
 
-/* REGOLA DICHIARATIVA RIGIDA: Spegne il footer piattaforma durante il gioco */
+/* Spegne il footer globale durante il gameplay e il wizard */
 body[data-active-screen="view-gameplay"] .main-app-footer,
 body[data-active-screen="view-wizard"] .main-app-footer {
   display: none !important;
 }
 
 /* ----------------------------------------------------------------------------
-   6. SIDEBAR DESKTOP WIDESCREEN (>= 768px)
+   7. SIDEBAR DESKTOP WIDESCREEN (>= 768px)
    ---------------------------------------------------------------------------- */
 .desktop-sidebar {
   display: none;
-  width: 18.5rem;
+  width: 19rem;
   background: var(--tg-sec-bg);
   border-right: 1px solid var(--tg-border);
   height: 100%;
-  padding: 1rem;
+  padding: 1.25rem 1rem;
   flex-direction: column;
-  gap: 1rem;
+  gap: 1.25rem;
   flex-shrink: 0;
   z-index: 30;
 }
@@ -377,25 +390,25 @@ body[data-active-screen="view-wizard"] .main-app-footer {
 
 .user-card-desk {
   background: var(--tg-surface);
-  padding: 0.875rem;
-  border-radius: 1rem;
+  padding: 1rem;
+  border-radius: 1.15rem;
   border: 1px solid var(--tg-border-light);
   box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4);
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 0.85rem;
 }
 .user-avatar-box {
-  width: 3rem;
-  height: 3rem;
-  border-radius: 0.85rem;
+  width: 3.25rem;
+  height: 3.25rem;
+  border-radius: 0.95rem;
   background: linear-gradient(135deg, #0284C7, #4F46E5, #0F172A);
   border: 2px solid rgba(56, 189, 248, 0.4);
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 900;
-  font-size: 1.25rem;
+  font-size: 1.35rem;
   color: #FFFFFF;
   flex-shrink: 0;
   overflow: hidden;
@@ -406,76 +419,75 @@ body[data-active-screen="view-wizard"] .main-app-footer {
   object-fit: cover;
 }
 .badge-role {
-  font-size: 8.5px;
+  font-size: 9.5px;
   font-weight: 800;
   color: var(--tg-text-muted);
   letter-spacing: 0.15em;
   text-transform: uppercase;
 }
 .user-name-label {
-  font-size: 0.875rem;
+  font-size: 0.95rem;
   font-weight: 900;
   color: #FFFFFF;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  margin-top: 0.1rem;
+  margin-top: 0.15rem;
 }
 .plan-pill-btn {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-  padding: 0.15rem 0.55rem;
+  padding: 0.2rem 0.65rem;
   border-radius: 9999px;
-  background: rgba(56, 189, 248, 0.15);
+  background: rgba(56, 189, 248, 0.14);
   border: 1px solid rgba(56, 189, 248, 0.35);
-  font-size: 8.5px;
+  font-size: 9.5px;
   font-weight: 900;
   color: #7DD3FC;
   text-transform: uppercase;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: background 0.15s ease;
 }
 .plan-pill-btn:hover {
   background: rgba(56, 189, 248, 0.25);
 }
 .plan-pill-btn .arrow {
-  color: rgba(125, 211, 252, 0.6);
-  font-family: monospace;
+  color: rgba(125, 211, 252, 0.7);
 }
 .wallet-desk-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.5rem;
-  padding-top: 0.65rem;
+  padding-top: 0.75rem;
   border-top: 1px solid var(--tg-border);
 }
 .wallet-desk-item {
   background: rgba(0, 0, 0, 0.4);
-  padding: 0.45rem;
-  border-radius: 0.65rem;
+  padding: 0.5rem;
+  border-radius: 0.75rem;
   text-align: center;
   border: 1px solid var(--tg-border);
 }
 .wallet-label {
-  font-size: 8px;
+  font-size: 9px;
   color: var(--tg-text-muted);
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
 .wallet-value {
-  font-size: 0.85rem;
+  font-size: 0.95rem;
   font-weight: 900;
   font-variant-numeric: tabular-nums;
-  margin-top: 0.1rem;
+  margin-top: 0.15rem;
 }
 
 .desktop-nav-menu {
   flex: 1 1 0%;
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
+  gap: 0.4rem;
 }
 .desk-nav-btn {
   width: 100%;
@@ -483,15 +495,15 @@ body[data-active-screen="view-wizard"] .main-app-footer {
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
-  padding: 0.65rem 0.85rem;
-  border-radius: 0.75rem;
-  font-size: 0.75rem;
+  padding: 0.75rem 0.95rem;
+  border-radius: 0.85rem;
+  font-size: 0.82rem;
   font-weight: 700;
   color: #CBD5E1;
   background: transparent;
   border: none;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: background 0.15s ease, color 0.15s ease;
   text-align: left;
 }
 .desk-nav-btn:hover {
@@ -499,23 +511,23 @@ body[data-active-screen="view-wizard"] .main-app-footer {
 }
 .desk-nav-btn.active {
   color: var(--tg-sky);
-  background: rgba(255, 255, 255, 0.07);
+  background: rgba(255, 255, 255, 0.08);
 }
 .desktop-footer-status {
-  padding-top: 0.75rem;
+  padding-top: 0.85rem;
   border-top: 1px solid var(--tg-border);
   display: flex;
   align-items: center;
   justify-content: space-between;
 }
 .version-label {
-  font-size: 9.5px;
+  font-size: 10px;
   color: var(--tg-text-subtle);
   font-family: monospace;
 }
 
 /* ----------------------------------------------------------------------------
-   7. DASHBOARD HOME, CAROSELLO & SPOTIFY-STYLE RADIO DECK
+   8. DASHBOARD HOME, SPOTIFY-STYLE RADIO DECK & KPI
    ---------------------------------------------------------------------------- */
 .home-hero-banner {
   border-radius: 1.25rem;
@@ -525,7 +537,7 @@ body[data-active-screen="view-wizard"] .main-app-footer {
   box-shadow: 0 15px 25px -10px rgba(0, 0, 0, 0.5);
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 0.85rem;
 }
 @media (min-width: 768px) {
   .home-hero-banner {
@@ -535,11 +547,11 @@ body[data-active-screen="view-wizard"] .main-app-footer {
 .badge-tag {
   display: inline-flex;
   align-items: center;
-  padding: 0.2rem 0.5rem;
+  padding: 0.25rem 0.55rem;
   border-radius: 9999px;
   border: 1px solid var(--tg-sky);
   color: var(--tg-sky);
-  font-size: 8.5px;
+  font-size: 9.5px;
   font-weight: 800;
   text-transform: uppercase;
 }
@@ -547,51 +559,51 @@ body[data-active-screen="view-wizard"] .main-app-footer {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-  padding: 0.2rem 0.55rem;
+  padding: 0.25rem 0.65rem;
   border-radius: 9999px;
   background: var(--tg-sky);
   color: #090D16;
-  font-size: 8.5px;
+  font-size: 9.5px;
   font-weight: 900;
   text-transform: uppercase;
   border: none;
   cursor: pointer;
-  transition: transform 0.15s ease;
+  transition: transform 0.12s ease;
 }
 .badge-plan-hero:active {
-  transform: scale(0.95);
+  transform: scale(0.96);
 }
 .hero-headline {
-  font-size: 1.25rem;
+  font-size: 1.35rem;
   font-weight: 900;
   color: #FFFFFF;
-  line-height: 1.2;
+  line-height: 1.25;
   margin: 0;
 }
 @media (min-width: 768px) {
   .hero-headline {
-    font-size: 1.75rem;
+    font-size: 1.85rem;
   }
 }
 .hero-lead {
-  font-size: 0.75rem;
+  font-size: 0.8rem;
   color: #CBD5E1;
   line-height: 1.45;
-  margin: 0.25rem 0 0 0;
+  margin: 0.2rem 0 0 0;
   max-width: 48rem;
 }
 
-/* Widget Miniplayer Radio */
+/* Miniplayer Radio */
 #home-radio-miniplayer {
-  background: rgba(15, 23, 42, 0.85);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(56, 189, 248, 0.3);
-  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease;
+  background: rgba(15, 23, 42, 0.90);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(56, 189, 248, 0.32);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.12s ease;
 }
 #home-radio-miniplayer:hover {
-  border-color: rgba(56, 189, 248, 0.6);
-  box-shadow: 0 4px 20px rgba(56, 189, 248, 0.15);
+  border-color: rgba(56, 189, 248, 0.65);
+  box-shadow: 0 4px 20px rgba(56, 189, 248, 0.18);
 }
 #home-radio-miniplayer:active {
   transform: scale(0.99);
@@ -600,47 +612,47 @@ body[data-active-screen="view-wizard"] .main-app-footer {
 .kpi-quad-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.55rem;
+  gap: 0.65rem;
 }
 @media (min-width: 768px) {
   .kpi-quad-grid {
     grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 0.75rem;
+    gap: 0.85rem;
   }
 }
 .kpi-card {
   background: var(--tg-surface);
-  padding: 0.75rem;
-  border-radius: 0.85rem;
+  padding: 0.85rem 0.95rem;
+  border-radius: 0.95rem;
   border: 1px solid var(--tg-border);
   cursor: pointer;
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  transition: all 0.15s ease;
+  transition: background 0.15s ease, transform 0.12s ease;
 }
 .kpi-card:hover {
   background: var(--tg-surface-hover);
 }
 .kpi-card:active {
-  transform: scale(0.98);
+  transform: scale(0.97);
 }
 .kpi-card-label {
-  font-size: 8.5px;
+  font-size: 9.5px;
   font-weight: 800;
   color: var(--tg-text-muted);
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
 .kpi-card-value {
-  font-size: 1.15rem;
+  font-size: 1.25rem;
   font-weight: 900;
   font-variant-numeric: tabular-nums;
-  margin-top: 0.15rem;
+  margin-top: 0.2rem;
 }
 .kpi-card-icon {
-  width: 0.95rem;
-  height: 0.95rem;
+  width: 1.1rem;
+  height: 1.1rem;
   color: var(--tg-text-subtle);
   transition: color 0.15s ease;
 }
@@ -649,40 +661,40 @@ body[data-active-screen="view-wizard"] .main-app-footer {
 }
 
 .section-kicker {
-  font-size: 0.75rem;
+  font-size: 0.8rem;
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--tg-text-muted);
 }
 .section-headline-flex {
-  font-size: 0.75rem;
+  font-size: 0.82rem;
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: #CBD5E1;
   display: flex;
   align-items: center;
-  gap: 0.35rem;
+  gap: 0.4rem;
   margin: 0;
 }
 
-/* Carosello Home */
+/* Carosello Dinamico */
 .carousel-outer-wrapper {
   position: relative;
   overflow: hidden;
-  border-radius: 1rem;
+  border-radius: 1.15rem;
   background: var(--tg-sec-bg);
   border: 1px solid var(--tg-border);
 }
 .carousel-track {
   display: flex;
-  transition: transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+  transition: transform 0.45s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 .carousel-slide {
   min-width: 100%;
   position: relative;
-  height: 10.5rem;
+  height: 11rem;
   background: #0F172A;
   cursor: pointer;
   overflow: hidden;
@@ -701,35 +713,37 @@ body[data-active-screen="view-wizard"] .main-app-footer {
 .carousel-slide-overlay {
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, transparent 0%, rgba(9, 13, 22, 0.4) 40%, #090D16 100%);
+  background: linear-gradient(180deg, transparent 0%, rgba(9, 13, 22, 0.5) 45%, #090D16 100%);
 }
 .carousel-slide-badge {
   position: absolute;
   top: 0.75rem;
   left: 0.75rem;
-  padding: 0.2rem 0.5rem;
-  border-radius: 0.45rem;
+  padding: 0.25rem 0.55rem;
+  border-radius: 0.5rem;
   background: var(--tg-sky);
   color: #090D16;
-  font-size: 8px;
+  font-size: 9px;
   font-weight: 900;
   text-transform: uppercase;
 }
 .carousel-slide-content {
   position: absolute;
-  bottom: 0.85rem;
-  left: 0.85rem;
-  right: 0.85rem;
+  bottom: 0.95rem;
+  left: 0.95rem;
+  right: 0.95rem;
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
+  gap: 0.5rem;
 }
 .carousel-slide-text {
-  max-width: 72%;
+  max-width: 74%;
+  min-width: 0;
 }
 .carousel-slide-title {
   font-weight: 900;
-  font-size: 0.85rem;
+  font-size: 0.92rem;
   color: #FFFFFF;
   margin: 0;
   white-space: nowrap;
@@ -737,55 +751,55 @@ body[data-active-screen="view-wizard"] .main-app-footer {
   text-overflow: ellipsis;
 }
 .carousel-slide-sub {
-  font-size: 9.5px;
+  font-size: 10.5px;
   color: #CBD5E1;
-  margin: 0.1rem 0 0 0;
+  margin: 0.15rem 0 0 0;
   display: -webkit-box;
   -webkit-line-clamp: 1;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
 .carousel-slide-btn {
-  padding: 0.25rem 0.65rem;
-  border-radius: 0.45rem;
+  padding: 0.35rem 0.75rem;
+  border-radius: 0.55rem;
   background: var(--tg-sky);
   color: #090D16;
-  font-size: 9.5px;
+  font-size: 10.5px;
   font-weight: 900;
   border: none;
   flex-shrink: 0;
 }
 .carousel-dot {
-  height: 0.35rem;
+  height: 0.4rem;
   border-radius: 9999px;
   transition: all 0.3s ease;
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.22);
   width: 0.45rem;
 }
 .carousel-dot.active {
   background: var(--tg-sky);
-  width: 1.1rem;
+  width: 1.25rem;
 }
 
 /* ----------------------------------------------------------------------------
-   8. CATALOGO SAGHE GIOCHI
+   9. CATALOGO SAGHE GIOCHI
    ---------------------------------------------------------------------------- */
 .page-title-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding-bottom: 0.4rem;
+  padding-bottom: 0.5rem;
   border-bottom: 1px solid var(--tg-border);
 }
 .sub-header-tag {
-  font-size: 9.5px;
+  font-size: 10px;
   font-weight: 800;
   letter-spacing: 0.15em;
   color: var(--tg-sky);
   text-transform: uppercase;
 }
 .page-headline {
-  font-size: 1.15rem;
+  font-size: 1.25rem;
   font-weight: 900;
   color: #FFFFFF;
   margin: 0;
@@ -793,15 +807,15 @@ body[data-active-screen="view-wizard"] .main-app-footer {
 
 .game-saga-card {
   background: var(--tg-surface);
-  border-radius: 0.95rem;
+  border-radius: 1.05rem;
   border: 1px solid var(--tg-border);
-  padding: 0.75rem;
+  padding: 0.85rem;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  gap: 0.65rem;
+  gap: 0.75rem;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: background 0.15s ease, transform 0.12s ease;
 }
 .game-saga-card:hover {
   background: var(--tg-surface-hover);
@@ -810,9 +824,9 @@ body[data-active-screen="view-wizard"] .main-app-footer {
   transform: scale(0.98);
 }
 .game-saga-media {
-  height: 8.5rem;
+  height: 9rem;
   width: 100%;
-  border-radius: 0.65rem;
+  border-radius: 0.75rem;
   overflow: hidden;
   position: relative;
   background: #000000;
@@ -821,16 +835,16 @@ body[data-active-screen="view-wizard"] .main-app-footer {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: transform 0.4s ease;
+  transition: transform 0.35s ease;
 }
 .game-saga-card:hover .game-saga-img {
   transform: scale(1.04);
 }
 .game-saga-badge {
   position: absolute;
-  top: 0.5rem;
-  left: 0.5rem;
-  font-size: 8px;
+  top: 0.55rem;
+  left: 0.55rem;
+  font-size: 9px;
   font-weight: 900;
   text-transform: uppercase;
 }
@@ -840,7 +854,7 @@ body[data-active-screen="view-wizard"] .main-app-footer {
   justify-content: space-between;
 }
 .game-saga-title {
-  font-size: 0.85rem;
+  font-size: 0.92rem;
   font-weight: 900;
   color: #FFFFFF;
   margin: 0;
@@ -849,36 +863,36 @@ body[data-active-screen="view-wizard"] .main-app-footer {
   color: var(--tg-sky);
 }
 .game-saga-ep-count {
-  font-size: 8.5px;
+  font-size: 9.5px;
   color: var(--tg-text-muted);
   font-family: monospace;
 }
 .game-saga-desc {
-  font-size: 10.5px;
+  font-size: 11px;
   color: #CBD5E1;
-  line-height: 1.4;
-  margin: 0.2rem 0 0 0;
+  line-height: 1.45;
+  margin: 0.25rem 0 0 0;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
 .game-saga-footer {
-  padding-top: 0.4rem;
+  padding-top: 0.5rem;
   border-top: 1px solid var(--tg-border);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-size: 9.5px;
+  font-size: 10px;
 }
 .game-saga-status {
   color: var(--tg-text-muted);
 }
 
 .episode-list-item {
-  padding: 0.65rem 0.75rem;
+  padding: 0.75rem 0.85rem;
   background: var(--tg-surface);
-  border-radius: 0.75rem;
+  border-radius: 0.85rem;
   border: 1px solid var(--tg-border);
   display: flex;
   align-items: center;
@@ -886,26 +900,26 @@ body[data-active-screen="view-wizard"] .main-app-footer {
   gap: 0.75rem;
 }
 .episode-item-title {
-  font-size: 0.75rem;
+  font-size: 0.82rem;
   font-weight: 700;
   color: #FFFFFF;
 }
 .episode-item-cost {
-  font-size: 8.5px;
+  font-size: 9.5px;
   color: var(--tg-text-muted);
-  margin-top: 0.1rem;
+  margin-top: 0.15rem;
 }
 
 /* ----------------------------------------------------------------------------
-   9. SHOP & RICETTARIO
+   10. SHOP & RICETTARIO (FIX AUTO-ZOOM INPUT iOS & TOUCH TARGETS)
    ---------------------------------------------------------------------------- */
 .search-bar-box {
   position: relative;
   width: 100%;
 }
 .search-icon {
-  width: 0.95rem;
-  height: 0.95rem;
+  width: 1.1rem;
+  height: 1.1rem;
   position: absolute;
   left: 0.85rem;
   top: 50%;
@@ -913,19 +927,30 @@ body[data-active-screen="view-wizard"] .main-app-footer {
   color: var(--tg-text-subtle);
   pointer-events: none;
 }
-.search-input {
+
+/* 🔒 FIX FONDAMENTALE iOS: font-size 16px impedisce lo zoom automatico parassita */
+.search-input,
+input[type="text"],
+input[type="search"] {
   width: 100%;
-  padding-left: 2.35rem;
+  padding-left: 2.5rem;
   padding-right: 0.85rem;
-  padding-top: 0.5rem;
-  padding-bottom: 0.5rem;
-  border-radius: 0.75rem;
+  padding-top: 0.65rem;
+  padding-bottom: 0.65rem;
+  border-radius: 0.85rem;
   background: var(--tg-surface);
   border: 1px solid var(--tg-border);
-  font-size: 0.75rem;
+  font-size: 16px !important;
   color: #FFFFFF;
   outline: none;
   transition: border-color 0.2s ease;
+}
+@media (min-width: 768px) {
+  .search-input,
+  input[type="text"],
+  input[type="search"] {
+    font-size: 0.82rem !important;
+  }
 }
 .search-input:focus {
   border-color: var(--tg-sky);
@@ -933,22 +958,22 @@ body[data-active-screen="view-wizard"] .main-app-footer {
 
 .chips-scroll-bar {
   display: flex;
-  gap: 0.45rem;
+  gap: 0.5rem;
   overflow-x: auto;
-  padding-bottom: 0.2rem;
+  padding-bottom: 0.35rem;
   scrollbar-width: none;
 }
 .category-chip {
-  padding: 0.35rem 0.85rem;
+  padding: 0.4rem 0.95rem;
   border-radius: 9999px;
-  font-size: 10.5px;
+  font-size: 11px;
   font-weight: 800;
   white-space: nowrap;
   background: var(--tg-surface);
   color: var(--tg-text-muted);
   border: 1px solid var(--tg-border);
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: background 0.15s ease, color 0.15s ease;
 }
 .category-chip.active {
   background: var(--tg-sky);
@@ -959,12 +984,12 @@ body[data-active-screen="view-wizard"] .main-app-footer {
 .shop-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.55rem;
+  gap: 0.65rem;
 }
 @media (min-width: 640px) {
   .shop-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 0.75rem;
+    gap: 0.85rem;
   }
 }
 @media (min-width: 1024px) {
@@ -975,7 +1000,7 @@ body[data-active-screen="view-wizard"] .main-app-footer {
 
 .shop-product-card {
   background: var(--tg-surface);
-  border-radius: 0.85rem;
+  border-radius: 0.95rem;
   border: 1px solid var(--tg-border);
   display: flex;
   flex-direction: column;
@@ -983,7 +1008,7 @@ body[data-active-screen="view-wizard"] .main-app-footer {
   overflow: hidden;
   cursor: pointer;
   position: relative;
-  transition: transform 0.15s ease;
+  transition: transform 0.12s ease;
 }
 .shop-product-card:active {
   transform: scale(0.98);
@@ -992,7 +1017,7 @@ body[data-active-screen="view-wizard"] .main-app-footer {
   position: absolute;
   inset: 0;
   z-index: 10;
-  background: rgba(9, 13, 22, 0.88);
+  background: rgba(9, 13, 22, 0.90);
   backdrop-filter: blur(4px);
   display: flex;
   flex-direction: column;
@@ -1002,17 +1027,17 @@ body[data-active-screen="view-wizard"] .main-app-footer {
   text-align: center;
 }
 .locked-icon {
-  font-size: 1.25rem;
+  font-size: 1.35rem;
   margin-bottom: 0.25rem;
 }
 .locked-label {
-  font-size: 8.5px;
+  font-size: 9.5px;
   font-weight: 900;
   color: #FDE047;
   text-transform: uppercase;
 }
 .shop-card-media {
-  height: 8.5rem;
+  height: 9rem;
   width: 100%;
   background: #0F172A;
   position: relative;
@@ -1029,77 +1054,77 @@ body[data-active-screen="view-wizard"] .main-app-footer {
   left: 0.5rem;
 }
 .shop-card-body {
-  padding: 0.65rem;
+  padding: 0.75rem;
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
+  gap: 0.45rem;
 }
 .shop-card-cat {
-  font-size: 8.5px;
+  font-size: 9.5px;
   font-weight: 800;
   color: var(--tg-sky);
   text-transform: uppercase;
 }
 .shop-card-name {
-  font-size: 0.75rem;
+  font-size: 0.82rem;
   font-weight: 800;
   color: #FFFFFF;
-  margin: 0.1rem 0 0 0;
+  margin: 0.15rem 0 0 0;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 .shop-card-footer {
-  padding-top: 0.4rem;
+  padding-top: 0.5rem;
   border-top: 1px solid var(--tg-border);
   display: flex;
   align-items: center;
   justify-content: space-between;
 }
 .shop-card-price-megoin {
-  font-size: 0.75rem;
+  font-size: 0.82rem;
   font-weight: 900;
   color: #FDE047;
 }
 .shop-card-price-euro {
-  font-size: 9.5px;
+  font-size: 10px;
   color: var(--tg-text-muted);
   font-weight: 700;
 }
 
 /* Dettaglio Shop / Ricetta */
 .detail-header-border {
-  padding-bottom: 0.4rem;
+  padding-bottom: 0.5rem;
   border-bottom: 1px solid var(--tg-border);
 }
 .detail-cat-tag {
-  font-size: 9.5px;
+  font-size: 10px;
   font-weight: 800;
   color: var(--tg-sky);
   text-transform: uppercase;
 }
 .detail-title {
-  font-size: 0.85rem;
+  font-size: 1rem;
   font-weight: 900;
   color: #FFFFFF;
-  margin: 0;
+  margin: 0.15rem 0 0 0;
 }
 .detail-media-box {
   height: 14rem;
-  border-radius: 0.95rem;
+  border-radius: 1rem;
   position: relative;
   background: var(--tg-surface);
   overflow: hidden;
 }
 .detail-prose {
-  font-size: 0.75rem;
+  font-size: 0.82rem;
   color: #CBD5E1;
-  line-height: 1.5;
+  line-height: 1.55;
   margin: 0;
 }
 .detail-price-box {
-  padding: 0.75rem 0.95rem;
-  border-radius: 0.85rem;
+  padding: 0.85rem 1rem;
+  border-radius: 0.95rem;
   background: var(--tg-surface);
   border: 1px solid var(--tg-border);
   display: flex;
@@ -1111,24 +1136,24 @@ body[data-active-screen="view-wizard"] .main-app-footer {
 .recipes-grid {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 0.55rem;
+  gap: 0.65rem;
 }
 @media (min-width: 640px) {
   .recipes-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0.75rem;
+    gap: 0.85rem;
   }
 }
 .recipe-card {
   background: var(--tg-surface);
-  border-radius: 0.85rem;
+  border-radius: 0.95rem;
   border: 1px solid var(--tg-border);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.65rem 0.75rem;
+  padding: 0.75rem 0.85rem;
   cursor: pointer;
-  transition: transform 0.15s ease;
+  transition: transform 0.12s ease;
 }
 .recipe-card:active {
   transform: scale(0.98);
@@ -1136,13 +1161,13 @@ body[data-active-screen="view-wizard"] .main-app-footer {
 .recipe-card-content {
   display: flex;
   align-items: center;
-  gap: 0.65rem;
+  gap: 0.75rem;
   overflow: hidden;
 }
 .recipe-card-thumb {
-  width: 2.75rem;
-  height: 2.75rem;
-  border-radius: 0.6rem;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 0.65rem;
   background: #0F172A;
   overflow: hidden;
   flex-shrink: 0;
@@ -1153,7 +1178,7 @@ body[data-active-screen="view-wizard"] .main-app-footer {
   object-fit: cover;
 }
 .recipe-card-name {
-  font-size: 0.75rem;
+  font-size: 0.82rem;
   font-weight: 800;
   color: #FFFFFF;
   margin: 0;
@@ -1162,14 +1187,14 @@ body[data-active-screen="view-wizard"] .main-app-footer {
   text-overflow: ellipsis;
 }
 .recipe-card-sub {
-  font-size: 9.5px;
+  font-size: 10.5px;
   color: var(--tg-text-muted);
-  margin-top: 0.1rem;
+  margin-top: 0.15rem;
 }
 .recipe-stat-box {
-  padding: 0.4rem;
-  border-radius: 0.6rem;
-  background: rgba(0, 0, 0, 0.35);
+  padding: 0.45rem;
+  border-radius: 0.65rem;
+  background: rgba(0, 0, 0, 0.4);
   border: 1px solid var(--tg-border);
   text-align: center;
 }
@@ -1177,30 +1202,30 @@ body[data-active-screen="view-wizard"] .main-app-footer {
   color: var(--tg-sky);
   font-weight: 800;
   display: block;
-  font-size: 0.75rem;
+  font-size: 0.82rem;
 }
 .recipe-stat-label {
-  font-size: 8.5px;
+  font-size: 9.5px;
   color: var(--tg-text-muted);
   text-transform: capitalize;
 }
 .recipe-content-box {
-  font-size: 0.75rem;
+  font-size: 0.8rem;
   color: #CBD5E1;
-  line-height: 1.45;
-  background: rgba(17, 24, 39, 0.5);
-  padding: 0.65rem 0.75rem;
-  border-radius: 0.75rem;
+  line-height: 1.5;
+  background: rgba(17, 24, 39, 0.6);
+  padding: 0.75rem 0.85rem;
+  border-radius: 0.85rem;
   border: 1px solid var(--tg-border);
   margin: 0;
 }
 
 /* ----------------------------------------------------------------------------
-   10. PROFILO UTENTE (ANTI-COLLISIONE BADGE & ID)
+   11. PROFILO UTENTE (ANTI-COLLISIONE BADGE & ID)
    ---------------------------------------------------------------------------- */
 .profile-header-card {
-  border-radius: 1.15rem;
-  padding: 1rem 1.15rem;
+  border-radius: 1.25rem;
+  padding: 1.15rem;
   background: linear-gradient(135deg, #0F172A, #1E1B4B, #0F172A);
   border: 1px solid var(--tg-border-light);
   box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4);
@@ -1209,72 +1234,49 @@ body[data-active-screen="view-wizard"] .main-app-footer {
   justify-content: space-between;
   gap: 0.85rem;
 }
-
-.profile-header-card > div:first-child {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  min-width: 0;
-  flex: 1 1 auto;
-}
-
 .profile-avatar-box {
-  width: 3.25rem;
-  height: 3.25rem;
-  border-radius: 0.85rem;
+  width: 3.5rem;
+  height: 3.5rem;
+  border-radius: 0.95rem;
   background: linear-gradient(135deg, #0284C7, #4F46E5, #0F172A);
   border: 2px solid rgba(56, 189, 248, 0.4);
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 900;
-  font-size: 1.35rem;
+  font-size: 1.45rem;
   color: #FFFFFF;
   flex-shrink: 0;
 }
 .profile-name {
-  font-size: 0.95rem;
+  font-size: 1rem;
   font-weight: 900;
   color: #FFFFFF;
   margin: 0;
   line-height: 1.2;
 }
 .profile-handle {
-  font-size: 0.75rem;
+  font-size: 0.8rem;
   color: var(--tg-text-muted);
   font-family: monospace;
 }
-
-.profile-header-card .mt-1 {
-  display: flex;
-  align-items: center;
-  gap: 0.45rem;
-  flex-wrap: wrap;
-  margin-top: 0.35rem !important;
-}
-#profile-card-plan {
-  display: inline-flex !important;
-  align-items: center !important;
-  line-height: 1 !important;
-  white-space: nowrap !important;
-}
 .profile-id-text {
-  font-size: 9.5px;
+  font-size: 10px;
   color: var(--tg-text-subtle);
   font-family: monospace;
   white-space: nowrap;
 }
 
 .action-card-plan, .action-card-vault {
-  padding: 0.75rem 0.85rem;
-  border-radius: 0.85rem;
+  padding: 0.85rem 0.95rem;
+  border-radius: 0.95rem;
   background: var(--tg-surface);
   border: 1px solid var(--tg-border);
   display: flex;
   align-items: center;
   justify-content: space-between;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: transform 0.12s ease;
 }
 .action-card-plan {
   border-color: rgba(56, 189, 248, 0.35);
@@ -1286,12 +1288,12 @@ body[data-active-screen="view-wizard"] .main-app-footer {
   transform: scale(0.98);
 }
 .action-card-title {
-  font-size: 0.75rem;
+  font-size: 0.82rem;
   font-weight: 900;
   color: #FFFFFF;
 }
 .action-card-sub {
-  font-size: 8.5px;
+  font-size: 9.5px;
   color: var(--tg-text-muted);
   font-weight: 800;
   text-transform: uppercase;
@@ -1299,17 +1301,17 @@ body[data-active-screen="view-wizard"] .main-app-footer {
 
 .vault-container-card, .transactions-container-card {
   background: var(--tg-surface);
-  padding: 1rem;
-  border-radius: 0.95rem;
+  padding: 1.15rem;
+  border-radius: 1.05rem;
   border: 1px solid var(--tg-border);
   display: flex;
   flex-direction: column;
-  gap: 0.65rem;
+  gap: 0.75rem;
 }
 .vault-item-card {
-  padding: 0.65rem 0.75rem;
-  border-radius: 0.75rem;
-  background: rgba(0, 0, 0, 0.35);
+  padding: 0.75rem 0.85rem;
+  border-radius: 0.85rem;
+  background: rgba(0, 0, 0, 0.4);
   border: 1px solid var(--tg-border);
   display: flex;
   align-items: center;
@@ -1319,15 +1321,15 @@ body[data-active-screen="view-wizard"] .main-app-footer {
 .vault-item-title {
   font-weight: 700;
   color: #FFFFFF;
-  font-size: 0.75rem;
+  font-size: 0.82rem;
 }
 .vault-item-date {
-  font-size: 9.5px;
+  font-size: 10px;
   color: var(--tg-text-muted);
 }
 .transaction-row {
-  padding-top: 0.5rem;
-  padding-bottom: 0.5rem;
+  padding-top: 0.6rem;
+  padding-bottom: 0.6rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -1336,15 +1338,15 @@ body[data-active-screen="view-wizard"] .main-app-footer {
 .transaction-type {
   font-weight: 700;
   color: #FFFFFF;
-  font-size: 0.75rem;
+  font-size: 0.82rem;
 }
 .transaction-desc {
-  font-size: 9.5px;
+  font-size: 10px;
   color: var(--tg-text-muted);
 }
 .transaction-amount {
   font-family: monospace;
-  font-size: 0.75rem;
+  font-size: 0.82rem;
   font-weight: 700;
   flex-shrink: 0;
 }
@@ -1352,7 +1354,7 @@ body[data-active-screen="view-wizard"] .main-app-footer {
 .transaction-amount.expense { color: var(--tg-amber); }
 
 /* ----------------------------------------------------------------------------
-   11. MODALI DI SISTEMA CENTRATE GLASSMORPHISM & COMPARATORE SAAS
+   12. MODALI DI SISTEMA CENTRATE GLASSMORPHISM & COMPARATORE SAAS
    ---------------------------------------------------------------------------- */
 dialog.modal.modal-middle,
 dialog.modal:not(.modal-bottom) {
@@ -1365,7 +1367,7 @@ dialog.modal:not(.modal-bottom) {
   backdrop-filter: blur(16px) !important;
   -webkit-backdrop-filter: blur(16px) !important;
   padding: 0.75rem !important;
-  z-index: 60 !important;
+  z-index: 90 !important;
 }
 dialog.modal:not([open]) {
   display: none !important;
@@ -1375,8 +1377,8 @@ dialog.modal:not([open]) {
   position: absolute;
   top: 0.75rem;
   right: 0.75rem;
-  width: 2rem;
-  height: 2rem;
+  width: 2.25rem;
+  height: 2.25rem;
   border-radius: 9999px;
   background: rgba(255, 255, 255, 0.08);
   border: 1px solid var(--tg-border-light);
@@ -1386,23 +1388,25 @@ dialog.modal:not([open]) {
   justify-content: center;
   cursor: pointer;
   z-index: 50;
-  transition: all 0.15s ease;
+  transition: background 0.15s ease;
 }
 .modal-close-btn:hover {
-  background: rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.16);
   color: #FFFFFF;
 }
 
 .plans-catalog-box {
   background: var(--tg-sec-bg);
   border: 1px solid rgba(56, 189, 248, 0.4);
-  padding: 1.15rem 1.25rem 1.5rem 1.25rem;
-  border-radius: 1.15rem;
+  padding: 1.25rem 1.25rem 1.5rem 1.25rem;
+  border-radius: 1.25rem;
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
-  max-width: 42rem;
+  gap: 0.85rem;
+  max-width: 44rem;
   width: 100%;
+  max-height: 90dvh;
+  overflow-y: auto;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.95);
   position: relative;
 }
@@ -1410,8 +1414,8 @@ dialog.modal:not([open]) {
   display: flex;
   align-items: center;
   padding: 0.25rem;
-  border-radius: 0.65rem;
-  background: rgba(0, 0, 0, 0.45);
+  border-radius: 0.75rem;
+  background: rgba(0, 0, 0, 0.5);
   border: 1px solid var(--tg-border);
   max-width: 15rem;
   margin: 0 auto;
@@ -1419,9 +1423,9 @@ dialog.modal:not([open]) {
 }
 .billing-btn {
   flex: 1 1 0%;
-  padding: 0.35rem 0.65rem;
-  border-radius: 0.45rem;
-  font-size: 0.75rem;
+  padding: 0.4rem 0.65rem;
+  border-radius: 0.55rem;
+  font-size: 0.78rem;
   font-weight: 700;
   border: none;
   background: transparent;
@@ -1441,24 +1445,24 @@ dialog.modal:not([open]) {
 
 .plans-desktop-grid {
   display: none;
-  gap: 0.75rem;
+  gap: 0.85rem;
 }
 @media (min-width: 768px) {
   .plans-desktop-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(175px, 1fr));
   }
 }
 
 .plan-card {
   background: var(--tg-surface);
-  border-radius: 0.85rem;
+  border-radius: 0.95rem;
   border: 1px solid var(--tg-border);
-  padding: 0.75rem;
+  padding: 0.85rem;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  gap: 0.65rem;
+  gap: 0.75rem;
   cursor: pointer;
   position: relative;
 }
@@ -1467,16 +1471,16 @@ dialog.modal:not([open]) {
   box-shadow: 0 0 15px rgba(56, 189, 248, 0.25);
 }
 .plan-card.featured-plan {
-  border-color: rgba(245, 158, 11, 0.6);
+  border-color: rgba(245, 158, 11, 0.65);
 }
 .plan-card-title {
-  font-size: 0.85rem;
+  font-size: 0.9rem;
   font-weight: 900;
   color: #FFFFFF;
   margin: 0;
 }
 .plan-card-price {
-  font-size: 1.1rem;
+  font-size: 1.15rem;
   font-weight: 900;
   color: #FDE047;
 }
@@ -1484,7 +1488,7 @@ dialog.modal:not([open]) {
 /* Tabella Comparativa Mobile */
 .plans-mobile-table-wrapper {
   background: var(--tg-surface);
-  border-radius: 0.85rem;
+  border-radius: 0.95rem;
   border: 1px solid var(--tg-border);
   overflow: hidden;
 }
@@ -1497,35 +1501,35 @@ dialog.modal:not([open]) {
   width: 100%;
   text-align: center;
   border-collapse: collapse;
-  font-size: 9.5px;
+  font-size: 10.5px;
 }
 .plans-compare-table thead tr {
   border-bottom: 1px solid var(--tg-border-light);
-  background: rgba(0, 0, 0, 0.4);
+  background: rgba(0, 0, 0, 0.45);
 }
 .table-head-corner {
-  padding: 0.4rem;
+  padding: 0.5rem;
   text-align: left;
-  font-size: 8.5px;
+  font-size: 9.5px;
   font-weight: 800;
   text-transform: uppercase;
   color: var(--tg-text-muted);
 }
 .table-cell-lead {
-  padding: 0.4rem;
+  padding: 0.5rem;
   text-align: left;
   color: #CBD5E1;
   font-weight: 600;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 110px;
+  max-width: 120px;
 }
 
 .free-plan-card {
-  background: rgba(17, 24, 39, 0.6);
-  padding: 0.65rem 0.75rem;
-  border-radius: 0.75rem;
+  background: rgba(17, 24, 39, 0.65);
+  padding: 0.75rem 0.85rem;
+  border-radius: 0.85rem;
   border: 1px solid var(--tg-border);
   display: flex;
   align-items: center;
@@ -1537,12 +1541,12 @@ dialog.modal:not([open]) {
 .plan-detail-box {
   background: var(--tg-sec-bg);
   border: 1px solid rgba(56, 189, 248, 0.4);
-  padding: 1.15rem 1.25rem 1.5rem 1.25rem;
-  border-radius: 1.15rem;
+  padding: 1.25rem;
+  border-radius: 1.25rem;
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
-  max-width: 26rem;
+  gap: 0.85rem;
+  max-width: 28rem;
   width: 100%;
   position: relative;
 }
@@ -1550,31 +1554,33 @@ dialog.modal:not([open]) {
 .fulfillment-modal-box {
   background: var(--tg-surface);
   border: 1px solid rgba(16, 185, 129, 0.4);
-  padding: 1.25rem;
-  border-radius: 1.15rem;
+  padding: 1.35rem;
+  border-radius: 1.25rem;
   text-align: center;
   display: flex;
   flex-direction: column;
-  gap: 0.65rem;
+  gap: 0.75rem;
   max-width: 22rem;
   width: 100%;
   position: relative;
 }
 .empty-state-card {
-  padding: 1.5rem 1rem;
+  padding: 1.75rem 1rem;
   text-align: center;
   color: var(--tg-text-subtle);
-  font-size: 0.75rem;
-  background: rgba(0, 0, 0, 0.2);
-  border-radius: 0.85rem;
+  font-size: 0.8rem;
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: 0.95rem;
   border: 1px dashed var(--tg-border);
 }
 
 /* ----------------------------------------------------------------------------
-   12. PULSANTI UNIVERSALI & STATI DISABILITATI AD ALTO CONTRASTO
+   13. PULSANTI UNIVERSALI (TOUCH TARGETS >= 36px/40px)
    ---------------------------------------------------------------------------- */
 .btn {
   transition: transform 0.1s ease, background-color 0.15s ease, border-color 0.15s ease;
+  min-height: 2.25rem;
+  height: 2.25rem;
 }
 .btn:active {
   transform: scale(0.97);
@@ -1590,48 +1596,48 @@ dialog.modal:not([open]) {
 }
 
 /* ----------------------------------------------------------------------------
-   13. MODALE JUKEBOX ("RADIO DARSENA SYNDICATE")
+   14. MODALE JUKEBOX ("RADIO DARSENA SYNDICATE")
    ---------------------------------------------------------------------------- */
 .jukebox-modal-box {
   background: var(--tg-sec-bg);
   border: 1px solid rgba(56, 189, 248, 0.4);
-  padding: 1.15rem 1.15rem 1.35rem 1.15rem;
-  border-radius: 1.15rem;
-  max-width: 28rem;
+  padding: 1.25rem;
+  border-radius: 1.25rem;
+  max-width: 30rem;
   width: 100%;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.95);
   display: flex;
   flex-direction: column;
-  gap: 0.65rem;
+  gap: 0.75rem;
   position: relative;
 }
 .jukebox-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding-bottom: 0.4rem;
+  padding-bottom: 0.5rem;
   border-bottom: 1px solid var(--tg-border);
   padding-right: 2.5rem;
 }
 .jukebox-brand {
-  font-size: 0.85rem;
+  font-size: 0.92rem;
   font-weight: 900;
   color: #FFFFFF;
   margin: 0;
   line-height: 1.2;
 }
 .jukebox-tag {
-  font-size: 8.5px;
+  font-size: 9.5px;
   color: var(--tg-text-muted);
 }
 .jukebox-display-screen {
-  background: rgba(0, 0, 0, 0.6);
-  border: 1px solid rgba(56, 189, 248, 0.25);
-  border-radius: 0.75rem;
-  padding: 0.6rem 0.75rem;
+  background: rgba(0, 0, 0, 0.65);
+  border: 1px solid rgba(56, 189, 248, 0.28);
+  border-radius: 0.85rem;
+  padding: 0.75rem 0.85rem;
 }
 .jukebox-track-title {
-  font-size: 0.95rem;
+  font-size: 1rem;
   font-weight: 900;
   color: #FFFFFF;
   margin: 0;
@@ -1640,18 +1646,18 @@ dialog.modal:not([open]) {
   text-overflow: ellipsis;
 }
 .jukebox-track-sub {
-  font-size: 9.5px;
+  font-size: 10.5px;
   color: #CBD5E1;
-  margin-top: 0.1rem;
+  margin-top: 0.15rem;
 }
 .jukebox-eq-bars {
   display: flex;
   align-items: flex-end;
-  gap: 2px;
-  height: 12px;
+  gap: 2.5px;
+  height: 14px;
 }
 .jukebox-eq-bars span {
-  width: 2px;
+  width: 2.5px;
   height: 3px;
   background: var(--tg-sky);
   border-radius: 1px;
@@ -1664,43 +1670,43 @@ dialog.modal:not([open]) {
 
 @keyframes eqBounce {
   0%, 100% { height: 3px; }
-  50% { height: 12px; }
+  50% { height: 14px; }
 }
 
 .jukebox-controls-row {
   display: flex;
   align-items: center;
-  gap: 0.45rem;
-  padding: 0.15rem 0;
+  gap: 0.5rem;
+  padding: 0.25rem 0;
 }
 .jukebox-playlist-scroll {
-  max-height: 10.5rem;
+  max-height: 11rem;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
+  gap: 0.4rem;
   padding-right: 0.25rem;
 }
 .jukebox-track-item {
-  padding: 0.4rem 0.6rem;
-  border-radius: 0.55rem;
-  background: rgba(17, 24, 39, 0.7);
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.65rem;
+  background: rgba(17, 24, 39, 0.75);
   border: 1px solid var(--tg-border);
   display: flex;
   align-items: center;
   justify-content: space-between;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: background 0.15s ease;
 }
 .jukebox-track-item:hover {
   background: var(--tg-surface-hover);
 }
 .jukebox-track-item.active {
-  background: rgba(56, 189, 248, 0.15);
+  background: rgba(56, 189, 248, 0.16);
   border-color: var(--tg-sky);
 }
 .track-item-title {
-  font-size: 10.5px;
+  font-size: 11px;
   font-weight: 700;
   color: #FFFFFF;
 }
@@ -1708,14 +1714,14 @@ dialog.modal:not([open]) {
   color: var(--tg-sky);
 }
 .track-item-sub {
-  font-size: 8.5px;
+  font-size: 9.5px;
   color: var(--tg-text-muted);
 }
 .track-item-tag {
-  font-size: 8px;
+  font-size: 8.5px;
   font-weight: 800;
   color: var(--tg-amber);
   text-transform: uppercase;
-  margin-left: 0.45rem;
+  margin-left: 0.5rem;
   flex-shrink: 0;
 }
