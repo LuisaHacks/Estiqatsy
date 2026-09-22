@@ -1,8 +1,8 @@
 // ============================================================================
 // PROJECT: ESTIQATSY SYNDICATE & RPG PLATFORM
-// FILE: js/app-modules.js (VERSIONE 9.0 - SESSION RESILIENCE, 1-2 WORDS BTNS)
-// LAYER 2: MODULI DI PIATTAFORMA AGNOSTICI, PORTALE GIOCHI, SHOP & SAAS
-// NOTE: 100% DISACCOPPIATO DA TAILWIND - TEMPLATE DINAMICI A CLASSI SEMANTICHE
+// FILE: js/app-modules.js (VERSIONE 10.0 - SPOTIFY MINIPLAYER & PURE SAAS LAYER)
+// LAYER 2: MODULI DI PIATTAFORMA AGNOSTICI, PORTALE GIOCHI, SHOP, RICETTE & RADIO
+// NOTE: 100% DISACCOPPIATO DAL MOTORE DI GIOCO - GESTIONE SEMANTICA CSS
 // ============================================================================
 
 const AppModules = {
@@ -35,7 +35,10 @@ const AppModules = {
       // 3. Slider Promozionale dinamico della Home
       this.initCarousel();
 
-      // 4. Rimozione Loader d'avvio tramite classe semantica
+      // 4. Inizializzazione Miniplayer Radiofonico della Home
+      this.initRadio();
+
+      // 5. Rimozione Loader d'avvio tramite classe semantica
       const loader = document.getElementById("app-loading");
       if (loader) {
         loader.classList.add("fade-out");
@@ -49,7 +52,6 @@ const AppModules = {
       const retryBtn = document.getElementById("loading-retry-btn");
 
       if (errBox) {
-        // GESTIONE INTELLIGENTE SESSION_EXPIRED (EVITA IL RELOAD LOOP)
         const isSessionExpired = err.message && (err.message.includes("SESSION_EXPIRED") || err.message.includes("UNAUTHORIZED"));
         
         if (isSessionExpired) {
@@ -151,27 +153,27 @@ const AppModules = {
       slides.push({
         badge: (topGame.tipologia || "GIOCO").toUpperCase(),
         titolo: `${topGame.emoji || '🎮'} ${topGame.serie}`,
-        sottotitolo: topGame.descrizione || "Entra nelle avventure della piattaforma",
+        sottotitolo: topGame.descrizione || "Entra nelle avventure investigative della piattaforma",
         btnText: "Gioca",
         action: () => AppRouter.navigate("games"),
         img: topGame.mediaUrl || "https://image.pollinations.ai/prompt/coastal-noir-docks-night-cinematic?width=800&height=400&nologo=true"
       });
     }
 
-    // Slide 2: Primo articolo in vetrina nello Shop
+    // Slide 2: Articolo in vetrina nello Shop
     if (AppState.shop.items && AppState.shop.items.length > 0) {
       const topProduct = AppState.shop.items[0];
       slides.push({
         badge: "SHOP",
         titolo: topProduct.nome,
-        sottotitolo: topProduct.descrizione || "Scopri gli articoli disponibili nello Shop",
+        sottotitolo: topProduct.descrizione || "Scopri gli articoli disponibili nel Syndicate",
         btnText: "Shop",
         action: () => AppRouter.navigate("shop"),
         img: topProduct.mediaUrl || "https://image.pollinations.ai/prompt/smugglers-dockside-warehouse-bazaar?width=800&height=400&nologo=true"
       });
     }
 
-    // Slide 3: Prima ricetta a catalogo
+    // Slide 3: Ricetta in evidenza
     if (AppState.recipes.items && AppState.recipes.items.length > 0) {
       const topRecipe = AppState.recipes.items[0];
       slides.push({
@@ -326,7 +328,6 @@ const AppModules = {
 
     const container = document.getElementById("hub-episodes-container");
     if (container) {
-      // BONIFICA EPISODIO 0: Mostra esclusivamente capitoli giocabili (episodio > 0)
       const playableEpisodes = (saga.episodes || []).filter(ep => ep.episodio > 0);
 
       container.innerHTML = playableEpisodes.map(ep => `
@@ -347,18 +348,13 @@ const AppModules = {
     AppRouter.navigate("subview-game-detail");
   },
 
-  // --------------------------------------------------------------------------
-  // AVVIO EPISODIO: RISOLUZIONE RESILIENTE DEL MOTORE
-  // --------------------------------------------------------------------------
   startEpisode: function(gameKey, epNum, canContinueFree) {
     const saga = AppState.games.catalog.find(s => s.gameKey === gameKey);
     if (!saga) return;
 
-    // Normalizzazione rigorosa: rimuove tutti gli spazi
     const rawRule = String(saga.regole || "Rules2").trim();
     const cleanRuleCode = rawRule.replace(/\s+/g, '');
 
-    // Catena di fallback multipla per azzerare discrepanze su Telegram Mobile
     let engine = null;
 
     if (typeof window.EngineRegistry !== "undefined" && typeof window.EngineRegistry.get === "function") {
@@ -383,7 +379,6 @@ const AppModules = {
     AppState.activeSession.combatRound = 1;
     AppState.activeSession.combatEnemyId = null;
 
-    // Apertura del cabinato arcade diegetico
     if (typeof engine.launchSession === "function") {
       const savedHeroProfile = saga.eroeSalvato || (saga.episodes && saga.episodes[epNum - 1]?.eroeSalvato) || null;
       engine.launchSession(gameKey, epNum, canContinueFree, savedHeroProfile);
@@ -910,6 +905,110 @@ const AppModules = {
     `).join("");
 
     if (window.lucide) lucide.createIcons();
+  },
+
+  // --------------------------------------------------------------------------
+  // 8. CONSOLE RADIO & MINIPLAYER HOMEPAGE (SPOTIFY-STYLE HI-FI DECK)
+  // --------------------------------------------------------------------------
+  initRadio: function() {
+    this.updateRadioDisplay();
+    // Aggiornamento periodico dell'equalizzatore e del titolo traccia
+    if (!this._radioSyncTimer) {
+      this._radioSyncTimer = setInterval(() => {
+        if (AppState.activeTab === "home") {
+          this.updateRadioDisplay();
+        }
+      }, 1500);
+    }
+  },
+
+  updateRadioDisplay: function() {
+    if (typeof SoundEngine === "undefined") return;
+
+    const curTrack = SoundEngine.getCurrentTrack ? SoundEngine.getCurrentTrack() : { title: "Hard Boiled", artist: "Kevin MacLeod", mood: "Noir Darsena" };
+    const isPlaying = SoundEngine.isPlaying !== undefined ? SoundEngine.isPlaying : true;
+    const isMuted = SoundEngine.isMuted !== undefined ? SoundEngine.isMuted : false;
+
+    // 1. Aggiornamento Deck nella Home
+    const homeTitle = document.getElementById("home-radio-title");
+    const homeArtist = document.getElementById("home-radio-artist");
+    const homeEq = document.getElementById("home-radio-eq");
+    const homePlayBtn = document.getElementById("home-radio-play-btn");
+    const homeMuteBtn = document.getElementById("home-radio-mute-btn");
+
+    if (homeTitle) homeTitle.textContent = curTrack.title || "Frequenze Syndicate";
+    if (homeArtist) homeArtist.textContent = `${curTrack.artist || 'Radio Noir'} • ${curTrack.mood || 'Darsena'}`;
+    if (homeEq) homeEq.classList.toggle("animated", isPlaying && !isMuted);
+    if (homePlayBtn) homePlayBtn.textContent = isPlaying ? "⏸" : "▶️";
+    if (homeMuteBtn) homeMuteBtn.textContent = isMuted ? "🔇" : "🔊";
+
+    // 2. Aggiornamento Modale Jukebox (se aperto)
+    const jukTitle = document.getElementById("jukebox-current-title");
+    const jukArtist = document.getElementById("jukebox-current-artist");
+    const jukMood = document.getElementById("jukebox-current-mood");
+    const jukEq = document.getElementById("jukebox-eq-bars");
+    const jukPlayBtn = document.getElementById("jukebox-btn-play");
+    const jukMuteBtn = document.getElementById("jukebox-btn-mute");
+
+    if (jukTitle) jukTitle.textContent = curTrack.title || "Hard Boiled";
+    if (jukArtist) jukArtist.textContent = curTrack.artist || "Kevin MacLeod";
+    if (jukMood) jukMood.textContent = curTrack.mood || "Tromba Noir & Pioggia";
+    if (jukEq) jukEq.classList.toggle("animated", isPlaying && !isMuted);
+    if (jukPlayBtn) jukPlayBtn.textContent = isPlaying ? "⏸ Pausa" : "▶️ Riproduci";
+    if (jukMuteBtn) {
+      jukMuteBtn.textContent = isMuted ? "🔇 Audio (OFF)" : "🔊 Audio (ON)";
+      jukMuteBtn.className = `btn btn-xs ${isMuted ? 'btn-error' : 'btn-success'} font-bold`;
+    }
+  },
+
+  toggleRadioPlay: function(e) {
+    if (e) e.stopPropagation();
+    if (typeof SoundEngine !== "undefined" && typeof SoundEngine.togglePlayPause === "function") {
+      SoundEngine.togglePlayPause();
+      this.updateRadioDisplay();
+    }
+  },
+
+  toggleRadioMute: function(e) {
+    if (e) e.stopPropagation();
+    if (typeof SoundEngine !== "undefined" && typeof SoundEngine.toggleMute === "function") {
+      SoundEngine.toggleMute();
+      this.updateRadioDisplay();
+    }
+  },
+
+  openRadioModal: function() {
+    const modal = document.getElementById("modal-audio-jukebox");
+    if (modal) {
+      this.updateRadioDisplay();
+      modal.showModal();
+    }
+  },
+
+  setMasterVolumePreset: function(val) {
+    if (typeof SoundEngine !== "undefined" && typeof SoundEngine.setVolume === "function") {
+      SoundEngine.setVolume(val);
+      localStorage.setItem(AppConfig.CACHE_KEYS.AUDIO_VOLUME, val);
+      this.updateRadioDisplay();
+    }
+  },
+
+  toggleBgmChannel: function() {
+    if (typeof SoundEngine !== "undefined") {
+      if (typeof SoundEngine.toggleBgm === "function") {
+        SoundEngine.toggleBgm();
+      } else {
+        SoundEngine.toggleMute();
+      }
+      this.updateRadioDisplay();
+    }
+  },
+
+  toggleSfxChannel: function() {
+    if (typeof SoundEngine !== "undefined" && typeof SoundEngine.toggleSfx === "function") {
+      SoundEngine.toggleSfx();
+      this.updateRadioDisplay();
+    }
   }
 };
 
