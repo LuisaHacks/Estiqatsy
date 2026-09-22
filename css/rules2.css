@@ -1,211 +1,22 @@
 /* ============================================================================
-   PROJECT: ESTIQATSY SYNDICATE & RPG PLATFORM
-   FILE: css/rules2.css (VERSIONE 17.0 - COMPLETE GAMING HUD & UEC ENGINE)
-   LAYER: ENGINE RULES2, HUD COCKPIT, UNIVERSAL CARD, TACTICAL DRAWERS & WIZARD
+   ESTIQATSY RULES 2 RPG - NARRATIVE COCKPIT, TOUCH SCROLL-SNAP & MULTIPLAYER
    ============================================================================ */
 
-/* ----------------------------------------------------------------------------
-   1. TOP BAR & HUD DI GIOCO (SCREENSHOT 6: NESSUNA IMMAGINE ESPLOSA)
-   ---------------------------------------------------------------------------- */
-
-/* Header Cockpit */
-#main-game-header.universal-top-bar {
-  background: rgba(9, 13, 22, 0.98);
-  border-bottom: 1px solid var(--tg-border, rgba(255, 255, 255, 0.08));
-}
-
-.game-header-titles {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-  flex: 1 1 auto;
-  min-width: 0;
-}
-.game-header-tag {
-  font-size: 10px;
-  font-weight: 900;
-  color: var(--tg-amber, #F59E0B);
-  text-transform: uppercase;
-  letter-spacing: 0.14em;
-  line-height: 1;
-}
-.game-header-sub {
-  font-size: 0.82rem;
-  font-weight: 900;
-  color: #FFFFFF;
-  line-height: 1.25;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 170px;
-  margin-top: 0.1rem;
-}
-@media (min-width: 640px) {
-  .game-header-sub {
-    max-width: 320px;
-    font-size: 0.95rem;
-  }
-}
-
-/* HUD Cockpit Unificato (Sopra la Scena) */
-.hud-cockpit {
-  flex: none;
-  background: var(--tg-sec-bg, #0D131F);
-  border: 1px solid var(--tg-border, rgba(255, 255, 255, 0.08));
-  border-radius: 1rem;
-  padding: 0.55rem 0.75rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.45rem;
-  margin-bottom: 0.45rem;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
-}
-
-.hud-row-identity {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
-  min-width: 0;
-}
-
-/* 🔒 FIX AVATAR HUD: Dimensioni fisse rigide, mai più immagini giganti deformed */
-.hud-avatar-box {
-  width: 36px !important;
-  height: 36px !important;
-  min-width: 36px !important;
-  min-height: 36px !important;
-  max-width: 36px !important;
-  max-height: 36px !important;
-  border-radius: 0.65rem;
-  background: #000000;
-  border: 1.5px solid rgba(56, 189, 248, 0.4);
-  overflow: hidden !important;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-.hud-avatar-img {
-  width: 100% !important;
-  height: 100% !important;
-  object-fit: cover !important;
-  object-position: center 15% !important; /* Inquadra il volto e non il petto */
-  display: block;
-}
-.hud-avatar-fallback {
-  font-size: 1.1rem;
-  line-height: 1;
-}
-.hud-hero-name {
-  font-size: 0.88rem;
-  font-weight: 900;
-  color: #FFFFFF;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 160px;
-}
-.hud-gold-display {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-  font-family: monospace;
-  font-size: 11.5px;
-  font-weight: 900;
-  color: #FDE047;
-  background: rgba(0, 0, 0, 0.45);
-  padding: 0.2rem 0.55rem;
-  border-radius: 9999px;
-  border: 1px solid rgba(245, 158, 11, 0.35);
-  flex-shrink: 0;
-}
-.gold-suffix {
-  color: var(--tg-text-muted);
-  font-size: 9.5px;
-}
-
-/* Riga Vitals (Barra Salute & D20 Trio) */
-.hud-row-vitals {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.65rem;
-}
-.hud-vitals-box {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  flex: 1 1 auto;
-  min-width: 0;
-}
-.heart-icon {
-  font-size: 11px;
-  flex-shrink: 0;
-}
-.progress-bar-container {
-  flex: 1 1 auto;
-  min-width: 0;
-}
-.hud-pv-number {
-  font-family: monospace;
-  font-size: 11px;
-  font-weight: 900;
-  color: #F43F5E;
-  flex-shrink: 0;
-}
-.hud-d20-trio {
-  display: flex;
-  align-items: center;
-  gap: 0.3rem;
-  flex-shrink: 0;
-}
-.d20-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.15rem;
-  font-family: monospace;
-  font-size: 10px;
-  font-weight: 800;
-  color: #CBD5E1;
-  background: rgba(0, 0, 0, 0.45);
-  padding: 0.15rem 0.35rem;
-  border-radius: 0.45rem;
-  border: 1px solid var(--tg-border);
-}
-.d20-chip b {
-  color: var(--tg-sky);
-}
-
-/* ----------------------------------------------------------------------------
-   2. SCENA DI GIOCO & AZIONI NARRATIVE
-   ---------------------------------------------------------------------------- */
+/* 1. SCENA CINEMA & COCKPIT NARRATIVO */
 .cinema-frame-rigid {
   position: relative;
   width: 100%;
-  height: clamp(150px, 22dvh, 220px);
-  border-radius: 1rem;
+  height: clamp(160px, 24dvh, 230px);
+  background: #050810;
+  border-radius: 14px;
   overflow: hidden;
-  background: #000000;
-  border: 1px solid var(--tg-border, rgba(255, 255, 255, 0.08));
-  flex-shrink: 0;
+  border: 1px solid var(--border-subtle);
 }
 .cinema-frame-rigid img {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: center;
-}
-
-.scene-badge {
-  position: absolute;
-  top: 0.65rem;
-  left: 0.65rem;
-  font-size: 9.5px;
-  font-weight: 900;
-  text-transform: uppercase;
-  z-index: 15;
+  display: block;
 }
 
 .watermark-cover-banner {
@@ -213,841 +24,341 @@
   bottom: 0;
   left: 0;
   right: 0;
-  background: linear-gradient(180deg, transparent 0%, rgba(9, 13, 22, 0.85) 40%, #090D16 100%);
-  padding: 0.45rem 0.85rem 0.4rem 0.85rem;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
+  background: linear-gradient(to top, rgba(7, 10, 18, 0.95) 20%, rgba(7, 10, 18, 0.5) 70%, transparent);
+  padding: 24px 14px 10px;
+  pointer-events: none;
   text-align: right;
-  z-index: 10;
 }
 .quote-text {
-  font-size: clamp(10.5px, 1.4dvh, 12px);
-  color: #F1F5F9;
+  font-size: 11.5px;
   font-style: italic;
+  color: #e2e8f0;
   line-height: 1.35;
-  text-align: right;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.95);
 }
 .quote-author {
+  font-family: var(--font-mono);
   font-size: 9.5px;
   font-weight: 800;
-  color: var(--tg-amber, #F59E0B);
+  color: var(--color-gold);
+  margin-top: 2px;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
-  text-align: right;
-  margin-top: 0.15rem;
 }
 
-/* Scatola Narrativa Flessibile */
 .narrative-box-flexible {
-  background: var(--tg-surface);
-  border: 1px solid var(--tg-border);
-  border-radius: 1rem;
-  padding: 0.75rem 0.85rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-  max-height: 28dvh;
-  overflow-y: auto;
+  background: rgba(17, 28, 52, 0.7);
+  border: 1px solid var(--border-subtle);
+  border-radius: 14px;
+  padding: 14px 16px;
+  margin-top: 10px;
 }
 .narrative-title {
-  font-size: 0.95rem;
-  font-weight: 900;
-  color: #FFFFFF;
+  font-size: 15px;
+  font-weight: 800;
+  color: #fff;
+  margin-bottom: 6px;
 }
 .narrative-prose {
-  font-size: 0.82rem;
-  color: #CBD5E1;
-  line-height: 1.5;
-  margin: 0;
+  font-size: 13px;
+  color: #cbd5e1;
+  line-height: 1.6;
 }
 
-/* Area Azioni & Bivi */
 .scene-actions-area {
   display: flex;
   flex-direction: column;
-  gap: 0.45rem;
-  margin-top: 0.45rem;
+  gap: 8px;
+  margin-top: 12px;
 }
-.combat-actions-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.5rem;
+.scene-action-btn {
+  background: rgba(22, 36, 66, 0.75);
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  border-radius: 12px;
+  padding: 12px 14px;
+  color: #f8fafc;
+  font-size: 12.5px;
+  font-weight: 700;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  min-height: 44px;
 }
-.arcade-actions-50-50 {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.5rem;
+.scene-action-btn:hover {
+  background: rgba(56, 189, 248, 0.15);
+  border-color: var(--color-accent);
+  transform: translateX(3px);
+}
+.scene-action-btn:active { transform: scale(0.99); }
+.scene-action-btn.action-danger {
+  border-color: rgba(244, 63, 94, 0.35);
+  background: rgba(40, 16, 28, 0.6);
 }
 
-/* Danni Fluttuanti */
-.floating-damage-layer {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  z-index: 25;
+/* 2. HUD COCKPIT GIOCO */
+.hud-cockpit {
+  background: rgba(17, 28, 52, 0.85);
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  padding: 10px 14px;
+  margin-bottom: 10px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+}
+.hud-row-identity {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+.hud-avatar-box {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  background: #000;
+  border: 1.5px solid rgba(56, 189, 248, 0.4);
   display: flex;
   align-items: center;
   justify-content: center;
+  overflow: hidden;
 }
-.floating-damage {
-  font-weight: 900;
-  font-size: 1.6rem;
-  color: var(--tg-sky, #38BDF8);
-  animation: floatDamage 1.2s ease-out forwards;
+.hud-avatar-box img { width: 100%; height: 100%; object-fit: cover; }
+.hud-hero-name { font-size: 13px; font-weight: 800; color: #fff; }
+.hud-gold-display {
+  font-size: 11.5px;
+  font-weight: 800;
+  font-family: var(--font-mono);
+  color: var(--color-gold);
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  padding: 2px 8px;
+  border-radius: 9999px;
 }
-@keyframes floatDamage {
-  0% { opacity: 0; transform: translateY(10px) scale(0.8); }
-  20% { opacity: 1; transform: translateY(-5px) scale(1.15); }
-  80% { opacity: 1; transform: translateY(-22px) scale(1); }
-  100% { opacity: 0; transform: translateY(-38px) scale(0.9); }
+.hud-row-vitals {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.hud-vitals-box {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+}
+.hud-pv-number {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--color-crimson);
+}
+.hud-d20-trio { display: flex; gap: 4px; }
+.d20-chip {
+  background: rgba(7, 10, 18, 0.6);
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  padding: 2px 6px;
+  font-size: 10px;
+  font-family: var(--font-mono);
+  color: #cbd5e1;
 }
 
-/* ----------------------------------------------------------------------------
-   3. FOOTER COCKPIT (RISPETTO ASSOLUTO PER L'HOME INDICATOR DI iOS)
-   ---------------------------------------------------------------------------- */
-.cockpit-footer {
+/* 3. WIZARD STEPPER TRACKER & LIVE HUD */
+.wizard-stepper-tracker {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  margin-bottom: 12px;
+  padding: 8px 12px;
+  background: rgba(11, 18, 34, 0.85);
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+}
+.wizard-stepper-step {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  opacity: 0.45;
+  transition: all 0.2s ease;
+}
+.wizard-stepper-step.active { opacity: 1; }
+.wizard-stepper-step.completed { opacity: 0.9; }
+
+.wizard-stepper-circle {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 800;
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-muted);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+.wizard-stepper-step.active .wizard-stepper-circle {
+  background: var(--color-accent);
+  color: #070a12;
+  border-color: var(--color-accent);
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.5);
+}
+.wizard-stepper-step.completed .wizard-stepper-circle {
+  background: rgba(16, 185, 129, 0.2);
+  color: #34d399;
+  border-color: var(--color-emerald);
+}
+.wizard-stepper-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+.wizard-stepper-step.active .wizard-stepper-label { color: #fff; }
+
+.wizard-live-hud {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 12px;
+  background: linear-gradient(135deg, rgba(14, 23, 42, 0.85), rgba(7, 10, 18, 0.92));
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  border-radius: 12px;
+  margin-bottom: 12px;
+}
+
+/* 4. TOUCH SCROLL-SNAP NATIVO (ADDIO 3D PESANTE) */
+.coverflow-stage-outer {
+  position: relative;
+  width: 100%;
+  padding: 8px 0;
+  overflow: hidden;
+}
+.coverflow-stage-wrapper {
+  display: flex;
+  align-items: stretch;
+  gap: 14px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  padding: 6px 16px 12px;
+  -webkit-overflow-scrolling: touch;
+}
+.coverflow-card {
+  flex: 0 0 260px;
+  scroll-snap-align: center;
+  background: rgba(17, 28, 52, 0.85);
+  border: 1px solid var(--border-subtle);
+  border-radius: 14px;
+  overflow: hidden;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.coverflow-card.selected {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 16px rgba(56, 189, 248, 0.3);
+  transform: translateY(-2px);
+}
+.coverflow-card-img {
+  width: 100%;
+  height: 140px;
+  object-fit: cover;
+  background: #000;
+}
+.coverflow-card-body {
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.coverflow-dots {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 10px;
+}
+.coverflow-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.coverflow-dot.active {
+  background: var(--color-accent);
+  transform: scale(1.3);
+  box-shadow: 0 0 6px var(--color-accent);
+}
+
+/* 5. FOOTER STICKY COCKPIT & WIZARD */
+.cockpit-footer,
+.wizard-sticky-footer {
   flex: none;
   z-index: 50;
   width: 100%;
-  max-width: 500px;
-  margin: 0 auto;
-  
-  /* Altezza dinamica: 46px ergonomici + Safe Area inferiore hardware */
-  height: calc(46px + var(--safe-bottom, 0px)) !important;
+  background: rgba(7, 10, 18, 0.98);
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
   padding-bottom: var(--safe-bottom, 0px);
-  
-  background: rgba(13, 19, 31, 0.98);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border-top: 1px solid var(--tg-border-light, rgba(255, 255, 255, 0.12));
+  height: calc(46px + var(--safe-bottom, 0px)) !important;
+}
+
+.cockpit-footer {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(4, 1fr);
   align-items: center;
   gap: 6px;
   padding-left: 8px;
   padding-right: 8px;
   padding-top: 4px;
 }
-
 .cockpit-btn {
   display: flex;
-  flex-direction: row;
   align-items: center;
   justify-content: center;
-  gap: 0.35rem;
+  gap: 4px;
   height: 36px;
-  padding: 0 0.4rem;
   background: rgba(255, 255, 255, 0.04);
-  border-radius: 0.5rem;
+  border-radius: 8px;
   border: 1px solid transparent;
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 700;
   cursor: pointer;
-  transition: transform 0.12s ease, background 0.15s ease, border-color 0.15s ease;
-  width: 100%;
+  transition: all 0.15s ease;
 }
 .cockpit-btn:active {
-  transform: scale(0.95);
   background: rgba(56, 189, 248, 0.15);
-  border-color: rgba(56, 189, 248, 0.4);
-}
-.cockpit-btn svg,
-.cockpit-btn i {
-  width: 15px !important;
-  height: 15px !important;
-  flex-shrink: 0;
-}
-.cockpit-btn-label {
-  font-size: 10.5px;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-  margin: 0;
-  line-height: 1;
-  white-space: nowrap;
+  border-color: var(--color-accent);
+  color: var(--color-accent);
 }
 
-/* ----------------------------------------------------------------------------
-   4. WIZARD: HEADER COLLISION-PROOF & CHIPS ORIZZONTALI (SCREENSHOTS 2, 3, 4)
-   ---------------------------------------------------------------------------- */
-body[data-active-screen="view-wizard"] .app-scroll-area {
-  overflow: hidden !important;
-  overscroll-behavior-y: none;
-}
-body[data-active-screen="view-wizard"] .app-content-wrapper {
-  height: 100% !important;
-  max-height: 100% !important;
-  min-height: 100% !important;
-  padding: 0.25rem 0.5rem 0.35rem 0.5rem !important;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-}
-body[data-active-screen="view-wizard"] .main-app-footer,
-body[data-active-screen="view-wizard"] .cockpit-footer {
-  display: none !important;
-}
-body[data-active-screen="view-wizard"] #main-wizard-footer {
-  display: flex;
-}
-
-.wizard-stage-container {
-  flex: 1 1 auto;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  position: relative;
-  width: 100%;
-  min-height: 0;
-}
-
-.wizard-step-panel {
-  flex: 1 1 auto;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  gap: 0.25rem;
-  min-height: 0;
-}
-
-/* 🔒 FIX HEADER WIZARD: Distribuzione solida che impedisce ai badge di sormontare i pulsanti 3D */
-.wizard-single-header {
-  flex: none;
-  min-height: 38px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0.2rem 0.35rem;
-  border-bottom: 1px solid var(--tg-border, rgba(255, 255, 255, 0.08));
-  gap: 0.35rem;
-}
-.wizard-single-header > div:first-child {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  min-width: 0;
-  flex: 1 1 auto;
-}
-
-.wizard-step-badge {
-  background: var(--tg-amber, #F59E0B);
-  color: #090D16;
-  font-size: 9.5px;
-  font-weight: 900;
-  padding: 0.2rem 0.45rem;
-  border-radius: 9999px;
-  line-height: 1;
-  flex-shrink: 0;
-}
-
-.wizard-step-title {
-  font-size: 0.84rem;
-  font-weight: 900;
-  color: #FFFFFF;
-  margin: 0;
-  line-height: 1.15;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-/* Badge Budget PX & Oro sonante nell'header */
-#wizard-px-budget,
-#wizard-shop-gold-display {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-  white-space: nowrap;
-  font-family: monospace;
-  font-size: 11px;
-  font-weight: 900;
-  line-height: 1;
-  padding: 0.2rem 0.5rem;
-  border-radius: 9999px;
-  flex-shrink: 0;
-}
-#wizard-shop-gold-display {
-  color: #FDE047;
-  background: rgba(0, 0, 0, 0.55);
-  border: 1px solid rgba(245, 158, 11, 0.35);
-}
-
-.wizard-view-toggle-pill {
-  display: inline-flex;
-  align-items: center;
-  background: rgba(0, 0, 0, 0.65);
-  border: 1px solid var(--tg-border-light, rgba(255, 255, 255, 0.12));
-  border-radius: 9999px;
-  padding: 2px;
-  gap: 2px;
-  flex-shrink: 0;
-}
-.toggle-pill-btn {
-  padding: 0.2rem 0.55rem;
-  border-radius: 9999px;
-  font-size: 9.5px;
-  font-weight: 800;
-  color: var(--tg-text-muted, #94A3B8);
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  transition: all 0.15s ease;
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-  line-height: 1;
-}
-.toggle-pill-btn.active {
-  background: var(--tg-sky, #38BDF8);
-  color: #090D16;
-  font-weight: 900;
-}
-
-/* 🔒 FIX CHIPS MERCATO NERO (SCREENSHOT 3 & 4): Nessuna icona tagliata */
-.rpg-category-chip {
-  display: inline-flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  gap: 0.3rem !important;
-  height: 28px !important;
-  min-height: 28px !important;
-  padding: 0 0.75rem !important;
-  border-radius: 9999px !important;
-  font-size: 11px !important;
-  font-weight: 800 !important;
-  white-space: nowrap !important;
-  border: 1px solid rgba(255, 255, 255, 0.1) !important;
-  background: rgba(17, 24, 39, 0.7) !important;
-  color: #CBD5E1 !important;
-  cursor: pointer;
-}
-.rpg-category-chip.active,
-.rpg-category-chip.badge-info {
-  background: var(--tg-sky, #38BDF8) !important;
-  color: #090D16 !important;
-  border-color: var(--tg-sky) !important;
-}
-
-.wizard-content-fill {
-  flex: 1 1 auto;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  position: relative;
-}
-
-/* ----------------------------------------------------------------------------
-   5. UNIVERSAL ENTITY CARD (UEC): ELIMINATO IL VUOTO NERO (SCREENSHOTS 2, 3, 4, 5)
-   ---------------------------------------------------------------------------- */
-.coverflow-stage-outer {
-  position: relative;
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 0 0.25rem;
-  flex: 1 1 auto;
-  min-height: 0;
-}
-
-.coverflow-stage-wrapper {
-  position: relative;
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  perspective: 1200px;
-  perspective-origin: center center;
-  user-select: none;
-  touch-action: pan-y;
-  height: 100% !important;
-  min-height: 380px;
-  max-height: 520px;
-}
-
-/* La Scheda Universale (UEC): Occupa Tutto lo Spazio Residuo */
-.coverflow-stage-wrapper .coverflow-card,
-.universal-card {
-  position: absolute;
-  border-radius: 1.25rem;
-  background: #0D131F;
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  cursor: pointer;
-  backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
-  transform: translateZ(0);
-  transform-style: preserve-3d;
-  contain: layout style paint;
-  transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.35s ease, box-shadow 0.35s ease, border-color 0.35s ease;
-  will-change: transform, opacity;
-
-  /* Geometria Dinamica */
-  width: clamp(285px, 86vw, 350px) !important;
-  height: 100% !important;
-  max-height: calc(100% - 6px) !important;
-  margin-bottom: 6px !important;
-
-  box-shadow: 0 0 1px rgba(255, 255, 255, 0.4), 0 0 14px rgba(255, 255, 255, 0.08);
-}
-
-/* Bagliore Fazione Politica */
-.coverflow-stage-wrapper .coverflow-card.glow-active,
-.universal-card.glow-active {
-  box-shadow: 0 0 2px rgba(56, 189, 248, 0.8), 0 0 22px rgba(56, 189, 248, 0.35) !important;
-  border-color: rgba(56, 189, 248, 0.6) !important;
-}
-.coverflow-stage-wrapper .coverflow-card.glow-active[data-faction="destra"],
-.universal-card.glow-active[data-faction="destra"] {
-  box-shadow: 0 0 2px rgba(56, 189, 248, 0.9), 0 0 26px rgba(56, 189, 248, 0.45) !important;
-  border-color: rgba(56, 189, 248, 0.75) !important;
-}
-.coverflow-stage-wrapper .coverflow-card.glow-active[data-faction="sinistra"],
-.universal-card.glow-active[data-faction="sinistra"] {
-  box-shadow: 0 0 2px rgba(244, 63, 94, 0.9), 0 0 26px rgba(244, 63, 94, 0.45) !important;
-  border-color: rgba(244, 63, 94, 0.75) !important;
-}
-
-/* Silenziamento Testi sulle Carte Laterali */
-.coverflow-stage-wrapper .coverflow-card:not(.glow-active) .coverflow-lore,
-.coverflow-stage-wrapper .coverflow-card:not(.glow-active) .card-lore-box,
-.coverflow-stage-wrapper .coverflow-card:not(.glow-active) .watermark-cover-banner,
-.coverflow-stage-wrapper .coverflow-card:not(.glow-active) .coverflow-stats-row,
-.coverflow-stage-wrapper .coverflow-card:not(.glow-active) .card-action-deck,
-.coverflow-stage-wrapper .coverflow-card:not(.glow-active) .coverflow-footer-row {
-  opacity: 0 !important;
-  pointer-events: none;
-  transition: opacity 0.2s ease;
-}
-
-.coverflow-stage-wrapper .coverflow-card:not(.glow-active) .coverflow-media-frame::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: rgba(9, 13, 22, 0.88);
-  pointer-events: none;
-}
-
-/* 1. Header Carta (32px Fisso) */
-.coverflow-header-bar,
-.uec-meta-bar {
-  position: relative;
-  z-index: 15;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 0.75rem;
-  background: rgba(9, 13, 22, 0.96);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-}
-.coverflow-title-group,
-.uec-title-group {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  max-width: 70%;
-}
-.coverflow-title,
-.uec-title {
-  font-size: 0.85rem;
-  font-weight: 900;
-  color: #FFFFFF;
-  line-height: 1.15;
-  margin: 0;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.coverflow-badge-faction {
-  font-size: 9.5px;
-  font-weight: 900;
-  letter-spacing: 0.06em;
-  padding: 0.2rem 0.5rem;
-  border-radius: 9999px;
-  line-height: 1;
-}
-.coverflow-badge-faction[data-faction="destra"],
-.badge-faction-destra {
-  background: var(--tg-sky, #38BDF8);
-  color: #090D16;
-}
-.coverflow-badge-faction[data-faction="sinistra"],
-.badge-faction-sinistra {
-  background: var(--tg-rose, #F43F5E);
-  color: #FFFFFF;
-}
-
-/* 🔒 FIX VORAGINE NERA: L'immagine si espande elasticamente per riempire lo spazio vuoto */
-.coverflow-media-frame,
-.card-media-box {
-  position: relative;
-  width: 100%;
-  flex: 1 1 0% !important; /* Riempie tutto il vuoto verticale */
-  min-height: 180px !important;
-  background: #000000;
-  overflow: hidden;
-}
-.coverflow-img,
-.card-media-box img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: center;
-}
-
-.coverflow-details-box {
-  flex: none;
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  background: #0D131F;
-}
-
-/* 3. Trittico KPI Tattici */
-.coverflow-stats-row,
-.uec-kpi-strip {
-  width: 100%;
-  height: 26px !important;
-  min-height: 26px !important;
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 1px;
-  background: rgba(255, 255, 255, 0.08);
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  align-items: center;
-  font-family: monospace;
-  font-size: 11px !important;
-  font-weight: 800;
-  margin: 0 !important;
-  flex-shrink: 0;
-}
-.coverflow-stats-row > div,
-.uec-kpi-item {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.2rem;
-  background: #0D131F;
-  height: 100%;
-}
-
-/* 4. Area Narrativa: Max 9 righe con scroll isolato */
-.coverflow-lore,
-.card-lore-box {
-  flex: none;
-  width: 100%;
-  font-size: 11.5px !important;
-  line-height: 1.4 !important;
-  max-height: calc(11.5px * 1.4 * 9) !important;
-  padding: 0.5rem 0.75rem !important;
-  color: #CBD5E1;
-  text-align: left;
-  overflow-y: auto;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-  word-break: break-word;
-  background: #0D131F;
-}
-.coverflow-lore::-webkit-scrollbar,
-.card-lore-box::-webkit-scrollbar {
-  display: none;
-}
-
-/* 🔒 FIX FOOTER CARTA: Mai più testo che sbatte contro il pulsante (Screenshot 2) */
-.coverflow-footer-row {
-  flex: none;
-  width: 100%;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: space-between !important;
-  gap: 0.5rem !important;
-  padding: 0.45rem 0.75rem !important;
-  background: rgba(9, 13, 22, 0.95);
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
-}
-.coverflow-gear-label {
-  font-size: 11px;
-  color: #CBD5E1;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  flex: 1 1 auto;
-  min-width: 0;
-}
-.coverflow-kpi-pill {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  flex-shrink: 0;
-}
-.pill-pv {
-  color: #F43F5E;
-  font-weight: 800;
-  font-size: 11px;
-  font-family: monospace;
-}
-.pill-gold {
-  color: #FDE047;
-  font-weight: 800;
-  font-size: 11px;
-  font-family: monospace;
-}
-
-/* 🔒 FIX FRECCE CILINDRO 3D: Controlli touch evidenti e cliccabili */
-.coverflow-nav-cluster {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 0.75rem;
-  margin-top: 6px !important;
-  margin-bottom: 2px !important;
-  height: 26px;
-  flex-shrink: 0;
-}
-.coverflow-counter-pill {
-  font-family: monospace;
-  font-size: 11px;
-  font-weight: 800;
-  color: var(--tg-sky, #38BDF8);
-  padding: 0.15rem 0.55rem;
-  background: rgba(0, 0, 0, 0.55);
-  border-radius: 9999px;
-  border: 1px solid rgba(56, 189, 248, 0.3);
-}
-.coverflow-btn-side {
-  width: 26px;
-  height: 26px;
-  border-radius: 9999px;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  color: #FFFFFF;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 12px;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-.coverflow-btn-side:active {
-  background: var(--tg-sky, #38BDF8);
-  color: #090D16;
-  transform: scale(0.92);
-}
-
-/* Step 4: Lancio Eroe */
-.hero-launch-stage {
-  flex: 1 1 auto;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 0;
-  padding: 0.25rem 0;
-}
-.hero-launch-card {
-  position: relative !important;
-  transform: none !important;
-  opacity: 1 !important;
-}
-
-/* ----------------------------------------------------------------------------
-   6. MODALE FASCICOLO AGENTE & RISORSE (SCREENSHOT 7 RISOLTO)
-   ---------------------------------------------------------------------------- */
-.hero-sheet-profile-card {
-  background: rgba(0, 0, 0, 0.4);
-  border: 1px solid var(--tg-border-light);
-  border-radius: 1rem;
-  padding: 0.75rem;
-}
-.hero-sheet-avatar-box {
-  width: 52px !important;
-  height: 52px !important;
-  min-width: 52px !important;
-  min-height: 52px !important;
-  border-radius: 0.85rem;
-  background: #000000;
-  border: 2px solid rgba(56, 189, 248, 0.4);
-  overflow: hidden !important;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-.hero-sheet-avatar-box img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: center 15%;
-}
-.hero-sheet-name {
-  font-size: 1rem;
-  font-weight: 900;
-  color: #FFFFFF;
-  margin: 0;
-  line-height: 1.2;
-}
-.hero-sheet-class-badge {
-  font-size: 11px;
-  color: var(--tg-sky);
-  font-weight: 800;
-  margin-top: 0.15rem;
-}
-
-.hero-sheet-wallet-box {
-  background: rgba(0, 0, 0, 0.45);
-  border: 1px solid var(--tg-border);
-  border-radius: 0.85rem;
-  padding: 0.65rem 0.85rem;
-}
-
-/* 🔒 FIX GRIGLIA STATISTICHE (SCREENSHOT 7): Disposizione compatta a 3 colonne affiancate */
-.hero-sheet-stats-grid {
-  display: grid !important;
-  grid-template-columns: repeat(3, 1fr) !important;
-  gap: 0.5rem !important;
-  width: 100%;
-}
-.sheet-stat-card {
-  background: rgba(0, 0, 0, 0.5);
-  border: 1px solid var(--tg-border);
-  border-radius: 0.75rem;
-  padding: 0.5rem 0.35rem;
-  text-align: center;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.15rem;
-}
-.stat-icon {
-  font-size: 1.2rem;
-  line-height: 1;
-}
-.stat-label {
-  font-size: 9.5px;
-  color: var(--tg-text-muted);
-  font-weight: 800;
-  text-transform: uppercase;
-}
-.stat-val {
-  font-size: 1.15rem;
-  font-weight: 900;
-  color: var(--tg-sky);
-  font-family: monospace;
-  line-height: 1;
-}
-.stat-pure {
-  font-size: 10px;
-  color: var(--tg-text-subtle);
-  font-family: monospace;
-}
-
-/* ----------------------------------------------------------------------------
-   7. MODALE ASSETTO TATTICO & SINTESI (SCREENSHOT 8 RISOLTO)
-   ---------------------------------------------------------------------------- */
-.drawer-header-row {
-  display: flex !important;
-  align-items: center !important;
-  justify-content: space-between !important;
-  width: 100%;
-  padding-bottom: 0.5rem;
-  border-bottom: 1px solid var(--tg-border);
-}
-.drawer-title {
-  font-size: 0.95rem;
-  font-weight: 900;
-  color: #FFFFFF;
-  margin: 0;
-}
-
-/* 🔒 FIX SLOT OPERATIVI (SCREENSHOT 8): Tasto "Cambia" perfettamente allineato a destra */
-.assetto-slot-card {
-  background: rgba(0, 0, 0, 0.4);
-  border: 1px solid var(--tg-border);
-  border-radius: 0.75rem;
-  padding: 0.65rem 0.85rem;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: space-between !important;
-  gap: 0.65rem;
-  width: 100%;
-}
-.assetto-slot-card > div {
-  display: flex;
-  align-items: center;
-  min-width: 0;
-  flex: 1 1 auto;
-}
-.assetto-crafting-box {
-  background: rgba(17, 24, 39, 0.6);
-  border: 1px solid rgba(168, 85, 247, 0.3);
-  border-radius: 0.85rem;
-  padding: 0.75rem;
-}
-
-/* ----------------------------------------------------------------------------
-   8. FOOTER WIZARD STICKY
-   ---------------------------------------------------------------------------- */
 .wizard-sticky-footer {
-  flex: none;
-  z-index: 50;
-  width: 100%;
-  max-width: 480px;
-  margin: 0 auto;
-  background: rgba(9, 13, 22, 0.98);
-  border-top: 1px solid rgba(255, 255, 255, 0.12);
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding-left: 0.65rem;
-  padding-right: 0.65rem;
-  padding-bottom: var(--safe-bottom, 0px);
-  height: calc(44px + var(--safe-bottom, 0px)) !important;
-}
-
-.wizard-footer-step-controls {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-.wizard-footer-step-controls .btn {
-  height: 36px;
-  min-height: 36px;
-  font-size: 0.82rem;
-  font-weight: 900;
-  text-transform: uppercase;
+  padding-left: 12px;
+  padding-right: 12px;
 }
 .btn-wizard-cta {
-  background: var(--tg-sky, #38BDF8) !important;
-  color: #090D16 !important;
-  border: none !important;
-  font-weight: 900 !important;
+  background: linear-gradient(135deg, #0284c7, #2563eb);
+  color: #fff;
+  border: none;
+  font-weight: 800;
+  border-radius: 10px;
+  height: 38px;
 }
 
-/* ----------------------------------------------------------------------------
-   9. RESPONSIVE DESKTOP & WIDESCREEN (>= 1024px)
-   ---------------------------------------------------------------------------- */
-@media (min-width: 1024px) {
-  .wizard-stage-container,
-  .gameplay-container {
-    max-width: 920px;
-    margin: 0 auto;
-  }
-  .coverflow-stage-wrapper {
-    perspective: 1400px;
-  }
-  .coverflow-stage-wrapper .coverflow-card,
-  .universal-card {
-    width: 360px !important;
-  }
+/* 6. MULTIPLAYER LOBBY & COCKPIT */
+.mode-select-btn {
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.mode-select-btn:hover {
+  border-color: var(--color-accent);
 }
