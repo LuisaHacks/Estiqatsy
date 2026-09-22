@@ -241,9 +241,8 @@
           <!-- =============================================================== -->
           <section id="view-wizard" class="wizard-stage-container hidden app-screen max-w-4xl mx-auto">
 
-            <!-- PASSO 1: ARCHETIPO DI CLASSE -->
+            <!-- PASSO 1: SCELTA CLASSE COSTIERA -->
             <div id="wizard-step-class" class="wizard-step-panel">
-              <!-- Single-Row Header Compatto -->
               <div class="wizard-single-header">
                 <div class="flex items-center space-x-2 min-w-0">
                   <span class="wizard-step-badge">1/4</span>
@@ -259,11 +258,9 @@
                 </div>
               </div>
 
-              <!-- Vista A: Cilindro 3D (Spazio Massimizzato & Alone Fluido) -->
+              <!-- Vista A: Cilindro 3D (Frecce orfane rimosse, pulizia totale) -->
               <div id="wizard-class-view-3d" class="wizard-content-fill">
                 <div class="coverflow-stage-outer">
-                  <button onclick="GameEngine.coverflowPrev()" class="coverflow-arrow-btn left-2" aria-label="Precedente">❮</button>
-                  <button onclick="GameEngine.coverflowNext()" class="coverflow-arrow-btn right-2" aria-label="Successivo">❯</button>
                   <div class="coverflow-stage-wrapper" id="wizard-classes-stage"></div>
                   <div class="coverflow-dots" id="wizard-coverflow-dots"></div>
                 </div>
@@ -296,8 +293,6 @@
               <!-- Vista A: Cilindro 3D Abilità -->
               <div id="wizard-abilities-view-3d" class="wizard-content-fill hidden">
                 <div class="coverflow-stage-outer">
-                  <button onclick="GameEngine.cylinderAbilitiesPrev()" class="coverflow-arrow-btn left-2" aria-label="Precedente">❮</button>
-                  <button onclick="GameEngine.cylinderAbilitiesNext()" class="coverflow-arrow-btn right-2" aria-label="Successivo">❯</button>
                   <div class="coverflow-stage-wrapper" id="wizard-abilities-stage"></div>
                   <div class="coverflow-dots" id="wizard-abilities-dots"></div>
                 </div>
@@ -341,8 +336,6 @@
               <!-- Vista A: Cilindro 3D Merci -->
               <div id="wizard-shop-view-3d" class="wizard-content-fill hidden">
                 <div class="coverflow-stage-outer">
-                  <button onclick="GameEngine.cylinderShopPrev()" class="coverflow-arrow-btn left-2" aria-label="Precedente">❮</button>
-                  <button onclick="GameEngine.cylinderShopNext()" class="coverflow-arrow-btn right-2" aria-label="Successivo">❯</button>
                   <div class="coverflow-stage-wrapper" id="wizard-shop-stage"></div>
                   <div class="coverflow-dots" id="wizard-shop-dots"></div>
                 </div>
@@ -354,44 +347,9 @@
               </div>
             </div>
 
-            <!-- PASSO 4: BATTESIMO DELL'EROE -->
+            <!-- PASSO 4: LANCIO DELL'EROE (CARTA MONUMENTALE DINAMICA) -->
             <div id="wizard-step-name" class="wizard-step-panel hidden">
-              <div class="wizard-single-header">
-                <div class="flex items-center space-x-2 min-w-0">
-                  <span class="wizard-step-badge">4/4</span>
-                  <h3 class="wizard-step-title truncate">Battesimo dell'Antieroe</h3>
-                </div>
-                <span class="text-xs font-black text-amber-400 font-mono" id="wizard-class-recap">Classe</span>
-              </div>
-
-              <div class="wizard-content-fill flex flex-col justify-center">
-                <div class="recap-card-box" id="wizard-final-recap-box">
-                  <div class="flex items-center justify-between border-b border-white/5 pb-2">
-                    <div class="flex items-center space-x-2.5">
-                      <span class="text-2xl" id="wizard-recap-avatar">🥋</span>
-                      <div>
-                        <div class="font-black text-white text-sm" id="wizard-recap-classname">Archetipo</div>
-                        <div class="text-[9px] text-sky-400 font-bold uppercase tracking-wider" id="wizard-recap-faction">Destra (+1 Danno)</div>
-                      </div>
-                    </div>
-                    <div class="text-right font-mono">
-                      <div class="text-rose-400 font-bold text-xs" id="wizard-recap-pv">❤️ 25 PV</div>
-                      <div class="text-amber-300 text-[11px]" id="wizard-recap-gold">🟡 40 Oro</div>
-                    </div>
-                  </div>
-
-                  <div class="space-y-1 text-[11px] text-slate-300">
-                    <div>⚡ <b>Talenti:</b> <span id="wizard-recap-abilities" class="text-slate-400 italic">Nessuno</span></div>
-                    <div>🎒 <b>Dotazione:</b> <span id="wizard-recap-inventory" class="text-slate-400 italic">Caricamento...</span></div>
-                  </div>
-
-                  <div class="pt-2 border-t border-white/5 space-y-1.5">
-                    <label class="text-[9.5px] font-bold text-slate-400 uppercase tracking-wider block">Nome dell'Eroe nel Syndicate</label>
-                    <input type="text" id="wizard-name-input" class="input input-sm input-bordered w-full text-xs text-white bg-black/50" placeholder="Es. Falco della Darsena" enterkeyhint="done">
-                    <button onclick="GameEngine.wizardUseTelegramName()" class="btn btn-xs btn-outline border-white/20 w-full text-[10px] mt-1">Usa il tuo nome Telegram</button>
-                  </div>
-                </div>
-              </div>
+              <!-- Renderizzato dinamicamente come Carta Monumentale da Rules2Wizard.renderStep4() -->
             </div>
 
           </section>
@@ -625,51 +583,51 @@
         </button>
       </footer>
 
-      <!-- 4.B FOOTER WIZARD STICKY (I PULSANTI DI CONTROLLO ANCORATI QUI!) -->
+      <!-- 4.B FOOTER WIZARD STICKY: CTA SNELLE & MOBILE-FIRST -->
       <footer id="main-wizard-footer" class="wizard-sticky-footer hidden">
-        <!-- Controlli Passo 1: Archetipo -->
+        <!-- Controlli Passo 1: Scelta Classe -->
         <div id="wiz-footer-step-1" class="wizard-footer-step-controls w-full flex">
-          <button id="wizard-step1-confirm-btn" onclick="GameEngine.wizardConfirmStep1()" class="btn btn-sm btn-primary w-full font-black uppercase shadow-lg shadow-sky-600/30">
-            ➡️ Conferma Archetipo (Passo 2/4)
+          <button id="wizard-step1-confirm-btn" onclick="GameEngine.wizardConfirmStep1()" class="btn btn-sm btn-wizard-cta w-full font-black uppercase tracking-wider">
+            Scegli Classe ›
           </button>
         </div>
 
         <!-- Controlli Passo 2: Talenti -->
         <div id="wiz-footer-step-2" class="wizard-footer-step-controls w-full flex space-x-2 hidden">
           <button onclick="GameEngine.wizardPrevStep(1)" class="btn btn-xs sm:btn-sm btn-outline border-white/20 text-slate-300 font-bold px-3">
-            🔙 Archetipo
+            ‹ Classi
           </button>
-          <button onclick="GameEngine.wizardConfirmStep2()" class="btn btn-sm btn-primary flex-1 font-bold shadow-lg shadow-sky-600/30">
-            ➡️ Emporio di Ciccio (Passo 3/4)
+          <button onclick="GameEngine.wizardConfirmStep2()" class="btn btn-sm btn-wizard-cta flex-1 font-black uppercase tracking-wider">
+            All'Emporio ›
           </button>
         </div>
 
-        <!-- Controlli Passo 3: Emporio -->
+        <!-- Controlli Passo 3: Emporio di Ciccio -->
         <div id="wiz-footer-step-3" class="wizard-footer-step-controls w-full flex items-center space-x-2 hidden">
           <button onclick="GameEngine.wizardPrevStep(2)" class="btn btn-xs sm:btn-sm btn-outline border-white/20 text-slate-300 font-bold px-3">
-            🔙 Talenti
+            ‹ Talenti
           </button>
           <div class="flex-1 flex items-center justify-between px-3 py-1 bg-black/40 rounded-lg border border-white/10 text-[11px]">
-            <span class="text-slate-300">🎒 Zaino: <b id="wizard-shop-backpack-count" class="text-amber-300">0 ogg.</b></span>
-            <button onclick="GameEngine.resetWizardShop()" class="text-rose-400 font-bold text-[10px] hover:underline">Ripristina</button>
+            <span class="text-slate-300">🎒 Zaino: <b id="wizard-shop-backpack-count" class="text-amber-300">0</b></span>
+            <button onclick="GameEngine.resetWizardShop()" class="text-rose-400 font-bold text-[10px] hover:underline">Azzera</button>
           </div>
-          <button onclick="GameEngine.wizardNextStep(4)" class="btn btn-sm btn-primary font-bold px-4 shadow-lg shadow-sky-600/30">
-            ➡️ Battesimo (4/4)
+          <button id="wizard-step3-next-btn" onclick="GameEngine.wizardNextStep(4)" class="btn btn-sm btn-wizard-cta font-black uppercase px-4">
+            Riepilogo ›
           </button>
         </div>
 
-        <!-- Controlli Passo 4: Battesimo -->
+        <!-- Controlli Passo 4: Battesimo & Lancio Eroe -->
         <div id="wiz-footer-step-4" class="wizard-footer-step-controls w-full flex space-x-2 hidden">
           <button onclick="GameEngine.wizardPrevStep(3)" class="btn btn-xs sm:btn-sm btn-outline border-white/20 text-slate-300 font-bold px-3">
-            🔙 Emporio
+            ‹ Emporio
           </button>
-          <button id="wizard-finalize-btn" onclick="GameEngine.wizardFinalizeHero()" class="btn btn-sm btn-primary flex-1 font-black uppercase shadow-lg shadow-sky-600/30">
-            🚀 ENTRA IN GIOCO ORA
+          <button id="wizard-finalize-btn" onclick="GameEngine.wizardFinalizeHero()" class="btn btn-sm btn-wizard-cta flex-1 font-black uppercase tracking-wider">
+            Lancia Eroe 🚀
           </button>
         </div>
       </footer>
 
-      <!-- 4.C FOOTER GAME COCKPIT RULES2 (5 SEZIONI) -->
+      <!-- 4.C FOOTER GAME COCKPIT RULES2 (5 SEZIONI PERMANENTI) -->
       <footer id="main-game-cockpit-footer" class="cockpit-footer hidden">
         <button onclick="GameEngine.openHeroSheetDrawer()" class="cockpit-btn text-slate-300 hover:text-sky-400">
           <i data-lucide="user" class="w-4 h-4"></i>
@@ -711,15 +669,15 @@
       </div>
 
       <div id="arcade-active-game-box" class="hidden space-y-2">
-        <span class="badge badge-warning font-black text-[9px] uppercase tracking-wider">⚠️ Partita Attiva Rilevata</span>
-        <h3 class="text-sm font-black text-white" id="arcade-active-title">Hai una sessione in corso</h3>
-        <p class="text-[11px] text-slate-300 leading-snug" id="arcade-active-desc">Vuoi riprendere dal tuo ultimo snodo o sovrascrivere la partita?</p>
+        <span class="badge badge-warning font-black text-[9px] uppercase tracking-wider">⚠️ Partita Attiva</span>
+        <h3 class="text-sm font-black text-white" id="arcade-active-title">Sessione in corso</h3>
+        <p class="text-[11px] text-slate-300 leading-snug" id="arcade-active-desc">Vuoi riprendere dal tuo ultimo snodo o sovrascrivere?</p>
         <div class="space-y-1.5 pt-2">
           <button id="arcade-btn-resume" class="btn btn-sm btn-success w-full font-black text-xs shadow-md">
-            ▶️ Riprendi Partita in Corso
+            Riprendi Partita ▶️
           </button>
           <button id="arcade-btn-overwrite" class="btn btn-xs btn-outline border-rose-500/40 text-rose-300 w-full font-bold">
-            🪙 Inizia Nuova Partita (Sovrascrivi)
+            Ricomincia (1 🪙)
           </button>
         </div>
       </div>
@@ -740,13 +698,13 @@
         </div>
 
         <button id="arcade-btn-launch" class="btn btn-sm btn-primary w-full font-black uppercase text-xs shadow-xl shadow-sky-600/40">
-          🕹️ Inserisci 1 Megoin & Inizia
+          Inserisci 1 🪙 e Gioca
         </button>
       </div>
     </div>
   </dialog>
 
-  <!-- SCHEDA DETTAGLIATA UNIVERSALE -->
+  <!-- SCHEDA DETTAGLIATA UNIVERSALE (DOSSIER) -->
   <dialog id="modal-universal-detail" class="modal modal-middle modal-dossier">
     <div class="modal-box dossier-box">
       <button onclick="document.getElementById('modal-universal-detail').close()" class="modal-close-btn">✕</button>
@@ -909,8 +867,8 @@
         <button onclick="GameEngine.openCambioModal()" class="btn btn-xs btn-warning font-black text-[9px]">💱 Banco Cambio</button>
       </div>
       <div class="flex space-x-1.5 pt-1">
-        <button id="emporio-tab-buy" onclick="GameEngine.setEmporioMode('buy')" class="flex-1 btn btn-xs btn-primary font-bold">Acquista Merci RPG</button>
-        <button id="emporio-tab-sell" onclick="GameEngine.setEmporioMode('sell')" class="flex-1 btn btn-xs btn-ghost text-slate-400 font-bold">Vendi a Ciccio (25%)</button>
+        <button id="emporio-tab-buy" onclick="GameEngine.setEmporioMode('buy')" class="flex-1 btn btn-xs btn-primary font-bold">Compra</button>
+        <button id="emporio-tab-sell" onclick="GameEngine.setEmporioMode('sell')" class="flex-1 btn btn-xs btn-ghost text-slate-400 font-bold">Vendi (25%)</button>
       </div>
       <div class="emporio-items-scroll-grid" id="emporio-items-container"></div>
     </div>
@@ -928,10 +886,10 @@
       </div>
       <div class="space-y-1.5 pt-1">
         <button onclick="GameEngine.convertMegoinToGold(1, 100)" class="btn btn-sm btn-primary w-full font-bold text-xs shadow-md">
-          Converti 1 🪙 ➔ +100 🟡 Oro
+          Scambia 1 🪙 (+100 🟡)
         </button>
         <button onclick="GameEngine.convertMegoinToGold(2, 200)" class="btn btn-sm btn-outline border-amber-400/50 text-amber-300 w-full font-bold text-xs">
-          Converti 2 🪙 ➔ +200 🟡 Oro
+          Scambia 2 🪙 (+200 🟡)
         </button>
       </div>
     </div>
@@ -1021,8 +979,8 @@
       <h3 class="text-xs font-black text-white">Confermi l'Uscita?</h3>
       <p class="text-[10px] text-slate-300">La partita attiva verrà conclusa e registrata nel foglio dei record.</p>
       <div class="space-y-1.5 pt-1">
-        <button onclick="GameEngine.confirmAbandon()" class="btn btn-sm btn-error w-full font-bold text-xs">Sì, Abbandona</button>
-        <button onclick="document.getElementById('modal-abandon').close()" class="btn btn-sm btn-ghost w-full text-xs">Continua a Giocare</button>
+        <button onclick="GameEngine.confirmAbandon()" class="btn btn-sm btn-error w-full font-bold text-xs">Esci dal Gioco</button>
+        <button onclick="document.getElementById('modal-abandon').close()" class="btn btn-sm btn-ghost w-full text-xs">Annulla</button>
       </div>
     </div>
   </dialog>
