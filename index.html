@@ -18,9 +18,9 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.4/howler.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
 
-  <!-- FOGLI DI STILE SEPARATI (CORE PIATTAFORMA + SPECIFICO RULES2) -->
-  <link rel="stylesheet" href="css/core.css?v=8">
-  <link rel="stylesheet" href="css/rules2.css?v=8">
+  <!-- FOGLI DI STILE VERSIONATI -->
+  <link rel="stylesheet" href="css/core.css?v=9.0">
+  <link rel="stylesheet" href="css/rules2.css?v=9.0">
 </head>
 
 <body class="rpg-app-body">
@@ -50,7 +50,7 @@
     </div>
   </header>
 
-  <!-- 2.B TOP BAR COCKPIT DI GIOCO (Safe-Zone Telegram a destra protetta) -->
+  <!-- 2.B TOP BAR COCKPIT DI GIOCO -->
   <header id="main-game-header" class="universal-top-bar hidden">
     <button onclick="GameEngine.leaveGameToHub()" class="btn btn-xs btn-ghost text-slate-300">
       <i data-lucide="chevron-left" class="w-4 h-4"></i>
@@ -125,7 +125,7 @@
           <i data-lucide="volume-2" class="w-4 h-4"></i>
           <span id="audio-status-desk" class="badge badge-xs badge-success">ON</span>
         </button>
-        <span class="version-label">v10.0 Full-Stage</span>
+        <span class="version-label">v12.0 Full-Stage</span>
       </div>
     </aside>
 
@@ -156,7 +156,7 @@
               </div>
             </div>
 
-            <!-- MINIPLAYER SPOTIFY-STYLE: RICEVITORE RADIO DARSENA -->
+            <!-- MINIPLAYER SPOTIFY-STYLE -->
             <div id="home-radio-miniplayer" onclick="AppModules.openRadioModal()" class="p-2.5 rounded-xl bg-slate-900/90 border border-sky-400/30 flex items-center justify-between cursor-pointer hover:border-sky-400/60 transition shadow-lg">
               <div class="flex items-center space-x-3 min-w-0">
                 <div class="w-9 h-9 rounded-lg bg-black/60 border border-sky-400/40 flex items-center justify-center flex-shrink-0 text-lg">
@@ -260,16 +260,16 @@
           </section>
 
           <!-- =============================================================== -->
-          <!-- VISTA 3: WIZARD FULL-STAGE (ZERO-SCROLL ABOVE-THE-FOLD)         -->
+          <!-- VISTA 3: WIZARD FULL-STAGE (COLLISION-PROOF & ZERO-SCROLL)      -->
           <!-- =============================================================== -->
           <section id="view-wizard" class="wizard-stage-container hidden app-screen max-w-4xl mx-auto">
 
             <!-- PASSO 1: SCELTA CLASSE COSTIERA -->
             <div id="wizard-step-class" class="wizard-step-panel">
               <div class="wizard-single-header">
-                <div class="flex items-center space-x-2 min-w-0">
+                <div>
                   <span class="wizard-step-badge">1/4</span>
-                  <h3 class="wizard-step-title truncate">Scegli la tua Classe Costiera</h3>
+                  <h3 class="wizard-step-title">Classe Costiera</h3>
                 </div>
                 <div class="wizard-view-toggle-pill">
                   <button id="toggle-view-btn-class-3d" onclick="GameEngine.setWizardViewMode('class', '3d')" class="toggle-pill-btn active">
@@ -281,7 +281,7 @@
                 </div>
               </div>
 
-              <!-- Vista A: Cilindro 3D (Senza frecce orfane, sopra pulito) -->
+              <!-- Vista 3D -->
               <div id="wizard-class-view-3d" class="wizard-content-fill">
                 <div class="coverflow-stage-outer">
                   <div class="coverflow-stage-wrapper" id="wizard-classes-stage"></div>
@@ -289,19 +289,19 @@
                 </div>
               </div>
 
-              <!-- Vista B: Lista Tattica Compatta -->
+              <!-- Vista Lista -->
               <div id="wizard-class-view-list" class="wizard-content-fill hidden">
                 <div class="wizard-list-scroll-grid" id="wizard-classes-list-container"></div>
               </div>
             </div>
 
-            <!-- PASSO 2: TALENTI CLANDESTINI -->
+            <!-- PASSO 2: TALENTI CLANDESTINI (INTESTATURA SEPARATA) -->
             <div id="wizard-step-abilities" class="wizard-step-panel hidden">
               <div class="wizard-single-header">
-                <div class="flex items-center space-x-2 min-w-0">
+                <div>
                   <span class="wizard-step-badge">2/4</span>
-                  <h3 class="wizard-step-title truncate">Apprendi Abilità & Talenti</h3>
-                  <span class="badge badge-xs badge-info font-mono" id="wizard-px-budget">✨ 100 PX</span>
+                  <h3 class="wizard-step-title">Abilità & Talenti</h3>
+                  <span class="badge badge-xs badge-info font-mono ml-1 font-bold" id="wizard-px-budget">✨ 100 PX</span>
                 </div>
                 <div class="wizard-view-toggle-pill">
                   <button id="toggle-view-btn-abilities-3d" onclick="GameEngine.setWizardViewMode('abilities', '3d')" class="toggle-pill-btn">
@@ -313,7 +313,7 @@
                 </div>
               </div>
 
-              <!-- Vista A: Cilindro 3D Abilità -->
+              <!-- Vista 3D Abilità -->
               <div id="wizard-abilities-view-3d" class="wizard-content-fill hidden">
                 <div class="coverflow-stage-outer">
                   <div class="coverflow-stage-wrapper" id="wizard-abilities-stage"></div>
@@ -321,20 +321,20 @@
                 </div>
               </div>
 
-              <!-- Vista B: Lista Tattica Abilità -->
+              <!-- Vista Lista Abilità -->
               <div id="wizard-abilities-view-list" class="wizard-content-fill">
                 <div class="abilities-scroll-grid" id="wizard-abilities-grid"></div>
               </div>
             </div>
 
-            <!-- PASSO 3: MERCATO NERO DI CICCIO -->
+            <!-- PASSO 3: MERCATO NERO DI CICCIO (INTESTATURA PULITA) -->
             <div id="wizard-step-shop" class="wizard-step-panel hidden">
               <div class="wizard-single-header">
-                <div class="flex items-center space-x-2 min-w-0">
+                <div>
                   <span class="wizard-step-badge">3/4</span>
-                  <h3 class="wizard-step-title truncate">Rifornimento da Ciccio</h3>
-                  <span class="badge badge-xs bg-black/70 border border-amber-400/40 text-amber-300 font-mono font-bold" id="wizard-shop-gold-display">💰 40 🟡</span>
-                  <button onclick="GameEngine.openCambioModal()" class="btn btn-xs btn-warning font-black text-[8px] h-5 min-h-0 px-1.5">💱 Cambio</button>
+                  <h3 class="wizard-step-title">Mercato Nero</h3>
+                  <span id="wizard-shop-gold-display">💰 40 🟡</span>
+                  <button onclick="GameEngine.openCambioModal()" class="btn btn-xs btn-warning font-black text-[9px] h-6 min-h-0 px-2 ml-1">💱 Cambio</button>
                 </div>
                 <div class="wizard-view-toggle-pill">
                   <button id="toggle-view-btn-shop-3d" onclick="GameEngine.setWizardViewMode('shop', '3d')" class="toggle-pill-btn">
@@ -346,17 +346,17 @@
                 </div>
               </div>
 
-              <!-- Chips Reparti Orizzontali -->
+              <!-- Chips Reparti Orizzontali (Senza conflitto classi DaisyUI) -->
               <div class="chips-scroll-bar px-1" id="wizard-shop-category-chips">
-                <button onclick="GameEngine.filterWizardShop('ARMI')" class="rpg-category-chip badge badge-info">🗡️ Armi</button>
-                <button onclick="GameEngine.filterWizardShop('VEICOLI')" class="rpg-category-chip badge badge-ghost">🛴 Veicoli</button>
-                <button onclick="GameEngine.filterWizardShop('STRUMENTI')" class="rpg-category-chip badge badge-ghost">🔧 Strumenti</button>
-                <button onclick="GameEngine.filterWizardShop('CURE')" class="rpg-category-chip badge badge-ghost">🍱 Cure</button>
-                <button onclick="GameEngine.filterWizardShop('DROGHE')" class="rpg-category-chip badge badge-ghost">💊 Droghe</button>
-                <button onclick="GameEngine.filterWizardShop('TALISMANI')" class="rpg-category-chip badge badge-ghost">📿 Talismani</button>
+                <button onclick="GameEngine.filterWizardShop('ARMI')" class="rpg-category-chip active">🗡️ Armi</button>
+                <button onclick="GameEngine.filterWizardShop('VEICOLI')" class="rpg-category-chip">🛴 Veicoli</button>
+                <button onclick="GameEngine.filterWizardShop('STRUMENTI')" class="rpg-category-chip">🔧 Strumenti</button>
+                <button onclick="GameEngine.filterWizardShop('CURE')" class="rpg-category-chip">🍱 Cure</button>
+                <button onclick="GameEngine.filterWizardShop('DROGHE')" class="rpg-category-chip">💊 Droghe</button>
+                <button onclick="GameEngine.filterWizardShop('TALISMANI')" class="rpg-category-chip">📿 Talismani</button>
               </div>
 
-              <!-- Vista A: Cilindro 3D Merci -->
+              <!-- Vista 3D Merci -->
               <div id="wizard-shop-view-3d" class="wizard-content-fill hidden">
                 <div class="coverflow-stage-outer">
                   <div class="coverflow-stage-wrapper" id="wizard-shop-stage"></div>
@@ -364,7 +364,7 @@
                 </div>
               </div>
 
-              <!-- Vista B: Griglia Tattica Merci -->
+              <!-- Vista Griglia Merci -->
               <div id="wizard-shop-view-list" class="wizard-content-fill">
                 <div class="shop-cards-grid" id="wizard-shop-grid"></div>
               </div>
@@ -372,7 +372,7 @@
 
             <!-- PASSO 4: LANCIO DELL'EROE (CARTA MONUMENTALE DINAMICA) -->
             <div id="wizard-step-name" class="wizard-step-panel hidden">
-              <!-- Renderizzato dinamicamente come Carta Monumentale identica al Passo 1 da Rules2Wizard.renderStep4() -->
+              <!-- Renderizzato dinamicamente da Rules2Wizard.renderStep4() -->
             </div>
 
           </section>
@@ -401,7 +401,7 @@
                 <div class="hud-vitals-box">
                   <span class="heart-icon">❤️</span>
                   <div class="progress-bar-container">
-                    <progress id="kpi-hero-pv-bar" class="progress progress-error w-full h-2 rounded-full" value="25" max="25"></progress>
+                    <progress id="kpi-hero-pv-bar" class="progress progress-error w-full h-2.5 rounded-full" value="25" max="25"></progress>
                   </div>
                   <span id="kpi-hero-pv-text" class="hud-pv-number">25/25</span>
                 </div>
@@ -414,8 +414,8 @@
               </div>
             </div>
 
-            <!-- Inquadratura Cinema con Banner Citazione Fisso -->
-            <div class="cinema-frame-rigid shadow-xl border border-white/5 relative">
+            <!-- Inquadratura Cinema -->
+            <div class="cinema-frame-rigid shadow-xl relative">
               <img id="scene-image" src="" alt="Scena di Gioco">
               <span id="scene-type-badge" class="badge badge-xs badge-info scene-badge">SNODO</span>
               <div id="floating-damage-box" class="floating-damage-layer"></div>
@@ -581,7 +581,7 @@
       <!-- 4. FOOTER MENU STICKY (TRE STATI MUTUAMENTE ESCLUSIVI)              -->
       <!-- =================================================================== -->
 
-      <!-- 4.A FOOTER PIATTAFORMA PRINCIPALE (Home, Giochi, Shop, Ricette, Profilo) -->
+      <!-- 4.A FOOTER PIATTAFORMA PRINCIPALE -->
       <footer id="main-app-footer" class="main-app-footer md:hidden">
         <button id="mob-nav-home" onclick="AppRouter.navigate('home')" class="nav-tab active" data-tab="home">
           <i data-lucide="home" class="w-4 h-4"></i>
@@ -606,7 +606,7 @@
         </button>
       </footer>
 
-      <!-- 4.B FOOTER WIZARD STICKY: CTA SNELLE & MOBILE-FIRST -->
+      <!-- 4.B FOOTER WIZARD STICKY -->
       <footer id="main-wizard-footer" class="wizard-sticky-footer hidden">
         <!-- Step 1: Scelta Classe -->
         <div id="wiz-footer-step-1" class="wizard-footer-step-controls w-full flex">
@@ -632,7 +632,7 @@
           </button>
           <div class="flex-1 flex items-center justify-between px-3 py-1 bg-black/40 rounded-lg border border-white/10 text-[11px]">
             <span class="text-slate-300">🎒 Zaino: <b id="wizard-shop-backpack-count" class="text-amber-300">0</b></span>
-            <button onclick="GameEngine.resetWizardShop()" class="text-rose-400 font-bold text-[10px] hover:underline">Azzera</button>
+            <button onclick="GameEngine.resetWizardShop()" class="text-rose-400 font-bold text-[10px] hover:underline px-1">Azzera</button>
           </div>
           <button id="wizard-step3-next-btn" onclick="GameEngine.wizardNextStep(4)" class="btn btn-sm btn-wizard-cta font-black uppercase px-4">
             Riepilogo ›
@@ -650,7 +650,7 @@
         </div>
       </footer>
 
-      <!-- 4.C FOOTER GAME COCKPIT RULES2: I 4 PILASTRI TATTICI -->
+      <!-- 4.C FOOTER GAME COCKPIT RULES2 -->
       <footer id="main-game-cockpit-footer" class="cockpit-footer hidden">
         <button onclick="Rules2Engine.openHeroModal('scheda')" class="cockpit-btn text-slate-300 hover:text-sky-400">
           <i data-lucide="user" class="w-4 h-4"></i>
@@ -674,10 +674,10 @@
   </div>
 
   <!-- ======================================================================= -->
-  <!-- 5. MODALI UNIFICATE GLASSMORPHISM & CABINATO ARCADE DIEGETICO           -->
+  <!-- 5. MODALI UNIFICATE GLASSMORPHISM                                       -->
   <!-- ======================================================================= -->
 
-  <!-- MODALE ARCADE CABINATO: "INSERT MEGOIN 🪙" & PARTITA IN CORSO -->
+  <!-- MODALE ARCADE CABINATO -->
   <dialog id="modal-insert-megoin" class="modal modal-middle">
     <div class="modal-box arcade-coin-modal-box">
       <button onclick="document.getElementById('modal-insert-megoin').close()" class="modal-close-btn">✕</button>
@@ -722,14 +722,14 @@
     </div>
   </dialog>
 
-  <!-- FASCICOLO APPROFONDITO UNIVERSALE (SCHEDA MONUMENTALE CENTRATA) -->
+  <!-- FASCICOLO APPROFONDITO UNIVERSALE -->
   <dialog id="modal-universal-detail" class="modal modal-middle modal-dossier">
     <div class="modal-box dossier-box">
       <button onclick="document.getElementById('modal-universal-detail').close()" class="modal-close-btn">✕</button>
 
       <div class="dossier-header">
         <span class="dossier-icon" id="uni-detail-icon">📦</span>
-        <div class="min-w-0">
+        <div class="min-w-0 pr-8">
           <h3 class="dossier-title" id="uni-detail-title">Nome Scheda</h3>
           <span class="badge badge-xs badge-info font-black uppercase text-[8px]" id="uni-detail-badge">TIPO / FAZIONE</span>
         </div>
@@ -778,10 +778,10 @@
     </div>
   </dialog>
 
-  <!-- 1. PILASTRO EROE: MODALE A 4 TAB (Scheda, Zaino, Squadra, Dossier) -->
+  <!-- 1. PILASTRO EROE: MODALE A 4 TAB -->
   <dialog id="drawer-hero-sheet" class="modal modal-middle">
     <div class="modal-box drawer-standard-box">
-      <div class="drawer-header-row">
+      <div class="drawer-header-row pr-10">
         <div class="flex items-center space-x-2">
           <span class="text-base">👤</span>
           <h3 class="drawer-title">Fascicolo Agente & Risorse</h3>
@@ -797,7 +797,7 @@
         <button onclick="Rules2Engine.setHeroModalTab('dossier')" id="hero-tab-btn-dossier" class="btn btn-xs btn-ghost text-slate-400 flex-1 font-bold">Dossier</button>
       </div>
 
-      <!-- SOTTO-TAB 1: SCHEDA EROE (DEFAULT) -->
+      <!-- SOTTO-TAB 1: SCHEDA EROE -->
       <div id="hero-tab-content-scheda" class="space-y-3">
         <div class="hero-sheet-profile-card">
           <div class="flex items-center space-x-3">
@@ -824,6 +824,7 @@
           </div>
         </div>
 
+        <!-- GRIGLIA COMPATTA 3 COLONNE -->
         <div class="hero-sheet-stats-grid">
           <div class="sheet-stat-card">
             <div class="stat-icon">🥊</div>
@@ -860,13 +861,13 @@
       <!-- SOTTO-TAB 2: ZAINO -->
       <div id="hero-tab-content-zaino" class="space-y-2 hidden">
         <div class="chips-scroll-bar" id="backpack-tabs">
-          <button onclick="Rules2Engine.filterBackpack('ALL')" class="rpg-category-chip badge badge-info">Tutti</button>
-          <button onclick="Rules2Engine.filterBackpack('ARMI')" class="rpg-category-chip badge badge-ghost">Armi</button>
-          <button onclick="Rules2Engine.filterBackpack('VEICOLI')" class="rpg-category-chip badge badge-ghost">Veicoli</button>
-          <button onclick="Rules2Engine.filterBackpack('CURE')" class="rpg-category-chip badge badge-ghost">Cure</button>
-          <button onclick="Rules2Engine.filterBackpack('DROGHE')" class="rpg-category-chip badge badge-ghost">Droghe</button>
-          <button onclick="Rules2Engine.filterBackpack('TALISMANI')" class="rpg-category-chip badge badge-ghost">Talismani</button>
-          <button onclick="Rules2Engine.filterBackpack('STRUMENTI')" class="rpg-category-chip badge badge-ghost">Strumenti</button>
+          <button onclick="Rules2Engine.filterBackpack('ALL')" class="rpg-category-chip active">Tutti</button>
+          <button onclick="Rules2Engine.filterBackpack('ARMI')" class="rpg-category-chip">Armi</button>
+          <button onclick="Rules2Engine.filterBackpack('VEICOLI')" class="rpg-category-chip">Veicoli</button>
+          <button onclick="Rules2Engine.filterBackpack('CURE')" class="rpg-category-chip">Cure</button>
+          <button onclick="Rules2Engine.filterBackpack('DROGHE')" class="rpg-category-chip">Droghe</button>
+          <button onclick="Rules2Engine.filterBackpack('TALISMANI')" class="rpg-category-chip">Talismani</button>
+          <button onclick="Rules2Engine.filterBackpack('STRUMENTI')" class="rpg-category-chip">Strumenti</button>
         </div>
         <div class="drawer-items-scroll-box" id="backpack-slots-container"></div>
       </div>
@@ -890,14 +891,12 @@
   </dialog>
 
   <!-- MODALE PILASTRO 2: ASSETTO TATTICO & BANCO DI SINTESI -->
-  <dialog id="modal-cockpit-assetto" class="modal modal-middle">
-    <!-- Popolato dinamicamente da Rules2Engine.openAssettoModal() -->
-  </dialog>
+  <dialog id="modal-cockpit-assetto" class="modal modal-middle"></dialog>
 
   <!-- MODALE PILASTRO 3: EMPORIO DI CICCIO -->
   <dialog id="drawer-emporio" class="modal modal-middle">
     <div class="modal-box emporio-drawer-box">
-      <div class="drawer-header-row">
+      <div class="drawer-header-row pr-10">
         <div class="flex items-center space-x-2">
           <span class="text-lg">🏪</span>
           <h3 class="drawer-title">Emporio di Ciccio & CO.</h3>
@@ -940,7 +939,7 @@
     </div>
   </dialog>
 
-  <!-- MODALE PILASTRO 4: ESCI CON BIVIO TRIPARTITO (SOSPENDI vs ABBANDONA vs ANNULLA) -->
+  <!-- MODALE PILASTRO 4: ESCI CON BIVIO TRIPARTITO -->
   <dialog id="modal-abandon" class="modal modal-middle">
     <div class="modal-box abandon-modal-box">
       <button onclick="document.getElementById('modal-abandon').close()" class="modal-close-btn">✕</button>
@@ -950,7 +949,6 @@
         Come desideri procedere con la tua partita?
       </p>
       <div class="space-y-2 pt-2 text-left">
-        <!-- Opzione 1: Sospendi e torna all'App (Partita rimane attiva e salvata) -->
         <button onclick="Rules2Engine.suspendAndExitToApp()" class="btn btn-sm btn-primary w-full font-black text-xs uppercase shadow-md flex items-center justify-between">
           <span>⏸️ Sospendi e Vai all'App</span>
           <span class="badge badge-xs badge-ghost text-[8px]">SALVA</span>
@@ -959,7 +957,6 @@
           La partita viene salvata e potrai riprenderla dal catalogo in qualsiasi momento.
         </div>
 
-        <!-- Opzione 2: Abbandona definitivamente (Partita chiusa irrevocabilmente) -->
         <button onclick="Rules2Engine.confirmAbandon()" class="btn btn-sm btn-error w-full font-black text-xs uppercase shadow-lg flex items-center justify-between">
           <span>🛑 Abbandona Definitivamente</span>
           <span class="badge badge-xs bg-black/40 text-[8px]">CHIUDI</span>
@@ -1014,7 +1011,6 @@
         <button id="jukebox-btn-shuffle" onclick="SoundEngine.toggleShuffle(); AppModules.updateRadioDisplay();" class="btn btn-sm btn-circle btn-ghost" title="Shuffle">🔀</button>
       </div>
 
-      <!-- CONTROLLI CANALI AUDIO INDIPENDENTI (BGM vs SFX) -->
       <div class="p-2.5 rounded-xl bg-black/40 border border-white/5 space-y-2 mt-1">
         <div class="flex items-center justify-between text-xs">
           <span class="text-slate-300 font-bold">Canale Musica Noir (BGM)</span>
@@ -1079,13 +1075,13 @@
     </div>
   </dialog>
 
-  <!-- MOTORE AUDIO -->
-  <script src="audio.js?v=8"></script>
+  <!-- MOTORE AUDIO VERSIONATO -->
+  <script src="audio.js?v=9.0"></script>
 
-  <!-- ARCHITETTURA MODULARE ESTIQATSY -->
-  <script src="js/app-core.js?v=8"></script>
-  <script src="js/app-modules.js?v=8"></script>
-  <script src="js/rules2wizard.js"></script>
-  <script src="js/rules2engine.js"></script>
+  <!-- ARCHITETTURA MODULARE ESTIQATSY VERSIONATA (CACHE-BUSTING TELEGRAM) -->
+  <script src="js/app-core.js?v=9.0"></script>
+  <script src="js/app-modules.js?v=9.0"></script>
+  <script src="js/rules2wizard.js?v=9.0"></script>
+  <script src="js/rules2engine.js?v=9.0"></script>
 </body>
 </html>
