@@ -6,11 +6,11 @@
   <title>Estiqatsy Syndicate & RPG</title>
 
   <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#090D16">
+  <meta name="theme-color" content="#070A12">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
-  <!-- FRAMEWORK & LIBRERIE ESTERNE -->
+  <!-- FRAMEWORK & LIBRERIE ESTERNE (Telegram SDK, Tailwind CDN, DaisyUI, Lucide, Howler, Confetti) -->
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css" rel="stylesheet" type="text/css" />
   <script src="https://cdn.tailwindcss.com"></script>
@@ -18,9 +18,9 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.4/howler.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
 
-  <!-- FOGLI DI STILE VERSIONATI -->
-  <link rel="stylesheet" href="css/core.css?v=9.0">
-  <link rel="stylesheet" href="css/rules2.css?v=9.0">
+  <!-- FOGLI DI STILE VERSIONATI CON BRIDGE VARIABILI E SCROLL-SNAP NATIVO -->
+  <link rel="stylesheet" href="css/core.css?v=14.0">
+  <link rel="stylesheet" href="css/rules2.css?v=14.0">
 </head>
 
 <body class="rpg-app-body">
@@ -32,45 +32,46 @@
       <div class="loader-icon">⚓</div>
     </div>
     <h2 class="loader-title">Estiqatsy Syndicate</h2>
-    <p class="loader-status" id="loading-status">Sincronizzazione archivi e frequenze...</p>
+    <p class="loader-status" id="loading-status">Sincronizzazione frequenze con Google Sheets...</p>
     <div id="loading-error-box" class="loader-error-box hidden"></div>
     <button id="loading-retry-btn" onclick="location.reload()" class="btn btn-sm btn-primary hidden mt-4">Riprova</button>
   </div>
 
-  <!-- 2.A TOP BAR PIATTAFORMA (Home, Shop, Ricette, Profilo) -->
+  <!-- 2.A TOP BAR PIATTAFORMA (CENTRAGGIO ASSOLUTO ANTI-CAPSULA TELEGRAM) -->
   <header id="main-app-header" class="universal-top-bar">
     <div class="top-bar-placeholder"></div>
-    <div class="top-bar-title-box">
+    <!-- Blocco centrato a livello matematico rispetto alla larghezza dello schermo -->
+    <div class="top-bar-title-box" id="top-bar-title-box">
       <span class="top-bar-brand">⚓ ESTIQATSY</span>
     </div>
-    <div class="top-bar-actions">
-      <button id="audio-toggle-btn-mob" onclick="SoundEngine.toggleMute()" class="btn btn-xs btn-circle btn-ghost text-sky-400 md:hidden" title="Audio">
+    <div class="top-bar-actions ml-auto z-10 flex items-center">
+      <button id="audio-toggle-btn-mob" onclick="AppModules.toggleRadioMute()" class="btn btn-xs btn-circle btn-ghost text-sky-400 md:hidden" title="Audio">
         <i data-lucide="volume-2" class="w-4 h-4"></i>
       </button>
     </div>
   </header>
 
-  <!-- 2.B TOP BAR COCKPIT DI GIOCO -->
+  <!-- 2.B TOP BAR COCKPIT DI GIOCO RULES 2 -->
   <header id="main-game-header" class="universal-top-bar hidden">
-    <button onclick="GameEngine.leaveGameToHub()" class="btn btn-xs btn-ghost text-slate-300">
+    <button onclick="GameEngine.leaveGameToHub()" class="btn btn-xs btn-ghost text-slate-300 z-10 flex items-center gap-1">
       <i data-lucide="chevron-left" class="w-4 h-4"></i>
-      <span class="btn-back-text">Hub</span>
+      <span class="text-xs font-bold">Hub</span>
     </button>
     <div class="game-header-titles">
       <div class="game-header-tag" id="game-header-series">GIOCO</div>
       <div class="game-header-sub" id="game-header-episode">Episodio 1</div>
     </div>
-    <div class="game-header-actions">
-      <button onclick="SoundEngine.toggleMute()" class="btn btn-xs btn-circle btn-ghost text-slate-400" title="Audio">
+    <div class="game-header-actions ml-auto z-10">
+      <button onclick="AppModules.toggleRadioMute()" class="btn btn-xs btn-circle btn-ghost text-slate-400" title="Audio">
         <i data-lucide="volume-2" class="w-3.5 h-3.5"></i>
       </button>
     </div>
   </header>
 
-  <!-- 3. STRUTTURA PRINCIPALE -->
+  <!-- 3. STRUTTURA PRINCIPALE VIEWPORT -->
   <div class="app-layout-container">
 
-    <!-- SIDEBAR DESKTOP WIDESCREEN -->
+    <!-- SIDEBAR DESKTOP WIDESCREEN (>= 768px) -->
     <aside id="desktop-sidebar" class="desktop-sidebar">
       <div class="user-card-desk">
         <div class="flex items-center space-x-3">
@@ -89,11 +90,11 @@
         <div class="wallet-desk-grid">
           <div class="wallet-desk-item">
             <div class="wallet-label">Megoin</div>
-            <div class="wallet-value text-amber-400 text-glow-amber" id="user-megoin-desk">0 🪙</div>
+            <div class="wallet-value text-amber-400 font-mono" id="user-megoin-desk">0 🪙</div>
           </div>
           <div class="wallet-desk-item">
             <div class="wallet-label">Fedeltà</div>
-            <div class="wallet-value text-emerald-400" id="user-points-desk">0 Pt</div>
+            <div class="wallet-value text-emerald-400 font-mono" id="user-points-desk">0 Pt</div>
           </div>
         </div>
       </div>
@@ -109,23 +110,33 @@
           </div>
           <span class="badge badge-xs badge-primary font-bold text-[8px]">PLAY</span>
         </button>
+        <button id="desk-nav-multiplayer" data-module="multiplayer" onclick="AppModules.openMultiplayerLobby()" class="desk-nav-btn" data-tab="multiplayer">
+          <div class="flex items-center space-x-3">
+            <i data-lucide="users" class="w-4 h-4 text-purple-400"></i>
+            <span>Stanze Multiplayer</span>
+          </div>
+          <span class="badge badge-xs badge-secondary font-bold text-[8px]">ONLINE</span>
+        </button>
         <button id="desk-nav-shop" data-module="shop" onclick="AppRouter.navigate('shop')" class="desk-nav-btn" data-tab="shop">
-          <i data-lucide="shopping-bag" class="w-4 h-4"></i> <span>Shop</span>
+          <i data-lucide="shopping-bag" class="w-4 h-4"></i> <span>Shop Syndicate</span>
         </button>
         <button id="desk-nav-recipes" data-module="recipes" onclick="AppRouter.navigate('recipes')" class="desk-nav-btn" data-tab="recipes">
           <i data-lucide="utensils" class="w-4 h-4"></i> <span>Barlady & Ricette</span>
         </button>
         <button id="desk-nav-profile" onclick="AppRouter.navigate('profile')" class="desk-nav-btn" data-tab="profile">
-          <i data-lucide="user" class="w-4 h-4"></i> <span>Profilo & Caveau</span>
+          <i data-lucide="user" class="w-4 h-4"></i> <span>Profilo & Arena</span>
         </button>
+        <a id="desk-nav-admin" href="admin.html" target="_blank" class="desk-nav-btn text-amber-300 border border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/20">
+          <i data-lucide="shield-alert" class="w-4 h-4"></i> <span>Console Admin</span>
+        </a>
       </nav>
 
       <div class="desktop-footer-status">
-        <button onclick="SoundEngine.toggleMute()" class="btn btn-ghost btn-xs text-slate-400">
+        <button onclick="AppModules.toggleRadioMute()" class="btn btn-ghost btn-xs text-slate-400">
           <i data-lucide="volume-2" class="w-4 h-4"></i>
-          <span id="audio-status-desk" class="badge badge-xs badge-success">ON</span>
+          <span class="badge badge-xs badge-success">AUDIO</span>
         </button>
-        <span class="version-label">v12.0 Full-Stage</span>
+        <span class="version-label">v14.0 Full Gas</span>
       </div>
     </aside>
 
@@ -134,7 +145,9 @@
       <main class="app-scroll-area" id="app-main-scroll">
         <div class="app-content-wrapper">
 
-          <!-- VISTA 1: DASHBOARD HOME -->
+          <!-- =============================================================== -->
+          <!-- VISTA 1: DASHBOARD HOME                                        -->
+          <!-- =============================================================== -->
           <section id="view-home" class="space-y-4 app-screen">
             <div class="home-hero-banner">
               <div class="flex items-center space-x-2.5 flex-wrap gap-y-2">
@@ -147,16 +160,17 @@
 
               <div>
                 <h2 class="hero-headline">Darsena Noir, <span id="home-username" class="text-sky-400">Avventuriero</span>.</h2>
-                <p class="hero-lead">Esplora le saghe investigative Rules 2 a colpi di D20, costruisci l'Organigramma del Potere e gestisci le tue risorse nel Syndicate.</p>
+                <p class="hero-lead">Esplora le saghe investigative Rules 2 a colpi di D20, costruisci l'Organigramma del Potere e sfida altri agenti sul Syndicate.</p>
               </div>
 
               <div class="pt-1 flex gap-3">
-                <button onclick="AppRouter.navigate('games')" class="btn btn-sm btn-primary font-bold">🎮 Giochi RPG</button>
+                <button onclick="AppRouter.navigate('games')" class="btn btn-sm btn-primary font-bold">🎮 Saghe RPG</button>
+                <button onclick="AppModules.openMultiplayerLobby()" class="btn btn-sm btn-secondary font-bold">👥 Multiplayer</button>
                 <button onclick="AppRouter.navigate('shop')" class="btn btn-sm btn-outline border-white/20 font-bold">🏪 Shop</button>
               </div>
             </div>
 
-            <!-- MINIPLAYER SPOTIFY-STYLE -->
+            <!-- MINIPLAYER RADIO NOIR SPOTIFY-STYLE -->
             <div id="home-radio-miniplayer" onclick="AppModules.openRadioModal()" class="p-2.5 rounded-xl bg-slate-900/90 border border-sky-400/30 flex items-center justify-between cursor-pointer hover:border-sky-400/60 transition shadow-lg">
               <div class="flex items-center space-x-3 min-w-0">
                 <div class="w-9 h-9 rounded-lg bg-black/60 border border-sky-400/40 flex items-center justify-center flex-shrink-0 text-lg">
@@ -182,11 +196,12 @@
               </div>
             </div>
 
+            <!-- KPI QUAD GRID -->
             <div class="kpi-quad-grid">
               <div onclick="AppRouter.navigate('profile')" class="kpi-card group">
                 <div>
                   <div class="kpi-card-label">Megoin</div>
-                  <div class="kpi-card-value text-amber-300 text-glow-amber" id="home-megoin-card">0 🪙</div>
+                  <div class="kpi-card-value text-amber-300 text-glow-amber font-mono" id="home-megoin-card">0 🪙</div>
                 </div>
                 <i data-lucide="chevron-right" class="kpi-card-icon"></i>
               </div>
@@ -194,15 +209,15 @@
               <div onclick="AppRouter.navigate('profile')" class="kpi-card group">
                 <div>
                   <div class="kpi-card-label">Punti Fedeltà</div>
-                  <div class="kpi-card-value text-emerald-400" id="home-punti-card">0 Pt</div>
+                  <div class="kpi-card-value text-emerald-400 font-mono" id="home-punti-card">0 Pt</div>
                 </div>
                 <i data-lucide="chevron-right" class="kpi-card-icon"></i>
               </div>
 
               <div onclick="AppRouter.navigate('games')" class="kpi-card group">
                 <div>
-                  <div class="kpi-card-label">Giochi RPG</div>
-                  <div class="kpi-card-value text-sky-400" id="home-games-count">0</div>
+                  <div class="kpi-card-label">Saghe RPG</div>
+                  <div class="kpi-card-value text-sky-400 font-mono" id="home-games-count">0</div>
                 </div>
                 <i data-lucide="play" class="kpi-card-icon"></i>
               </div>
@@ -210,13 +225,13 @@
               <div onclick="AppModules.openVaultSection()" class="kpi-card group">
                 <div>
                   <div class="kpi-card-label">Download Caveau</div>
-                  <div class="kpi-card-value text-purple-400" id="home-purchases-count">0</div>
+                  <div class="kpi-card-value text-purple-400 font-mono" id="home-purchases-count">0</div>
                 </div>
                 <i data-lucide="chevron-right" class="kpi-card-icon"></i>
               </div>
             </div>
 
-            <!-- Carosello Home Dinamico -->
+            <!-- CAROSELLO HOME DINAMICO -->
             <div class="space-y-2">
               <div class="flex items-center justify-between">
                 <span class="section-kicker">In Evidenza nel Syndicate</span>
@@ -228,19 +243,21 @@
             </div>
           </section>
 
-          <!-- VISTA 2: CATALOGO GIOCHI -->
+          <!-- =============================================================== -->
+          <!-- VISTA 2: CATALOGO SAGHE GIOCHI REALI                           -->
+          <!-- =============================================================== -->
           <section id="view-hub" class="space-y-4 hidden app-screen max-w-5xl mx-auto">
             <div class="page-title-row">
               <div>
-                <span class="sub-header-tag">CATALOGO SAGHE</span>
-                <h2 class="page-headline">Giochi Noir RPG</h2>
+                <span class="sub-header-tag">DATABASE GIOCHI</span>
+                <h2 class="page-headline">Saghe Noir RPG</h2>
               </div>
               <span class="text-xs text-slate-400 font-mono" id="games-total-counter">Caricamento...</span>
             </div>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="games-catalog-container"></div>
           </section>
 
-          <!-- DETTAGLIO GIOCO & CAPITOLI -->
+          <!-- DETTAGLIO SAGA CON CLUSTER A 3 AZIONI (CAPITOLI, REGOLE, SCHEDA) -->
           <section id="subview-game-detail" class="space-y-4 hidden app-screen max-w-3xl mx-auto">
             <div class="cinema-frame-rigid shadow-xl">
               <img id="hub-image" src="" alt="Copertina Gioco">
@@ -249,20 +266,247 @@
                 <div class="quote-author" id="hub-author"></div>
               </div>
             </div>
-            <div class="space-y-1.5">
-              <h2 class="text-base md:text-xl font-black text-white" id="hub-title">Titolo Gioco</h2>
+
+            <div class="space-y-2">
+              <h2 class="text-base md:text-xl font-black text-white" id="hub-title">Titolo Saga</h2>
               <p class="text-xs md:text-sm text-slate-300 leading-relaxed" id="hub-desc"></p>
+              
+              <!-- Cluster a 3 Azioni Primarie -->
+              <div class="grid grid-cols-3 gap-2 pt-1" id="hub-saga-actions-cluster">
+                <button onclick="AppModules.scrollToEpisodes()" class="btn btn-sm btn-primary font-black text-xs flex items-center justify-center gap-1 shadow-md">
+                  <span>▶️</span> <span>Capitoli</span>
+                </button>
+                <button onclick="AppModules.openSagaRulesModal(AppState.games.activeGameKey)" class="btn btn-sm btn-outline border-white/20 text-slate-200 font-bold text-xs flex items-center justify-center gap-1">
+                  <span>📜</span> <span>Regole</span>
+                </button>
+                <button onclick="AppModules.openSagaFeaturesModal(AppState.games.activeGameKey)" class="btn btn-sm btn-outline border-sky-400/40 text-sky-300 font-bold text-xs flex items-center justify-center gap-1">
+                  <span>🔍</span> <span>Scheda</span>
+                </button>
+              </div>
             </div>
-            <div class="space-y-2 pt-1">
+
+            <div class="space-y-2 pt-2">
               <div class="section-kicker">Capitoli Ufficiali</div>
               <div id="hub-episodes-container" class="space-y-2"></div>
             </div>
           </section>
 
           <!-- =============================================================== -->
-          <!-- VISTA 3: WIZARD FULL-STAGE (COLLISION-PROOF & ZERO-SCROLL)      -->
+          <!-- VISTA MULTIPLAYER: LOBBY & COCKPIT DI SCONTRO ONLINE           -->
+          <!-- =============================================================== -->
+          <section id="view-multiplayer" class="space-y-4 hidden app-screen max-w-3xl mx-auto">
+            <!-- 1. PANNELLO LOBBY -->
+            <div id="multiplayer-lobby-panel" class="space-y-4">
+              <div class="page-title-row">
+                <div>
+                  <span class="sub-header-tag">RETE TELEGRAM REAL-TIME</span>
+                  <h2 class="page-headline">Stanze Clandestine</h2>
+                </div>
+                <span class="badge badge-sm badge-secondary font-mono font-bold">ONLINE</span>
+              </div>
+
+              <!-- Selezione Modalità -->
+              <div class="space-y-2">
+                <div class="section-kicker">1. Seleziona Modalità di Scontro</div>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                  <button id="btn-mode-1vs1" onclick="AppModules.selectMultiplayerMode('1vs1')" class="mode-select-btn p-3 rounded-xl border border-sky-400 bg-sky-950/40 text-left transition">
+                    <div class="flex items-center justify-between">
+                      <span class="font-black text-xs text-white">Duello 1vs1</span>
+                      <span>⚔️</span>
+                    </div>
+                    <div class="text-[10px] text-slate-300 mt-1">Sfida un amico testa a testa a colpi di D20 sul molo.</div>
+                  </button>
+
+                  <button id="btn-mode-coop" onclick="AppModules.selectMultiplayerMode('coop')" class="mode-select-btn p-3 rounded-xl border border-white/10 bg-slate-900/60 text-left transition">
+                    <div class="flex items-center justify-between">
+                      <span class="font-black text-xs text-white">Co-op Boss</span>
+                      <span>🤝</span>
+                    </div>
+                    <div class="text-[10px] text-slate-400 mt-1">Unisciti con un amico per abbattere il Boss Bruto.</div>
+                  </button>
+
+                  <button id="btn-mode-raid" onclick="AppModules.selectMultiplayerMode('raid')" class="mode-select-btn p-3 rounded-xl border border-white/10 bg-slate-900/60 text-left transition">
+                    <div class="flex items-center justify-between">
+                      <span class="font-black text-xs text-white">Raid Cantieri</span>
+                      <span>🛡️</span>
+                    </div>
+                    <div class="text-[10px] text-slate-400 mt-1">Spedizione collettiva contro le forze corrotte.</div>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Creazione Stanza -->
+              <div class="p-4 rounded-2xl bg-gradient-to-br from-slate-900 to-sky-950/30 border border-sky-400/30 space-y-3">
+                <div>
+                  <h3 class="font-black text-sm text-white">Crea una Nuova Stanza</h3>
+                  <p class="text-[11px] text-slate-400 mt-0.5">Genera un codice univoco e condividi il link diretto per far entrare il tuo amico via Telegram.</p>
+                </div>
+                <button onclick="AppModules.createAndLaunchRoom()" class="btn btn-sm btn-primary w-full font-black uppercase text-xs shadow-lg">
+                  Crea Stanza & Invita Amico 🚀
+                </button>
+              </div>
+
+              <!-- Unisciti a Stanza Esistente -->
+              <div class="p-4 rounded-2xl bg-slate-900 border border-white/10 space-y-3">
+                <div>
+                  <h3 class="font-black text-xs text-white">Hai Ricevuto un Codice Stanza?</h3>
+                  <p class="text-[10px] text-slate-400 mt-0.5">Inserisci il codice ricevuto dal tuo compagno (es. ROOM_A9X7K2):</p>
+                </div>
+                <div class="flex gap-2">
+                  <input id="input-join-room-code" type="text" placeholder="ROOM_XXXXXX" class="input input-sm input-bordered bg-slate-950 text-white font-mono font-bold flex-1 uppercase">
+                  <button onclick="AppModules.joinRoomByInput()" class="btn btn-sm btn-outline border-sky-400/40 text-sky-300 font-bold px-4">
+                    Entra ➔
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- 2. PANNELLO COCKPIT STANZA ATTIVA -->
+            <div id="multiplayer-cockpit-panel" class="space-y-4 hidden">
+              <!-- Header Stanza -->
+              <div class="p-3.5 rounded-xl bg-slate-900 border border-white/10 flex items-center justify-between">
+                <div>
+                  <div class="flex items-center gap-2">
+                    <span class="font-mono font-black text-xs text-sky-400" id="cockpit-room-id">ROOM_XXXXXX</span>
+                    <span class="badge badge-xs badge-info font-bold" id="cockpit-room-mode">1VS1</span>
+                  </div>
+                  <h3 class="text-xs font-bold text-white mt-0.5" id="cockpit-room-title">Duello al Molo</h3>
+                </div>
+                <div id="cockpit-status-badge"></div>
+              </div>
+
+              <!-- Barra Invito Telegram -->
+              <div class="p-3 rounded-xl bg-sky-950/30 border border-sky-500/30 space-y-2">
+                <div class="flex items-center justify-between text-xs">
+                  <span class="text-sky-300 font-bold">Link Invito Telegram per l'Amico:</span>
+                  <div class="flex gap-1.5">
+                    <button onclick="AppModules.copyInviteLink()" class="btn btn-xs btn-outline border-sky-400/40 text-sky-300 font-bold">Copia 📋</button>
+                    <button onclick="AppModules.shareInviteLink()" class="btn btn-xs btn-primary font-bold">Invia in Chat 📤</button>
+                    <button onclick="AppModules.simulateFriendJoin()" class="btn btn-xs btn-warning font-black" title="Testa subito senza secondo smartphone">Simula Amico 🧪</button>
+                  </div>
+                </div>
+                <div class="p-2 rounded bg-black/50 font-mono text-[10px] text-slate-400 break-all select-all" id="cockpit-invite-link-text"></div>
+              </div>
+
+              <!-- Tavolo Giocatori: Host vs Guest -->
+              <div class="grid grid-cols-2 gap-3">
+                <!-- Host Card -->
+                <div class="p-3 rounded-xl bg-slate-900 border border-sky-500/40 space-y-2">
+                  <div class="flex items-center justify-between">
+                    <span class="badge badge-xs badge-info font-bold">TU (HOST)</span>
+                    <span class="font-mono text-[10px] text-amber-300 font-bold" id="cockpit-host-last-roll">—</span>
+                  </div>
+                  <div class="font-black text-xs text-white truncate" id="cockpit-host-name">Tu</div>
+                  <div>
+                    <div class="flex justify-between text-[10px] font-mono mb-1">
+                      <span class="text-slate-400">Salute</span>
+                      <span class="text-rose-400 font-bold" id="cockpit-host-hp-text">25 / 25 HP</span>
+                    </div>
+                    <div class="w-full h-2 rounded-full bg-slate-800 overflow-hidden">
+                      <div id="cockpit-host-hp-bar" class="h-full bg-emerald-500 transition-all duration-300" style="width: 100%;"></div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Guest Card -->
+                <div class="p-3 rounded-xl bg-slate-900 border border-white/10 space-y-2">
+                  <div class="flex items-center justify-between">
+                    <span class="badge badge-xs badge-ghost text-slate-400 font-bold" id="cockpit-guest-ready">IN ATTESA</span>
+                    <span class="font-mono text-[10px] text-amber-300 font-bold" id="cockpit-guest-last-roll">—</span>
+                  </div>
+                  <div class="font-black text-xs text-white truncate" id="cockpit-guest-name">In attesa amico...</div>
+                  <div>
+                    <div class="flex justify-between text-[10px] font-mono mb-1">
+                      <span class="text-slate-400">Salute</span>
+                      <span class="text-rose-400 font-bold" id="cockpit-guest-hp-text">25 / 25 HP</span>
+                    </div>
+                    <div class="w-full h-2 rounded-full bg-slate-800 overflow-hidden">
+                      <div id="cockpit-guest-hp-bar" class="h-full bg-emerald-500 transition-all duration-300" style="width: 100%;"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Scheda Boss (Modalità Co-op) -->
+              <div id="cockpit-boss-card" class="p-3 rounded-xl bg-rose-950/40 border border-rose-500/40 space-y-2 hidden">
+                <div class="flex items-center justify-between">
+                  <span class="badge badge-xs badge-error font-black">BOSS DEL PORTO</span>
+                  <span class="font-mono text-[10px] text-rose-300 font-bold" id="cockpit-boss-hp-text">60 / 60 HP</span>
+                </div>
+                <div class="font-black text-xs text-white">Bruto lo Scaricatore Gigante</div>
+                <div class="w-full h-2 rounded-full bg-slate-950 overflow-hidden">
+                  <div id="cockpit-boss-hp-bar" class="h-full bg-rose-500 transition-all duration-300" style="width: 100%;"></div>
+                </div>
+              </div>
+
+              <!-- Azioni Tattiche Multiplayer -->
+              <div class="grid grid-cols-3 gap-2">
+                <button onclick="AppModules.executeRoomCombatAction('attack')" class="btn btn-sm btn-error font-black text-xs shadow-md">
+                  ⚔️ Attacca
+                </button>
+                <button onclick="AppModules.executeRoomCombatAction('roll_dice')" class="btn btn-sm btn-primary font-black text-xs">
+                  🎲 D20 Test
+                </button>
+                <button onclick="AppModules.executeRoomCombatAction('heal')" class="btn btn-sm btn-success text-slate-950 font-black text-xs">
+                  💊 Tonico
+                </button>
+              </div>
+
+              <!-- Feed Mosse di Combattimento -->
+              <div class="p-3 rounded-xl bg-slate-900 border border-white/5 space-y-1.5">
+                <div class="flex items-center justify-between text-[10px] font-mono text-slate-400">
+                  <span>LOG COMBATTIMENTO IN TEMPO REALE</span>
+                  <button onclick="AppModules.clearRoomLog()" class="hover:underline">Pulisci</button>
+                </div>
+                <div id="cockpit-combat-log" class="font-mono text-xs text-slate-300 max-h-32 overflow-y-auto space-y-1 divide-y divide-white/5"></div>
+              </div>
+
+              <!-- Abbandona Stanza -->
+              <button onclick="AppModules.leaveMultiplayerRoom()" class="btn btn-xs btn-ghost text-slate-400 w-full uppercase font-bold">
+                Esci dalla Stanza 🚪
+              </button>
+            </div>
+          </section>
+
+          <!-- =============================================================== -->
+          <!-- VISTA 3: WIZARD FULL-STAGE (STEPPER 1..4 & LIVE HUD DOCK)       -->
           <!-- =============================================================== -->
           <section id="view-wizard" class="wizard-stage-container hidden app-screen max-w-4xl mx-auto">
+
+            <!-- Stepper Progress Tracker in Cima -->
+            <div class="wizard-stepper-tracker">
+              <div id="wiz-step-ind-1" onclick="Rules2Wizard.goToStep(1)" class="wizard-stepper-step active">
+                <div class="wizard-stepper-circle">1</div>
+                <span class="wizard-stepper-label">Classe</span>
+              </div>
+              <div id="wiz-step-ind-2" onclick="Rules2Wizard.goToStep(2)" class="wizard-stepper-step">
+                <div class="wizard-stepper-circle">2</div>
+                <span class="wizard-stepper-label">Talenti</span>
+              </div>
+              <div id="wiz-step-ind-3" onclick="Rules2Wizard.goToStep(3)" class="wizard-stepper-step">
+                <div class="wizard-stepper-circle">3</div>
+                <span class="wizard-stepper-label">Emporio</span>
+              </div>
+              <div id="wiz-step-ind-4" onclick="Rules2Wizard.goToStep(4)" class="wizard-stepper-step">
+                <div class="wizard-stepper-circle">4</div>
+                <span class="wizard-stepper-label">Battesimo</span>
+              </div>
+            </div>
+
+            <!-- Live HUD Dock Dinamico -->
+            <div class="wizard-live-hud" id="wizard-live-hud">
+              <div class="wizard-live-hero-chip">
+                <span id="wiz-live-avatar" class="wizard-live-avatar">🥋</span>
+                <div class="wizard-live-details">
+                  <span id="wiz-live-name" class="wizard-live-name">Avventuriero</span>
+                  <span id="wiz-live-stats" class="wizard-live-stats">❤️ 25 PV • FOR 10 · DES 10 · INT 10</span>
+                </div>
+              </div>
+              <div class="flex items-center gap-2">
+                <span id="wiz-live-budget" class="badge badge-xs badge-info font-mono font-bold">✨ 100 PX</span>
+                <span id="wiz-live-gold" class="font-mono text-amber-300 font-bold text-xs">💰 40 🟡</span>
+              </div>
+            </div>
 
             <!-- PASSO 1: SCELTA CLASSE COSTIERA -->
             <div id="wizard-step-class" class="wizard-step-panel">
@@ -273,7 +517,7 @@
                 </div>
                 <div class="wizard-view-toggle-pill">
                   <button id="toggle-view-btn-class-3d" onclick="GameEngine.setWizardViewMode('class', '3d')" class="toggle-pill-btn active">
-                    🎡 3D
+                    🎡 Scorrimento
                   </button>
                   <button id="toggle-view-btn-class-list" onclick="GameEngine.setWizardViewMode('class', 'list')" class="toggle-pill-btn">
                     📋 Lista
@@ -281,7 +525,7 @@
                 </div>
               </div>
 
-              <!-- Vista 3D -->
+              <!-- Vista Touch Scroll-Snap -->
               <div id="wizard-class-view-3d" class="wizard-content-fill">
                 <div class="coverflow-stage-outer">
                   <div class="coverflow-stage-wrapper" id="wizard-classes-stage"></div>
@@ -291,11 +535,11 @@
 
               <!-- Vista Lista -->
               <div id="wizard-class-view-list" class="wizard-content-fill hidden">
-                <div class="wizard-list-scroll-grid" id="wizard-classes-list-container"></div>
+                <div class="space-y-2" id="wizard-classes-list-container"></div>
               </div>
             </div>
 
-            <!-- PASSO 2: TALENTI CLANDESTINI (INTESTATURA SEPARATA) -->
+            <!-- PASSO 2: TALENTI CLANDESTINI (BUDGET 100 PX) -->
             <div id="wizard-step-abilities" class="wizard-step-panel hidden">
               <div class="wizard-single-header">
                 <div>
@@ -304,50 +548,48 @@
                   <span class="badge badge-xs badge-info font-mono ml-1 font-bold" id="wizard-px-budget">✨ 100 PX</span>
                 </div>
                 <div class="wizard-view-toggle-pill">
-                  <button id="toggle-view-btn-abilities-3d" onclick="GameEngine.setWizardViewMode('abilities', '3d')" class="toggle-pill-btn">
-                    🎡 3D
+                  <button id="toggle-view-btn-abilities-3d" onclick="GameEngine.setWizardViewMode('abilities', '3d')" class="toggle-pill-btn active">
+                    🎡 Scorrimento
                   </button>
-                  <button id="toggle-view-btn-abilities-list" onclick="GameEngine.setWizardViewMode('abilities', 'list')" class="toggle-pill-btn active">
-                    📋 Lista
+                  <button id="toggle-view-btn-abilities-list" onclick="GameEngine.setWizardViewMode('abilities', 'list')" class="toggle-pill-btn">
+                    📋 Griglia
                   </button>
                 </div>
               </div>
 
-              <!-- Vista 3D Abilità -->
-              <div id="wizard-abilities-view-3d" class="wizard-content-fill hidden">
+              <div id="wizard-abilities-view-3d" class="wizard-content-fill">
                 <div class="coverflow-stage-outer">
                   <div class="coverflow-stage-wrapper" id="wizard-abilities-stage"></div>
                   <div class="coverflow-dots" id="wizard-abilities-dots"></div>
                 </div>
               </div>
 
-              <!-- Vista Lista Abilità -->
-              <div id="wizard-abilities-view-list" class="wizard-content-fill">
-                <div class="abilities-scroll-grid" id="wizard-abilities-grid"></div>
+              <div id="wizard-abilities-view-list" class="wizard-content-fill hidden">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2" id="wizard-abilities-grid"></div>
               </div>
             </div>
 
-            <!-- PASSO 3: MERCATO NERO DI CICCIO (INTESTATURA PULITA) -->
+            <!-- PASSO 3: MERCATO NERO DI CICCIO -->
             <div id="wizard-step-shop" class="wizard-step-panel hidden">
               <div class="wizard-single-header">
                 <div>
                   <span class="wizard-step-badge">3/4</span>
                   <h3 class="wizard-step-title">Mercato Nero</h3>
-                  <span id="wizard-shop-gold-display">💰 40 🟡</span>
+                  <span id="wizard-shop-gold-display" class="font-mono text-amber-300 font-bold text-xs ml-1">💰 40 🟡</span>
                   <button onclick="GameEngine.openCambioModal()" class="btn btn-xs btn-warning font-black text-[9px] h-6 min-h-0 px-2 ml-1">💱 Cambio</button>
                 </div>
                 <div class="wizard-view-toggle-pill">
-                  <button id="toggle-view-btn-shop-3d" onclick="GameEngine.setWizardViewMode('shop', '3d')" class="toggle-pill-btn">
-                    🎡 3D
+                  <button id="toggle-view-btn-shop-3d" onclick="GameEngine.setWizardViewMode('shop', '3d')" class="toggle-pill-btn active">
+                    🎡 Scorrimento
                   </button>
-                  <button id="toggle-view-btn-shop-list" onclick="GameEngine.setWizardViewMode('shop', 'list')" class="toggle-pill-btn active">
+                  <button id="toggle-view-btn-shop-list" onclick="GameEngine.setWizardViewMode('shop', 'list')" class="toggle-pill-btn">
                     📋 Griglia
                   </button>
                 </div>
               </div>
 
-              <!-- Chips Reparti Orizzontali (Senza conflitto classi DaisyUI) -->
-              <div class="chips-scroll-bar px-1" id="wizard-shop-category-chips">
+              <!-- Chips Reparti Orizzontali -->
+              <div class="chips-scroll-bar px-1 my-1.5" id="wizard-shop-category-chips">
                 <button onclick="GameEngine.filterWizardShop('ARMI')" class="rpg-category-chip active">🗡️ Armi</button>
                 <button onclick="GameEngine.filterWizardShop('VEICOLI')" class="rpg-category-chip">🛴 Veicoli</button>
                 <button onclick="GameEngine.filterWizardShop('STRUMENTI')" class="rpg-category-chip">🔧 Strumenti</button>
@@ -356,21 +598,19 @@
                 <button onclick="GameEngine.filterWizardShop('TALISMANI')" class="rpg-category-chip">📿 Talismani</button>
               </div>
 
-              <!-- Vista 3D Merci -->
-              <div id="wizard-shop-view-3d" class="wizard-content-fill hidden">
+              <div id="wizard-shop-view-3d" class="wizard-content-fill">
                 <div class="coverflow-stage-outer">
                   <div class="coverflow-stage-wrapper" id="wizard-shop-stage"></div>
                   <div class="coverflow-dots" id="wizard-shop-dots"></div>
                 </div>
               </div>
 
-              <!-- Vista Griglia Merci -->
-              <div id="wizard-shop-view-list" class="wizard-content-fill">
-                <div class="shop-cards-grid" id="wizard-shop-grid"></div>
+              <div id="wizard-shop-view-list" class="wizard-content-fill hidden">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2" id="wizard-shop-grid"></div>
               </div>
             </div>
 
-            <!-- PASSO 4: LANCIO DELL'EROE (CARTA MONUMENTALE DINAMICA) -->
+            <!-- PASSO 4: LANCIO EROE -->
             <div id="wizard-step-name" class="wizard-step-panel hidden">
               <!-- Renderizzato dinamicamente da Rules2Wizard.renderStep4() -->
             </div>
@@ -378,7 +618,7 @@
           </section>
 
           <!-- =============================================================== -->
-          <!-- VISTA 4: COCKPIT GAMEPLAY                                      -->
+          <!-- VISTA 4: COCKPIT GAMEPLAY NARRATIVO D20                         -->
           <!-- =============================================================== -->
           <section id="view-gameplay" class="gameplay-container hidden app-screen max-w-3xl mx-auto">
             <div class="hud-cockpit">
@@ -414,7 +654,6 @@
               </div>
             </div>
 
-            <!-- Inquadratura Cinema -->
             <div class="cinema-frame-rigid shadow-xl relative">
               <img id="scene-image" src="" alt="Scena di Gioco">
               <span id="scene-type-badge" class="badge badge-xs badge-info scene-badge">SNODO</span>
@@ -426,7 +665,6 @@
               </div>
             </div>
 
-            <!-- Scatola Narrativa Flessibile -->
             <div class="narrative-box-flexible no-scrollbar shadow-inner">
               <div class="narrative-title" id="scene-title">Titolo Snodo</div>
               <p class="narrative-prose" id="scene-text">Caricamento narrazione...</p>
@@ -435,7 +673,9 @@
             <div id="scene-actions-container" class="scene-actions-area"></div>
           </section>
 
-          <!-- VISTA 5: SHOP PIATTAFORMA -->
+          <!-- =============================================================== -->
+          <!-- VISTA 5: SHOP REALE PIATTAFORMA                                -->
+          <!-- =============================================================== -->
           <section id="view-shop" class="space-y-4 hidden app-screen">
             <div class="search-bar-box">
               <i data-lucide="search" class="search-icon"></i>
@@ -460,14 +700,16 @@
               <div class="detail-price-box">
                 <div>
                   <div class="price-label">Prezzo</div>
-                  <div class="price-value text-amber-400 text-glow-amber" id="detail-shop-price">0 🪙</div>
+                  <div class="price-value text-amber-400 font-mono font-bold" id="detail-shop-price">0 🪙</div>
                 </div>
                 <button id="detail-shop-action-btn" class="btn btn-primary btn-sm px-6 font-bold">Acquista</button>
               </div>
             </div>
           </section>
 
-          <!-- VISTA 6: RICETTE -->
+          <!-- =============================================================== -->
+          <!-- VISTA 6: RICETTARIO REALE                                      -->
+          <!-- =============================================================== -->
           <section id="view-recipes" class="space-y-4 hidden app-screen">
             <div class="search-bar-box">
               <i data-lucide="search" class="search-icon"></i>
@@ -494,16 +736,18 @@
               </div>
               <div class="space-y-1">
                 <div class="section-kicker">Ingredienti</div>
-                <p id="detail-recipe-ingredients" class="recipe-content-box"></p>
+                <p id="detail-recipe-ingredients" class="recipe-content-box whitespace-pre-line"></p>
               </div>
               <div class="space-y-1">
                 <div class="section-kicker">Preparazione</div>
-                <p id="detail-recipe-prep" class="recipe-content-box"></p>
+                <p id="detail-recipe-prep" class="recipe-content-box whitespace-pre-line"></p>
               </div>
             </div>
           </section>
 
-          <!-- VISTA 7: PROFILO UTENTE -->
+          <!-- =============================================================== -->
+          <!-- VISTA 7: PROFILO UTENTE, ARENA & CAVEAU                         -->
+          <!-- =============================================================== -->
           <section id="view-profile" class="space-y-4 hidden app-screen">
             <div class="profile-header-card">
               <div class="flex items-center space-x-4">
@@ -521,22 +765,23 @@
               <div class="text-right space-y-1">
                 <div>
                   <div class="kpi-card-label">Saldo Megoin</div>
-                  <div class="text-base md:text-lg font-black text-amber-300 text-glow-amber tabular-nums" id="profile-card-megoin">0 🪙</div>
+                  <div class="text-base md:text-lg font-black text-amber-300 font-mono tabular-nums" id="profile-card-megoin">0 🪙</div>
                 </div>
                 <div>
                   <div class="kpi-card-label">Punti Fedeltà</div>
-                  <div class="text-base md:text-lg font-black text-emerald-400 tabular-nums" id="profile-card-points">0 Pt</div>
+                  <div class="text-base md:text-lg font-black text-emerald-400 font-mono tabular-nums" id="profile-card-points">0 Pt</div>
                 </div>
               </div>
             </div>
 
+            <!-- Azioni Rapide Piano & Download -->
             <div class="grid grid-cols-2 gap-3">
               <button onclick="AppModules.openPlansCatalogModal()" class="action-card-plan group">
                 <div class="flex items-center space-x-2.5">
                   <span class="text-xl">👑</span>
                   <div class="text-left">
                     <div class="action-card-title group-hover:text-sky-400" id="profile-action-plan-name">Piano: BASE</div>
-                    <div class="action-card-sub">Dettagli / Upgrade ›</div>
+                    <div class="action-card-sub">Upgrade Piani ›</div>
                   </div>
                 </div>
                 <span class="badge badge-xs badge-info font-black text-[8px]">INFO</span>
@@ -554,6 +799,10 @@
               </button>
             </div>
 
+            <!-- CONTENITORE ARENA DUELLI CLANDESTINI (POPOLATO DA APPMODULES) -->
+            <div id="profile-arena-section" class="space-y-3 pt-1"></div>
+
+            <!-- Caveau File Scaricati -->
             <div id="profile-vault-container-card" class="vault-container-card">
               <h3 class="section-headline-flex">
                 <i data-lucide="download" class="w-4 h-4 text-emerald-400"></i>
@@ -562,6 +811,7 @@
               <div id="profile-vault-container" class="space-y-2"></div>
             </div>
 
+            <!-- Ultime Transazioni Reali da GAS -->
             <div class="transactions-container-card">
               <div class="flex justify-between items-center">
                 <h3 class="section-headline-flex">
@@ -570,7 +820,7 @@
                 </h3>
                 <button onclick="AppModules.syncTransactions(true)" class="btn btn-ghost btn-xs text-sky-400">Aggiorna</button>
               </div>
-              <div id="profile-transactions-container" class="divide-y divide-white/5 space-y-2"></div>
+              <div id="profile-transactions-container" class="space-y-2"></div>
             </div>
           </section>
 
@@ -581,15 +831,19 @@
       <!-- 4. FOOTER MENU STICKY (TRE STATI MUTUAMENTE ESCLUSIVI)              -->
       <!-- =================================================================== -->
 
-      <!-- 4.A FOOTER PIATTAFORMA PRINCIPALE -->
+      <!-- 4.A FOOTER PIATTAFORMA PRINCIPALE (MOBILE) -->
       <footer id="main-app-footer" class="main-app-footer md:hidden">
         <button id="mob-nav-home" onclick="AppRouter.navigate('home')" class="nav-tab active" data-tab="home">
           <i data-lucide="home" class="w-4 h-4"></i>
           <span class="nav-tab-label">Home</span>
         </button>
-        <button id="mob-nav-games" data-module="games" onclick="AppRouter.navigate('games')" class="nav-tab relative" data-tab="games">
+        <button id="mob-nav-games" data-module="games" onclick="AppRouter.navigate('games')" class="nav-tab" data-tab="games">
           <i data-lucide="gamepad-2" class="w-4 h-4 text-sky-400"></i>
           <span class="nav-tab-label text-sky-400">Giochi</span>
+        </button>
+        <button id="mob-nav-multiplayer" data-module="multiplayer" onclick="AppModules.openMultiplayerLobby()" class="nav-tab relative" data-tab="multiplayer">
+          <i data-lucide="users" class="w-4 h-4 text-purple-400"></i>
+          <span class="nav-tab-label text-purple-400">Stanze</span>
           <span class="nav-tab-dot"></span>
         </button>
         <button id="mob-nav-shop" data-module="shop" onclick="AppRouter.navigate('shop')" class="nav-tab" data-tab="shop">
@@ -608,24 +862,21 @@
 
       <!-- 4.B FOOTER WIZARD STICKY -->
       <footer id="main-wizard-footer" class="wizard-sticky-footer hidden">
-        <!-- Step 1: Scelta Classe -->
         <div id="wiz-footer-step-1" class="wizard-footer-step-controls w-full flex">
-          <button id="wizard-step1-confirm-btn" onclick="GameEngine.wizardConfirmStep1()" class="btn btn-sm btn-wizard-cta w-full font-black uppercase tracking-wider">
+          <button id="wizard-step1-confirm-btn" onclick="GameEngine.wizardConfirmStep1()" class="btn btn-sm btn-wizard-cta w-full font-black uppercase">
             Scegli Classe ›
           </button>
         </div>
 
-        <!-- Step 2: Talenti -->
         <div id="wiz-footer-step-2" class="wizard-footer-step-controls w-full flex space-x-2 hidden">
           <button onclick="GameEngine.wizardPrevStep(1)" class="btn btn-xs sm:btn-sm btn-outline border-white/20 text-slate-300 font-bold px-3">
             ‹ Classi
           </button>
-          <button onclick="GameEngine.wizardConfirmStep2()" class="btn btn-sm btn-wizard-cta flex-1 font-black uppercase tracking-wider">
+          <button onclick="GameEngine.wizardConfirmStep2()" class="btn btn-sm btn-wizard-cta flex-1 font-black uppercase">
             All'Emporio ›
           </button>
         </div>
 
-        <!-- Step 3: Emporio di Ciccio -->
         <div id="wiz-footer-step-3" class="wizard-footer-step-controls w-full flex items-center space-x-2 hidden">
           <button onclick="GameEngine.wizardPrevStep(2)" class="btn btn-xs sm:btn-sm btn-outline border-white/20 text-slate-300 font-bold px-3">
             ‹ Talenti
@@ -639,34 +890,33 @@
           </button>
         </div>
 
-        <!-- Step 4: Battesimo & Lancio Eroe -->
         <div id="wiz-footer-step-4" class="wizard-footer-step-controls w-full flex space-x-2 hidden">
           <button onclick="GameEngine.wizardPrevStep(3)" class="btn btn-xs sm:btn-sm btn-outline border-white/20 text-slate-300 font-bold px-3">
             ‹ Emporio
           </button>
-          <button id="wizard-finalize-btn" onclick="GameEngine.wizardFinalizeHero()" class="btn btn-sm btn-wizard-cta flex-1 font-black uppercase tracking-wider">
+          <button id="wizard-finalize-btn" onclick="GameEngine.wizardFinalizeHero()" class="btn btn-sm btn-wizard-cta flex-1 font-black uppercase">
             Lancia Eroe 🚀
           </button>
         </div>
       </footer>
 
-      <!-- 4.C FOOTER GAME COCKPIT RULES2 -->
+      <!-- 4.C FOOTER GAME COCKPIT RULES 2 -->
       <footer id="main-game-cockpit-footer" class="cockpit-footer hidden">
-        <button onclick="Rules2Engine.openHeroModal('scheda')" class="cockpit-btn text-slate-300 hover:text-sky-400">
+        <button onclick="Rules2Engine.openHeroModal('scheda')" class="cockpit-btn">
           <i data-lucide="user" class="w-4 h-4"></i>
-          <span class="cockpit-btn-label">Eroe</span>
+          <span>Eroe</span>
         </button>
-        <button onclick="Rules2Engine.openAssettoModal()" class="cockpit-btn text-slate-300 hover:text-purple-400">
+        <button onclick="Rules2Engine.openAssettoModal()" class="cockpit-btn">
           <i data-lucide="shield" class="w-4 h-4"></i>
-          <span class="cockpit-btn-label">Assetto</span>
+          <span>Assetto</span>
         </button>
-        <button onclick="Rules2Engine.openEmporioDrawer()" class="cockpit-btn text-slate-300 hover:text-amber-400">
+        <button onclick="Rules2Engine.openEmporioDrawer()" class="cockpit-btn">
           <i data-lucide="shopping-bag" class="w-4 h-4"></i>
-          <span class="cockpit-btn-label">Emporio</span>
+          <span>Emporio</span>
         </button>
-        <button onclick="Rules2Engine.openAbandonModal()" class="cockpit-btn text-slate-300 hover:text-rose-400">
+        <button onclick="Rules2Engine.openAbandonModal()" class="cockpit-btn text-rose-400">
           <i data-lucide="log-out" class="w-4 h-4"></i>
-          <span class="cockpit-btn-label">Esci</span>
+          <span>Esci</span>
         </button>
       </footer>
 
@@ -674,48 +924,44 @@
   </div>
 
   <!-- ======================================================================= -->
-  <!-- 5. MODALI UNIFICATE GLASSMORPHISM                                       -->
+  <!-- 5. MODALI GLASSMORPHISM                                                -->
   <!-- ======================================================================= -->
 
-  <!-- MODALE ARCADE CABINATO -->
+  <!-- MODALE CABINATO MEGOIN -->
   <dialog id="modal-insert-megoin" class="modal modal-middle">
-    <div class="modal-box arcade-coin-modal-box">
+    <div class="modal-box p-5 bg-slate-950 border border-sky-400/40 rounded-2xl max-w-sm text-center relative space-y-3">
       <button onclick="document.getElementById('modal-insert-megoin').close()" class="modal-close-btn">✕</button>
 
-      <div class="arcade-coin-frame">
-        <span class="arcade-coin-huge">🪙</span>
+      <div class="w-14 h-14 mx-auto rounded-full bg-amber-500/20 border border-amber-400/40 flex items-center justify-center text-3xl">
+        🪙
       </div>
 
       <div id="arcade-active-game-box" class="hidden space-y-2">
-        <span class="badge badge-warning font-black text-[9px] uppercase tracking-wider">⚠️ Partita Attiva</span>
+        <span class="badge badge-warning font-black text-[9px] uppercase tracking-wider">Partita Attiva</span>
         <h3 class="text-sm font-black text-white" id="arcade-active-title">Sessione in corso</h3>
-        <p class="text-[11px] text-slate-300 leading-snug" id="arcade-active-desc">Vuoi riprendere dal tuo ultimo snodo o sovrascrivere?</p>
-        <div class="space-y-1.5 pt-2">
-          <button id="arcade-btn-resume" class="btn btn-sm btn-success w-full font-black text-xs shadow-md">
-            Riprendi Partita ▶️
-          </button>
-          <button id="arcade-btn-overwrite" class="btn btn-xs btn-outline border-rose-500/40 text-rose-300 w-full font-bold">
-            Ricomincia (1 🪙)
-          </button>
+        <p class="text-[11px] text-slate-300 leading-snug">Vuoi riprendere dal tuo ultimo snodo o sovrascrivere?</p>
+        <div class="grid grid-cols-2 gap-2 pt-2">
+          <button id="btn-arcade-new" class="btn btn-outline border-amber-500/40 text-amber-300 font-bold text-xs">Ricomincia (1 🪙)</button>
+          <button id="btn-arcade-resume" class="btn btn-success text-slate-950 font-black text-xs">Riprendi ▶️</button>
         </div>
       </div>
 
       <div id="arcade-insert-coin-box" class="space-y-3">
         <div>
-          <span class="arcade-kicker">CABINATO SYNDICATE</span>
-          <h3 class="arcade-title" id="arcade-coin-title">INSERT 1 MEGOIN</h3>
+          <span class="text-[10px] font-mono text-sky-400 uppercase font-bold tracking-wider">CABINATO SYNDICATE</span>
+          <h3 class="text-sm font-black text-white uppercase mt-0.5" id="arcade-coin-title">INSERT 1 MEGOIN</h3>
         </div>
 
-        <p class="arcade-subtitle" id="arcade-coin-desc">
+        <p class="text-[11px] text-slate-300 leading-snug" id="arcade-coin-desc">
           L'avvio di un nuovo eroe consuma 1 Megoin dal tuo borsello di piattaforma.
         </p>
 
-        <div class="arcade-wallet-pill">
+        <div class="p-2.5 rounded-xl bg-black/50 border border-white/10 flex items-center justify-between text-xs font-mono">
           <span>Tuo Saldo: <b class="text-amber-400" id="arcade-user-balance">0</b> 🪙</span>
           <span class="badge badge-xs badge-info font-black" id="arcade-cost-badge">1 🪙</span>
         </div>
 
-        <button id="arcade-btn-launch" class="btn btn-sm btn-primary w-full font-black uppercase text-xs shadow-xl shadow-sky-600/40">
+        <button id="arcade-btn-launch" class="btn btn-sm btn-primary w-full font-black uppercase text-xs shadow-xl">
           Inserisci 1 🪙 e Gioca
         </button>
       </div>
@@ -723,43 +969,29 @@
   </dialog>
 
   <!-- FASCICOLO APPROFONDITO UNIVERSALE -->
-  <dialog id="modal-universal-detail" class="modal modal-middle modal-dossier">
-    <div class="modal-box dossier-box">
+  <dialog id="modal-universal-detail" class="modal modal-middle">
+    <div class="modal-box p-5 bg-slate-950 border border-sky-400/40 rounded-2xl max-w-md space-y-3 relative">
       <button onclick="document.getElementById('modal-universal-detail').close()" class="modal-close-btn">✕</button>
 
-      <div class="dossier-header">
-        <span class="dossier-icon" id="uni-detail-icon">📦</span>
-        <div class="min-w-0 pr-8">
-          <h3 class="dossier-title" id="uni-detail-title">Nome Scheda</h3>
-          <span class="badge badge-xs badge-info font-black uppercase text-[8px]" id="uni-detail-badge">TIPO / FAZIONE</span>
-        </div>
-      </div>
-      
-      <div id="uni-detail-media-container" class="hidden cinema-frame-rigid shadow-md">
-        <img id="uni-detail-img" src="" alt="">
-        <div class="watermark-cover-banner" id="uni-detail-quote-banner">
-          <div class="quote-text" id="uni-detail-quote"></div>
-          <div class="quote-author" id="uni-detail-author"></div>
+      <div class="flex items-center gap-3">
+        <span class="text-2xl" id="uni-detail-icon">📦</span>
+        <div class="min-w-0 pr-6">
+          <h3 class="text-sm font-black text-white truncate" id="uni-detail-title">Nome Scheda</h3>
+          <span class="badge badge-xs badge-info font-mono uppercase" id="uni-detail-badge">TIPO</span>
         </div>
       </div>
 
-      <div id="uni-detail-metrics-box" class="dossier-metrics-box">
-        <div class="metrics-label" id="uni-detail-metrics-label">PROPRIETÀ TECNICHE</div>
-        <div class="metrics-value" id="uni-detail-metrics-value">Nessuna proprietà</div>
+      <div class="p-2.5 rounded-xl bg-black/50 border border-white/5 font-mono text-xs text-amber-300" id="uni-detail-metrics-value">
+        Nessuna proprietà
       </div>
 
-      <div class="space-y-1">
-        <div class="section-kicker">FASCICOLO INVESTIGATIVO</div>
-        <p class="dossier-lore-prose" id="uni-detail-lore"></p>
+      <div class="space-y-1 text-xs">
+        <span class="text-[10px] font-mono text-slate-400 uppercase font-bold">Fascicolo Investigativo</span>
+        <p class="text-slate-300 leading-relaxed max-h-36 overflow-y-auto" id="uni-detail-lore"></p>
       </div>
 
       <div class="pt-2 flex gap-2">
-        <button onclick="document.getElementById('modal-universal-detail').close()" class="btn btn-ghost btn-sm flex-1 text-slate-400 font-bold uppercase">
-          Chiudi ✕
-        </button>
-        <button id="uni-detail-action-btn" class="btn btn-primary btn-sm flex-1 font-bold shadow-lg shadow-sky-600/30">
-          Azione
-        </button>
+        <button id="uni-detail-action-btn" class="btn btn-primary btn-sm flex-1 font-bold">Azione</button>
       </div>
     </div>
   </dialog>
@@ -778,13 +1010,13 @@
     </div>
   </dialog>
 
-  <!-- 1. PILASTRO EROE: MODALE A 4 TAB -->
+  <!-- MODALE EROE A 4 TAB -->
   <dialog id="drawer-hero-sheet" class="modal modal-middle">
-    <div class="modal-box drawer-standard-box">
-      <div class="drawer-header-row pr-10">
+    <div class="modal-box p-5 bg-slate-950 border border-sky-400/40 rounded-2xl max-w-md space-y-3 relative">
+      <div class="flex items-center justify-between pb-2 border-b border-white/10 pr-8">
         <div class="flex items-center space-x-2">
-          <span class="text-base">👤</span>
-          <h3 class="drawer-title">Fascicolo Agente & Risorse</h3>
+          <span class="text-lg">👤</span>
+          <h3 class="text-sm font-black text-white">Fascicolo Agente & Risorse</h3>
         </div>
         <button onclick="document.getElementById('drawer-hero-sheet').close()" class="modal-close-btn">✕</button>
       </div>
@@ -799,32 +1031,17 @@
 
       <!-- SOTTO-TAB 1: SCHEDA EROE -->
       <div id="hero-tab-content-scheda" class="space-y-3">
-        <div class="hero-sheet-profile-card">
-          <div class="flex items-center space-x-3">
-            <div class="hero-sheet-avatar-box">
-              <img id="sheet-hero-avatar-img" src="" class="avatar-img hidden" alt="Avatar">
-              <span id="sheet-hero-avatar-fallback" class="text-2xl">🥋</span>
-            </div>
-            <div class="min-w-0 flex-1">
-              <h4 class="hero-sheet-name" id="sheet-hero-name">Avventuriero</h4>
-              <div class="hero-sheet-class-badge" id="sheet-hero-class">Classe (Destra)</div>
-            </div>
+        <div class="p-3 bg-slate-900 rounded-xl border border-white/10 flex items-center justify-between">
+          <div>
+            <h4 class="font-black text-sm text-white" id="sheet-hero-name">Avventuriero</h4>
+            <div class="text-[11px] text-sky-400 font-bold" id="sheet-hero-class">Classe</div>
+          </div>
+          <div class="text-right font-mono">
+            <div class="text-[9px] text-slate-400 uppercase">Borsello Oro</div>
+            <div class="text-sm font-black text-amber-300" id="sheet-hero-gold">0 🟡</div>
           </div>
         </div>
 
-        <div class="hero-sheet-wallet-box">
-          <div class="flex items-center justify-between">
-            <div>
-              <div class="wallet-label">Borsello Oro Sonante</div>
-              <div class="text-base font-black text-amber-300 font-mono" id="sheet-hero-gold">0 🟡</div>
-            </div>
-            <button onclick="GameEngine.openCambioModal()" class="btn btn-xs btn-warning font-black text-[9px] shadow-sm">
-              💱 Banco Cambio
-            </button>
-          </div>
-        </div>
-
-        <!-- GRIGLIA COMPATTA 3 COLONNE -->
         <div class="hero-sheet-stats-grid">
           <div class="sheet-stat-card">
             <div class="stat-icon">🥊</div>
@@ -846,15 +1063,15 @@
           </div>
         </div>
 
-        <div class="p-2.5 rounded-xl bg-black/40 border border-white/5 space-y-1">
+        <div class="p-2.5 rounded-xl bg-black/40 border border-white/5 space-y-1 text-xs">
           <div class="text-[9.5px] font-bold text-sky-400 uppercase tracking-wider">Dotazione Attiva</div>
-          <div class="text-slate-300 text-[11px]">🗡️ Arma: <b id="sheet-active-weapon" class="text-white">Pugni nudi</b></div>
-          <div class="text-slate-300 text-[11px]">🛴 Veicolo: <b id="sheet-active-vehicle" class="text-white">A piedi</b></div>
+          <div class="text-slate-300">🗡️ Arma: <b id="sheet-active-weapon" class="text-white">Pugni nudi</b></div>
+          <div class="text-slate-300">🛴 Veicolo: <b id="sheet-active-vehicle" class="text-white">A piedi</b></div>
         </div>
 
-        <div class="p-2.5 rounded-xl bg-black/40 border border-white/5 space-y-1">
+        <div class="p-2.5 rounded-xl bg-black/40 border border-white/5 space-y-1 text-xs">
           <div class="text-[9.5px] font-bold text-amber-400 uppercase tracking-wider">Talenti Appresi</div>
-          <div id="sheet-abilities-list" class="text-slate-300 text-[11px] leading-snug">Nessun talento</div>
+          <div id="sheet-abilities-list" class="text-slate-300 leading-snug">Nessun talento</div>
         </div>
       </div>
 
@@ -866,21 +1083,20 @@
           <button onclick="Rules2Engine.filterBackpack('VEICOLI')" class="rpg-category-chip">Veicoli</button>
           <button onclick="Rules2Engine.filterBackpack('CURE')" class="rpg-category-chip">Cure</button>
           <button onclick="Rules2Engine.filterBackpack('DROGHE')" class="rpg-category-chip">Droghe</button>
-          <button onclick="Rules2Engine.filterBackpack('TALISMANI')" class="rpg-category-chip">Talismani</button>
           <button onclick="Rules2Engine.filterBackpack('STRUMENTI')" class="rpg-category-chip">Strumenti</button>
         </div>
-        <div class="drawer-items-scroll-box" id="backpack-slots-container"></div>
+        <div class="space-y-2 max-h-56 overflow-y-auto" id="backpack-slots-container"></div>
       </div>
 
-      <!-- SOTTO-TAB 3: SQUADRA & ZOMBI -->
+      <!-- SOTTO-TAB 3: SQUADRA -->
       <div id="hero-tab-content-squadra" class="space-y-2 hidden">
-        <div class="drawer-subtitle">Compagni vivi e zombi assorbono una quota del danno inflitto al gruppo.</div>
+        <div class="text-[11px] text-slate-400">Compagni vivi e zombi assorbono una quota del danno inflitto al gruppo.</div>
         <div id="squad-list-container" class="space-y-2 text-xs"></div>
       </div>
 
-      <!-- SOTTO-TAB 4: DOSSIER ORGANIGRAMMA -->
+      <!-- SOTTO-TAB 4: DOSSIER -->
       <div id="hero-tab-content-dossier" class="space-y-2 hidden">
-        <div class="drawer-subtitle">Le <b>Prove</b> assegnano <b class="text-emerald-400">+1 INT permanente</b>; i <b>Sospetti e gli Indizi</b> conferiscono <b class="text-amber-300">+1 INT situazionale</b>.</div>
+        <div class="text-[11px] text-slate-400">Le <b>Prove</b> assegnano +1 INT permanente; gli <b>Indizi</b> conferiscono +1 INT situazionale.</div>
         <div id="dossier-list-container" class="space-y-2 text-xs"></div>
       </div>
 
@@ -890,20 +1106,20 @@
     </div>
   </dialog>
 
-  <!-- MODALE PILASTRO 2: ASSETTO TATTICO & BANCO DI SINTESI -->
+  <!-- MODALE PILASTRO 2: ASSETTO TATTICO -->
   <dialog id="modal-cockpit-assetto" class="modal modal-middle"></dialog>
 
   <!-- MODALE PILASTRO 3: EMPORIO DI CICCIO -->
   <dialog id="drawer-emporio" class="modal modal-middle">
-    <div class="modal-box emporio-drawer-box">
-      <div class="drawer-header-row pr-10">
+    <div class="modal-box p-5 bg-slate-950 border border-amber-400/40 rounded-2xl max-w-md space-y-3 relative">
+      <div class="flex items-center justify-between pb-2 border-b border-white/10 pr-8">
         <div class="flex items-center space-x-2">
           <span class="text-lg">🏪</span>
-          <h3 class="drawer-title">Emporio di Ciccio & CO.</h3>
+          <h3 class="text-sm font-black text-white">Emporio di Ciccio & CO.</h3>
         </div>
         <button onclick="document.getElementById('drawer-emporio').close()" class="modal-close-btn">✕</button>
       </div>
-      <div class="emporio-gold-bar">
+      <div class="p-2.5 rounded-xl bg-slate-900 border border-white/10 flex items-center justify-between text-xs font-mono">
         <span>💰 Borsello: <b class="text-amber-400" id="emporio-gold-display">0 🟡</b></span>
         <button onclick="GameEngine.openCambioModal()" class="btn btn-xs btn-warning font-black text-[9px]">💱 Banco Cambio</button>
       </div>
@@ -911,24 +1127,24 @@
         <button id="emporio-tab-buy" onclick="GameEngine.setEmporioMode('buy')" class="flex-1 btn btn-xs btn-primary font-bold">Compra</button>
         <button id="emporio-tab-sell" onclick="GameEngine.setEmporioMode('sell')" class="flex-1 btn btn-xs btn-ghost text-slate-400 font-bold">Vendi (25%)</button>
       </div>
-      <div class="emporio-items-scroll-grid" id="emporio-items-container"></div>
+      <div class="space-y-2 max-h-56 overflow-y-auto" id="emporio-items-container"></div>
       <button onclick="document.getElementById('drawer-emporio').close()" class="btn btn-sm btn-ghost text-slate-400 font-bold uppercase w-full mt-2">
         Chiudi ✕
       </button>
     </div>
   </dialog>
 
-  <!-- MODALE BANCO DI CAMBIO -->
+  <!-- MODALE BANCO DI CAMBIO (MEGOIN -> ORO) -->
   <dialog id="modal-banco-cambio" class="modal modal-middle">
-    <div class="modal-box modal-cambio-box">
+    <div class="modal-box p-5 bg-slate-950 border border-amber-400/40 rounded-2xl max-w-sm text-center relative space-y-3">
       <button onclick="document.getElementById('modal-banco-cambio').close()" class="modal-close-btn">✕</button>
       <span class="text-3xl">💱</span>
       <h3 class="text-sm font-black text-white">Banco di Cambio del Molo</h3>
-      <p class="text-[10px] text-slate-300">Converti gettoni Megoin in monete d'oro sonanti direttamente sul server:</p>
-      <div class="cambio-balance-box">
+      <p class="text-[11px] text-slate-300">Converti gettoni Megoin in monete d'oro sonanti direttamente sul server:</p>
+      <div class="p-2 bg-black/50 rounded-xl font-mono text-xs text-amber-300">
         Tuo Saldo: <b id="cambio-megoin-balance">0</b> Megoin 🪙
       </div>
-      <div class="space-y-1.5 pt-1">
+      <div class="space-y-2 pt-1">
         <button onclick="GameEngine.convertMegoinToGold(1, 100)" class="btn btn-sm btn-primary w-full font-bold text-xs shadow-md">
           Scambia 1 🪙 (+100 🟡)
         </button>
@@ -939,22 +1155,22 @@
     </div>
   </dialog>
 
-  <!-- MODALE PILASTRO 4: ESCI CON BIVIO TRIPARTITO -->
+  <!-- MODALE ABBANDONO / SOSPENSIONE -->
   <dialog id="modal-abandon" class="modal modal-middle">
-    <div class="modal-box abandon-modal-box">
+    <div class="modal-box p-5 bg-slate-950 border border-white/20 rounded-2xl max-w-sm text-center relative space-y-3">
       <button onclick="document.getElementById('modal-abandon').close()" class="modal-close-btn">✕</button>
       <span class="text-3xl">🚪</span>
       <h3 class="text-sm font-black text-white uppercase">Gestione Sessione</h3>
-      <p class="text-[11px] text-slate-300 leading-relaxed" id="abandon-modal-message">
+      <p class="text-[11px] text-slate-300 leading-relaxed">
         Come desideri procedere con la tua partita?
       </p>
-      <div class="space-y-2 pt-2 text-left">
+      <div class="space-y-2 pt-1 text-left">
         <button onclick="Rules2Engine.suspendAndExitToApp()" class="btn btn-sm btn-primary w-full font-black text-xs uppercase shadow-md flex items-center justify-between">
           <span>⏸️ Sospendi e Vai all'App</span>
           <span class="badge badge-xs badge-ghost text-[8px]">SALVA</span>
         </button>
         <div class="text-[9.5px] text-slate-400 px-1 -mt-1 mb-2">
-          La partita viene salvata e potrai riprenderla dal catalogo in qualsiasi momento.
+          La partita viene salvata sul server e potrai riprenderla in qualsiasi momento.
         </div>
 
         <button onclick="Rules2Engine.confirmAbandon()" class="btn btn-sm btn-error w-full font-black text-xs uppercase shadow-lg flex items-center justify-between">
@@ -965,7 +1181,7 @@
           La partita viene chiusa e archiviata. Non potrai più riprenderla.
         </div>
       </div>
-      <button onclick="document.getElementById('modal-abandon').close()" class="btn btn-sm btn-ghost w-full text-xs text-slate-400 font-bold uppercase mt-3">
+      <button onclick="document.getElementById('modal-abandon').close()" class="btn btn-sm btn-ghost w-full text-xs text-slate-400 font-bold uppercase mt-2">
         Continua l'Avventura ›
       </button>
     </div>
@@ -975,7 +1191,6 @@
   <dialog id="modal-audio-jukebox" class="modal modal-middle">
     <div class="modal-box jukebox-modal-box">
       <button onclick="document.getElementById('modal-audio-jukebox').close()" class="modal-close-btn">✕</button>
-
       <div class="jukebox-header">
         <div class="flex items-center space-x-2">
           <span class="text-xl">📻</span>
@@ -984,14 +1199,11 @@
             <span class="jukebox-tag">Frequenze Salmastre • Incompetech Noir</span>
           </div>
         </div>
-        <button id="jukebox-btn-mute" onclick="AppModules.toggleRadioMute()" class="btn btn-xs btn-success font-bold">
-          🔊 Audio (ON)
-        </button>
       </div>
 
       <div class="jukebox-display-screen">
         <div class="flex items-center justify-between">
-          <span class="badge badge-xs badge-info font-black" id="jukebox-current-tag">HUB / NOIR</span>
+          <span class="badge badge-xs badge-info font-black" id="jukebox-current-tag">NOIR DARSENA</span>
           <div class="jukebox-eq-bars" id="jukebox-eq-bars">
             <span></span><span></span><span></span><span></span><span></span>
           </div>
@@ -1005,26 +1217,13 @@
       </div>
 
       <div class="jukebox-controls-row">
-        <button onclick="SoundEngine.playPrevTrack(); AppModules.updateRadioDisplay();" class="btn btn-sm btn-circle btn-ghost text-slate-200" title="Precedente">⏮</button>
-        <button id="jukebox-btn-play" onclick="AppModules.toggleRadioPlay()" class="btn btn-sm btn-primary font-bold flex-1">⏸ Pausa</button>
-        <button onclick="SoundEngine.playNextTrack(); AppModules.updateRadioDisplay();" class="btn btn-sm btn-circle btn-ghost text-slate-200" title="Successivo">⏭</button>
-        <button id="jukebox-btn-shuffle" onclick="SoundEngine.toggleShuffle(); AppModules.updateRadioDisplay();" class="btn btn-sm btn-circle btn-ghost" title="Shuffle">🔀</button>
-      </div>
-
-      <div class="p-2.5 rounded-xl bg-black/40 border border-white/5 space-y-2 mt-1">
-        <div class="flex items-center justify-between text-xs">
-          <span class="text-slate-300 font-bold">Canale Musica Noir (BGM)</span>
-          <button onclick="AppModules.toggleBgmChannel()" class="btn btn-xs btn-outline border-sky-400/40 text-sky-300">Toggle BGM</button>
-        </div>
-        <div class="flex items-center justify-between text-xs">
-          <span class="text-slate-300 font-bold">Canale Effetti Sonori (SFX)</span>
-          <button onclick="AppModules.toggleSfxChannel()" class="btn btn-xs btn-outline border-amber-400/40 text-amber-300">Toggle SFX</button>
-        </div>
+        <button id="jukebox-btn-play" onclick="AppModules.toggleRadioPlay(event)" class="btn btn-sm btn-primary font-bold flex-1">⏸ Pausa</button>
+        <button onclick="AppModules.toggleRadioMute(event)" class="btn btn-sm btn-ghost text-slate-300">🔊 Muto</button>
       </div>
     </div>
   </dialog>
 
-  <!-- MODALE COMPARATORE PIANI SAAS -->
+  <!-- MODALE PIANI SAAS REALI DA GAS -->
   <dialog id="modal-plans-catalog" class="modal modal-middle">
     <div class="modal-box plans-catalog-box">
       <button onclick="document.getElementById('modal-plans-catalog').close()" class="modal-close-btn">✕</button>
@@ -1042,28 +1241,6 @@
     </div>
   </dialog>
 
-  <!-- MODALE DETTAGLIO PIANO -->
-  <dialog id="modal-plan-upgrade" class="modal modal-middle">
-    <div class="modal-box plan-detail-box">
-      <button onclick="document.getElementById('modal-plan-upgrade').close()" class="modal-close-btn">✕</button>
-      <div class="plan-detail-header">
-        <div>
-          <span class="sub-header-tag" id="plan-modal-badge">SCHEDA PIANO</span>
-          <h3 class="plan-detail-title" id="upgrade-modal-title">Nome Piano</h3>
-        </div>
-        <div class="text-right">
-          <div class="plan-detail-price" id="plan-modal-price">€ 0,00</div>
-          <span class="plan-detail-period" id="plan-modal-period">/mese</span>
-        </div>
-      </div>
-      <p class="detail-prose" id="upgrade-modal-desc"></p>
-      <div class="plan-perks-box" id="plan-modal-perks-list"></div>
-      <div class="pt-2">
-        <button id="upgrade-modal-action-btn" class="btn btn-primary btn-sm w-full font-bold shadow-lg shadow-sky-600/30">Attiva Piano con PayPal</button>
-      </div>
-    </div>
-  </dialog>
-
   <!-- MODALE CONFERMA ACQUISTO SHOP -->
   <dialog id="modal-fulfillment" class="modal modal-middle">
     <div class="modal-box fulfillment-modal-box">
@@ -1075,13 +1252,11 @@
     </div>
   </dialog>
 
-  <!-- MOTORE AUDIO VERSIONATO -->
-  <script src="audio.js?v=9.0"></script>
-
-  <!-- ARCHITETTURA MODULARE ESTIQATSY VERSIONATA (CACHE-BUSTING TELEGRAM) -->
-  <script src="js/app-core.js?v=9.0"></script>
-  <script src="js/app-modules.js?v=9.0"></script>
-  <script src="js/rules2wizard.js?v=9.0"></script>
-  <script src="js/rules2engine.js?v=9.0"></script>
+  <!-- SCRIPT DI SISTEMA VERSIONATI -->
+  <script src="audio.js?v=14.0"></script>
+  <script src="js/app-core.js?v=14.0"></script>
+  <script src="js/app-modules.js?v=14.0"></script>
+  <script src="js/rules2wizard.js?v=14.0"></script>
+  <script src="js/rules2engine.js?v=14.0"></script>
 </body>
 </html>
