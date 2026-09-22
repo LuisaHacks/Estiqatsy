@@ -191,25 +191,135 @@ const Rules2Wizard = {
     }
   },
 
+  // In js/rules2wizard.js:
+
   resumeSession: async function(gameKey, epNum, sessionData) {
-    await this.open(gameKey, epNum, false, null);
-    const fase = sessionData.activeFase || sessionData.fase || "";
-    const hero = sessionData.statoEroe || sessionData.hero || {};
-
-    if (hero.classeId || hero.classe) {
-      const found = this.state.classes.find(c => c.id === hero.classeId || c.nome === hero.classe);
-      if (found) {
-        this.state.activeClassIndex = this.state.classes.indexOf(found);
-        this.state.chosenClass = found;
-        this.state.startingGold = Number(found.oro || 40);
-        this.state.currentGold = hero.oro !== undefined ? hero.oro : this.state.startingGold;
+    try {
+      // 1. Carica prima i cataloghi (classi, abilità, shop)
+      let wizData = Rules2Store.loadCachedWizardData(gameKey);
+      if (!wizData) {
+        wizData = await apiCall("game_wizard_data", { gameKey: gameKey });
+        if (wizData) Rules2Store.setCachedWizardData(gameKey, wizData);
       }
-    }
 
-    if (fase === "WIZARD_ABILITA") { this.renderStep2(); this.showStep(2); }
-    else if (fase === "WIZARD_SHOP") { this.renderStep3(); this.showStep(3); }
-    else if (fase === "WIZARD_NOME") { this.renderStep4(); this.showStep(4); }
-    else { this.renderStep1(); this.showStep(1); }
+      this.state.gameKey = gameKey;
+      this.state.episodio = epNum;
+      this.state.classes = (wizData.classes || wizData.classi || []);
+      this.state.abilities = (wizData.abilities || wizData.abilita || []);
+      this.state.shopCatalog = (wizData.emporioItems || wizData.equipaggiamenti || []);
+
+      const fase = String(sessionData.activeFase || sessionData.fase || "WIZARD_CLASSE").toUpperCase();
+      const hero = sessionData.statoEroe || sessionData.hero || {};
+
+      // 2. Ripristino Classe
+      if (hero.classeId || hero.classe) {
+        const found = this.state.classes.find(c => c.id === hero.classeId || c.nome === hero.classe) || this.state.classes[0];
+        if (found) {
+          this.state.activeClassIndex = this.state.classes.indexOf(found);
+          this.state.chosenClass = found;
+          this.state.startingGold = Number(found.oro || 40);
+        }
+      } else {
+        this.state.chosenClass = this.state.classes[0] || null;
+        this.state.startingGold = this.state.chosenClass ? Number(this.state.chosenClass.oro || 40) : 40;
+      }
+
+      // 3. Ripristino Nome
+      this.state.heroName = hero.nomeEroe || AppState.user?.nome || "Avventuriero";
+
+      // 4. Ripristino Abilità e PX
+      this.state.chosenAbilities = [];
+      if (hero.abilita && Array.isArray(hero.abilita)) {
+        hero.abilita.forEach(aName => {
+          const aObj = this.state.abilities.find(x => x.nome === aName || x.id === aName);
+          if (aObj) this.state.chosenAbilities.push(aObj.id);
+        });
+      }
+      this.state.remainingPx = hero.px !== undefined ? Number(hero.px) : (100 - (this.state.chosenAbilities.length * 100));
+
+      // 5. Ripristino Carrello Emporio e Oro
+      this.state.boughtItems = [];
+      if (hero.inventario && Array.isArray(hero.inventario)) {
+        hero.inventario.forEach(iName => {
+          const itemObj = this.state.shopCatalog.find(x => x.nome === iName || x.id === iName);
+          if (itemObj) this.state.boughtItems.push(itemObj);
+        });
+      }
+      this.state.currentGold = hero.oro !== undefined ? Number(hero.oro) : this.state.startingGold;
+
+      // 6. Navigazione e rendering allo Step esatto
+      this.bindModalBackdropClose();
+      AppRouter.navigate("view-wizard");
+
+      if (fase === "WIZARD_ABILITA") {
+        this.renderStep2();
+        this.showStep(2);
+      } else if (fase === "WIZARD_SHOP") {
+        this.renderStep3();
+        this.showStep(3);
+      } else if (fase === "WIZARD_NOME") {
+        this.renderStep4();
+        this.showStep(4);
+      } else {
+        this.renderStep1();
+        this.showStep(1);
+      }
+    } catch (e) {
+      console.error("[Rules2Wizard] Errore resumeSession:", e);
+      this.open(gameKey, epNum, false, null);
+    }
+  },
+
+  // Sincronizzazione con il server ad ogni avanzamento di step
+  _syncStepToServer: function(faseName) {
+    if (!this.state.gameKey) return;
+    const heroPayload = {
+      subAction: "save_wizard_step",
+      gameKey: this.state.gameKey,
+      episodio: this.state.episodio,
+      fase: faseName,
+      classeId: this.state.chosenClass?.id || "",
+      classe: this.state.chosenClass?.nome || "",
+      schieramentoPolitico: this.state.chosenClass?.sottocategoria || "Destra",
+      oro: this.state.currentGold,
+      px: this.state.remainingPx,
+      abilita: (this.state.chosenAbilities || []).map(id => {
+        const a = this.state.abilities.find(x => x.id === id);
+        return a ? a.nome : id;
+      }),
+      inventario: (this.state.boughtItems || []).map(i => i.nome || i.id),
+      nomeEroe: this.state.heroName
+    };
+    // Chiamata asincrona in background (non blocca la UI)
+    apiCall("game_action", heroPayload).catch(() => {});
+  },
+
+  confirmStep1: function() {
+    this.stopAutoplay();
+    if (!this.state.chosenClass) return tgAlert("Scegli una classe!");
+    if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("success");
+    this._syncStepToServer("WIZARD_ABILITA");
+    this.renderStep2();
+    this.showStep(2);
+  },
+
+  confirmStep2: function() {
+    this.stopAutoplay();
+    if (!this.state.chosenClass) return tgAlert("Scegli prima una classe!");
+    if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("success");
+    this._syncStepToServer("WIZARD_SHOP");
+    this.renderStep3();
+    this.showStep(3);
+  },
+
+  nextStep: function(s) {
+    if (s === 4) {
+      this._syncStepToServer("WIZARD_NOME");
+      this.renderStep4();
+    }
+    this.showStep(s);
+    tgHaptic("selection");
+    if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("click");
   },
 
   showStep: function(stepNum) {
