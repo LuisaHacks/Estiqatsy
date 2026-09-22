@@ -1,7 +1,7 @@
 // ============================================================================
 // PROJECT: ESTIQATSY SYNDICATE & RPG PLATFORM
-// FILE: js/rules2wizard.js (VERSIONE 6.0 - SYNCHRONIZED GOLD & UEC ENGINE)
-// LAYER: WIZARD FULL-STAGE, 3D DYNAMIC STAGE, STAT CALCULATOR & DIEGETIC NAMING
+// FILE: js/rules2wizard.js (VERSIONE 14.0 - TOUCH SCROLL-SNAP & GAS REST ALIGNED)
+// LAYER: WIZARD FULL-STAGE, LIVE HUD DOCK, STEPPER TRACKER & STAT CALCULATOR
 // ============================================================================
 
 // ----------------------------------------------------------------------------
@@ -74,13 +74,18 @@ function tgHaptic(type = "light") {
   } catch (e) {}
 }
 
-function tgAlert(message) {
-  if (window.Telegram?.WebApp?.showAlert) window.Telegram.WebApp.showAlert(message);
-  else alert(message);
+function wizardNotify(msg, type = "info") {
+  if (window.AppCore && typeof AppCore.toast === "function") {
+    AppCore.toast(msg, type);
+  } else if (window.Telegram?.WebApp?.showAlert) {
+    window.Telegram.WebApp.showAlert(msg);
+  } else {
+    alert(msg);
+  }
 }
 
 // ----------------------------------------------------------------------------
-// 2. STORE CLIENT-SIDE (CACHE WIZARD)
+// 2. STORE CLIENT-SIDE (CACHE LOCALE DATI WIZARD)
 // ----------------------------------------------------------------------------
 const Rules2Store = {
   _cache: {},
@@ -100,7 +105,7 @@ const Rules2Store = {
 };
 
 // ----------------------------------------------------------------------------
-// 3. WIZARD PERSONAGGIO (MACCHINA A STATI CON RESUME COMPLETO & SYNC ORO)
+// 3. WIZARD CREAZIONE PERSONAGGIO (MACCHINA A STATI CON RESUME REALE SU GAS)
 // ----------------------------------------------------------------------------
 const Rules2Wizard = {
   state: {
@@ -125,14 +130,11 @@ const Rules2Wizard = {
     heroName: "",
     remainingPx: 100,
     startingGold: 40,
-    currentGold: 40,
-
-    _autoplayTimer: null,
-    _touchStartX: 0
+    currentGold: 40
   },
 
   // --------------------------------------------------------------------------
-  // GESTIONE SINCRONIZZATA DELL'ORO (RISOLVE IL BUG "ORO INSUFF.")
+  // GESTIONE SINCRONIZZATA DELL'ORO CON IL RUNTIME ENGINE
   // --------------------------------------------------------------------------
   syncGold: function() {
     if (typeof Rules2Engine !== "undefined" && typeof Rules2Engine.getGold === "function") {
@@ -168,20 +170,52 @@ const Rules2Wizard = {
 
   _syncGoldDisplay: function() {
     const goldDisp = document.getElementById("wizard-shop-gold-display");
-    if (goldDisp) goldDisp.textContent = `💰 ${this.state.currentGold} 🟡`;
+    if (goldDisp) goldDisp.innerHTML = `💰 <b>${this.state.currentGold}</b> 🟡`;
   },
 
   // --------------------------------------------------------------------------
-  // APERTURA E RIPRISTINO SESSIONE
+  // STEPPER PROGRESSIVO & LIVE HUD
+  // --------------------------------------------------------------------------
+  updateStepper: function(step) {
+    [1, 2, 3, 4].forEach(n => {
+      const ind = document.getElementById(`wiz-step-ind-${n}`);
+      if (!ind) return;
+      ind.classList.remove('active', 'completed');
+      if (n === step) {
+        ind.classList.add('active');
+      } else if (n < step) {
+        ind.classList.add('completed');
+      }
+    });
+  },
+
+  syncLiveHUD: function() {
+    const cls = this.state.chosenClass;
+    if (!cls) return;
+
+    const avatarEl = document.getElementById('wiz-live-avatar');
+    const nameEl = document.getElementById('wiz-live-name');
+    const statsEl = document.getElementById('wiz-live-stats');
+    const budgetEl = document.getElementById('wiz-live-budget');
+    const goldEl = document.getElementById('wiz-live-gold');
+
+    if (avatarEl) avatarEl.textContent = cls.emoji || '🥋';
+    if (nameEl) nameEl.textContent = this.state.heroName || cls.nome;
+    if (statsEl) statsEl.textContent = `❤️ ${cls.pv} PV • FOR ${cls.forza} · DES ${cls.destrezza} · INT ${cls.intelligenza}`;
+    if (budgetEl) budgetEl.textContent = `✨ ${this.state.remainingPx} PX`;
+    if (goldEl) goldEl.textContent = `💰 ${this.state.currentGold} 🟡`;
+  },
+
+  // --------------------------------------------------------------------------
+  // APERTURA E RIPRISTINO SESSIONE DA GOOGLE APPS SCRIPT
   // --------------------------------------------------------------------------
   open: async function(gameKey, epNum, isVeteran = false, savedHero = null) {
     try {
-      if (typeof SoundEngine !== "undefined") SoundEngine.playBgm("wizard");
-
       this.state.gameKey = gameKey;
       this.state.episodio = epNum;
       this.state.isVeteran = Boolean(isVeteran || (savedHero && epNum > 1));
 
+      // Fetch dati reali da Modulo_WebApp.gs
       let wizData = Rules2Store.loadCachedWizardData(gameKey);
       if (!wizData) {
         wizData = await apiCall("game_wizard_data", { gameKey: gameKey });
@@ -201,7 +235,7 @@ const Rules2Wizard = {
       if (this.state.isVeteran && savedHero) {
         const matchingClass = this.state.classes.find(c => c.id === savedHero.classeId || c.nome === savedHero.classe) || this.state.classes[0];
         this.state.chosenClass = matchingClass;
-        this.state.heroName = savedHero.nomeEroe || AppState.user?.nome || "Veterano";
+        this.state.heroName = savedHero.nomeEroe || AppState.user?.first_name || "Veterano";
         this.state.currentGold = savedHero.oro !== undefined ? Number(savedHero.oro) : Number(matchingClass.oro || 40);
         this.state.startingGold = this.state.currentGold;
         this.state.remainingPx = Number(savedHero.px !== undefined ? savedHero.px : 100);
@@ -216,7 +250,7 @@ const Rules2Wizard = {
         this.state.remainingPx = 100;
         this.state.startingGold = firstClass ? Number(firstClass.oro || 40) : 40;
         this.state.currentGold = this.state.startingGold;
-        this.state.heroName = AppState.user?.nome || "Avventuriero";
+        this.state.heroName = AppState.user?.nome || AppState.user?.first_name || "Avventuriero";
 
         this.syncGold();
         this.renderStep1();
@@ -227,7 +261,7 @@ const Rules2Wizard = {
       AppRouter.navigate("view-wizard");
     } catch (err) {
       console.error("[Rules2Wizard] Errore apertura wizard:", err);
-      tgAlert("Errore wizard: " + err.message);
+      wizardNotify("Errore caricamento wizard: " + err.message, "error");
     }
   },
 
@@ -245,8 +279,8 @@ const Rules2Wizard = {
       this.state.abilities = (wizData.abilities || wizData.abilita || []);
       this.state.shopCatalog = (wizData.emporioItems || wizData.equipaggiamenti || []);
 
-      const fase = String(sessionData.activeFase || sessionData.fase || "WIZARD_CLASSE").toUpperCase();
-      const hero = sessionData.statoEroe || sessionData.hero || {};
+      const fase = String(sessionData.activeFase || "WIZARD_CLASSE").toUpperCase();
+      const hero = sessionData.statoEroe || {};
 
       if (hero.classeId || hero.classe) {
         const found = this.state.classes.find(c => c.id === hero.classeId || c.nome === hero.classe) || this.state.classes[0];
@@ -298,7 +332,7 @@ const Rules2Wizard = {
         this.showStep(1);
       }
     } catch (e) {
-      console.error("[Rules2Wizard] Errore resumeSession:", e);
+      console.error("[Rules2Wizard] Errore ripristino wizard:", e);
       this.open(gameKey, epNum, false, null);
     }
   },
@@ -326,18 +360,16 @@ const Rules2Wizard = {
   },
 
   confirmStep1: function() {
-    this.stopAutoplay();
-    if (!this.state.chosenClass) return tgAlert("Scegli una classe!");
-    if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("success");
+    if (!this.state.chosenClass) return wizardNotify("Scegli una classe prima di avanzare!", "warning");
+    tgHaptic("success");
     this._syncStepToServer("WIZARD_ABILITA");
     this.renderStep2();
     this.showStep(2);
   },
 
   confirmStep2: function() {
-    this.stopAutoplay();
-    if (!this.state.chosenClass) return tgAlert("Scegli prima una classe!");
-    if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("success");
+    if (!this.state.chosenClass) return wizardNotify("Scegli prima una classe!", "warning");
+    tgHaptic("success");
     this._syncStepToServer("WIZARD_SHOP");
     this.renderStep3();
     this.showStep(3);
@@ -350,17 +382,20 @@ const Rules2Wizard = {
     }
     this.showStep(s);
     tgHaptic("selection");
-    if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("click");
+    if (window.SoundEngine) SoundEngine.playClick();
   },
 
   prevStep: function(s) {
     this.showStep(s);
     tgHaptic("selection");
-    if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("click");
+    if (window.SoundEngine) SoundEngine.playClick();
   },
 
   showStep: function(stepNum) {
     this.state.step = stepNum;
+    this.updateStepper(stepNum);
+    this.syncLiveHUD();
+
     [1, 2, 3, 4].forEach(n => {
       const panel = document.getElementById(`wizard-step-${n === 1 ? 'class' : n === 2 ? 'abilities' : n === 3 ? 'shop' : 'name'}`);
       if (panel) panel.classList.toggle("hidden", n !== stepNum);
@@ -386,30 +421,8 @@ const Rules2Wizard = {
       }
     }
 
-    if (stepNum <= 3 && this.state.globalViewMode === "3d") {
-      this.startAutoplay();
-    } else {
-      this.stopAutoplay();
-    }
-
     const scrollContainer = document.getElementById("app-main-scroll");
     if (scrollContainer) scrollContainer.scrollTop = 0;
-  },
-
-  startAutoplay: function() {
-    this.stopAutoplay();
-    this.state._autoplayTimer = setInterval(() => {
-      if (this.state.step === 1) this.coverflowNext(true);
-      else if (this.state.step === 2) this.cylinderAbilitiesNext(true);
-      else if (this.state.step === 3) this.cylinderShopNext(true);
-    }, 5000);
-  },
-
-  stopAutoplay: function() {
-    if (this.state._autoplayTimer) {
-      clearInterval(this.state._autoplayTimer);
-      this.state._autoplayTimer = null;
-    }
   },
 
   bindModalBackdropClose: function() {
@@ -440,11 +453,11 @@ const Rules2Wizard = {
     });
 
     tgHaptic("selection");
-    if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("card_flip");
+    if (window.SoundEngine) SoundEngine.playClick();
 
     if (this.state.step === 1) {
-      if (is3D) { this.updateCoverflowStage(); this.startAutoplay(); }
-      else { this.stopAutoplay(); this.renderClassesList(); }
+      if (!is3D) this.renderClassesList();
+      else this.scrollToCard('wizard-classes-stage', this.state.activeClassIndex);
     } else if (this.state.step === 2) {
       this.renderStep2();
     } else if (this.state.step === 3) {
@@ -453,7 +466,16 @@ const Rules2Wizard = {
   },
 
   // --------------------------------------------------------------------------
-  // STEP 1: CLASSI COSTIERE (ZERO VORAGINE NERA & UEC PERFETTA)
+  // HELPER SCROLL-SNAP NATIVO TOUCH (ZERO CPU BOTTLENECK)
+  // --------------------------------------------------------------------------
+  scrollToCard: function(stageId, index, cardWidth = 274) {
+    const stage = document.getElementById(stageId);
+    if (!stage) return;
+    stage.scrollTo({ left: index * cardWidth, behavior: 'smooth' });
+  },
+
+  // --------------------------------------------------------------------------
+  // STEP 1: SCELTA CLASSE COSTIERA (CON SCROLL-SNAP NATIVO)
   // --------------------------------------------------------------------------
   renderStep1: function() {
     const stage = document.getElementById("wizard-classes-stage");
@@ -462,49 +484,37 @@ const Rules2Wizard = {
 
     const classes = this.state.classes || [];
     stage.innerHTML = classes.map((cls, idx) => {
+      const isSelected = (this.state.activeClassIndex === idx);
       const pol = String(cls.sottocategoria || "Destra").toLowerCase();
       const forVal = Number(cls.forza || 10);
       const desVal = Number(cls.destrezza || 10);
       const intVal = Number(cls.intelligenza || 10);
-      const cleanQuote = String(cls.citazione || "A Viareggio se non hai il ferro giusto duri poco.").replace(/^["'“”]+|["'“”]+$/g, "");
 
       return `
-        <div id="coverflow-card-${idx}" data-faction="${pol}" onclick="Rules2Wizard.coverflowSelectIndex(${idx})" class="coverflow-card">
-          <div class="coverflow-header-bar">
-            <div class="coverflow-title-group">
-              <span class="coverflow-title-icon">${cls.emoji || '🥋'}</span>
-              <h4 class="coverflow-title">${cls.nome}</h4>
-            </div>
-            <span class="coverflow-badge-faction" data-faction="${pol}">
-              ${pol.toUpperCase()}
-            </span>
+        <div id="coverflow-card-${idx}" data-faction="${pol}" onclick="Rules2Wizard.selectClassByIndex(${idx})" class="coverflow-card ${isSelected ? 'selected' : ''}">
+          <div class="relative">
+            <img src="${cls.mediaUrl}" class="coverflow-card-img" alt="${Rules2_SafeAttr(cls.nome)}" loading="lazy">
+            <span class="absolute top-2 left-2 item-card-badge">${pol.toUpperCase()}</span>
+            <span class="absolute bottom-2 right-2 px-2 py-0.5 rounded bg-black/80 font-mono text-[10px] text-amber-300 font-bold">❤️ ${cls.pv} PV</span>
           </div>
 
-          <div class="coverflow-media-frame">
-            <img src="${cls.mediaUrl}" class="coverflow-img" alt="${Rules2_SafeAttr(cls.nome)}" loading="lazy">
-            <div class="watermark-cover-banner">
-              <div class="quote-text">“${cleanQuote}”</div>
-              <div class="quote-author">${cls.autoreCitazione || 'Darsena'}</div>
-            </div>
-          </div>
-
-          <div class="coverflow-details-box">
-            <div class="coverflow-stats-row">
-              <div>🥊 FOR <b>${forVal}</b></div>
-              <div>🤸 DES <b>${desVal}</b></div>
-              <div>🧠 INT <b>${intVal}</b></div>
+          <div class="coverflow-card-body">
+            <div class="flex items-center justify-between">
+              <h4 class="text-xs font-black text-white">${cls.emoji || '🥋'} ${cls.nome}</h4>
+              ${isSelected ? '<span class="badge badge-xs badge-info font-black">ATTIVO</span>' : ''}
             </div>
 
-            <div class="coverflow-lore">
-              <p>${cls.testo || cls.descrizione || ''}</p>
+            <div class="grid grid-cols-3 gap-1 text-center font-mono my-2 text-[10px]">
+              <div class="bg-black/40 rounded p-1 border border-white/5">FOR <b>${forVal}</b></div>
+              <div class="bg-black/40 rounded p-1 border border-white/5">DES <b>${desVal}</b></div>
+              <div class="bg-black/40 rounded p-1 border border-white/5">INT <b>${intVal}</b></div>
             </div>
 
-            <div class="coverflow-footer-row">
-              <span class="coverflow-gear-label truncate">🎒 <b>${cls.equipLoot || 'Pugni nudi'}</b></span>
-              <div class="coverflow-kpi-pill">
-                <span class="pill-pv">❤️ ${cls.pv} PV</span>
-                <span class="pill-gold">🟡 ${cls.oro} ORO</span>
-              </div>
+            <p class="text-[10.5px] text-slate-300 leading-snug line-clamp-2">${cls.descrizione || cls.testo || ''}</p>
+
+            <div class="mt-2 pt-1.5 border-t border-white/10 text-[9.5px] text-slate-400 flex items-center justify-between">
+              <span class="truncate">🎒 <b>${cls.equipLoot || 'Pugni nudi'}</b></span>
+              <span class="font-mono text-amber-300 font-bold">🟡 ${cls.oro} ORO</span>
             </div>
           </div>
         </div>
@@ -512,115 +522,43 @@ const Rules2Wizard = {
     }).join("");
 
     if (dotsBox) {
-      dotsBox.innerHTML = `
-        <div class="coverflow-nav-cluster">
-          <button onclick="event.stopPropagation(); Rules2Wizard.coverflowPrev();" class="coverflow-btn-side" aria-label="Precedente">‹</button>
-          <div class="coverflow-counter-pill">${this.state.activeClassIndex + 1} / ${classes.length}</div>
-          <button onclick="event.stopPropagation(); Rules2Wizard.coverflowNext();" class="coverflow-btn-side" aria-label="Successivo">›</button>
-        </div>
-      `;
+      dotsBox.innerHTML = classes.map((_, i) => `
+        <span onclick="Rules2Wizard.selectClassByIndex(${i})" class="coverflow-dot ${i === this.state.activeClassIndex ? 'active' : ''}"></span>
+      `).join("");
     }
 
-    this.bindGestures(stage, () => this.coverflowNext(), () => this.coverflowPrev());
-    this.updateCoverflowStage();
+    this.syncLiveHUD();
   },
 
-  bindGestures: function(stageEl, onNext, onPrev) {
-    if (!stageEl || stageEl._hasGestures) return;
-    stageEl._hasGestures = true;
+  selectClassByIndex: function(idx) {
+    this.state.activeClassIndex = idx;
+    this.state.chosenClass = this.state.classes[idx];
 
-    stageEl.addEventListener("touchstart", (e) => {
-      this.stopAutoplay();
-      this.state._touchStartX = e.changedTouches[0].screenX;
-    }, { passive: true });
-
-    stageEl.addEventListener("touchend", (e) => {
-      const diff = this.state._touchStartX - e.changedTouches[0].screenX;
-      if (Math.abs(diff) > 35) {
-        if (diff > 0) onNext();
-        else onPrev();
-      }
-    }, { passive: true });
-
-    stageEl.addEventListener("wheel", (e) => {
-      if (Math.abs(e.deltaX) > 25) {
-        this.stopAutoplay();
-        if (e.deltaX > 0) onNext();
-        else onPrev();
-      }
-    }, { passive: true });
-  },
-
-  updateCoverflowStage: function() {
-    const classes = this.state.classes || [];
-    const total = classes.length;
-    if (total === 0) return;
-
-    const activeIdx = this.state.activeClassIndex;
-    const spacing = window.innerWidth >= 768 ? 200 : 145;
-
-    classes.forEach((cls, i) => {
-      const el = document.getElementById(`coverflow-card-${i}`);
-      if (!el) return;
-
-      let diff = (i - activeIdx) % total;
-      if (diff > total / 2) diff -= total;
-      if (diff < -total / 2) diff += total;
-
-      const offset = diff;
-      const absOffset = Math.abs(offset);
-
-      if (absOffset > 2 && window.innerWidth < 768) {
-        el.style.display = "none";
-        return;
-      }
-      el.style.display = "flex";
-
-      const isCenter = (offset === 0);
-      const translateX = offset * spacing;
-      const rotateY = offset * -18;
-      const scale = isCenter ? 1.02 : Math.max(0.72, 0.88 - absOffset * 0.08);
-
-      el.style.transform = `translateX(${translateX}px) translateZ(${isCenter ? 40 : -50}px) rotateY(${rotateY}deg) scale(${scale})`;
-      el.style.zIndex = 30 - Math.round(absOffset * 5);
-      el.style.opacity = isCenter ? 1 : Math.max(0.15, 0.45 - absOffset * 0.15);
-      el.classList.toggle("glow-active", isCenter);
-    });
-
-    this.state.chosenClass = classes[activeIdx];
-    if (!this.state.isVeteran) {
-      this.state.startingGold = Number(classes[activeIdx].oro || 40);
+    if (!this.state.isVeteran && this.state.chosenClass) {
+      this.state.startingGold = Number(this.state.chosenClass.oro || 40);
       this.state.currentGold = this.state.startingGold;
       this.syncGold();
     }
 
-    const pill = document.querySelector("#wizard-coverflow-dots .coverflow-counter-pill");
-    if (pill) pill.textContent = `${activeIdx + 1} / ${total}`;
+    tgHaptic("selection");
+    if (window.SoundEngine) SoundEngine.playClick();
+
+    this.renderStep1();
+    this.scrollToCard('wizard-classes-stage', idx);
   },
 
-  coverflowSelectIndex: function(idx) {
-    this.stopAutoplay();
-    this.state.activeClassIndex = idx;
-    if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("card_flip");
-    this.updateCoverflowStage();
-  },
-
-  coverflowNext: function(isAuto = false) {
-    if (!isAuto) this.stopAutoplay();
+  coverflowNext: function() {
     const total = (this.state.classes || []).length;
     if (total <= 1) return;
-    this.state.activeClassIndex = (this.state.activeClassIndex + 1) % total;
-    if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("card_flip");
-    this.updateCoverflowStage();
+    const nextIdx = (this.state.activeClassIndex + 1) % total;
+    this.selectClassByIndex(nextIdx);
   },
 
   coverflowPrev: function() {
-    this.stopAutoplay();
     const total = (this.state.classes || []).length;
     if (total <= 1) return;
-    this.state.activeClassIndex = (this.state.activeClassIndex - 1 + total) % total;
-    if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("card_flip");
-    this.updateCoverflowStage();
+    const prevIdx = (this.state.activeClassIndex - 1 + total) % total;
+    this.selectClassByIndex(prevIdx);
   },
 
   renderClassesList: function() {
@@ -633,41 +571,29 @@ const Rules2Wizard = {
       const pol = String(cls.sottocategoria || "Destra").toLowerCase();
 
       return `
-        <div data-faction="${pol}" onclick="Rules2Wizard.selectClassByIndex(${idx})" class="class-list-card ${isSelected ? 'selected' : ''}">
-          <div class="flex items-center space-x-3 min-w-0 flex-1">
-            <div class="class-list-thumb">
-              <img src="${cls.mediaUrl}" alt="${Rules2_SafeAttr(cls.nome)}" loading="lazy">
+        <div onclick="Rules2Wizard.selectClassByIndex(${idx})" class="p-3.5 rounded-2xl bg-slate-900 border transition-all ${isSelected ? 'border-sky-400 bg-sky-950/30' : 'border-white/10'} flex items-center justify-between cursor-pointer">
+          <div class="flex items-center gap-3 min-w-0">
+            <div class="w-11 h-11 rounded-xl bg-slate-800 border border-white/10 flex items-center justify-center text-xl shrink-0">
+              ${cls.emoji || '🥋'}
             </div>
-            <div class="class-list-info">
-              <div class="class-list-name">${cls.emoji || '🥋'} ${cls.nome}</div>
-              <div class="class-list-sub">
-                <span class="${pol === 'destra' ? 'text-sky-400' : 'text-rose-400'} font-bold">${pol.toUpperCase()}</span> • ❤️ ${cls.pv} PV • 🟡 ${cls.oro} ORO
+            <div class="min-w-0">
+              <div class="flex items-center gap-2">
+                <h4 class="text-xs font-bold text-white truncate">${cls.nome}</h4>
+                <span class="badge badge-xs ${pol === 'destra' ? 'badge-info' : 'badge-error'} font-mono uppercase text-[8px]">${pol}</span>
               </div>
+              <div class="text-[10px] font-mono text-sky-300 mt-0.5">❤️ ${cls.pv} PV • FOR ${cls.forza} · DES ${cls.destrezza} · INT ${cls.intelligenza}</div>
             </div>
           </div>
-          <button class="btn btn-xs ${isSelected ? 'btn-success font-black' : 'btn-outline border-white/20 text-slate-300'}">
-            ${isSelected ? 'Attivo ✓' : 'Seleziona'}
+          <button class="btn btn-xs ${isSelected ? 'btn-primary' : 'btn-outline border-white/20 text-slate-300'} font-bold shrink-0 ml-2">
+            ${isSelected ? 'Scelto ✓' : 'Scegli'}
           </button>
         </div>
       `;
     }).join("");
   },
 
-  selectClassByIndex: function(idx) {
-    this.state.activeClassIndex = idx;
-    this.state.chosenClass = this.state.classes[idx];
-    if (!this.state.isVeteran) {
-      this.state.startingGold = Number(this.state.chosenClass.oro || 40);
-      this.state.currentGold = this.state.startingGold;
-      this.syncGold();
-    }
-    if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("click");
-    this.updateCoverflowStage();
-    this.renderClassesList();
-  },
-
   // --------------------------------------------------------------------------
-  // STEP 2: ABILITÀ & TALENTI CLANDESTINI (NESSUNA COLLISIONE TASTI)
+  // STEP 2: ABILITÀ & TALENTI CLANDESTINI (BUDGET 100 PX)
   // --------------------------------------------------------------------------
   renderStep2: function() {
     const is3D = (this.state.globalViewMode === "3d");
@@ -681,9 +607,7 @@ const Rules2Wizard = {
 
     if (is3D) {
       this.renderAbilities3D();
-      this.startAutoplay();
     } else {
-      this.stopAutoplay();
       this.renderAbilitiesList();
     }
   },
@@ -703,123 +627,32 @@ const Rules2Wizard = {
       const perkText = Rules2_FormatHumanEffect(abl.requisitiCodificati || abl.effettoCodificato, userFaction);
 
       return `
-        <div id="abilities-card-${idx}" data-faction="${userFaction}" onclick="Rules2Wizard.selectAbilityIndex(${idx})" class="coverflow-card">
-          <div class="coverflow-header-bar">
-            <div class="coverflow-title-group">
-              <span class="coverflow-title-icon">${abl.emoji || '⚡'}</span>
-              <h4 class="coverflow-title">${abl.nome}</h4>
+        <div id="abilities-card-${idx}" onclick="Rules2Wizard.toggleAbility('${abl.id}')" class="coverflow-card ${isSelected ? 'selected' : ''}">
+          <div class="p-4 bg-gradient-to-b from-slate-900 to-slate-950 flex flex-col justify-between h-[230px]">
+            <div>
+              <div class="flex items-center justify-between mb-2">
+                <span class="badge badge-xs badge-info font-black text-[9px] uppercase">${abl.categoria || 'Talento'}</span>
+                <span class="font-mono text-xs font-bold text-amber-300 bg-amber-950/60 border border-amber-500/40 px-2 py-0.5 rounded">${abl.costoPX || 100} PX</span>
+              </div>
+              <div class="text-3xl my-2 text-center">${abl.emoji || '⚡'}</div>
+              <h4 class="text-xs font-black text-white text-center">${abl.nome}</h4>
+              <div class="text-[10px] text-slate-300 text-center mt-1 leading-snug line-clamp-3">${perkText}</div>
             </div>
-            <span class="coverflow-badge-faction" data-faction="${userFaction}">
-              ${abl.costoPX || 100} PX
-            </span>
-          </div>
-
-          <div class="coverflow-media-frame">
-            <img src="${abl.mediaUrl && abl.mediaUrl !== '—' ? abl.mediaUrl : 'https://image.pollinations.ai/prompt/cyberpunk-noir-skill-icon?width=800&height=450&nologo=true'}" class="coverflow-img" alt="${Rules2_SafeAttr(abl.nome)}" loading="lazy">
-            <div class="watermark-cover-banner">
-              <div class="quote-text">${abl.descrizione || 'Abilità Clandestina'}</div>
-            </div>
-          </div>
-
-          <div class="coverflow-details-box">
-            <div class="coverflow-stats-row">
-              <div>⚡ TALENTO</div>
-              <div>✨ ${abl.costoPX || 100} PX</div>
-              <div>${isCompatible ? '✅ IDONEO' : '🔒 INCOMPATIBILE'}</div>
-            </div>
-
-            <div class="coverflow-lore">
-              ${perkText}
-            </div>
-
-            <div class="coverflow-footer-row">
-              <span class="coverflow-gear-label">Requisito: <b>${req.includes('destra') ? 'Destra' : (req.includes('sinistra') ? 'Sinistra' : 'Comune')}</b></span>
-              <button onclick="event.stopPropagation(); Rules2Wizard.toggleAbility('${abl.id}')" class="btn btn-xs ${isSelected ? 'btn-error font-black' : (isCompatible ? 'btn-primary font-black' : 'btn-disabled')}">
-                ${isSelected ? 'Rimuovi' : (isCompatible ? 'Attiva' : '🔒')}
-              </button>
-            </div>
+            <button class="btn btn-xs ${isSelected ? 'btn-warning text-black' : (isCompatible ? 'btn-primary' : 'btn-disabled')} font-bold w-full mt-2">
+              ${isSelected ? 'Appreso ✓ (Rimuovi)' : (isCompatible ? '+ Apprendi Talento' : '🔒 Incompatibile')}
+            </button>
           </div>
         </div>
       `;
     }).join("");
 
     if (dotsBox) {
-      dotsBox.innerHTML = `
-        <div class="coverflow-nav-cluster">
-          <button onclick="event.stopPropagation(); Rules2Wizard.cylinderAbilitiesPrev();" class="coverflow-btn-side" aria-label="Precedente">‹</button>
-          <div class="coverflow-counter-pill">${this.state.activeAbilityIndex + 1} / ${abilities.length}</div>
-          <button onclick="event.stopPropagation(); Rules2Wizard.cylinderAbilitiesNext();" class="coverflow-btn-side" aria-label="Successivo">›</button>
-        </div>
-      `;
+      dotsBox.innerHTML = abilities.map((_, i) => `
+        <span onclick="Rules2Wizard.scrollToCard('wizard-abilities-stage', ${i})" class="coverflow-dot ${i === this.state.activeAbilityIndex ? 'active' : ''}"></span>
+      `).join("");
     }
 
-    this.bindGestures(stage, () => this.cylinderAbilitiesNext(), () => this.cylinderAbilitiesPrev());
-    this.updateAbilitiesCylinder();
-  },
-
-  updateAbilitiesCylinder: function() {
-    const abilities = this.state.abilities || [];
-    const total = abilities.length;
-    if (total === 0) return;
-
-    const activeIdx = this.state.activeAbilityIndex;
-    const spacing = window.innerWidth >= 768 ? 200 : 145;
-
-    abilities.forEach((abl, i) => {
-      const el = document.getElementById(`abilities-card-${i}`);
-      if (!el) return;
-
-      let diff = (i - activeIdx) % total;
-      if (diff > total / 2) diff -= total;
-      if (diff < -total / 2) diff += total;
-
-      const offset = diff;
-      const absOffset = Math.abs(offset);
-
-      if (absOffset > 2 && window.innerWidth < 768) {
-        el.style.display = "none";
-        return;
-      }
-      el.style.display = "flex";
-
-      const isCenter = (offset === 0);
-      const translateX = offset * spacing;
-      const rotateY = offset * -18;
-      const scale = isCenter ? 1.02 : Math.max(0.72, 0.88 - absOffset * 0.08);
-
-      el.style.transform = `translateX(${translateX}px) translateZ(${isCenter ? 40 : -50}px) rotateY(${rotateY}deg) scale(${scale})`;
-      el.style.zIndex = 30 - Math.round(absOffset * 5);
-      el.style.opacity = isCenter ? 1 : Math.max(0.15, 0.45 - absOffset * 0.15);
-      el.classList.toggle("glow-active", isCenter);
-    });
-
-    const pill = document.querySelector("#wizard-abilities-dots .coverflow-counter-pill");
-    if (pill) pill.textContent = `${activeIdx + 1} / ${total}`;
-  },
-
-  selectAbilityIndex: function(idx) {
-    this.stopAutoplay();
-    this.state.activeAbilityIndex = idx;
-    if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("card_flip");
-    this.updateAbilitiesCylinder();
-  },
-
-  cylinderAbilitiesNext: function(isAuto = false) {
-    if (!isAuto) this.stopAutoplay();
-    const total = (this.state.abilities || []).length;
-    if (total <= 1) return;
-    this.state.activeAbilityIndex = (this.state.activeAbilityIndex + 1) % total;
-    if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("card_flip");
-    this.updateAbilitiesCylinder();
-  },
-
-  cylinderAbilitiesPrev: function() {
-    this.stopAutoplay();
-    const total = (this.state.abilities || []).length;
-    if (total <= 1) return;
-    this.state.activeAbilityIndex = (this.state.activeAbilityIndex - 1 + total) % total;
-    if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("card_flip");
-    this.updateAbilitiesCylinder();
+    this.syncLiveHUD();
   },
 
   renderAbilitiesList: function() {
@@ -834,16 +667,21 @@ const Rules2Wizard = {
       const isCompatible = req.includes("tutti") || req.includes(userFaction);
 
       return `
-        <div onclick="Rules2Wizard.toggleAbility('${abl.id}')" class="wizard-ability-card ${isSelected ? 'selected' : (isCompatible ? 'compatible' : 'locked')}">
-          <div class="ability-card-info">
-            <div class="flex items-center space-x-2">
-              <span class="text-xl">${abl.emoji || '⚡'}</span>
-              <span class="ability-card-title">${abl.nome}</span>
+        <div class="p-3.5 rounded-2xl bg-slate-900 border transition-all ${isSelected ? 'border-amber-400 bg-amber-950/20' : 'border-white/10'} flex items-center justify-between gap-3">
+          <div class="flex items-center gap-3 min-w-0">
+            <div class="w-10 h-10 rounded-xl bg-slate-800 border ${isSelected ? 'border-amber-400' : 'border-white/10'} flex items-center justify-center text-xl shrink-0">
+              ${abl.emoji || '⚡'}
             </div>
-            <div class="text-[11px] text-slate-300 mt-1">${abl.effettoCodificato || abl.descrizione || ''}</div>
+            <div class="min-w-0">
+              <div class="flex items-center gap-1.5 flex-wrap">
+                <h4 class="text-xs font-bold text-white">${abl.nome}</h4>
+                <span class="badge badge-xs badge-warning font-mono font-bold">${abl.costoPX || 100} PX</span>
+              </div>
+              <p class="text-[10.5px] text-slate-300 leading-snug mt-0.5">${abl.descrizione || ''}</p>
+            </div>
           </div>
-          <button class="btn btn-xs ${isSelected ? 'btn-primary font-black' : (isCompatible ? 'btn-outline border-white/20' : 'btn-disabled')}">
-            ${isSelected ? 'Appreso ✓' : (isCompatible ? '100 PX' : '🔒')}
+          <button onclick="Rules2Wizard.toggleAbility('${abl.id}')" class="btn btn-xs ${isSelected ? 'btn-warning text-black font-black' : (isCompatible ? 'btn-outline border-white/20 text-slate-300' : 'btn-disabled')} shrink-0 px-3">
+            ${isSelected ? 'Appreso ✓' : (isCompatible ? 'Acquista' : '🔒')}
           </button>
         </div>
       `;
@@ -851,29 +689,49 @@ const Rules2Wizard = {
   },
 
   toggleAbility: function(ablId) {
+    const ab = this.state.abilities.find(a => a.id === ablId);
+    if (!ab) return;
+
+    const cost = Number(ab.costoPX || 100);
     const idx = this.state.chosenAbilities.indexOf(ablId);
+
     if (idx !== -1) {
       this.state.chosenAbilities.splice(idx, 1);
-      this.state.remainingPx += 100;
+      this.state.remainingPx += cost;
       tgHaptic("light");
-      if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("click");
+      if (window.SoundEngine) SoundEngine.playClick();
+      wizardNotify(`Rimosso ${ab.nome}. +${cost} PX rimborsati.`, "info");
     } else {
-      if (this.state.remainingPx >= 100) {
-        this.state.chosenAbilities.push(ablId);
-        this.state.remainingPx -= 100;
-        tgHaptic("success");
-        if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("lucky");
-      } else {
+      if (this.state.remainingPx < cost) {
         tgHaptic("error");
-        if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("unlucky");
-        return tgAlert("PX insufficienti!");
+        return wizardNotify(`PX insufficienti! Mancano ${cost - this.state.remainingPx} PX.`, "warning");
       }
+      this.state.chosenAbilities.push(ablId);
+      this.state.remainingPx -= cost;
+      tgHaptic("success");
+      if (window.SoundEngine) SoundEngine.playCoin();
+      wizardNotify(`Talento ${ab.nome} appreso!`, "success");
     }
+
     this.renderStep2();
   },
 
+  cylinderAbilitiesNext: function() {
+    const total = (this.state.abilities || []).length;
+    if (total <= 1) return;
+    this.state.activeAbilityIndex = (this.state.activeAbilityIndex + 1) % total;
+    this.scrollToCard('wizard-abilities-stage', this.state.activeAbilityIndex);
+  },
+
+  cylinderAbilitiesPrev: function() {
+    const total = (this.state.abilities || []).length;
+    if (total <= 1) return;
+    this.state.activeAbilityIndex = (this.state.activeAbilityIndex - 1 + total) % total;
+    this.scrollToCard('wizard-abilities-stage', this.state.activeAbilityIndex);
+  },
+
   // --------------------------------------------------------------------------
-  // STEP 3: MERCATO NERO DI CICCIO (SALDO SINCRONIZZATO & COMPRA ATTIVO)
+  // STEP 3: MERCATO NERO DI CICCIO (ORO REALE & CONTRATTI)
   // --------------------------------------------------------------------------
   renderStep3: function() {
     this.syncGold();
@@ -900,9 +758,7 @@ const Rules2Wizard = {
 
     if (is3D) {
       this.renderShop3D();
-      this.startAutoplay();
     } else {
-      this.stopAutoplay();
       this.renderShopList();
     }
 
@@ -915,137 +771,39 @@ const Rules2Wizard = {
     if (!stage) return;
 
     const filtered = (this.state.shopCatalog || []).filter(i => Rules2_ClassifyEntity(i) === this.state.shopCategory);
-    const userFaction = String(this.state.chosenClass?.sottocategoria || "Destra").toLowerCase();
 
     stage.innerHTML = filtered.map((it, idx) => {
       const price = Math.abs(Number(it.costoOro || it.costo || 15));
       const canAfford = (this.state.currentGold >= price);
       const cartCount = (this.state.boughtItems || []).filter(b => b.id === it.id || b.nome === it.nome).length;
 
-      const bonusTag = Rules2_FormatHumanEffect(it.requisitiCodificati || it.effettoCodificato, userFaction);
-
       return `
-        <div id="shop-card-${idx}" data-faction="${userFaction}" onclick="Rules2Wizard.selectShopIndex(${idx})" class="coverflow-card">
-          <div class="coverflow-header-bar">
-            <div class="coverflow-title-group">
-              <span class="coverflow-title-icon">${it.emoji || '📦'}</span>
-              <h4 class="coverflow-title">${it.nome}</h4>
+        <div id="shop-card-${idx}" class="coverflow-card ${cartCount > 0 ? 'selected' : ''}">
+          <div class="p-4 bg-gradient-to-b from-slate-900 to-slate-950 flex flex-col justify-between h-[230px]">
+            <div>
+              <div class="flex items-center justify-between mb-2">
+                <span class="badge badge-xs badge-info font-black text-[9px] uppercase">${this.state.shopCategory}</span>
+                <span class="font-mono text-xs font-bold text-amber-300 bg-amber-950/60 border border-amber-500/40 px-2 py-0.5 rounded">${price} 🟡</span>
+              </div>
+              <div class="text-3xl my-2 text-center">${it.emoji || '📦'}</div>
+              <h4 class="text-xs font-black text-white text-center">${it.nome}</h4>
+              <p class="text-[10.5px] text-slate-300 text-center mt-1 leading-snug line-clamp-2">${it.descrizione || it.testo || ''}</p>
             </div>
-            <span class="coverflow-badge-faction badge-warning">
-              ${price} 🟡
-            </span>
-          </div>
-
-          <div class="coverflow-media-frame">
-            <img src="${it.mediaUrl && it.mediaUrl !== '—' ? it.mediaUrl : 'https://image.pollinations.ai/prompt/black-market-crate?width=800&height=450&nologo=true'}" class="coverflow-img" alt="${Rules2_SafeAttr(it.nome)}" loading="lazy">
-            <div class="watermark-cover-banner">
-              <div class="quote-text">${it.nome} (${this.state.shopCategory})</div>
-            </div>
-          </div>
-
-          <div class="coverflow-details-box">
-            <div class="coverflow-stats-row">
-              <div>${it.danno ? '💥 Danno ' + it.danno : '🛡️ DOTAZIONE'}</div>
-              <div>${it.pv ? '❤️ ' + it.pv + ' PV' : '📦 MERCATO'}</div>
-              <div>💰 ${price} 🟡</div>
-            </div>
-
-            <div class="coverflow-lore">
-              <p>${it.descrizione || it.testo || bonusTag}</p>
-            </div>
-
-            <div class="coverflow-footer-row">
-              <span class="coverflow-gear-label">
-                ${cartCount > 0 ? `🎒 Nello zaino (x${cartCount})` : `Prezzo: <b>${price} ORO</b>`}
-              </span>
-              <button onclick="event.stopPropagation(); Rules2Wizard.buyItem('${it.id}', ${price})" class="btn btn-xs ${canAfford ? 'btn-primary font-bold' : 'btn-disabled opacity-40'}" ${!canAfford ? 'disabled' : ''}>
-                ${canAfford ? `Compra (${price} 🟡)` : 'Oro Insuff.'}
-              </button>
-            </div>
+            <button onclick="Rules2Wizard.buyItem('${it.id}', ${price})" class="btn btn-xs ${canAfford ? 'btn-primary font-bold' : 'btn-disabled opacity-40'} w-full mt-2" ${!canAfford ? 'disabled' : ''}>
+              ${cartCount > 0 ? `Nello Zaino (${cartCount}) +` : `Compra (${price} 🟡)`}
+            </button>
           </div>
         </div>
       `;
     }).join("");
 
     if (dotsBox) {
-      dotsBox.innerHTML = `
-        <div class="coverflow-nav-cluster">
-          <button onclick="event.stopPropagation(); Rules2Wizard.cylinderShopPrev();" class="coverflow-btn-side" aria-label="Precedente">‹</button>
-          <div class="coverflow-counter-pill">${this.state.activeShopIndex + 1} / ${filtered.length}</div>
-          <button onclick="event.stopPropagation(); Rules2Wizard.cylinderShopNext();" class="coverflow-btn-side" aria-label="Successivo">›</button>
-        </div>
-      `;
+      dotsBox.innerHTML = filtered.map((_, i) => `
+        <span onclick="Rules2Wizard.scrollToCard('wizard-shop-stage', ${i})" class="coverflow-dot ${i === this.state.activeShopIndex ? 'active' : ''}"></span>
+      `).join("");
     }
 
-    this.bindGestures(stage, () => this.cylinderShopNext(), () => this.cylinderShopPrev());
-    this.updateShopCylinder();
-  },
-
-  updateShopCylinder: function() {
-    const filtered = (this.state.shopCatalog || []).filter(i => Rules2_ClassifyEntity(i) === this.state.shopCategory);
-    const total = filtered.length;
-    if (total === 0) return;
-
-    const activeIdx = this.state.activeShopIndex;
-    const spacing = window.innerWidth >= 768 ? 200 : 145;
-
-    filtered.forEach((it, i) => {
-      const el = document.getElementById(`shop-card-${i}`);
-      if (!el) return;
-
-      let diff = (i - activeIdx) % total;
-      if (diff > total / 2) diff -= total;
-      if (diff < -total / 2) diff += total;
-
-      const offset = diff;
-      const absOffset = Math.abs(offset);
-
-      if (absOffset > 2 && window.innerWidth < 768) {
-        el.style.display = "none";
-        return;
-      }
-      el.style.display = "flex";
-
-      const isCenter = (offset === 0);
-      const translateX = offset * spacing;
-      const rotateY = offset * -18;
-      const scale = isCenter ? 1.02 : Math.max(0.72, 0.88 - absOffset * 0.08);
-
-      el.style.transform = `translateX(${translateX}px) translateZ(${isCenter ? 40 : -50}px) rotateY(${rotateY}deg) scale(${scale})`;
-      el.style.zIndex = 30 - Math.round(absOffset * 5);
-      el.style.opacity = isCenter ? 1 : Math.max(0.15, 0.45 - absOffset * 0.15);
-      el.classList.toggle("glow-active", isCenter);
-    });
-
-    const pill = document.querySelector("#wizard-shop-dots .coverflow-counter-pill");
-    if (pill) pill.textContent = `${activeIdx + 1} / ${total}`;
-  },
-
-  selectShopIndex: function(idx) {
-    this.stopAutoplay();
-    this.state.activeShopIndex = idx;
-    if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("card_flip");
-    this.updateShopCylinder();
-  },
-
-  cylinderShopNext: function(isAuto = false) {
-    if (!isAuto) this.stopAutoplay();
-    const filtered = (this.state.shopCatalog || []).filter(i => Rules2_ClassifyEntity(i) === this.state.shopCategory);
-    const total = filtered.length;
-    if (total <= 1) return;
-    this.state.activeShopIndex = (this.state.activeShopIndex + 1) % total;
-    if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("card_flip");
-    this.updateShopCylinder();
-  },
-
-  cylinderShopPrev: function() {
-    this.stopAutoplay();
-    const filtered = (this.state.shopCatalog || []).filter(i => Rules2_ClassifyEntity(i) === this.state.shopCategory);
-    const total = filtered.length;
-    if (total <= 1) return;
-    this.state.activeShopIndex = (this.state.activeShopIndex - 1 + total) % total;
-    if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("card_flip");
-    this.updateShopCylinder();
+    this.syncLiveHUD();
   },
 
   renderShopList: function() {
@@ -1056,51 +814,54 @@ const Rules2Wizard = {
     container.innerHTML = filtered.map(it => {
       const price = Math.abs(Number(it.costoOro || it.costo || 15));
       const canAfford = (this.state.currentGold >= price);
+      const inBag = (this.state.boughtItems || []).filter(b => b.id === it.id || b.nome === it.nome).length;
 
       return `
-        <div class="wizard-shop-card">
-          <div onclick="Rules2Wizard.inspectItemDetail('${it.id}')" class="shop-card-clickable">
-            <div class="shop-card-head">
-              <span class="text-lg">${it.emoji || '📦'}</span>
-              <span class="shop-card-price">${price} 🟡</span>
+        <div class="p-3.5 rounded-2xl bg-slate-900 border ${inBag > 0 ? 'border-amber-400 bg-amber-950/10' : 'border-white/10'} flex items-center justify-between gap-3">
+          <div class="flex items-center gap-3 min-w-0">
+            <div class="w-10 h-10 rounded-xl bg-slate-800 border border-white/10 flex items-center justify-center text-xl shrink-0">
+              ${it.emoji || '📦'}
             </div>
-            <div class="shop-card-title">${it.nome}</div>
-            <div class="shop-card-desc">${it.descrizione || it.testo || ''}</div>
+            <div class="min-w-0">
+              <div class="flex items-center gap-1.5">
+                <span class="font-bold text-xs text-white">${it.nome}</span>
+                ${inBag > 0 ? `<span class="badge badge-xs badge-warning font-mono font-bold">x${inBag}</span>` : ''}
+              </div>
+              <div class="text-[10px] text-slate-400 leading-tight mt-0.5 line-clamp-1">${it.descrizione || ''}</div>
+            </div>
           </div>
-          <button onclick="Rules2Wizard.buyItem('${it.id}', ${price})" class="btn btn-xs ${canAfford ? 'btn-primary font-bold' : 'btn-disabled opacity-40'}" ${!canAfford ? 'disabled' : ''}>
-            ${canAfford ? `Compra (${price} 🟡)` : 'Oro Insuff.'}
-          </button>
+          <div class="flex items-center gap-2 shrink-0">
+            <span class="font-mono text-xs font-bold text-amber-300">${price} 🟡</span>
+            <button onclick="Rules2Wizard.buyItem('${it.id}', ${price})" class="btn btn-xs ${canAfford ? 'btn-primary font-bold' : 'btn-disabled opacity-40'} px-3" ${!canAfford ? 'disabled' : ''}>
+              Compra
+            </button>
+          </div>
         </div>
       `;
     }).join("");
   },
 
-  inspectItemDetail: function(itemId) {
-    const it = (this.state.shopCatalog || []).find(i => i.id === itemId);
-    if (!it) return;
-    const price = Math.abs(Number(it.costoOro || it.costo || 15));
-    const canAfford = (this.state.currentGold >= price);
+  cylinderShopNext: function() {
+    const filtered = (this.state.shopCatalog || []).filter(i => Rules2_ClassifyEntity(i) === this.state.shopCategory);
+    const total = filtered.length;
+    if (total <= 1) return;
+    this.state.activeShopIndex = (this.state.activeShopIndex + 1) % total;
+    this.scrollToCard('wizard-shop-stage', this.state.activeShopIndex);
+  },
 
-    document.getElementById("uni-detail-icon").textContent = it.emoji || "📦";
-    document.getElementById("uni-detail-title").textContent = it.nome;
-    document.getElementById("uni-detail-lore").textContent = it.descrizione || it.testo || "";
-
-    const btn = document.getElementById("uni-detail-action-btn");
-    if (btn) {
-      btn.textContent = canAfford ? `Compra (${price} 🟡)` : "Oro Insufficiente";
-      btn.className = canAfford ? "btn btn-sm btn-primary font-black w-full" : "btn btn-sm btn-disabled w-full";
-      btn.onclick = canAfford ? () => this.buyItem(it.id, price) : null;
-    }
-
-    if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("modal_open");
-    document.getElementById("modal-universal-detail")?.showModal();
+  cylinderShopPrev: function() {
+    const filtered = (this.state.shopCatalog || []).filter(i => Rules2_ClassifyEntity(i) === this.state.shopCategory);
+    const total = filtered.length;
+    if (total <= 1) return;
+    this.state.activeShopIndex = (this.state.activeShopIndex - 1 + total) % total;
+    this.scrollToCard('wizard-shop-stage', this.state.activeShopIndex);
   },
 
   buyItem: function(itemId, price) {
     this.syncGold();
     if (this.state.currentGold < price) {
       tgHaptic("error");
-      return tgAlert("Oro insufficiente!");
+      return wizardNotify("Monete d'oro insufficienti!", "warning");
     }
 
     const item = (this.state.shopCatalog || []).find(i => i.id === itemId);
@@ -1110,7 +871,7 @@ const Rules2Wizard = {
       const alreadyHasVehicle = this.state.boughtItems.some(x => Rules2_ClassifyEntity(x) === "VEICOLI");
       if (alreadyHasVehicle) {
         tgHaptic("warning");
-        return tgAlert("Massimo 1 Veicolo consentito!");
+        return wizardNotify("Massimo 1 Veicolo consentito!", "warning");
       }
     }
 
@@ -1119,15 +880,15 @@ const Rules2Wizard = {
       Rules2Engine.setGold(this.state.currentGold);
     }
     this.state.boughtItems.push(item);
-    tgHaptic("success");
 
-    if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("cash_register");
-    document.getElementById("modal-universal-detail")?.close();
+    tgHaptic("success");
+    if (window.SoundEngine) SoundEngine.playCoin();
+    wizardNotify(`${item.nome} inserito nello zaino!`, "success");
+
     this.filterShop(this.state.shopCategory);
   },
 
   resetShop: function() {
-    // Rimborsa tutti gli acquisti fatti nel Wizard
     (this.state.boughtItems || []).forEach(item => {
       const p = Math.abs(Number(item.costoOro || item.costo || 0));
       this.state.currentGold += p;
@@ -1138,8 +899,8 @@ const Rules2Wizard = {
     }
     this._syncGoldDisplay();
     tgHaptic("selection");
-    if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("click");
     this.filterShop(this.state.shopCategory);
+    wizardNotify("Zaino svuotato e oro ripristinato.", "info");
   },
 
   updateBackpackSummary: function() {
@@ -1152,16 +913,15 @@ const Rules2Wizard = {
   },
 
   // --------------------------------------------------------------------------
-  // STEP 4: LANCIO EROE (CARTA MONUMENTALE DINAMICA & STATISTICHE EFFETTIVE)
+  // STEP 4: LANCIO EROE & STATISTICHE FINALI
   // --------------------------------------------------------------------------
   renderStep4: function() {
-    this.stopAutoplay();
     this.syncGold();
     const cls = this.state.chosenClass;
     if (!cls) return;
 
     const pol = String(cls.sottocategoria || 'Destra').toLowerCase();
-    const heroName = this.state.heroName || AppState.user?.nome || "Avventuriero";
+    const heroName = this.state.heroName || AppState.user?.nome || AppState.user?.first_name || "Avventuriero";
     const startingGear = cls.equipLoot || "Pugni nudi";
 
     let effFor = Number(cls.forza || 10);
@@ -1178,102 +938,124 @@ const Rules2Wizard = {
 
     const totPV = Number(cls.pv || 25) + bonusPV;
 
-    const ablNames = (this.state.chosenAbilities || []).map(id => {
-      const a = (this.state.abilities || []).find(x => x.id === id);
-      return a ? a.nome : id;
-    });
-
-    const gearNames = [startingGear, ...this.state.boughtItems.map(i => i.nome)].filter(Boolean);
-    const dynamicBio = `Antieroe temprato dalle nebbie del canale di Viareggio, votato alla causa di ${pol.toUpperCase()}. ` +
-      (ablNames.length > 0 ? `Abilità clandestine: ${ablNames.join(', ')}. ` : 'Nessuna specializzazione attiva. ') +
-      (gearNames.length > 0 ? `Dotazione pronta in spalla: ${gearNames.join(', ')}.` : '');
-
     const container = document.getElementById("wizard-step-name");
     if (!container) return;
 
     container.innerHTML = `
-      <div class="hero-launch-stage">
-        <div data-faction="${pol}" class="coverflow-card hero-launch-card glow-active">
-          <div class="coverflow-header-bar">
-            <div onclick="Rules2Wizard.openNameEditModal()" class="coverflow-title-group cursor-pointer" title="Tocca per modificare il nome">
-              <span class="coverflow-title-icon">${cls.emoji || '🥋'}</span>
-              <h4 id="hero-display-name" class="coverflow-title">${heroName} ✏️</h4>
-            </div>
-            <span class="coverflow-badge-faction" data-faction="${pol}">
-              ${pol.toUpperCase()}
-            </span>
+      <div class="wizard-single-header">
+        <div>
+          <span class="wizard-step-badge">4/4</span>
+          <h3 class="wizard-step-title">Battesimo dell'Agente</h3>
+        </div>
+        <span class="text-xs font-mono text-emerald-400 font-bold">✨ Pronto al Duello</span>
+      </div>
+
+      <div class="space-y-4">
+        <!-- Input Nome Eroe -->
+        <div class="p-4 rounded-2xl bg-slate-900 border border-white/10 space-y-2">
+          <div class="flex items-center justify-between">
+            <label class="text-xs font-mono text-sky-400 font-bold uppercase tracking-wider block">Nome dell'Eroe nella Darsena</label>
+            <button onclick="Rules2Wizard.randomizeHeroName()" class="text-[10px] text-amber-300 font-mono hover:underline flex items-center gap-1">
+              🎲 Nome Casuale
+            </button>
           </div>
-
-          <div class="coverflow-media-frame">
-            <img src="${cls.mediaUrl}" class="coverflow-img" alt="${heroName}">
-            <div class="watermark-cover-banner">
-              <div class="quote-text">Classe: <b>${cls.nome}</b></div>
+          <div class="flex items-center gap-2">
+            <div class="w-10 h-10 rounded-xl bg-slate-800 border border-sky-400/40 flex items-center justify-center text-xl shrink-0">
+              ${cls.emoji || '🥋'}
             </div>
+            <input id="wizard-hero-name-input" type="text" value="${heroName}" oninput="Rules2Wizard.updateHeroName(this.value)" class="input input-bordered input-sm w-full bg-slate-950 text-white font-bold text-sm focus:border-sky-400">
           </div>
+        </div>
 
-          <div class="coverflow-details-box">
-            <div class="coverflow-stats-row">
-              <div>🥊 FOR <b>${effFor}</b></div>
-              <div>🤸 DES <b>${effDes}</b></div>
-              <div>🧠 INT <b>${effInt}</b></div>
-            </div>
-
-            <div class="coverflow-lore">
-              <p>${dynamicBio}</p>
-            </div>
-
-            <div class="coverflow-footer-row">
-              <span class="coverflow-gear-label">Status: <b>Pronto al Duello</b></span>
-              <div class="coverflow-kpi-pill">
-                <span class="pill-pv">❤️ ${totPV} PV</span>
-                <span class="pill-gold">🟡 ${this.state.currentGold} ORO</span>
+        <!-- Scheda Riassuntiva Finale -->
+        <div class="p-5 rounded-2xl bg-gradient-to-br from-slate-900 via-sky-950/30 to-slate-950 border border-sky-400/40 space-y-4 shadow-xl">
+          <div class="flex items-center justify-between border-b border-white/10 pb-3">
+            <div class="flex items-center gap-3">
+              <div class="w-12 h-12 rounded-xl bg-slate-800 border border-sky-400 flex items-center justify-center text-2xl">
+                ${cls.emoji || '🥋'}
               </div>
+              <div>
+                <span class="text-[9px] font-mono text-sky-400 font-bold uppercase tracking-wider">${pol}</span>
+                <h4 class="font-black text-sm text-white" id="recap-hero-title">${heroName} • ${cls.nome}</h4>
+                <div class="text-[11px] font-mono text-slate-300 mt-0.5">❤️ <b>${totPV}</b> PV • 💰 <b>${this.state.currentGold}</b> 🟡 Oro</div>
+              </div>
+            </div>
+            <button onclick="Rules2Wizard.goToStep(1)" class="btn btn-xs btn-outline border-white/20 text-slate-300 font-bold">
+              Modifica ✎
+            </button>
+          </div>
+
+          <div class="grid grid-cols-3 gap-2 text-center font-mono">
+            <div class="p-2.5 rounded-xl bg-black/50 border border-white/10">
+              <div class="text-[9px] text-slate-400 font-bold">FORZA</div>
+              <div class="text-base font-black text-white">${effFor}</div>
+            </div>
+            <div class="p-2.5 rounded-xl bg-black/50 border border-white/10">
+              <div class="text-[9px] text-slate-400 font-bold">DESTREZZA</div>
+              <div class="text-base font-black text-white">${effDes}</div>
+            </div>
+            <div class="p-2.5 rounded-xl bg-black/50 border border-white/10">
+              <div class="text-[9px] text-slate-400 font-bold">INTELLIGENZA</div>
+              <div class="text-base font-black text-white">${effInt}</div>
+            </div>
+          </div>
+
+          <div class="space-y-2 text-xs">
+            <div class="p-2.5 rounded-xl bg-slate-900 border border-white/5">
+              <div class="text-[10px] font-mono text-amber-300 font-bold uppercase mb-1">Talenti (${this.state.chosenAbilities.length})</div>
+              <div class="flex flex-wrap gap-1">
+                ${this.state.chosenAbilities.map(id => {
+                  const a = this.state.abilities.find(x => x.id === id);
+                  return `<span class="badge badge-xs badge-warning font-bold">${a ? a.nome : id}</span>`;
+                }).join('') || '<span class="text-slate-500 italic">Nessun talento attivo</span>'}
+              </div>
+            </div>
+            <div class="p-2.5 rounded-xl bg-slate-900 border border-white/5">
+              <div class="text-[10px] font-mono text-sky-300 font-bold uppercase mb-1">Dotazione Spalla</div>
+              <div class="text-slate-300">${[startingGear, ...this.state.boughtItems.map(i => i.nome)].filter(Boolean).join(", ")}</div>
             </div>
           </div>
         </div>
       </div>
-
-      <!-- MODALE MODIFICA NOME EROE -->
-      <dialog id="modal-hero-name" class="modal modal-middle">
-        <div class="modal-hero-name-box">
-          <h3 class="text-sm font-black text-white uppercase">Nome dell'Eroe</h3>
-          <input id="input-hero-name" type="text" class="input input-sm input-bordered w-full my-3 text-center font-bold text-white bg-slate-900" value="${heroName}">
-          <div class="grid grid-cols-2 gap-2">
-            <button onclick="Rules2Wizard.saveHeroName()" class="btn btn-sm btn-primary font-black uppercase">Salva</button>
-            <button onclick="document.getElementById('modal-hero-name').close()" class="btn btn-sm btn-ghost text-slate-400 font-bold uppercase">Annulla</button>
-          </div>
-        </div>
-      </dialog>
     `;
-
-    this.bindModalBackdropClose();
   },
 
-  openNameEditModal: function() {
-    if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("modal_open");
-    document.getElementById("modal-hero-name")?.showModal();
-  },
-
-  saveHeroName: function() {
-    const input = document.getElementById("input-hero-name");
-    if (input && input.value.trim()) {
-      this.state.heroName = input.value.trim();
-      const disp = document.getElementById("hero-display-name");
-      if (disp) disp.textContent = `${this.state.heroName} ✏️`;
+  updateHeroName: function(val) {
+    if (val && val.trim()) {
+      this.state.heroName = val.trim();
+      const recap = document.getElementById('recap-hero-title');
+      if (recap) recap.textContent = `${this.state.heroName} • ${this.state.chosenClass?.nome}`;
       this._syncStepToServer("WIZARD_NOME");
     }
-    document.getElementById("modal-hero-name")?.close();
+  },
+
+  randomizeHeroName: function() {
+    const firstNames = ['Paul', 'Tazio', 'Vincenzo', 'Dante', 'Marco', 'Silvia', 'Laura', 'Gennaro', 'Ruggero', 'Flavio'];
+    const lastNames = ['De Santis', 'Maraldi', 'Vettori', 'Bonghi', 'Calamari', 'Porta', 'Rossi', 'Ferrante', 'Speranza'];
+    const randFirst = firstNames[Math.floor(Math.random() * firstNames.length)];
+    const randLast = lastNames[Math.floor(Math.random() * lastNames.length)];
+    this.state.heroName = `${randFirst} ${randLast}`;
+
+    const input = document.getElementById('wizard-hero-name-input');
+    if (input) input.value = this.state.heroName;
+    const recap = document.getElementById('recap-hero-title');
+    if (recap) recap.textContent = `${this.state.heroName} • ${this.state.chosenClass?.nome}`;
+    this._syncStepToServer("WIZARD_NOME");
   },
 
   finalizeHero: function() {
-    const heroName = this.state.heroName || AppState.user?.nome || "Avventuriero";
+    const input = document.getElementById('wizard-hero-name-input');
+    if (input && input.value.trim()) {
+      this.state.heroName = input.value.trim();
+    }
+
     const payload = {
       gameKey: this.state.gameKey,
       episodio: this.state.episodio,
       classId: this.state.chosenClass?.id || "CLS_0001_S1_E0",
       abilityIds: this.state.chosenAbilities.join(","),
       boughtItems: this.state.boughtItems.map(i => i.id || i.nome).join(","),
-      heroName: heroName,
+      heroName: this.state.heroName,
       avatarUrl: this.state.chosenClass?.mediaUrl || "",
       isVeteran: this.state.isVeteran
     };
