@@ -1,7 +1,7 @@
 // ============================================================================
 // PROJECT: ESTIQATSY SYNDICATE & RPG PLATFORM
-// FILE: js/rules2engine.js (VERSIONE 1.0 - RUNTIME ENGINE & GAMEPLAY COCKPIT)
-// LAYER: GAMEPLAY LOOP, COMBAT D20, HUD VITALS, 5 DRAWERS & 50/50 MODALS
+// FILE: js/rules2engine.js (VERSIONE 2.0 - FAST RUNTIME & PUNCHY CTA)
+// LAYER: GAMEPLAY LOOP, COMBAT D20, HUD VITALS, 5 DRAWERS & DIEGETIC TRIAGE
 // ============================================================================
 
 // ----------------------------------------------------------------------------
@@ -72,7 +72,7 @@ const Rules2Engine = {
     });
   },
 
-  // Flusso Cabinato: Modal "INSERT MEGOIN 🪙" (Tasti Affiancati 50/50)
+  // Flusso Cabinato: Modal "INSERT MEGOIN 🪙" (CTA Compatte 50/50)
   launchSession: function(gameKey, epNum, canContinueFree, savedHero) {
     const saga = (AppState.games.catalog || []).find(g => g.gameKey === gameKey);
     const modal = document.getElementById("modal-insert-megoin");
@@ -92,10 +92,10 @@ const Rules2Engine = {
 
       activeBox.innerHTML = `
         <h3 class="arcade-title">${saga.serie || 'AVVENTURA'}</h3>
-        <p class="arcade-subtitle">Partita attiva in corso (ID: ${saga.activePartitaId})</p>
+        <p class="arcade-subtitle">Partita attiva rilevata (ID: ${saga.activePartitaId})</p>
         <div class="arcade-actions-50-50">
-          <button id="btn-arcade-new" class="btn btn-outline border-amber-500/40 text-amber-300">🪙 Nuova</button>
-          <button id="btn-arcade-resume" class="btn btn-success text-slate-950 font-black">▶️ Riprendi</button>
+          <button id="btn-arcade-new" class="btn btn-outline border-amber-500/40 text-amber-300">Ricomincia (1 🪙)</button>
+          <button id="btn-arcade-resume" class="btn btn-success text-slate-950 font-black">Riprendi ▶️</button>
         </div>
       `;
 
@@ -147,7 +147,7 @@ const Rules2Engine = {
       s("arcade-cost-badge", "GRATIS");
       const btnLaunch = document.getElementById("arcade-btn-launch");
       if (btnLaunch) {
-        btnLaunch.textContent = "🎖️ Continua";
+        btnLaunch.textContent = "Continua 🎖️";
         btnLaunch.onclick = () => {
           modal.close();
           if (typeof Rules2Wizard !== "undefined") {
@@ -157,11 +157,11 @@ const Rules2Engine = {
       }
     } else {
       s("arcade-coin-title", "INSERT MEGOIN");
-      s("arcade-coin-desc", "1 Megoin per creare un nuovo eroe.");
+      s("arcade-coin-desc", "1 Megoin per creare e lanciare un nuovo eroe.");
       s("arcade-cost-badge", "1 🪙");
       const btnLaunch = document.getElementById("arcade-btn-launch");
       if (btnLaunch) {
-        btnLaunch.textContent = "🕹️ Inizia";
+        btnLaunch.textContent = "Inserisci 1 🪙 e Gioca";
         btnLaunch.onclick = () => {
           if (userBalance < 1) {
             tgHaptic("error");
@@ -243,7 +243,7 @@ const Rules2Engine = {
     const currentHero = AppState.activeSession.hero;
     if (!currentNode) return;
 
-    // Monitor Cardiaco per Ansia da Bassa Salute (PV <= 25%)
+    // Monitor Cardiaco Ansia (PV <= 25%)
     if (currentHero && currentHero.pvMax) {
       const pvRatio = (currentHero.pv || 0) / currentHero.pvMax;
       if (pvRatio <= 0.25 && currentHero.pv > 0) {
@@ -257,7 +257,7 @@ const Rules2Engine = {
     const isVictory = (String(currentNode.id).includes("SND_END") || currentNode.sottocategoria === "gancio" || currentNode.sottocategoria === "conclusione");
     const actBox = document.getElementById("scene-actions-container");
 
-    // 1. ESITO MORTE: 2 TASTI AFFIANCATI 50/50 [ RETRY ] [ ESCI ]
+    // 1. ESITO MORTE: 50/50 [ Riprova ] [ Esci ]
     if (isDefeat) {
       if (typeof SoundEngine !== "undefined") {
         SoundEngine.stopHeartbeat();
@@ -268,10 +268,10 @@ const Rules2Engine = {
         actBox.innerHTML = `
           <div class="arcade-actions-50-50">
             <button onclick="Rules2Engine.launchSession('${AppState.activeSession.gameKey}', ${AppState.activeSession.episodio}, false, null)" class="btn btn-warning font-black">
-              🔄 Retry
+              Riprova (1 🪙) 🔄
             </button>
             <button onclick="Rules2Engine.leaveGameToHub()" class="btn btn-outline border-white/20 text-white font-bold">
-              🚪 Esci
+              Esci 🚪
             </button>
           </div>
         `;
@@ -279,7 +279,7 @@ const Rules2Engine = {
       return;
     }
 
-    // 2. ESITO VITTORIA: 2 TASTI AFFIANCATI 50/50 [ RETRY GRATIS ] [ AVANZA ]
+    // 2. ESITO VITTORIA: 50/50 [ Rigioca ] [ Avanza ]
     if (isVictory) {
       if (typeof SoundEngine !== "undefined") {
         SoundEngine.stopHeartbeat();
@@ -290,10 +290,10 @@ const Rules2Engine = {
         actBox.innerHTML = `
           <div class="arcade-actions-50-50">
             <button onclick="if(typeof Rules2Wizard !== 'undefined') Rules2Wizard.open('${AppState.activeSession.gameKey}', ${AppState.activeSession.episodio}, false, null)" class="btn btn-outline border-emerald-400 text-emerald-300 font-bold">
-              🔄 Rigioca
+              Rigioca Ep. ${AppState.activeSession.episodio} 🔄
             </button>
             <button onclick="if(typeof Rules2Wizard !== 'undefined') Rules2Wizard.open('${AppState.activeSession.gameKey}', ${AppState.activeSession.episodio + 1}, true, AppState.activeSession.hero)" class="btn btn-success text-slate-950 font-black">
-              ➡️ Avanza
+              Episodio ${AppState.activeSession.episodio + 1} ›
             </button>
           </div>
         `;
@@ -381,7 +381,7 @@ const Rules2Engine = {
       if (currentNode.corruption?.canCorrupt && currentNode.corruption.validDrugs?.length > 0) {
         bribeHtml = currentNode.corruption.validDrugs.map(d => `
           <button onclick="Rules2Engine.combatBribe('${Rules2_SafeAttr(d.nome)}')" class="btn btn-sm btn-block btn-warning font-black uppercase">
-            💊 Cedi ${Rules2_SafeAttr(d.nome.split(" ")[0])}
+            Offri ${Rules2_SafeAttr(d.nome.split(" ")[0])} 💊
           </button>
         `).join("");
       }
@@ -392,13 +392,13 @@ const Rules2Engine = {
             ⚔️ Attacca
           </button>
           <button onclick="Rules2Engine.combatAction('flee')" class="btn btn-sm btn-outline border-white/20 btn-combat-flee">
-            🏃 Fuggi
+            Fuggi 🏃
           </button>
         </div>
         ${bribeHtml}
         <div class="pt-0.5">
           <button onclick="Rules2Engine.inspectCurrentEnemyDetail()" class="btn btn-xs btn-block btn-ghost btn-inspect-enemy font-black">
-            🔍 Fascicolo
+            Fascicolo 🔍
           </button>
         </div>
       `;
@@ -424,17 +424,17 @@ const Rules2Engine = {
             <div class="text-[10px] font-bold text-emerald-300">🛡️ Vantaggio Tattico: possiedi ${bypassTool}!</div>
           </div>
           <button onclick="Rules2Engine.advanceToNode('${currentNode.destSuccesso}')" class="btn btn-sm btn-block btn-success font-black h-11 uppercase">
-            ⚡ Oltrepassa
+            Bypassa ⚡
           </button>
         `;
       } else {
         actBox.innerHTML = `
           <div class="combat-actions-grid">
             <button onclick="Rules2Engine.executeEventRoll('${currentNode.id}', '${statReq}', ${cdVal})" class="btn btn-sm btn-primary font-black h-11 uppercase">
-              🎲 Prova ${shortStat}
+              Tira D20 (${shortStat}) 🎲
             </button>
             <button onclick="Rules2Engine.advanceToNode('${currentNode.destFallback || currentNode.destFallimento}')" class="btn btn-sm btn-outline border-white/20 h-11 font-black uppercase">
-              🏃 Evita
+              Schiva 🏃
             </button>
           </div>
         `;
@@ -489,7 +489,7 @@ const Rules2Engine = {
     } else {
       actBox.innerHTML = `
         <button onclick="Rules2Engine.leaveGameToHub()" class="btn btn-sm btn-block btn-outline border-white/20 font-black h-11 uppercase">
-          🏁 Esci
+          Esci 🚪
         </button>
       `;
     }
@@ -708,10 +708,10 @@ const Rules2Engine = {
         <div class="text-[10px] text-slate-300">Rianima <b>${deadEnemy ? deadEnemy.nome : 'nemico'}</b> come Zombi (Danno x2).</div>
         <div class="combat-actions-grid pt-1">
           <button onclick="Rules2Engine.executeResurrectZombie('${deadEnemy ? deadEnemy.id : ''}')" class="btn btn-sm btn-secondary font-black uppercase">
-            🧟 Rianima
+            Rianima (-1 PV) 🧟
           </button>
           <button onclick="Rules2Engine.skipNecromancy()" class="btn btn-sm btn-outline border-white/20 text-slate-300 font-bold uppercase">
-            Prosegui
+            Lascia Cadavere ›
           </button>
         </div>
       </div>
@@ -1153,7 +1153,7 @@ const Rules2Engine = {
             </div>
             <div class="item-card-actions">
               <button onclick="Rules2Engine.inspectEntityDetail(Rules2Engine._findEntityData('${Rules2_SafeAttr(item.nome)}'))" class="btn btn-xs btn-outline border-white/10 text-slate-300">
-                Dettagli
+                Fascicolo
               </button>
               <button onclick="Rules2Engine.buyFromEmporio('${item.id}', ${price})" class="btn btn-xs ${canAfford ? 'btn-primary font-bold' : 'btn-outline border-white/10 text-slate-500 cursor-not-allowed'}" ${!canAfford ? 'disabled' : ''}>
                 ${canAfford ? 'Compra' : 'Oro Insuff.'}
