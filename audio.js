@@ -1,31 +1,36 @@
 // ============================================================================
 // PROJECT: ESTIQATSY BOT & RPG PLATFORM
-// FILE: js/audio.js (VERSIONE 8.0 - 100% MP3 UNIVERSAL & IOS IMMUNE)
-// DESCRIZIONE: Motore sonoro ad alta fedeltà compatibile con iPhone, Android & Web.
-//              - Zero file .ogg (100% MP3 compatibile con Apple WebKit)
-//              - Inizializzazione immediata con verifica document.readyState
-//              - Auto-Resume Watchdog ad ogni interazione touch
-//              - Matrice colonne sonore scalabile per singolo Episodio
-//              - SFX fisici, colpi secchi e feedback diegetico
+// FILE: js/audio.js (VERSIONE 9.0 - DUAL-CHANNEL BGM/SFX & SPOTIFY DECK INTEGRATION)
+// DESCRIZIONE: Motore sonoro ad alta fedeltà con gestione separata per Musica e SFX.
+//              - 100% MP3 universale (Zero .ogg, compatibilità iOS Safari garantita)
+//              - Controllo indipendente: Canale BGM (Musica) vs Canale SFX (Effetti)
+//              - Controller completo per Miniplayer Home e Jukebox Noir
+//              - Auto-Resume Watchdog e sblocco hardware al primo tocco
+//              - Persistenza globale dei volumi e canali in localStorage
 // ============================================================================
 
 const SoundEngine = (function() {
-  let isMuted = localStorage.getItem("estiqatsy_audio_muted") === "true";
+  // Canali e Stati di Mute Persistenti
+  let isMasterMuted = localStorage.getItem("estiqatsy_audio_muted") === "true";
+  let isBgmMuted = localStorage.getItem("estiqatsy_bgm_muted") === "true";
+  let isSfxMuted = localStorage.getItem("estiqatsy_sfx_muted") === "true";
   let isShuffle = localStorage.getItem("estiqatsy_audio_shuffle") === "true";
+
   let currentBgmKey = "hard_boiled";
   let currentBgmHowl = null;
   let heartbeatHowl = null;
-  let isPlayingManual = false;
+  let isPlayingManual = true;
 
   let duckTimer = null;
   let fadeTimer = null;
 
-  const DEFAULT_BGM_VOLUME = 0.32;
+  const DEFAULT_BGM_VOLUME = 0.35;
   const DEFAULT_SFX_VOLUME = 0.80;
   let currentBgmVolume = parseFloat(localStorage.getItem("estiqatsy_bgm_volume")) || DEFAULT_BGM_VOLUME;
+  let currentSfxVolume = parseFloat(localStorage.getItem("estiqatsy_sfx_volume")) || DEFAULT_SFX_VOLUME;
 
   // ==========================================================================
-  // 1. CATALOGO BGM 100% MP3 (WIKIMEDIA COMMONS VERIFICATI SENZA .OGG)
+  // 1. CATALOGO BGM 100% MP3 (VERIFICATI WIKIMEDIA COMMONS & STREAMING RESILIENTE)
   // ==========================================================================
   const playlist = [
     {
@@ -112,16 +117,16 @@ const SoundEngine = (function() {
   ];
 
   // ==========================================================================
-  // 2. EFFETTI SONORI SFX 100% MP3 (ZERO .OGG - PIENA COMPATIBILITÀ IPHONE)
+  // 2. EFFETTI SONORI SFX 100% MP3 (ZERO .OGG - COMPATIBILITÀ APPLE SAFARI)
   // ==========================================================================
   const sfxUrls = {
-    // Interfaccia & Carte
+    // Interfaccia, Bottoni & Carte
     click: "https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3",
     card_flip: "https://assets.mixkit.co/active_storage/sfx/166/166-preview.mp3",
     flee: "https://assets.mixkit.co/active_storage/sfx/166/166-preview.mp3",
     modal_open: "https://assets.mixkit.co/active_storage/sfx/3115/3115-preview.mp3",
 
-    // Gettoniera, Vendita & Oro
+    // Gettoniera, Finanza & Oro
     coin: "https://assets.mixkit.co/active_storage/sfx/2019/2019-preview.mp3",
     insert_coin: "https://assets.mixkit.co/active_storage/sfx/2602/2602-preview.mp3",
     cash_register: "https://assets.mixkit.co/active_storage/sfx/2870/2870-preview.mp3",
@@ -131,18 +136,18 @@ const SoundEngine = (function() {
     dice: "https://assets.mixkit.co/active_storage/sfx/1070/1070-preview.mp3",
     shock: "https://assets.mixkit.co/active_storage/sfx/2908/2908-preview.mp3",
 
-    // Eventi Fortunati (D20=20 / Vittoria)
+    // Esiti Fortunati (D20=20 / Vittoria)
     lucky: "https://assets.mixkit.co/active_storage/sfx/2013/2013-preview.mp3",
     success: "https://assets.mixkit.co/active_storage/sfx/2013/2013-preview.mp3",
     d20_crit: "https://assets.mixkit.co/active_storage/sfx/2013/2013-preview.mp3",
 
-    // Eventi Sfortunati (D20=1 / Morte / Fumble)
+    // Esiti Sfortunati (D20=1 / Fumble / Sconfitta)
     unlucky: "https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3",
     sad_trombone: "https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3",
     zelda_death: "https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3",
     d20_fail: "https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3",
 
-    // Combattimento: Colpo Secco Standard vs Critico Pesante
+    // Combattimento: Colpo Standard vs Critico
     hit: "https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3",
     crit_hit: "https://assets.mixkit.co/active_storage/sfx/2908/2908-preview.mp3",
     hurt: "https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3",
@@ -161,7 +166,7 @@ const SoundEngine = (function() {
   const bgmPlayers = {};
 
   // ==========================================================================
-  // 3. SBLOCCO AUDIO HARDWARE MOBILE & WATCHDOG TELEGRAM
+  // 3. SBLOCCO AUDIO HARDWARE MOBILE & WATCHDOG
   // ==========================================================================
   function wakeUpAudioContext() {
     if (window.Howler && Howler.ctx) {
@@ -197,7 +202,7 @@ const SoundEngine = (function() {
   }
 
   // ==========================================================================
-  // 4. INIZIALIZZAZIONE SICURA (NO BUG DOMCONTENTLOADED)
+  // 4. INIZIALIZZAZIONE SICURA
   // ==========================================================================
   function init() {
     const unlockEvents = ["touchstart", "touchend", "pointerdown", "click"];
@@ -211,22 +216,21 @@ const SoundEngine = (function() {
         if (heartbeatHowl && heartbeatHowl.playing()) heartbeatHowl.pause();
       } else {
         wakeUpAudioContext();
-        if (!isMuted && currentBgmHowl && !currentBgmHowl.playing() && isPlayingManual) {
+        if (!isMasterMuted && !isBgmMuted && currentBgmHowl && !currentBgmHowl.playing() && isPlayingManual) {
           currentBgmHowl.play();
         }
-        if (!isMuted && heartbeatHowl && !heartbeatHowl.playing()) {
+        if (!isMasterMuted && !isSfxMuted && heartbeatHowl && !heartbeatHowl.playing()) {
           heartbeatHowl.play();
         }
       }
     });
 
-    // Precarica i suoni di interazione frequenti
+    // Precarica gli SFX di interazione più frequenti
     ["click", "insert_coin", "dice", "hit", "crit_hit", "cash_register"].forEach(key => getOrCreateSfx(key));
 
     updateMuteUI();
   }
 
-  // Risoluzione certa dell'inizializzazione
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", init);
   } else {
@@ -241,7 +245,7 @@ const SoundEngine = (function() {
       sfxPlayers[name] = new Howl({
         src: [sfxUrls[name]],
         format: ["mp3"],
-        volume: DEFAULT_SFX_VOLUME,
+        volume: currentSfxVolume,
         preload: true
       });
       return sfxPlayers[name];
@@ -260,21 +264,8 @@ const SoundEngine = (function() {
   }
 
   // ==========================================================================
-  // 5. RIPRODUZIONE, DUCKING & MATRICE EPISODI
+  // 5. RIPRODUZIONE BGM, DUCKING & MATRICE EPISODI
   // ==========================================================================
-  function playSfx(name) {
-    if (isMuted) return;
-    wakeUpAudioContext();
-    const player = getOrCreateSfx(name);
-    if (player) {
-      try {
-        player.play();
-      } catch (e) {
-        unlockMobileAudio();
-      }
-    }
-  }
-
   function playEpisodeBgm(gameKey, episodeNum, mood = "explore", fadeDuration = 1000) {
     const ep = parseInt(episodeNum, 10) || 1;
     const m = String(mood).toLowerCase();
@@ -329,7 +320,7 @@ const SoundEngine = (function() {
     currentBgmHowl = bgmPlayers[track.id];
     isPlayingManual = true;
 
-    if (!isMuted) {
+    if (!isMasterMuted && !isBgmMuted) {
       try {
         currentBgmHowl.play();
         currentBgmHowl.fade(0, currentBgmVolume, fadeDuration);
@@ -337,23 +328,37 @@ const SoundEngine = (function() {
         unlockMobileAudio();
       }
     }
+
+    notifyAppModules();
   }
 
   function pauseBgm() {
     if (currentBgmHowl && currentBgmHowl.playing()) {
       currentBgmHowl.pause();
       isPlayingManual = false;
+      notifyAppModules();
     }
   }
 
   function resumeBgm() {
-    if (isMuted) toggleMute();
+    if (isMasterMuted) toggleMasterMute();
+    if (isBgmMuted) toggleBgm();
+
     if (currentBgmHowl && !currentBgmHowl.playing()) {
       currentBgmHowl.play();
       currentBgmHowl.fade(0, currentBgmVolume, 500);
       isPlayingManual = true;
     } else if (!currentBgmHowl) {
       playBgm(currentBgmKey || "hard_boiled");
+    }
+    notifyAppModules();
+  }
+
+  function togglePlayPause() {
+    if (currentBgmHowl && currentBgmHowl.playing()) {
+      pauseBgm();
+    } else {
+      resumeBgm();
     }
   }
 
@@ -367,22 +372,39 @@ const SoundEngine = (function() {
     fadeTimer = setTimeout(() => {
       try { howl.stop(); } catch (e) {}
     }, fadeDuration);
+    notifyAppModules();
   }
 
   function duck(targetVol = 0.08, duration = 1200) {
-    if (isMuted || !currentBgmHowl || !currentBgmHowl.playing()) return;
+    if (isMasterMuted || isBgmMuted || !currentBgmHowl || !currentBgmHowl.playing()) return;
     if (duckTimer) clearTimeout(duckTimer);
     currentBgmHowl.fade(currentBgmHowl.volume(), targetVol, 150);
     duckTimer = setTimeout(() => {
-      if (!isMuted && currentBgmHowl && currentBgmHowl.playing()) {
+      if (!isMasterMuted && !isBgmMuted && currentBgmHowl && currentBgmHowl.playing()) {
         currentBgmHowl.fade(currentBgmHowl.volume(), currentBgmVolume, 400);
       }
       duckTimer = null;
     }, duration);
   }
 
+  // ==========================================================================
+  // 6. RIPRODUZIONE EFFETTI SONORI SFX
+  // ==========================================================================
+  function playSfx(name) {
+    if (isMasterMuted || isSfxMuted) return;
+    wakeUpAudioContext();
+    const player = getOrCreateSfx(name);
+    if (player) {
+      try {
+        player.play();
+      } catch (e) {
+        unlockMobileAudio();
+      }
+    }
+  }
+
   function startHeartbeat() {
-    if (isMuted) return;
+    if (isMasterMuted || isSfxMuted) return;
     if (!heartbeatHowl) {
       heartbeatHowl = new Howl({
         src: [sfxUrls.heartbeat],
@@ -398,6 +420,9 @@ const SoundEngine = (function() {
     if (heartbeatHowl && heartbeatHowl.playing()) heartbeatHowl.stop();
   }
 
+  // ==========================================================================
+  // 7. CONTROLLI RADIO & PLAYLIST (SPOTIFY-STYLE)
+  // ==========================================================================
   function playNextTrack() {
     const curIdx = playlist.findIndex(t => t.id === currentBgmKey);
     let nextIdx;
@@ -419,50 +444,120 @@ const SoundEngine = (function() {
     isShuffle = !isShuffle;
     localStorage.setItem("estiqatsy_audio_shuffle", isShuffle);
     if (currentBgmHowl) currentBgmHowl.loop(!isShuffle);
+    notifyAppModules();
   }
 
-  function setBgmVolume(val) {
-    currentBgmVolume = Math.max(0, Math.min(1, parseFloat(val) || DEFAULT_BGM_VOLUME));
-    localStorage.setItem("estiqatsy_bgm_volume", currentBgmVolume);
-    if (currentBgmHowl) currentBgmHowl.volume(currentBgmVolume);
+  // ==========================================================================
+  // 8. GESTIONE CANALI SEPARATI: BGM, SFX & MASTER
+  // ==========================================================================
+  function toggleBgm() {
+    isBgmMuted = !isBgmMuted;
+    localStorage.setItem("estiqatsy_bgm_muted", isBgmMuted);
+
+    if (isBgmMuted) {
+      if (currentBgmHowl && currentBgmHowl.playing()) currentBgmHowl.pause();
+    } else {
+      if (!isMasterMuted && currentBgmHowl && !currentBgmHowl.playing() && isPlayingManual) {
+        currentBgmHowl.play();
+        currentBgmHowl.fade(0, currentBgmVolume, 500);
+      }
+    }
+    notifyAppModules();
   }
 
-  function toggleMute() {
-    isMuted = !isMuted;
-    localStorage.setItem("estiqatsy_audio_muted", isMuted);
-    if (window.Howler) Howler.mute(isMuted);
-    if (!isMuted && currentBgmHowl && !currentBgmHowl.playing() && isPlayingManual) {
-      currentBgmHowl.play();
-      currentBgmHowl.fade(0, currentBgmVolume, 800);
+  function toggleSfx() {
+    isSfxMuted = !isSfxMuted;
+    localStorage.setItem("estiqatsy_sfx_muted", isSfxMuted);
+    if (isSfxMuted && heartbeatHowl && heartbeatHowl.playing()) {
+      heartbeatHowl.stop();
+    }
+    notifyAppModules();
+  }
+
+  function toggleMasterMute() {
+    isMasterMuted = !isMasterMuted;
+    localStorage.setItem("estiqatsy_audio_muted", isMasterMuted);
+
+    if (window.Howler) Howler.mute(isMasterMuted);
+
+    if (!isMasterMuted) {
+      if (!isBgmMuted && currentBgmHowl && !currentBgmHowl.playing() && isPlayingManual) {
+        currentBgmHowl.play();
+        currentBgmHowl.fade(0, currentBgmVolume, 600);
+      }
     }
     updateMuteUI();
+    notifyAppModules();
+  }
+
+  function setMasterVolume(val) {
+    const v = Math.max(0, Math.min(1, parseFloat(val) || DEFAULT_BGM_VOLUME));
+    currentBgmVolume = v;
+    localStorage.setItem("estiqatsy_bgm_volume", currentBgmVolume);
+    if (currentBgmHowl) currentBgmHowl.volume(currentBgmVolume);
+    notifyAppModules();
+  }
+
+  function setSfxVolume(val) {
+    currentSfxVolume = Math.max(0, Math.min(1, parseFloat(val) || DEFAULT_SFX_VOLUME));
+    localStorage.setItem("estiqatsy_sfx_volume", currentSfxVolume);
+    for (let k in sfxPlayers) {
+      if (sfxPlayers[k]) sfxPlayers[k].volume(currentSfxVolume);
+    }
   }
 
   function updateMuteUI() {
     const badgeDesk = document.getElementById("audio-status-desk");
     if (badgeDesk) {
-      badgeDesk.textContent = isMuted ? "OFF" : "ON";
-      badgeDesk.classList.toggle("badge-error", isMuted);
-      badgeDesk.classList.toggle("badge-success", !isMuted);
+      badgeDesk.textContent = isMasterMuted ? "OFF" : "ON";
+      badgeDesk.classList.toggle("badge-error", isMasterMuted);
+      badgeDesk.classList.toggle("badge-success", !isMasterMuted);
     }
   }
 
+  function notifyAppModules() {
+    if (typeof AppModules !== "undefined" && typeof AppModules.updateRadioDisplay === "function") {
+      AppModules.updateRadioDisplay();
+    }
+  }
+
+  // ==========================================================================
+  // 9. ESPOSIZIONE PUBBLICA API AUDIO
+  // ==========================================================================
   return {
+    // SFX
     playSfx,
+    startHeartbeat,
+    stopHeartbeat,
+
+    // BGM & Matrice Saghe
     playBgm,
     playEpisodeBgm,
     pauseBgm,
     resumeBgm,
     stopBgm,
+    togglePlayPause,
     duck,
-    startHeartbeat,
-    stopHeartbeat,
+
+    // Playlist Radio Noir
     playNextTrack,
     playPrevTrack,
     toggleShuffle,
-    setVolume: setBgmVolume,
-    toggleMute,
-    isMuted: () => isMuted
+    getCurrentTrack: () => findTrack(currentBgmKey),
+    getPlaylist: () => [...playlist],
+
+    // Canali Indipendenti
+    toggleMute: toggleMasterMute,
+    toggleBgm,
+    toggleSfx,
+    setVolume: setMasterVolume,
+    setSfxVolume,
+
+    // Getters di Stato Reattivi
+    get isPlaying() { return Boolean(currentBgmHowl && currentBgmHowl.playing()); },
+    get isMuted() { return isMasterMuted; },
+    get isBgmMuted() { return isBgmMuted; },
+    get isSfxMuted() { return isSfxMuted; }
   };
 })();
 
