@@ -1,6 +1,6 @@
 // ============================================================================
 // PROJECT: ESTIQATSY SYNDICATE & RPG PLATFORM
-// FILE: js/app-modules.js (VERSIONE 10.0 - SPOTIFY MINIPLAYER & PURE SAAS LAYER)
+// FILE: js/app-modules.js (VERSIONE 11.0 - UNIFIED SAAS, HUB & AUDIO DECK)
 // LAYER 2: MODULI DI PIATTAFORMA AGNOSTICI, PORTALE GIOCHI, SHOP, RICETTE & RADIO
 // NOTE: 100% DISACCOPPIATO DAL MOTORE DI GIOCO - GESTIONE SEMANTICA CSS
 // ============================================================================
@@ -135,7 +135,7 @@ const AppModules = {
   },
 
   // --------------------------------------------------------------------------
-  // 2. CAROSELLO PROMOZIONALE HOME (DATA-DRIVEN)
+  // 2. CAROSELLO PROMOZIONALE HOME (DATA-DRIVEN & RISPARMIO ENERGETICO)
   // --------------------------------------------------------------------------
   _currentPromoSlides: [],
 
@@ -227,7 +227,8 @@ const AppModules = {
 
     if (AppState.carousel.timer) clearInterval(AppState.carousel.timer);
     AppState.carousel.timer = setInterval(() => {
-      if (AppState.carousel.isPaused || AppState.carousel.count <= 1) return;
+      // Risparmio risorse: non ciclare se l'utente non è nella tab Home
+      if (AppState.activeTab !== "home" || AppState.carousel.isPaused || AppState.carousel.count <= 1) return;
       AppState.carousel.index = (AppState.carousel.index + 1) % AppState.carousel.count;
       AppModules.updateCarouselPosition();
     }, 5000);
@@ -298,7 +299,9 @@ const AppModules = {
             <p class="game-saga-desc">${saga.descrizione || ''}</p>
           </div>
           <div class="game-saga-footer">
-            <span class="game-saga-status">${saga.hasActiveGame ? '⚔️ In corso' : 'Pronto'}</span>
+            <span class="game-saga-status ${saga.hasActiveGame ? 'text-amber-400 font-bold' : ''}">
+              ${saga.hasActiveGame ? '⚔️ In corso' : 'Pronto'}
+            </span>
             <button class="btn btn-xs btn-primary font-black uppercase">Esplora ›</button>
           </div>
         </div>
@@ -330,19 +333,34 @@ const AppModules = {
     if (container) {
       const playableEpisodes = (saga.episodes || []).filter(ep => ep.episodio > 0);
 
-      container.innerHTML = playableEpisodes.map(ep => `
-        <div class="episode-list-item">
-          <div class="episode-item-info">
-            <div class="episode-item-title">${ep.emoji || '▶️'} Ep. ${ep.episodio}: ${ep.titolo}</div>
-            <div class="episode-item-cost">
-              ${ep.canContinueFree ? '⚔️ Eroe Veterano (Gratis)' : (ep.costoMegoin === 0 ? 'Gratis' : `${ep.costoMegoin} Megoin 🪙`)}
+      container.innerHTML = playableEpisodes.map(ep => {
+        const isCurrentActive = saga.hasActiveGame && (Number(saga.activeEpisodio) === Number(ep.episodio));
+        
+        let btnText = "Gioca";
+        let btnClass = "btn-primary";
+        
+        if (isCurrentActive) {
+          btnText = "Riprendi ▶️";
+          btnClass = "btn-success text-slate-950 font-black";
+        } else if (ep.canContinueFree) {
+          btnText = "Continua 🎖️";
+          btnClass = "btn-info";
+        }
+
+        return `
+          <div class="episode-list-item ${isCurrentActive ? 'border-amber-400/40 bg-amber-500/10' : ''}">
+            <div class="episode-item-info">
+              <div class="episode-item-title">${ep.emoji || '▶️'} Ep. ${ep.episodio}: ${ep.titolo}</div>
+              <div class="episode-item-cost">
+                ${isCurrentActive ? '⚔️ Partita in corso' : (ep.canContinueFree ? '🎖️ Eroe Veterano (Gratis)' : (ep.costoMegoin === 0 ? 'Gratis' : `${ep.costoMegoin} Megoin 🪙`))}
+              </div>
             </div>
+            <button onclick="AppModules.startEpisode('${saga.gameKey}', ${ep.episodio}, ${!!ep.canContinueFree})" class="btn btn-xs ${btnClass} font-black uppercase">
+              ${btnText}
+            </button>
           </div>
-          <button onclick="AppModules.startEpisode('${saga.gameKey}', ${ep.episodio}, ${!!ep.canContinueFree})" class="btn btn-xs btn-primary font-black uppercase">
-            ${ep.canContinueFree ? 'Continua' : 'Gioca'}
-          </button>
-        </div>
-      `).join("");
+        `;
+      }).join("");
     }
 
     AppRouter.navigate("subview-game-detail");
@@ -1005,8 +1023,12 @@ const AppModules = {
   },
 
   toggleSfxChannel: function() {
-    if (typeof SoundEngine !== "undefined" && typeof SoundEngine.toggleSfx === "function") {
-      SoundEngine.toggleSfx();
+    if (typeof SoundEngine !== "undefined") {
+      if (typeof SoundEngine.toggleSfx === "function") {
+        SoundEngine.toggleSfx();
+      } else {
+        SoundEngine.toggleMute();
+      }
       this.updateRadioDisplay();
     }
   }
