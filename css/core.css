@@ -1,6 +1,6 @@
 /* ============================================================================
    PROJECT: ESTIQATSY SYNDICATE & RPG PLATFORM
-   FILE: css/core.css (VERSIONE 6.8 - ZERO-SCROLL & TELEGRAM NATIVE FIT)
+   FILE: css/core.css (VERSIONE 7.0 - TELEGRAM SAFE-ZONE & SPOTIFY RADIO DECK)
    LAYER: DESIGN SYSTEM DI PIATTAFORMA, VIEWPORT FIT, SAAS, SHOP & PROFILO
    ============================================================================ */
 
@@ -164,16 +164,16 @@ html, body.rpg-app-body {
 }
 
 /* ----------------------------------------------------------------------------
-   3. TOP BAR PIATTAFORMA (ALLINEAMENTO CONTROLLI NATIVI TELEGRAM)
+   3. TOP BAR PIATTAFORMA (CON SAFE-ZONE NATIVA TELEGRAM)
    ---------------------------------------------------------------------------- */
 .universal-top-bar {
   flex: none;
   z-index: 40;
   width: 100%;
-  height: calc(var(--safe-top) + 48px);
-  padding-top: var(--safe-top);
+  height: calc(var(--safe-top, 0px) + 48px);
+  padding-top: var(--safe-top, 0px);
   padding-left: 1rem;
-  padding-right: 1rem;
+  padding-right: 85px; /* SAFE-ZONE: Protegge l'area dei tasti nativi Telegram (✕ e •••) */
   background: rgba(9, 13, 22, 0.98);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
@@ -184,12 +184,12 @@ html, body.rpg-app-body {
   position: relative;
 }
 .top-bar-placeholder {
-  width: 3.5rem;
+  width: 2.5rem;
   height: 100%;
 }
 .top-bar-title-box {
   position: absolute;
-  inset: var(--safe-top) 0 0 0;
+  inset: var(--safe-top, 0px) 0 0 0;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -203,7 +203,6 @@ html, body.rpg-app-body {
   text-transform: uppercase;
 }
 .top-bar-actions {
-  width: 3.5rem;
   display: flex;
   justify-content: flex-end;
   align-items: center;
@@ -214,7 +213,7 @@ html, body.rpg-app-body {
    ---------------------------------------------------------------------------- */
 .app-layout-container {
   flex: 1 1 0%;
-  min-height: 0; /* Impedisce al flex-child di espandersi all'infinito */
+  min-height: 0;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -251,7 +250,7 @@ html, body.rpg-app-body {
 
 .app-content-wrapper {
   padding: 0.85rem;
-  padding-bottom: 2rem; /* Cuscinetto d'aria che non tocca il footer */
+  padding-bottom: 2rem;
   max-width: 1500px;
   margin: 0 auto;
   display: flex;
@@ -266,7 +265,7 @@ html, body.rpg-app-body {
 }
 
 /* ----------------------------------------------------------------------------
-   5. FOOTER PIATTAFORMA MOBILE (STICKY A TUTTA LARGHEZZA)
+   5. FOOTER PIATTAFORMA MOBILE (STICKY CON SAFE-AREA IPHONE)
    ---------------------------------------------------------------------------- */
 .main-app-footer {
   flex: none;
@@ -279,9 +278,9 @@ html, body.rpg-app-body {
   display: flex;
   justify-content: space-around;
   align-items: center;
-  padding-top: 0.4rem;
-  padding-bottom: max(var(--safe-bottom), 0.75rem);
-  height: calc(54px + max(var(--safe-bottom), 0px));
+  padding-top: 0.35rem;
+  padding-bottom: max(var(--safe-bottom, 0px), 1.15rem); /* Protezione Home Bar iOS */
+  height: calc(54px + max(var(--safe-bottom, 0px), 0px));
 }
 
 .nav-tab {
@@ -321,7 +320,7 @@ html, body.rpg-app-body {
   right: 14px;
 }
 
-/* Regola dichiarativa: spegne il footer piattaforma durante il gioco */
+/* REGOLA DICHIARATIVA RIGIDA: Spegne il footer piattaforma durante il gioco */
 body[data-active-screen="view-gameplay"] .main-app-footer,
 body[data-active-screen="view-wizard"] .main-app-footer {
   display: none !important;
@@ -488,7 +487,7 @@ body[data-active-screen="view-wizard"] .main-app-footer {
 }
 
 /* ----------------------------------------------------------------------------
-   7. DASHBOARD HOME & CAROSELLO
+   7. DASHBOARD HOME, CAROSELLO & SPOTIFY-STYLE RADIO DECK
    ---------------------------------------------------------------------------- */
 .home-hero-banner {
   border-radius: 1.35rem;
@@ -552,6 +551,22 @@ body[data-active-screen="view-wizard"] .main-app-footer {
   line-height: 1.5;
   margin: 0.35rem 0 0 0;
   max-width: 48rem;
+}
+
+/* WIDGET MINIPLAYER SPOTIFY-STYLE */
+#home-radio-miniplayer {
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease;
+}
+#home-radio-miniplayer:hover {
+  border-color: rgba(56, 189, 248, 0.6);
+  box-shadow: 0 4px 20px rgba(56, 189, 248, 0.15);
+}
+#home-radio-miniplayer:active {
+  transform: scale(0.99);
 }
 
 .kpi-quad-grid {
@@ -624,7 +639,7 @@ body[data-active-screen="view-wizard"] .main-app-footer {
   margin: 0;
 }
 
-/* Carosello */
+/* Carosello Home */
 .carousel-outer-wrapper {
   position: relative;
   overflow: hidden;
@@ -1167,7 +1182,6 @@ body[data-active-screen="view-wizard"] .main-app-footer {
   gap: 1rem;
 }
 
-/* Blocco Avatar e Anagrafica */
 .profile-header-card > div:first-child {
   display: flex;
   align-items: center;
@@ -1203,12 +1217,11 @@ body[data-active-screen="view-wizard"] .main-app-footer {
   font-family: monospace;
 }
 
-/* RISOLUZIONE COLLISIONE BADGE PIANO E ID UTENTE */
 .profile-header-card .mt-1 {
   display: flex;
   align-items: center;
   gap: 0.45rem;
-  flex-wrap: wrap; /* Evita sovrapposizioni orizzontali */
+  flex-wrap: wrap;
   margin-top: 0.35rem !important;
 }
 #profile-card-plan {
@@ -1311,13 +1324,23 @@ body[data-active-screen="view-wizard"] .main-app-footer {
 .transaction-amount.expense { color: var(--tg-amber); }
 
 /* ----------------------------------------------------------------------------
-   11. MODALI DI SISTEMA CENTRATE & COMPARATORE SAAS
+   11. MODALI DI SISTEMA CENTRATE GLASSMORPHISM & COMPARATORE SAAS
    ---------------------------------------------------------------------------- */
-.modal.modal-middle {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 1rem;
+dialog.modal.modal-middle,
+dialog.modal:not(.modal-bottom) {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  position: fixed !important;
+  inset: 0 !important;
+  background: rgba(9, 13, 22, 0.88) !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
+  padding: 1rem !important;
+  z-index: 60 !important;
+}
+dialog.modal:not([open]) {
+  display: none !important;
 }
 
 .modal-close-btn {
@@ -1345,14 +1368,14 @@ body[data-active-screen="view-wizard"] .main-app-footer {
 .plans-catalog-box {
   background: var(--tg-sec-bg);
   border: 1px solid rgba(56, 189, 248, 0.4);
-  padding: 1.25rem 1.35rem 1.75rem 1.35rem; /* Respiro sul fondo */
+  padding: 1.25rem 1.35rem 1.75rem 1.35rem;
   border-radius: 1.25rem;
   display: flex;
   flex-direction: column;
   gap: 0.85rem;
   max-width: 42rem;
   width: 100%;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.85);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.95);
   position: relative;
 }
 .billing-toggle-box {
@@ -1529,7 +1552,6 @@ body[data-active-screen="view-wizard"] .main-app-footer {
   transform: scale(0.97);
 }
 
-/* Contrasto visibile per pulsanti disabilitati (MAI NERO SU NERO) */
 .btn:disabled, .btn-disabled, button[disabled] {
   background-color: rgba(255, 255, 255, 0.04) !important;
   border: 1px solid rgba(255, 255, 255, 0.14) !important;
@@ -1547,9 +1569,9 @@ body[data-active-screen="view-wizard"] .main-app-footer {
   border: 1px solid rgba(56, 189, 248, 0.4);
   padding: 1.25rem 1.25rem 1.5rem 1.25rem;
   border-radius: 1.25rem;
-  max-width: 26rem;
+  max-width: 28rem;
   width: 100%;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.85);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.95);
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
