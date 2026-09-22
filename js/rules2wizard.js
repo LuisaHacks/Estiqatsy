@@ -1,6 +1,6 @@
 // ============================================================================
 // PROJECT: ESTIQATSY SYNDICATE & RPG PLATFORM
-// FILE: js/rules2wizard.js (VERSIONE 4.0 - ADVANCED VETERAN LOOP & MONUMENTAL CARD)
+// FILE: js/rules2wizard.js (VERSIONE 5.0 - ATOMIC CROSS-SAVE & RESUME ENGINE)
 // LAYER: WIZARD FULL-STAGE, 3D DYNAMIC STAGE, STAT CALCULATOR & DIEGETIC NAMING
 // ============================================================================
 
@@ -100,7 +100,7 @@ const Rules2Store = {
 };
 
 // ----------------------------------------------------------------------------
-// 3. WIZARD PERSONAGGIO (MACCHINA A STATI CON SALTO VETERANO)
+// 3. WIZARD PERSONAGGIO (MACCHINA A STATI CON RESUME COMPLETO)
 // ----------------------------------------------------------------------------
 const Rules2Wizard = {
   state: {
@@ -191,11 +191,9 @@ const Rules2Wizard = {
     }
   },
 
-  // In js/rules2wizard.js:
-
   resumeSession: async function(gameKey, epNum, sessionData) {
     try {
-      // 1. Carica prima i cataloghi (classi, abilità, shop)
+      // 1. Carica i cataloghi dal server
       let wizData = Rules2Store.loadCachedWizardData(gameKey);
       if (!wizData) {
         wizData = await apiCall("game_wizard_data", { gameKey: gameKey });
@@ -290,7 +288,6 @@ const Rules2Wizard = {
       inventario: (this.state.boughtItems || []).map(i => i.nome || i.id),
       nomeEroe: this.state.heroName
     };
-    // Chiamata asincrona in background (non blocca la UI)
     apiCall("game_action", heroPayload).catch(() => {});
   },
 
@@ -322,6 +319,12 @@ const Rules2Wizard = {
     if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("click");
   },
 
+  prevStep: function(s) {
+    this.showStep(s);
+    tgHaptic("selection");
+    if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("click");
+  },
+
   showStep: function(stepNum) {
     this.state.step = stepNum;
     [1, 2, 3, 4].forEach(n => {
@@ -333,7 +336,6 @@ const Rules2Wizard = {
 
     // CONTROLLI DINAMICI FOOTER PER VETERANO
     if (stepNum === 2 && this.state.isVeteran) {
-      // Nasconde il tasto indietro verso la classe: il veterano non può cambiare classe
       const prevClassBtn = document.querySelector("#wiz-footer-step-2 button:first-child");
       if (prevClassBtn) prevClassBtn.classList.add("hidden");
     }
@@ -342,7 +344,6 @@ const Rules2Wizard = {
       const nextBtn = document.getElementById("wizard-step3-next-btn");
       if (nextBtn) {
         if (this.state.isVeteran) {
-          // VETERANO: Salta lo step 4 e avvia direttamente la partita
           nextBtn.textContent = `Inizia Ep. ${this.state.episodio} 🚀`;
           nextBtn.onclick = () => Rules2Wizard.finalizeHero();
         } else {
@@ -419,7 +420,7 @@ const Rules2Wizard = {
   },
 
   // --------------------------------------------------------------------------
-  // STEP 1: CLASSI COSTIERE (FACTION GLOW, DOTAZIONE COMPATTA & ZERO FRECCE)
+  // STEP 1: CLASSI COSTIERE (FACTION GLOW & 3D COVERFLOW)
   // --------------------------------------------------------------------------
   renderStep1: function() {
     const stage = document.getElementById("wizard-classes-stage");
@@ -458,14 +459,12 @@ const Rules2Wizard = {
           </div>
 
           <div id="coverflow-details-${idx}" class="coverflow-details-box">
-            <!-- TRITTICO KPI UNIFORME -->
             <div class="coverflow-stats-row">
               <div>🥊 FOR <b>${forVal}</b></div>
               <div>🤸 DES <b>${desVal}</b></div>
               <div>🧠 INT <b>${intVal}</b></div>
             </div>
 
-            <!-- SPAZIO LORE A 9 RIGHE ANCORATO RIGIDAMENTE IN ALTO A SX -->
             <div class="coverflow-lore">
               <p>${cls.testo || cls.descrizione || ''}</p>
             </div>
@@ -649,14 +648,6 @@ const Rules2Wizard = {
     if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("click");
     this.updateCoverflowStage();
     this.renderClassesList();
-  },
-
-  confirmStep1: function() {
-    this.stopAutoplay();
-    if (!this.state.chosenClass) return tgAlert("Scegli una classe!");
-    if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("success");
-    this.renderStep2();
-    this.showStep(2);
   },
 
   // --------------------------------------------------------------------------
@@ -866,16 +857,8 @@ const Rules2Wizard = {
     this.renderStep2();
   },
 
-  confirmStep2: function() {
-    this.stopAutoplay();
-    if (!this.state.chosenClass) return tgAlert("Scegli prima una classe!");
-    if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("success");
-    this.renderStep3();
-    this.showStep(3);
-  },
-
   // --------------------------------------------------------------------------
-  // STEP 3: MERCATO NERO DI CICCIO (GESTIONE ORO INTERNA & SALTO VETERANO)
+  // STEP 3: MERCATO NERO DI CICCIO (GESTIONE ORO & VEICOLI)
   // --------------------------------------------------------------------------
   renderStep3: function() {
     this.filterShop(this.state.shopCategory || "ARMI");
@@ -1150,7 +1133,7 @@ const Rules2Wizard = {
     const heroName = this.state.heroName || AppState.user?.nome || "Avventuriero";
     const startingGear = cls.equipLoot || "Pugni nudi";
 
-    // CALCOLO DINAMICO DELLE CARATTERISTICHE CON BONUS ACQUISTATI
+    // Calcolo dinamico caratteristiche effettive con bonus acquisti
     let effFor = Number(cls.forza || 10);
     let effDes = Number(cls.destrezza || 10);
     let effInt = Number(cls.intelligenza || 10);
@@ -1174,7 +1157,6 @@ const Rules2Wizard = {
     const container = document.getElementById("wizard-step-name");
     if (!container) return;
 
-    // INIEZIONE DELLA CARTA MONUMENTALE (EREDITA GLOW E PROPORZIONI DAL MODELLO 3D)
     container.innerHTML = `
       <div class="hero-launch-stage">
         <div data-faction="${pol}" class="coverflow-card hero-launch-card glow-active">
@@ -1199,14 +1181,12 @@ const Rules2Wizard = {
           </div>
 
           <div class="coverflow-details-box">
-            <!-- TRITTICO KPI CON STATISTICHE RICALCOLATE -->
             <div class="coverflow-stats-row">
               <div>🥊 FOR <b>${effFor}</b></div>
               <div>🤸 DES <b>${effDes}</b></div>
               <div>🧠 INT <b>${effInt}</b></div>
             </div>
 
-            <!-- SPAZIO LORE A 9 RIGHE ANCORATO RIGIDAMENTE IN ALTO A SX -->
             <div class="coverflow-lore">
               <p>${dynamicBio}</p>
             </div>
@@ -1249,6 +1229,7 @@ const Rules2Wizard = {
       this.state.heroName = input.value.trim();
       const disp = document.getElementById("hero-display-name");
       if (disp) disp.textContent = `${this.state.heroName} ✏️`;
+      this._syncStepToServer("WIZARD_NOME");
     }
     document.getElementById("modal-hero-name")?.close();
   },
@@ -1269,19 +1250,6 @@ const Rules2Wizard = {
     if (typeof Rules2Engine !== "undefined" && typeof Rules2Engine.executeStartGame === "function") {
       Rules2Engine.executeStartGame(payload, payload.avatarUrl);
     }
-  },
-
-  nextStep: function(s) {
-    if (s === 4) this.renderStep4();
-    this.showStep(s);
-    tgHaptic("selection");
-    if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("click");
-  },
-
-  prevStep: function(s) {
-    this.showStep(s);
-    tgHaptic("selection");
-    if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("click");
   }
 };
 
