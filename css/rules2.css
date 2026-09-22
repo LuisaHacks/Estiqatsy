@@ -1,11 +1,11 @@
 /* ============================================================================
    PROJECT: ESTIQATSY SYNDICATE & RPG PLATFORM
-   FILE: css/rules2.css (VERSIONE 10.0 - PERFORMANCE OPTIMIZED & CLEAN SPECIFICITY)
+   FILE: css/rules2.css (VERSIONE 11.0 - -5% CARD HEIGHT, MIRRORED LINES & TIGHT GEOMETRY)
    LAYER: ENGINE RULES2, WIZARD FULL-STAGE, COCKPIT & CASSETTI TATTICI
    ============================================================================ */
 
 /* ----------------------------------------------------------------------------
-   1. COCKPIT HEADER DI GIOCO & FOOTER STICKY A 5 SEZIONI
+   1. COCKPIT HEADER DI GIOCO & FOOTER STICKY
    ---------------------------------------------------------------------------- */
 .game-header-titles {
   display: flex;
@@ -75,12 +75,10 @@
   background: transparent;
   border: none;
   cursor: pointer;
-  transition: transform 0.15s ease, color 0.15s ease;
+  transition: transform 0.15s ease;
   min-width: 3.2rem;
 }
-.cockpit-btn:active {
-  transform: scale(0.92);
-}
+.cockpit-btn:active { transform: scale(0.92); }
 .cockpit-btn-label {
   font-size: 8.5px;
   font-weight: 800;
@@ -130,34 +128,33 @@
   left: 0;
   right: 0;
   background: linear-gradient(180deg, transparent 0%, rgba(9, 13, 22, 0.78) 25%, rgba(9, 13, 22, 0.98) 100%);
-  padding: 0.65rem 0.85rem 0.45rem 0.85rem;
+  padding: 0.5rem 0.85rem 0.4rem 0.85rem;
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
   text-align: right;
   z-index: 10;
-  min-height: 75px;
 }
 .quote-text {
-  font-size: clamp(11.5px, 1.4dvh, 12.5px);
+  font-size: clamp(11px, 1.35dvh, 12px);
   color: #F1F5F9;
   font-style: italic;
-  line-height: 1.42;
+  line-height: 1.35;
   text-align: right;
   display: -webkit-box;
-  -webkit-line-clamp: 4;
+  -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.95);
 }
 .quote-author {
-  font-size: 10px;
+  font-size: 9.5px;
   font-weight: 800;
   color: var(--tg-amber, #F59E0B);
   text-transform: uppercase;
   letter-spacing: 0.08em;
   text-align: right;
-  margin-top: 0.2rem;
+  margin-top: 0.15rem;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9);
 }
 
@@ -194,7 +191,7 @@
 }
 
 /* ----------------------------------------------------------------------------
-   3. WIZARD: SINGLE-ROW HEADER & SCROLL VIEWPORT STABILE
+   3. WIZARD: HEADER COMPATTO & GEOMETRIA PULITA (ZERO VUOTO SOTTO)
    ---------------------------------------------------------------------------- */
 body[data-active-screen="view-wizard"] .app-scroll-area {
   overflow-y: auto;
@@ -204,7 +201,7 @@ body[data-active-screen="view-wizard"] .app-scroll-area {
 body[data-active-screen="view-wizard"] .app-content-wrapper {
   min-height: 100%;
   height: auto;
-  padding: 0.25rem 0.65rem 0.85rem 0.65rem;
+  padding: 0.25rem 0.5rem 0.5rem 0.5rem;
   display: flex;
   flex-direction: column;
 }
@@ -218,7 +215,6 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
 
 .wizard-stage-container {
   flex: 1 1 auto;
-  min-height: 0;
   display: flex;
   flex-direction: column;
   position: relative;
@@ -227,7 +223,6 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
 
 .wizard-step-panel {
   flex: 1 1 auto;
-  min-height: 0;
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
@@ -235,11 +230,11 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
 
 .wizard-single-header {
   flex: none;
-  min-height: 38px;
+  min-height: 36px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.15rem 0.25rem 0.25rem 0.25rem;
+  padding: 0.15rem 0.25rem;
   border-bottom: 1px solid var(--tg-border, rgba(255, 255, 255, 0.08));
   gap: 0.35rem;
 }
@@ -247,7 +242,7 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
 @media (max-width: 480px) {
   .wizard-single-header {
     flex-wrap: wrap;
-    min-height: 40px;
+    min-height: 38px;
     gap: 0.2rem 0.35rem;
   }
 }
@@ -277,7 +272,8 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
   gap: 0.25rem;
   white-space: nowrap;
   font-family: monospace;
-  font-size: 10.5px;
+  font-size: 11px;
+  font-weight: 800;
   line-height: 1;
   padding: 0.2rem 0.5rem;
 }
@@ -307,14 +303,10 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
   gap: 0.25rem;
   line-height: 1;
 }
-.toggle-pill-btn:hover {
-  color: #FFFFFF;
-}
 .toggle-pill-btn.active {
   background: var(--tg-sky, #38BDF8);
   color: #090D16;
   font-weight: 900;
-  box-shadow: 0 0 10px rgba(56, 189, 248, 0.4);
 }
 
 .wizard-content-fill {
@@ -327,7 +319,7 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
 }
 
 /* ----------------------------------------------------------------------------
-   4. PALCOSCENICO CILINDRICO 3D (CARTA CON ALONE BIANCO, SIMMETRIA 24px)
+   4. PALCOSCENICO CILINDRICO 3D (CARTA -5% ALTEZZA, GLOW ETEREO, LINEE SPECULARI)
    ---------------------------------------------------------------------------- */
 .coverflow-stage-outer {
   position: relative;
@@ -336,9 +328,7 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  overflow: visible;
-  /* DISTANZA SIMMETRICA: 24px sopra verso header, 24px sotto verso dots */
-  padding: 24px 0.5rem 0 0.5rem;
+  padding: 8px 0.25rem 0 0.25rem; /* Azzerato il vuoto superiore ed inferiore */
 }
 
 .coverflow-stage-wrapper {
@@ -351,15 +341,16 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
   perspective-origin: center center;
   user-select: none;
   touch-action: pan-y;
-  height: clamp(480px, 66dvh, 555px);
+  /* Ridotto del 5% in altezza */
+  height: clamp(450px, 62dvh, 515px);
 }
 
-/* Scheda Archetipo Collezionabile: 3D Hardware Accelerated */
+/* Scheda Collezionabile: 3D Hardware Accelerated & -5% Altezza */
 .coverflow-stage-wrapper .coverflow-card {
   position: absolute;
-  border-radius: 1.25rem;
+  border-radius: 1.15rem;
   background: #0D131F;
-  border: 2px solid rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.18);
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -367,33 +358,29 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
   transform: translateZ(0);
-  transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1),
-              opacity 0.35s ease,
-              box-shadow 0.35s ease;
+  transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.35s ease;
   will-change: transform, opacity;
 
+  /* -5% in altezza: proporzione compatta */
   width: clamp(285px, 82vw, 335px);
-  height: clamp(475px, 65dvh, 545px);
+  height: clamp(445px, 61dvh, 510px);
 
-  /* Alone Perimetrale Morbido Etereo */
-  box-shadow: 0 0 6px 1px rgba(255, 255, 255, 0.2),
-              0 0 14px 2px rgba(255, 255, 255, 0.08);
+  /* Bagliore leggero ed elegante */
+  box-shadow: 0 0 1px rgba(255, 255, 255, 0.4), 0 0 12px rgba(255, 255, 255, 0.08);
 }
 
 .coverflow-stage-wrapper .coverflow-card.glow-active {
-  box-shadow: 0 0 8px 1px rgba(255, 255, 255, 0.28),
-              0 0 16px 3px rgba(255, 255, 255, 0.12),
-              0 0 24px 4px rgba(255, 255, 255, 0.04);
+  box-shadow: 0 0 2px rgba(255, 255, 255, 0.6), 0 0 16px rgba(255, 255, 255, 0.16);
 }
 
 /* Responsive Tablet & Desktop tuning */
 @media (min-width: 640px) and (max-width: 1023px) {
   .coverflow-stage-wrapper {
-    height: clamp(530px, 67dvh, 610px);
+    height: clamp(500px, 64dvh, 575px);
   }
   .coverflow-stage-wrapper .coverflow-card {
-    width: 345px;
-    height: clamp(520px, 65dvh, 595px);
+    width: 340px;
+    height: clamp(490px, 62dvh, 565px);
   }
 }
 @media (min-width: 1024px) {
@@ -402,27 +389,22 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
     margin: 0 auto;
   }
   .coverflow-stage-wrapper {
-    height: clamp(570px, 70dvh, 640px);
+    height: clamp(540px, 66dvh, 605px);
   }
   .coverflow-stage-wrapper .coverflow-card {
-    width: 365px;
-    height: clamp(550px, 68dvh, 625px);
+    width: 360px;
+    height: clamp(520px, 64dvh, 590px);
   }
 }
 
-/* Media Frame (Immagine 1:1 Ingrandita e Centrata) */
+/* Media Frame (Immagine) */
 .coverflow-media-frame {
   position: relative;
   width: 100%;
-  height: clamp(230px, 32dvh, 265px);
+  height: clamp(210px, 29dvh, 245px);
   background: #090D16;
   flex-shrink: 0;
   overflow: hidden;
-}
-@media (min-width: 640px) {
-  .coverflow-media-frame {
-    height: clamp(250px, 34dvh, 285px);
-  }
 }
 .coverflow-img {
   width: 100%;
@@ -431,60 +413,79 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
   object-position: center center;
 }
 
-/* Titolo Overlay in alto a sinistra (Puro, Senza Fondino, Con Ombra Morbida) */
-.coverflow-title-overlay {
+/* HEADER CARTA: EMOJI, TITOLO E BADGE PERFETTAMENTE ALLINEATI */
+.coverflow-header-bar {
   position: absolute;
-  top: 0.65rem;
-  left: 0.75rem;
+  top: 0;
+  left: 0;
+  right: 0;
   z-index: 15;
+  height: 42px;
   display: flex;
   align-items: center;
-  gap: 0.35rem;
-  background: transparent;
-  max-width: calc(100% - 110px);
+  justify-content: space-between;
+  padding: 0 0.85rem;
+}
+.coverflow-title-group {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  max-width: 68%;
+}
+.coverflow-title-icon {
+  font-size: 1rem;
+  line-height: 1;
 }
 .coverflow-title {
-  font-size: 1.05rem;
+  font-size: 0.92rem;
   font-weight: 900;
   color: #FFFFFF;
-  line-height: 1.15;
+  line-height: 1.1;
   margin: 0;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.95), 0 0 10px rgba(0, 0, 0, 0.85);
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.95);
 }
 
-/* Badge Politico con Micro-Glow in alto a destra */
-.coverflow-card .coverflow-badge-faction {
-  position: absolute;
-  top: 0.65rem;
-  right: 0.75rem;
-  z-index: 15;
-  font-size: 10.5px;
+.coverflow-badge-faction {
+  font-size: 0.72rem;
   font-weight: 900;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.05em;
   padding: 0.22rem 0.55rem;
   border-radius: 9999px;
   line-height: 1;
-  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
-.coverflow-card .coverflow-badge-faction.badge-info,
+.coverflow-badge-faction[data-faction="destra"],
 .badge-faction-destra {
   background: #38BDF8;
   color: #090D16;
-  box-shadow: 0 0 8px 1px rgba(56, 189, 248, 0.7);
+  box-shadow: 0 0 8px 1px rgba(56, 189, 248, 0.6);
 }
-.coverflow-card .coverflow-badge-faction.badge-error,
+.coverflow-badge-faction[data-faction="sinistra"],
 .badge-faction-sinistra {
   background: #F43F5E;
   color: #FFFFFF;
-  box-shadow: 0 0 8px 1px rgba(244, 63, 94, 0.7);
+  box-shadow: 0 0 8px 1px rgba(244, 63, 94, 0.6);
 }
 
-/* Area Lore & Dati */
+/* RIGA BIANCA IN SOVRIMPRESSIONE SOTTO L'HEADER (SPECULARE AL FOOTER) */
+.coverflow-header-divider {
+  position: absolute;
+  top: 42px;
+  left: 0.85rem;
+  right: 0.85rem;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.18);
+  z-index: 15;
+}
+
+/* Area Lore & Dati (Compattata per assorbire il -5%) */
 .coverflow-details-box {
-  padding: 0.55rem 0.85rem 0.65rem 0.85rem;
+  padding: 0.45rem 0.85rem 0.55rem 0.85rem;
   flex: 1 1 auto;
   display: flex;
   flex-direction: column;
@@ -492,81 +493,61 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
   background: #0D131F;
 }
 
-/* Trittico Caratteristiche: Flessibile e non tranciato da accessibilità font */
+/* Trittico Caratteristiche: FONT UNIFORMI (11px MONO) */
 .coverflow-stats-row {
-  min-height: 2.4rem;
+  min-height: 2.2rem;
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0.35rem;
-  padding: 0.25rem 0.35rem;
-  border-radius: 0.65rem;
+  padding: 0.2rem 0.35rem;
+  border-radius: 0.55rem;
   background: rgba(0, 0, 0, 0.55);
   border: 1px solid var(--tg-border, rgba(255, 255, 255, 0.08));
   align-items: center;
-  font-size: 10.5px;
-  margin: 0.15rem 0 0.35rem 0;
+  font-family: monospace;
+  font-size: 11px;
+  font-weight: 800;
+  margin: 0.1rem 0 0.25rem 0;
 }
 .coverflow-stats-row > div {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.25rem;
+  gap: 0.2rem;
   border-right: 1px solid rgba(255, 255, 255, 0.08);
 }
-.coverflow-stats-row > div:last-child {
-  border-right: none;
-}
-.stat-mod { 
-  font-size: 10px;
-  color: var(--tg-text-muted, #94A3B8); 
-}
+.coverflow-stats-row > div:last-child { border-right: none; }
+.stat-mod { font-size: 9.5px; color: #94A3B8; font-weight: 700; }
 
-/* Testo Narrativo Lore (9 Righe Non Tranciate, Scrollable) */
+/* Testo Narrativo Lore */
 .coverflow-lore {
   display: block;
   text-align: left;
-  font-size: clamp(12px, 1.45vh, 13px);
+  font-size: 12px;
   color: #CBD5E1;
-  line-height: 1.5;
+  line-height: 1.45;
   margin: 0.1rem 0;
   word-break: break-word;
-  min-height: 135px;
-  max-height: 175px;
+  min-height: 110px;
+  max-height: 145px;
   overflow-y: auto;
   scrollbar-width: none;
   -ms-overflow-style: none;
 }
-.coverflow-lore::-webkit-scrollbar {
-  display: none;
-}
-@media (min-width: 640px) {
-  .coverflow-lore {
-    min-height: 150px;
-    max-height: 190px;
-    font-size: 13.5px;
-  }
-}
-@media (min-width: 1024px) {
-  .coverflow-lore {
-    min-height: 165px;
-    max-height: 210px;
-    font-size: 14px;
-  }
-}
+.coverflow-lore::-webkit-scrollbar { display: none; }
 
-/* Piede Scheda Flessibile: Dotazione a sinistra, Pills a destra */
+/* Piede Scheda: DOTAZIONE A SINISTRA, BADGE PV E ORO CON ETICHETTA "ORO" */
 .coverflow-footer-row {
-  min-height: 2.4rem;
+  min-height: 2.2rem;
   padding-top: 0.35rem;
-  border-top: 1px solid var(--tg-border, rgba(255, 255, 255, 0.08));
+  border-top: 1px solid rgba(255, 255, 255, 0.18); /* Speculare alla linea superiore */
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 0.45rem;
-  position: relative;
 }
 .coverflow-gear-label {
-  font-size: 10.5px;
+  font-size: 10px;
   color: #CBD5E1;
   max-width: 55%;
   white-space: nowrap;
@@ -584,9 +565,9 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
 .pill-pv, .pill-gold {
   background: rgba(9, 13, 22, 0.85);
   font-family: monospace;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 800;
-  padding: 0.22rem 0.5rem;
+  padding: 0.2rem 0.45rem;
   border-radius: 9999px;
   border: 1px solid var(--tg-border-light, rgba(255, 255, 255, 0.12));
   line-height: 1;
@@ -594,15 +575,20 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
 .pill-pv { color: #FDA4AF; }
 .pill-gold { color: #FDE047; }
 
-/* Pallini di Scorrimento (Dots): Esattamente 24px dalla carta e 12px dal footer */
-.coverflow-dots {
+/* CONTROLLI INFERIORI: FRECCE AI LATI DEI PALLINI (ZERO SPAZIO SOTTO) */
+.coverflow-nav-cluster {
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 0.4rem;
-  margin-top: 24px;
-  margin-bottom: 12px;
+  gap: 0.65rem;
+  margin-top: 10px;
+  margin-bottom: 8px; /* Esattamente 8px dal footer */
   flex-shrink: 0;
+}
+.coverflow-dots {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
 }
 .coverflow-dot {
   width: 0.35rem;
@@ -613,35 +599,24 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
   transition: all 0.2s ease;
 }
 .coverflow-dot.active {
-  width: 1.1rem;
+  width: 1rem;
   background: var(--tg-sky, #38BDF8);
 }
-
-.coverflow-arrow-btn {
-  display: none;
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  z-index: 30;
-  width: 2.25rem;
-  height: 2.25rem;
+.coverflow-btn-side {
+  width: 24px;
+  height: 24px;
   border-radius: 9999px;
-  background: rgba(0, 0, 0, 0.75);
-  border: 1px solid var(--tg-border-light, rgba(255, 255, 255, 0.12));
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
   color: #FFFFFF;
+  display: flex;
   align-items: center;
   justify-content: center;
+  font-size: 12px;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: background 0.15s ease;
 }
-@media (min-width: 640px) {
-  .coverflow-arrow-btn { display: flex; }
-}
-.coverflow-arrow-btn:hover {
-  background: var(--tg-sky, #38BDF8);
-  color: #090D16;
-  border-color: var(--tg-sky, #38BDF8);
-}
+.coverflow-btn-side:active { background: #38BDF8; color: #090D16; }
 
 /* ----------------------------------------------------------------------------
    5. MENU FILTRI E VISTE LISTA / GRIGLIA
@@ -656,16 +631,7 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
   scrollbar-width: none;
   padding: 0 0.25rem;
 }
-.chips-scroll-bar::-webkit-scrollbar {
-  display: none;
-}
-
-.wizard-step-panel .chips-scroll-bar + .wizard-content-fill .coverflow-stage-wrapper {
-  height: clamp(430px, 58dvh, 495px);
-}
-.wizard-step-panel .chips-scroll-bar + .wizard-content-fill .coverflow-card {
-  height: clamp(420px, 57dvh, 485px);
-}
+.chips-scroll-bar::-webkit-scrollbar { display: none; }
 
 .wizard-list-scroll-grid,
 .abilities-scroll-grid,
@@ -715,9 +681,7 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
   cursor: pointer;
   transition: all 0.15s ease;
 }
-.class-list-card:hover {
-  background: var(--tg-surface-hover, #1F2937);
-}
+.class-list-card:hover { background: var(--tg-surface-hover, #1F2937); }
 .class-list-card.selected {
   border-color: var(--tg-sky, #38BDF8);
   background: rgba(56, 189, 248, 0.12);
@@ -737,10 +701,7 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
   height: 100%;
   object-fit: cover;
 }
-.class-list-info {
-  flex: 1 1 0%;
-  min-width: 0;
-}
+.class-list-info { flex: 1 1 0%; min-width: 0; }
 .class-list-name {
   font-size: 0.82rem;
   font-weight: 900;
@@ -782,16 +743,6 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-.ability-card-desc {
-  font-size: 11px;
-  color: #CBD5E1;
-  line-height: 1.45;
-  margin-top: 0.15rem;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
 }
 
 .wizard-shop-card {
@@ -850,45 +801,63 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
 }
 
 /* ----------------------------------------------------------------------------
-   6. FOOTER WIZARD STICKY
+   6. FOOTER WIZARD STICKY & TASTI SINTETICI (AVANTI / INDIETRO)
    ---------------------------------------------------------------------------- */
 .wizard-sticky-footer {
   flex: none;
   z-index: 40;
   width: 100%;
-  background: rgba(9, 13, 22, 0.96);
+  background: rgba(9, 13, 22, 0.98);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
-  border-top: 1px solid var(--tg-border-light, rgba(255, 255, 255, 0.12));
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.45rem 0.85rem;
-  padding-bottom: max(var(--safe-bottom, 0px), 0.65rem);
-  height: calc(56px + max(var(--safe-bottom, 0px), 0px));
+  padding: 0.4rem 0.75rem;
+  padding-bottom: max(var(--safe-bottom, 0px), 0.55rem);
+  height: calc(54px + max(var(--safe-bottom, 0px), 0px));
 }
 
 .wizard-footer-step-controls {
   width: 100%;
   display: flex;
   align-items: center;
+  gap: 0.5rem;
 }
-
-#wiz-footer-step-3 {
-  gap: 0.4rem;
-}
-#wiz-footer-step-3 > div {
-  min-width: 0;
-}
-#wiz-footer-step-3 span {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 100%;
+.wizard-footer-step-controls .btn {
+  height: 2.5rem;
+  min-height: 2.5rem;
+  font-size: 0.85rem;
+  font-weight: 900;
+  text-transform: uppercase;
 }
 
 /* ----------------------------------------------------------------------------
-   7. MODALE ARCADE DIEGETICA "INSERT MEGOIN 🪙" (GRIGLIA 50/50 COMPATTA)
+   7. CARD MONUMENTALE STEP 4 ("LANCIA IL TUO EROE")
+   ---------------------------------------------------------------------------- */
+.hero-launch-stage {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 10px 0.5rem 0 0.5rem;
+}
+.hero-launch-card {
+  width: clamp(290px, 85vw, 345px);
+  height: clamp(450px, 62dvh, 515px);
+  border-radius: 1.15rem;
+  background: #0D131F;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 0 2px rgba(255, 255, 255, 0.6), 0 0 16px rgba(255, 255, 255, 0.16);
+  position: relative;
+}
+
+/* ----------------------------------------------------------------------------
+   8. MODALI CABINATO & ESITI PARTITA (GRIGLIE 50/50 COMPATTE)
    ---------------------------------------------------------------------------- */
 .arcade-coin-modal-box {
   background: linear-gradient(180deg, #0F172A 0%, #090D16 100%);
@@ -967,10 +936,30 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.5rem;
   width: 100%;
+  margin-top: 0.75rem;
+}
+.arcade-actions-50-50 .btn {
+  height: 2.65rem;
+  min-height: 2.65rem;
+  font-size: 0.82rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+/* Modale Modifica Nome Eroe */
+.modal-hero-name-box {
+  background: #0F172A;
+  border: 1px solid rgba(56, 189, 248, 0.5);
+  border-radius: 1.25rem;
+  padding: 1.25rem;
+  text-align: center;
+  max-width: 20rem;
+  width: 100%;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.9);
 }
 
 /* ----------------------------------------------------------------------------
-   8. COCKPIT GAMEPLAY BORDERLESS (SCATOLA NARRATIVA & PULSANTI SOTTO)
+   9. COCKPIT GAMEPLAY BORDERLESS (SCATOLA NARRATIVA & PULSANTI SOTTO)
    ---------------------------------------------------------------------------- */
 .gameplay-container {
   display: flex;
@@ -1181,7 +1170,7 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
 }
 
 /* ----------------------------------------------------------------------------
-   9. MODALE UNIVERSALE (SCROLL FLUIDO & ISPEZIONE ENTITÀ)
+   10. MODALI UNIVERSALI & CASSETTI COCKPIT
    ---------------------------------------------------------------------------- */
 dialog.modal.modal-middle,
 dialog.modal:not(.modal-bottom) {
@@ -1327,9 +1316,7 @@ dialog.modal:not([open]) {
   margin: 0.2rem 0 0 0;
 }
 
-/* ----------------------------------------------------------------------------
-   10. I 5 CASSETTI COCKPIT (SCHEDA, ZAINO, EMPORIO, SQUADRA, DOSSIER)
-   ---------------------------------------------------------------------------- */
+/* Cassetti Cockpit */
 .drawer-standard-box {
   background: var(--tg-sec-bg, #0F172A);
   border: 1px solid var(--tg-border-light, rgba(255, 255, 255, 0.12));
@@ -1448,7 +1435,7 @@ dialog.modal:not([open]) {
 .slot-tag { font-size: 9px; color: var(--tg-text-muted, #94A3B8); margin-top: 0.1rem; }
 .slot-tag.active-gear { color: var(--tg-emerald, #10B981); font-weight: 800; }
 
-/* 3. Emporio Ciccio */
+/* 3. Emporio Ciccio & Co. */
 .emporio-drawer-box {
   background: var(--tg-sec-bg, #0F172A);
   border: 1px solid var(--tg-border-light, rgba(255, 255, 255, 0.12));
