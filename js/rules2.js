@@ -1,6 +1,6 @@
 // ============================================================================
 // PROJECT: ESTIQATSY SYNDICATE & RPG PLATFORM
-// FILE: js/rules2.js (VERSIONE 10.0 - PRODUCTION GRADE & STATE-MACHINE RECOVERY)
+// FILE: js/rules2.js (VERSIONE 10.1 - FULL AUDIO INTEGRATION & EPISODE BGM)
 // LAYER 3: ENGINE RULES2, WIZARD FULL-STAGE, COCKPIT & CASSETTI TATTICI
 // ============================================================================
 
@@ -233,7 +233,7 @@ const Rules2Wizard = {
   },
 
   // --------------------------------------------------------------------------
-  // RECUPERO DELLO STATO PARZIALE (RISOLUZIONE DEL BUG "RIPRENDI")
+  // RECUPERO STATO MACCHINA WIZARD (BUG "RIPRENDI")
   // --------------------------------------------------------------------------
   resumeSession: async function(gameKey, epNum, sessionData) {
     try {
@@ -242,7 +242,6 @@ const Rules2Wizard = {
       const fase = sessionData.activeFase || sessionData.fase || "";
       const hero = sessionData.statoEroe || sessionData.hero || {};
 
-      // 1. Ripristina Archetipo se già scelto
       if (hero.classeId || hero.classe) {
         const found = this.state.classes.find(c => c.id === hero.classeId || c.nome === hero.classe);
         if (found) {
@@ -254,7 +253,6 @@ const Rules2Wizard = {
         }
       }
 
-      // 2. Ripristina Abilità
       if (Array.isArray(hero.abilita) && hero.abilita.length > 0) {
         this.state.chosenAbilities = hero.abilita.map(a => {
           const match = this.state.abilities.find(x => x.nome === a || x.id === a);
@@ -263,7 +261,6 @@ const Rules2Wizard = {
         this.state.remainingPx = Math.max(0, 100 - (this.state.chosenAbilities.length * 100));
       }
 
-      // 3. Ripristina Inventario / Shop
       if (Array.isArray(hero.inventario) && hero.inventario.length > 0) {
         this.state.boughtItems = hero.inventario.map(itName => {
           const it = this.state.shopCatalog.find(x => x.nome === itName || x.id === itName);
@@ -271,14 +268,12 @@ const Rules2Wizard = {
         });
       }
 
-      // 4. Ripristina Nome Eroe
       if (hero.nomeEroe) {
         this.state.heroName = hero.nomeEroe;
         const nameInput = document.getElementById("wizard-name-input");
         if (nameInput) nameInput.value = hero.nomeEroe;
       }
 
-      // 5. Instradamento al passo corretto della Macchina a Stati
       if (fase === "WIZARD_ABILITA") {
         this.renderStep2();
         this.showStep(2);
@@ -324,9 +319,6 @@ const Rules2Wizard = {
     if (scrollContainer) scrollContainer.scrollTop = 0;
   },
 
-  // --------------------------------------------------------------------------
-  // SWITCH VISTE (3D CYLINDER / LISTA TATTICA)
-  // --------------------------------------------------------------------------
   setWizardViewMode: function(stepKey, mode) {
     if (!this.state.viewModes) {
       this.state.viewModes = { class: "3d", abilities: "list", shop: "list" };
@@ -345,7 +337,7 @@ const Rules2Wizard = {
     if (vList) vList.classList.toggle("hidden", is3D);
 
     tgHaptic("selection");
-    if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("click");
+    if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("card_flip");
 
     if (stepKey === "class") {
       if (is3D) this.updateCoverflowStage();
@@ -640,13 +632,14 @@ const Rules2Wizard = {
       };
     }
 
+    if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("modal_open");
     document.getElementById("modal-universal-detail")?.showModal();
   },
 
   coverflowSelectIndex: function(idx) {
     if (idx === this.state.activeClassIndex) return;
     this.state.activeClassIndex = idx;
-    if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("click");
+    if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("card_flip");
     this.updateCoverflowStage();
     this.renderClassesList();
   },
@@ -655,7 +648,7 @@ const Rules2Wizard = {
     const total = (this.state.classes || []).length;
     if (total <= 1) return;
     this.state.activeClassIndex = (this.state.activeClassIndex + 1) % total;
-    if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("click");
+    if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("card_flip");
     this.updateCoverflowStage();
     this.renderClassesList();
   },
@@ -664,7 +657,7 @@ const Rules2Wizard = {
     const total = (this.state.classes || []).length;
     if (total <= 1) return;
     this.state.activeClassIndex = (this.state.activeClassIndex - 1 + total) % total;
-    if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("click");
+    if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("card_flip");
     this.updateCoverflowStage();
     this.renderClassesList();
   },
@@ -674,6 +667,7 @@ const Rules2Wizard = {
       tgAlert("Scegli un archetipo!");
       return;
     }
+    if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("success");
     this.renderStep2();
     this.showStep(2);
   },
@@ -839,7 +833,7 @@ const Rules2Wizard = {
     const total = (this.state.abilities || []).length;
     if (total <= 1) return;
     this.state.activeAbilityIndex = (this.state.activeAbilityIndex + 1) % total;
-    if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("click");
+    if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("card_flip");
     this.updateAbilitiesCylinder();
   },
 
@@ -847,7 +841,7 @@ const Rules2Wizard = {
     const total = (this.state.abilities || []).length;
     if (total <= 1) return;
     this.state.activeAbilityIndex = (this.state.activeAbilityIndex - 1 + total) % total;
-    if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("click");
+    if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("card_flip");
     this.updateAbilitiesCylinder();
   },
 
@@ -903,6 +897,7 @@ const Rules2Wizard = {
       }
     }
 
+    if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("modal_open");
     document.getElementById("modal-universal-detail")?.showModal();
   },
 
@@ -912,22 +907,25 @@ const Rules2Wizard = {
       this.state.chosenAbilities.splice(idx, 1);
       this.state.remainingPx += 100;
       tgHaptic("light");
+      if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("click");
     } else {
       if (this.state.remainingPx >= 100) {
         this.state.chosenAbilities.push(ablId);
         this.state.remainingPx -= 100;
         tgHaptic("success");
+        if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("lucky");
       } else {
         tgHaptic("error");
+        if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("unlucky");
         tgAlert("PX insufficienti!");
         return;
       }
     }
-    if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("click");
     this.renderStep2();
   },
 
   confirmStep2: function() {
+    if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("success");
     this.renderStep3();
     this.showStep(3);
   },
@@ -1122,7 +1120,7 @@ const Rules2Wizard = {
     const total = (this.state.shopCatalog || []).filter(item => Rules2_ClassifyEntity(item) === targetCategory.toUpperCase()).length;
     if (total <= 1) return;
     this.state.activeShopIndex = (this.state.activeShopIndex + 1) % total;
-    if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("click");
+    if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("card_flip");
     this.updateShopCylinder();
   },
 
@@ -1131,7 +1129,7 @@ const Rules2Wizard = {
     const total = (this.state.shopCatalog || []).filter(item => Rules2_ClassifyEntity(item) === targetCategory.toUpperCase()).length;
     if (total <= 1) return;
     this.state.activeShopIndex = (this.state.activeShopIndex - 1 + total) % total;
-    if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("click");
+    if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("card_flip");
     this.updateShopCylinder();
   },
 
@@ -1182,12 +1180,14 @@ const Rules2Wizard = {
       } : null;
     }
 
+    if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("modal_open");
     document.getElementById("modal-universal-detail")?.showModal();
   },
 
   buyItem: function(itemId, price) {
     if (this.state.currentGold < price) {
       tgHaptic("error");
+      if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("unlucky");
       tgAlert("Oro insufficiente!");
       return;
     }
@@ -1199,6 +1199,7 @@ const Rules2Wizard = {
       const alreadyHasVehicle = this.state.boughtItems.some(x => Rules2_ClassifyEntity(x) === "VEICOLI");
       if (alreadyHasVehicle) {
         tgHaptic("warning");
+        if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("unlucky");
         tgAlert("Massimo 1 Veicolo consentito!");
         return;
       }
@@ -1281,6 +1282,7 @@ const Rules2Wizard = {
     const input = document.getElementById("wizard-name-input");
     if (input && AppState.user) input.value = AppState.user.nome;
     tgHaptic("selection");
+    if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("click");
   },
 
   finalizeHero: function() {
@@ -1294,6 +1296,7 @@ const Rules2Wizard = {
 
     if (!isFree && userBalance < 1) {
       tgHaptic("error");
+      if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("unlucky");
       tgAlert("⚠️ Megoin insufficienti!");
       return;
     }
@@ -1316,6 +1319,7 @@ const Rules2Wizard = {
     if (stepNum === 4) this.renderStep4();
     this.showStep(stepNum);
     tgHaptic("selection");
+    if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("click");
   },
 
   prevStep: function(stepNum) {
@@ -1323,6 +1327,7 @@ const Rules2Wizard = {
     this.state.step = stepNum;
     this.showStep(stepNum);
     tgHaptic("selection");
+    if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("click");
   }
 };
 
@@ -1375,7 +1380,6 @@ const Rules2Engine = {
           modal.close();
           const activeFase = saga.activeFase || saga.fase || (saga.statoPartita && saga.statoPartita.fase) || "IN_GIOCO";
 
-          // GESTIONE STATI WIZARD VS IN_GIOCO
           if (activeFase.startsWith("WIZARD_")) {
             Rules2Wizard.resumeSession(gameKey, saga.activeEpisodio || epNum, saga);
           } else {
@@ -1407,6 +1411,7 @@ const Rules2Engine = {
       this._setupArcadeCoinScreen(gameKey, epNum, canContinueFree, savedHero, modal);
     }
 
+    if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("modal_open");
     modal.showModal();
   },
 
@@ -1438,6 +1443,7 @@ const Rules2Engine = {
         btnLaunch.onclick = () => {
           if (userBalance < 1) {
             tgHaptic("error");
+            if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("unlucky");
             tgAlert("⚠️ Megoin insufficienti!");
             return;
           }
@@ -1453,7 +1459,7 @@ const Rules2Engine = {
       tgHaptic("success");
       if (typeof SoundEngine !== "undefined") {
         SoundEngine.playSfx("insert_coin");
-        SoundEngine.playBgm("exploration");
+        SoundEngine.playEpisodeBgm(payloadParams.gameKey, payloadParams.episodio, "explore");
       }
 
       const res = await apiCall("game_start", payloadParams);
@@ -1513,6 +1519,16 @@ const Rules2Engine = {
     const currentNode = AppState.activeSession.currentNode;
     const currentHero = AppState.activeSession.hero;
     if (!currentNode) return;
+
+    // MONITOR BATTITO CARDIACO IN CASO DI BASSA SALUTE (PV < 25%)
+    if (currentHero && currentHero.pvMax) {
+      const pvRatio = (currentHero.pv || 0) / currentHero.pvMax;
+      if (pvRatio <= 0.25 && currentHero.pv > 0) {
+        if (typeof SoundEngine !== "undefined") SoundEngine.startHeartbeat();
+      } else {
+        if (typeof SoundEngine !== "undefined") SoundEngine.stopHeartbeat();
+      }
+    }
 
     const s = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
 
@@ -1577,15 +1593,21 @@ const Rules2Engine = {
     if (!actBox) return;
 
     const isCombat = (currentNode.tipo === "NEMICO" || (currentNode.id && currentNode.id.includes("NEM_")));
+    const isBoss = isCombat && (String(currentNode.id).includes("BOSS") || String(currentNode.sottocategoria || "").toUpperCase().includes("BOSS"));
     const isEvento = (currentNode.tipo === "EVENTO" || (currentNode.id && currentNode.id.includes("EVT_")));
 
     // CASO 1: COMBATTIMENTO D20
     if (isCombat) {
-      if (typeof SoundEngine !== "undefined") SoundEngine.playBgm("combat");
+      if (typeof SoundEngine !== "undefined") {
+        SoundEngine.playEpisodeBgm(AppState.activeSession.gameKey, AppState.activeSession.episodio, isBoss ? "boss" : "combat");
+      }
 
       if (AppState.activeSession.combatEnemyId !== currentNode.id) {
         AppState.activeSession.combatEnemyId = currentNode.id;
         AppState.activeSession.combatRound = 1;
+        if (typeof SoundEngine !== "undefined") {
+          SoundEngine.playSfx(isBoss ? "shock" : "hit");
+        }
       }
 
       let bribeHtml = "";
@@ -1614,6 +1636,11 @@ const Rules2Engine = {
         </div>
       `;
       return;
+    }
+
+    // GESTIONE BGM ESPLORAZIONE SNODO NORMALE
+    if (typeof SoundEngine !== "undefined") {
+      SoundEngine.playEpisodeBgm(AppState.activeSession.gameKey, AppState.activeSession.episodio, "explore");
     }
 
     // CASO 2: EVENTO D20
@@ -1707,7 +1734,7 @@ const Rules2Engine = {
     this._setBusy(true);
 
     tgHaptic("selection");
-    if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("click");
+    if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("card_flip");
 
     try {
       const res = await apiCall("game_node", {
@@ -1728,6 +1755,7 @@ const Rules2Engine = {
     }
   },
 
+  // DUCKING AUDIO CINEMATOGRAFICO DURANTE LA SUSPENSE DEL DADO
   showDiceRollSuspense: function(title, desc, durationMs, onComplete) {
     const diceModal = document.getElementById("modal-dice-suspense");
     const diceCube = document.getElementById("dice-visual-cube");
@@ -1739,7 +1767,11 @@ const Rules2Engine = {
 
     if (diceCube) diceCube.classList.add("dice-rolling");
     if (diceModal) diceModal.showModal();
-    if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("dice");
+
+    if (typeof SoundEngine !== "undefined") {
+      SoundEngine.duck(0.08, (durationMs || 700) + 400);
+      SoundEngine.playSfx("dice");
+    }
 
     setTimeout(() => {
       if (diceCube) diceCube.classList.remove("dice-rolling");
@@ -1765,16 +1797,25 @@ const Rules2Engine = {
       s("dice-roll-result", `${total} • ${isSuccess ? 'SUPERATO!' : 'FALLITO!'}`);
       s("dice-roll-desc", isSuccess ? 'Ostacolo superato!' : 'Danni subiti!');
 
+      // FEEDBACK SONORO DIFFERENZIATO: FORTUNATO VS SFORTUNATO
+      if (typeof SoundEngine !== "undefined") {
+        if (isSuccess) {
+          SoundEngine.playSfx(d20 === 20 ? "lucky" : "success");
+        } else {
+          SoundEngine.playSfx(d20 === 1 ? "unlucky" : "hurt");
+        }
+      }
+
       setTimeout(() => {
         modal.close();
         const node = AppState.activeSession.currentNode;
         if (isSuccess) {
           tgHaptic("success");
-          this.showFloatingDamage("✅ Superato!", false, false);
+          this.showFloatingDamage(d20 === 20 ? "🌟 CRITICO!" : "✅ Superato!", d20 === 20, false);
           this.advanceToNode(node.destSuccesso);
         } else {
           tgHaptic("error");
-          this.showFloatingDamage("❌ Fallito!", false, true);
+          this.showFloatingDamage(d20 === 1 ? "💀 FUMBLE!" : "❌ Fallito!", false, true);
           this.advanceToNode(node.destFallback || node.destFallimento);
         }
       }, 650);
@@ -1797,7 +1838,13 @@ const Rules2Engine = {
       s("dice-roll-desc", "Tiro di attacco...");
       if (diceCube) diceCube.classList.add("dice-rolling");
       if (diceModal) diceModal.showModal();
-      if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("dice");
+
+      if (typeof SoundEngine !== "undefined") {
+        SoundEngine.duck(0.08, 900);
+        SoundEngine.playSfx("dice");
+      }
+    } else if (subAction === "flee") {
+      if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("flee");
     }
 
     try {
@@ -1825,14 +1872,19 @@ const Rules2Engine = {
             if (log.isHit) {
               tgHaptic(log.isCrit ? "success" : "light");
               this.showFloatingDamage(`💥 -${log.dmgDealt} PV`, log.isCrit, false);
-              if (typeof SoundEngine !== "undefined") SoundEngine.playSfx(log.isCrit ? "crit_hit" : "hit");
+              if (typeof SoundEngine !== "undefined") {
+                SoundEngine.playSfx(log.isCrit ? "crit_hit" : "hit");
+              }
             } else {
               this.showFloatingDamage("💨 A vuoto", false, false);
+              if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("flee");
             }
+
             if (log.dmgTaken > 0) {
               setTimeout(() => {
                 tgHaptic("error");
                 this.showFloatingDamage(`💔 -${log.dmgTaken} PV Squadra`, false, true);
+                if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("hurt");
               }, 250);
             }
           }
@@ -1841,7 +1893,11 @@ const Rules2Engine = {
             AppState.activeSession.combatRound = 1;
             AppState.activeSession.combatEnemyId = null;
 
-            if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("victory");
+            if (typeof SoundEngine !== "undefined") {
+              SoundEngine.stopHeartbeat();
+              SoundEngine.playSfx("lucky");
+              SoundEngine.playBgm("victory");
+            }
             if (window.confetti) confetti({ particleCount: 75, spread: 60 });
 
             const hero = AppState.activeSession.hero;
@@ -1857,7 +1913,11 @@ const Rules2Engine = {
             AppState.activeSession.combatRound = 1;
             AppState.activeSession.combatEnemyId = null;
 
-            if (typeof SoundEngine !== "undefined") SoundEngine.playBgm("defeat");
+            if (typeof SoundEngine !== "undefined") {
+              SoundEngine.stopHeartbeat();
+              SoundEngine.playSfx("zelda_death"); // Morte 8-bit Zelda
+              SoundEngine.playBgm("defeat");
+            }
             this.renderNode(res.nextView.nodo, res.nextView.statoEroe);
           } else {
             AppState.activeSession.combatRound = (log ? log.round + 1 : curRound + 1);
@@ -1881,6 +1941,8 @@ const Rules2Engine = {
     this._setBusy(false);
     const actBox = document.getElementById("scene-actions-container");
     if (!actBox) return;
+
+    if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("evil_laugh");
 
     actBox.innerHTML = `
       <div class="necromancy-prompt-box">
@@ -1975,10 +2037,12 @@ const Rules2Engine = {
     const isCorrect = (selectedOpz.trim().toLowerCase() === node.quiz.rispostaCorretta?.trim().toLowerCase());
     if (isCorrect) {
       tgHaptic("success");
+      if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("lucky");
       this.showFloatingDamage("✅ Esatto!", false, false);
       this.advanceToNode(node.destSuccesso);
     } else {
       tgHaptic("error");
+      if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("unlucky"); // Sad Trombone
       this.showFloatingDamage("❌ Errato!", false, true);
       this.advanceToNode(node.destFallimento);
     }
@@ -2094,6 +2158,7 @@ const Rules2Engine = {
       }
     }
 
+    if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("modal_open");
     document.getElementById("modal-universal-detail")?.showModal();
   },
 
@@ -2144,6 +2209,7 @@ const Rules2Engine = {
     }
 
     tgHaptic("selection");
+    if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("modal_open");
     document.getElementById("drawer-hero-sheet")?.showModal();
   },
 
@@ -2151,6 +2217,7 @@ const Rules2Engine = {
   openBackpackDrawer: function() {
     this.filterBackpack(AppState.activeSession.engineState?.backpackFilter || "ALL");
     tgHaptic("selection");
+    if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("modal_open");
     document.getElementById("drawer-backpack")?.showModal();
   },
 
@@ -2253,7 +2320,7 @@ const Rules2Engine = {
       });
       if (res?.success) {
         tgHaptic("success");
-        if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("drug");
+        if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("drug"); // Deglutizione fisica confermata
         AppState.activeSession.hero = { ...AppState.activeSession.hero, ...res.statoEroe };
         this.renderNode(AppState.activeSession.currentNode, AppState.activeSession.hero);
         this.filterBackpack(AppState.activeSession.engineState.backpackFilter);
@@ -2270,6 +2337,7 @@ const Rules2Engine = {
     if (goldDisp) goldDisp.textContent = `${h ? h.oro : 0} 🟡`;
     this.setEmporioMode(AppState.activeSession.engineState?.emporioMode || "buy");
     tgHaptic("selection");
+    if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("modal_open");
     document.getElementById("drawer-emporio")?.showModal();
   },
 
@@ -2345,6 +2413,7 @@ const Rules2Engine = {
     const hero = AppState.activeSession.hero;
     if (!hero || hero.oro < goldCost) {
       tgHaptic("error");
+      if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("unlucky");
       tgAlert("Oro insufficiente!");
       return;
     }
@@ -2355,6 +2424,7 @@ const Rules2Engine = {
       const hasVehicle = (hero.inventario || []).some(x => Rules2_ClassifyEntity(this._findEntityData(x)) === "VEICOLI");
       if (hasVehicle) {
         tgHaptic("warning");
+        if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("unlucky");
         tgAlert("Massimo 1 Veicolo consentito!");
         return;
       }
@@ -2424,6 +2494,7 @@ const Rules2Engine = {
     const balEl = document.getElementById("cambio-megoin-balance");
     if (balEl) balEl.textContent = Wallet.getMegoin();
     tgHaptic("selection");
+    if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("modal_open");
     document.getElementById("modal-banco-cambio")?.showModal();
   },
 
@@ -2431,6 +2502,7 @@ const Rules2Engine = {
     const currentMegoin = Wallet.getMegoin();
     if (currentMegoin < megoinCost) {
       tgHaptic("error");
+      if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("unlucky");
       tgAlert("Megoin insufficienti!");
       return;
     }
@@ -2444,7 +2516,10 @@ const Rules2Engine = {
 
       if (res?.success) {
         tgHaptic("success");
-        if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("cash_register");
+        if (typeof SoundEngine !== "undefined") {
+          SoundEngine.playSfx("cash_register");
+          SoundEngine.playSfx("lucky");
+        }
         if (window.confetti) confetti({ particleCount: 60, spread: 50 });
 
         const nuovoSaldo = res.nuovoSaldoMegoin !== undefined ? res.nuovoSaldoMegoin : (currentMegoin - megoinCost);
@@ -2502,6 +2577,7 @@ const Rules2Engine = {
 
     c.innerHTML = html;
     tgHaptic("selection");
+    if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("modal_open");
     document.getElementById("drawer-squad")?.showModal();
   },
 
@@ -2540,11 +2616,13 @@ const Rules2Engine = {
     }
 
     tgHaptic("selection");
+    if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("clue_found");
     document.getElementById("drawer-dossier")?.showModal();
   },
 
   openAbandonModal: function() {
     tgHaptic("warning");
+    if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("modal_open");
     document.getElementById("modal-abandon")?.showModal();
   },
 
@@ -2554,10 +2632,15 @@ const Rules2Engine = {
     AppState.activeSession.hero = null;
     AppState.activeSession.currentNode = null;
     AppState.activeSession.engineState = null;
+    if (typeof SoundEngine !== "undefined") SoundEngine.stopHeartbeat();
     this.leaveGameToHub();
   },
 
   leaveGameToHub: function() {
+    if (typeof SoundEngine !== "undefined") {
+      SoundEngine.stopHeartbeat();
+      SoundEngine.playBgm("hub");
+    }
     AppRouter.navigate("games");
   }
 };
