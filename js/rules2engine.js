@@ -1,12 +1,20 @@
 // ============================================================================
 // PROJECT: ESTIQATSY SYNDICATE & RPG PLATFORM
-// FILE: js/rules2engine.js (VERSIONE 2.0 - FAST RUNTIME & PUNCHY CTA)
-// LAYER: GAMEPLAY LOOP, COMBAT D20, HUD VITALS, 5 DRAWERS & DIEGETIC TRIAGE
+// FILE: js/rules2engine.js (VERSIONE 3.0 - 4-PILLAR COCKPIT & DETERMINISTIC RPG)
+// LAYER: GAMEPLAY LOOP, D20 COMBAT, ASSETTO LOADOUT, CRAFTING & FORFEIT ENGINE
 // ============================================================================
 
 // ----------------------------------------------------------------------------
-// 1. UTILITY CONDIVISE & GUARDIE DI SICUREZZA
+// 1. UTILITY CONDIVISE & COSTANTI RICETTARIO CHIMICO
 // ----------------------------------------------------------------------------
+const RULES2_SYNTHESIS_RECIPES = {
+  "spore duna": { toolName: "Capsulatrice Inox", toolId: "EQP_0031_S1_E0", prodName: "Psilocybe Duna", prodId: "EQP_0039_S1_E0", turns: 2, icon: "🍄" },
+  "talea indoor": { toolName: "Estrattore BHO", toolId: "EQP_0023_S1_E0", prodName: "Danpei Gold", prodId: "EQP_0037_S1_E0", turns: 2, icon: "🌿" },
+  "mosto padule": { toolName: "Alambicco Rame", toolId: "EQP_0024_S1_E0", prodName: "Ponce Caldo", prodId: "EQP_0038_S1_E0", turns: 1, icon: "☕" },
+  "resina grezza": { toolName: "Fornello Taglio", toolId: "EQP_0030_S1_E0", prodName: "Brown Bufalina", prodId: "EQP_0042_S1_E0", turns: 3, icon: "🥄" },
+  "scarto solvente": { toolName: "Fornello Taglio", toolId: "EQP_0030_S1_E0", prodName: "Puro Bogotà", prodId: "EQP_0040_S1_E0", turns: 3, icon: "💎" }
+};
+
 if (typeof Rules2_ClassifyEntity === "undefined") {
   window.Rules2_ClassifyEntity = function(item) {
     if (!item) return "STRUMENTI";
@@ -55,6 +63,7 @@ if (typeof tgAlert === "undefined") {
 // ----------------------------------------------------------------------------
 const Rules2Engine = {
   _isBusy: false,
+  _activeHeroTab: "scheda",
 
   _setBusy: function(flag) {
     this._isBusy = flag;
@@ -72,7 +81,7 @@ const Rules2Engine = {
     });
   },
 
-  // Flusso Cabinato: Modal "INSERT MEGOIN 🪙" (CTA Compatte 50/50)
+  // Flusso Cabinato: Rilevamento Partita Attiva vs Nuova Partita
   launchSession: function(gameKey, epNum, canContinueFree, savedHero) {
     const saga = (AppState.games.catalog || []).find(g => g.gameKey === gameKey);
     const modal = document.getElementById("modal-insert-megoin");
@@ -86,13 +95,14 @@ const Rules2Engine = {
     const activeBox = document.getElementById("arcade-active-game-box");
     const insertBox = document.getElementById("arcade-insert-coin-box");
 
+    // SE C'È UNA PARTITA ATTIVA E NON ABBANDONATA: Mostra opzione Riprendi o Sovrascrivi
     if (saga && saga.hasActiveGame && saga.activePartitaId) {
       if (activeBox) activeBox.classList.remove("hidden");
       if (insertBox) insertBox.classList.add("hidden");
 
       activeBox.innerHTML = `
         <h3 class="arcade-title">${saga.serie || 'AVVENTURA'}</h3>
-        <p class="arcade-subtitle">Partita attiva rilevata (ID: ${saga.activePartitaId})</p>
+        <p class="arcade-subtitle">Sessione attiva salvata (ID: ${saga.activePartitaId})</p>
         <div class="arcade-actions-50-50">
           <button id="btn-arcade-new" class="btn btn-outline border-amber-500/40 text-amber-300">Ricomincia (1 🪙)</button>
           <button id="btn-arcade-resume" class="btn btn-success text-slate-950 font-black">Riprendi ▶️</button>
@@ -103,11 +113,13 @@ const Rules2Engine = {
         modal.close();
         const activeFase = saga.activeFase || saga.fase || (saga.statoPartita && saga.statoPartita.fase) || "IN_GIOCO";
 
+        // SE SOSPESA DURANTE IL WIZARD: Torna allo step esatto del Wizard
         if (activeFase.startsWith("WIZARD_")) {
           if (typeof Rules2Wizard !== "undefined") {
             Rules2Wizard.resumeSession(gameKey, saga.activeEpisodio || epNum, saga);
           }
         } else {
+          // SE IN GIOCO: Ripristina la sessione e torna allo snodo narrativo attivo
           AppState.activeSession.engineKey = "Rules2";
           AppState.activeSession.gameKey = gameKey;
           AppState.activeSession.episodio = saga.activeEpisodio || epNum;
@@ -126,6 +138,7 @@ const Rules2Engine = {
         this._setupArcadeCoinScreen(gameKey, epNum, canContinueFree, savedHero, modal);
       };
     } else {
+      // PARTITA ABBANDONATA O NUOVA: Mostra ESCLUSIVAMENTE "Inserisci 1 🪙 e Gioca"
       if (activeBox) activeBox.classList.add("hidden");
       if (insertBox) insertBox.classList.remove("hidden");
       this._setupArcadeCoinScreen(gameKey, epNum, canContinueFree, savedHero, modal);
@@ -201,7 +214,12 @@ const Rules2Engine = {
 
         AppState.activeSession.hero = {
           ...res.statoEroe,
-          mediaUrl: avatarUrl || res.statoEroe?.mediaUrl || ""
+          mediaUrl: avatarUrl || res.statoEroe?.mediaUrl || "",
+          armaAttiva: res.statoEroe?.armaAttiva || "",
+          veicoloAttivo: res.statoEroe?.veicoloAttivo || "",
+          sostanzaAttiva: "",
+          talismanoAttivo: "",
+          sintesiInCorso: res.statoEroe?.sintesiInCorso || []
         };
 
         AppState.activeSession.currentNode = res.nodoIniziale;
@@ -213,6 +231,14 @@ const Rules2Engine = {
           backpackFilter: "ALL",
           emporioMode: "buy"
         };
+
+        // Aggiornamento catalogo locale per indicare partita attiva
+        const saga = (AppState.games.catalog || []).find(g => g.gameKey === payloadParams.gameKey);
+        if (saga) {
+          saga.hasActiveGame = true;
+          saga.activePartitaId = res.partitaId;
+          saga.activeEpisodio = payloadParams.episodio;
+        }
 
         if (res.nuovoSaldoMegoin !== undefined) {
           Wallet.setMegoin(res.nuovoSaldoMegoin);
@@ -243,7 +269,7 @@ const Rules2Engine = {
     const currentHero = AppState.activeSession.hero;
     if (!currentNode) return;
 
-    // Monitor Cardiaco Ansia (PV <= 25%)
+    // Monitor Cardiaco Bassa Salute (PV <= 25%)
     if (currentHero && currentHero.pvMax) {
       const pvRatio = (currentHero.pv || 0) / currentHero.pvMax;
       if (pvRatio <= 0.25 && currentHero.pv > 0) {
@@ -257,7 +283,7 @@ const Rules2Engine = {
     const isVictory = (String(currentNode.id).includes("SND_END") || currentNode.sottocategoria === "gancio" || currentNode.sottocategoria === "conclusione");
     const actBox = document.getElementById("scene-actions-container");
 
-    // 1. ESITO MORTE: 50/50 [ Riprova ] [ Esci ]
+    // 1. ESITO MORTE: 50/50 [ Riprova (1 🪙) ] [ Esci ]
     if (isDefeat) {
       if (typeof SoundEngine !== "undefined") {
         SoundEngine.stopHeartbeat();
@@ -270,7 +296,7 @@ const Rules2Engine = {
             <button onclick="Rules2Engine.launchSession('${AppState.activeSession.gameKey}', ${AppState.activeSession.episodio}, false, null)" class="btn btn-warning font-black">
               Riprova (1 🪙) 🔄
             </button>
-            <button onclick="Rules2Engine.leaveGameToHub()" class="btn btn-outline border-white/20 text-white font-bold">
+            <button onclick="Rules2Engine.confirmAbandon()" class="btn btn-outline border-white/20 text-white font-bold">
               Esci 🚪
             </button>
           </div>
@@ -279,7 +305,7 @@ const Rules2Engine = {
       return;
     }
 
-    // 2. ESITO VITTORIA: 50/50 [ Rigioca ] [ Avanza ]
+    // 2. ESITO VITTORIA: 50/50 [ Rigioca Ep. ] [ Episodio Succ. › ]
     if (isVictory) {
       if (typeof SoundEngine !== "undefined") {
         SoundEngine.stopHeartbeat();
@@ -405,12 +431,11 @@ const Rules2Engine = {
       return;
     }
 
-    // BGM Esplorazione Standard
     if (typeof SoundEngine !== "undefined") {
       SoundEngine.playEpisodeBgm(AppState.activeSession.gameKey, AppState.activeSession.episodio, "explore");
     }
 
-    // CASO 2: EVENTO D20
+    // CASO 2: EVENTO D20 (DETERMINISTICO)
     if (isEvento) {
       const statReq = currentNode.statRichiesta || "DESTREZZA";
       const shortStat = statReq.substring(0, 3).toUpperCase();
@@ -489,7 +514,7 @@ const Rules2Engine = {
     } else {
       actBox.innerHTML = `
         <button onclick="Rules2Engine.leaveGameToHub()" class="btn btn-sm btn-block btn-outline border-white/20 font-black h-11 uppercase">
-          Esci 🚪
+          Torna all'Hub 🏠
         </button>
       `;
     }
@@ -501,6 +526,23 @@ const Rules2Engine = {
 
     tgHaptic("selection");
     if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("card_flip");
+
+    // Avanzamento laboratorio di sintesi chimica ad ogni snodo
+    const h = AppState.activeSession.hero;
+    if (h && h.sintesiInCorso && h.sintesiInCorso.length > 0) {
+      const stillCrafting = [];
+      for (let sc of h.sintesiInCorso) {
+        sc.turniMancanti -= 1;
+        if (sc.turniMancanti <= 0) {
+          h.inventario = h.inventario || [];
+          h.inventario.push(sc.prodotto);
+          tgAlert(`⚗️ Sintesi completata: 1 dose di ${sc.icon || '💊'} ${sc.prodotto} aggiunta allo zaino!`);
+        } else {
+          stillCrafting.push(sc);
+        }
+      }
+      h.sintesiInCorso = stillCrafting;
+    }
 
     try {
       const res = await apiCall("game_node", {
@@ -548,6 +590,7 @@ const Rules2Engine = {
     }, durationMs || 700);
   },
 
+  // RISOLUZIONE EVENTO D20: MAI RIPETERE LO STESSO SNODO SE FALLITO
   executeEventRoll: async function(nodeId, statName, cdVal) {
     if (this._isBusy) return;
     this._setBusy(true);
@@ -577,7 +620,9 @@ const Rules2Engine = {
         } else {
           tgHaptic("error");
           this.showFloatingDamage(d20 === 1 ? "💀 FUMBLE!" : "❌ Fallito!", false, true);
-          this.advanceToNode(node.destFallback || node.destFallimento);
+          // DETERMINISMO RIGIDO: Avanza sempre alla destinazione di fallback
+          const targetFail = node.destFallback || node.destFallimento || `SND_0001_S1_E${AppState.activeSession.episodio}`;
+          this.advanceToNode(targetFail);
         }
       }, 650);
     });
@@ -807,7 +852,7 @@ const Rules2Engine = {
   },
 
   // --------------------------------------------------------------------------
-  // 3. DEEP INSPECTION UNIVERSALE & I 5 CASSETTI COCKPIT
+  // 3. FASCICOLO APPROFONDITO UNIVERSALE (SCHEDA 3D CENTRATA GLASSMORPHISM)
   // --------------------------------------------------------------------------
   inspectCurrentEnemyDetail: function() {
     const enemy = AppState.activeSession.currentNode;
@@ -837,6 +882,9 @@ const Rules2Engine = {
 
   inspectEntityDetail: function(it) {
     if (!it) return;
+
+    const modal = document.getElementById("modal-universal-detail");
+    if (!modal) return;
 
     const s = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
     const h = (id, val) => { const el = document.getElementById(id); if (el) el.innerHTML = val; };
@@ -871,79 +919,98 @@ const Rules2Engine = {
       }
     }
 
+    // TASTO AZIONE CONTESTUALE COLLEGATO ALL'ASSETTO
     const btn = document.getElementById("uni-detail-action-btn");
     if (btn) {
+      const cat = Rules2_ClassifyEntity(it);
       if (it.isEnemyInspection) {
-        btn.textContent = "Torna";
+        btn.textContent = "Attacca ⚔️";
+        btn.className = "btn btn-error btn-sm w-full font-black uppercase";
+        btn.onclick = () => {
+          modal.close();
+          this.combatAction("attack_round");
+        };
+      } else if (cat === "ARMI") {
+        btn.textContent = "Impugna 🗡️";
         btn.className = "btn btn-primary btn-sm w-full font-black uppercase";
-        btn.onclick = () => document.getElementById("modal-universal-detail")?.close();
-      } else if (it.isFromBackpack) {
-        const cat = Rules2_ClassifyEntity(it);
-        const isArma = cat === "ARMI";
-        const isVeicolo = cat === "VEICOLI";
-        const isConsumabile = (cat === "CURE" || cat === "DROGHE");
-
-        if (isConsumabile) {
-          btn.textContent = (cat === "DROGHE") ? "Assumi" : "Usa";
-          btn.className = "btn btn-success btn-sm w-full font-black uppercase";
-          btn.onclick = () => {
-            this.useBackpackItem(it.nome);
-            document.getElementById("modal-universal-detail")?.close();
-          };
-        } else if (isArma) {
-          btn.textContent = "Impugna";
-          btn.className = "btn btn-primary btn-sm w-full font-black uppercase";
-          btn.onclick = () => {
-            this.equipItem(it.nome, "weapon");
-            document.getElementById("modal-universal-detail")?.close();
-          };
-        } else if (isVeicolo) {
-          btn.textContent = "Guida";
-          btn.className = "btn btn-primary btn-sm w-full font-black uppercase";
-          btn.onclick = () => {
-            this.equipItem(it.nome, "vehicle");
-            document.getElementById("modal-universal-detail")?.close();
-          };
-        } else {
-          btn.textContent = "Chiudi";
-          btn.className = "btn btn-ghost btn-sm w-full text-slate-400 font-bold uppercase";
-          btn.onclick = () => document.getElementById("modal-universal-detail")?.close();
-        }
+        btn.onclick = () => {
+          this.equipItem(it.nome, "weapon");
+          modal.close();
+        };
+      } else if (cat === "VEICOLI") {
+        btn.textContent = "Guida 🛴";
+        btn.className = "btn btn-primary btn-sm w-full font-black uppercase";
+        btn.onclick = () => {
+          this.equipItem(it.nome, "vehicle");
+          modal.close();
+        };
+      } else if (cat === "DROGHE" || cat === "CURE") {
+        btn.textContent = (cat === "DROGHE") ? "Assumi 💊" : "Usa ❤️";
+        btn.className = "btn btn-success btn-sm w-full font-black uppercase";
+        btn.onclick = () => {
+          this.useBackpackItem(it.nome);
+          modal.close();
+        };
       } else {
-        btn.textContent = "Chiudi";
+        btn.textContent = "Chiudi ✕";
         btn.className = "btn btn-ghost btn-sm w-full text-slate-400 font-bold uppercase";
-        btn.onclick = () => document.getElementById("modal-universal-detail")?.close();
+        btn.onclick = () => modal.close();
       }
     }
 
     if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("modal_open");
-    document.getElementById("modal-universal-detail")?.showModal();
+    modal.showModal();
   },
 
-  // 1. Scheda Eroe
-  openHeroSheetDrawer: function() {
+  // --------------------------------------------------------------------------
+  // 4. I 4 PILASTRI TATTICI DEL COCKPIT FOOTER
+  // --------------------------------------------------------------------------
+
+  // 1. PILASTRO EROE: MODALE A 4 TAB (Scheda, Zaino, Squadra, Dossier)
+  openHeroModal: function(tabName = "scheda") {
+    this._activeHeroTab = tabName;
     const h = AppState.activeSession.hero;
     if (!h) return;
 
+    const modal = document.getElementById("drawer-hero-sheet");
+    if (!modal) return;
+
+    this.renderHeroModalContent();
+    tgHaptic("selection");
+    if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("modal_open");
+    modal.showModal();
+  },
+
+  setHeroModalTab: function(tab) {
+    this._activeHeroTab = tab;
+    this.renderHeroModalContent();
+    tgHaptic("selection");
+  },
+
+  renderHeroModalContent: function() {
+    const h = AppState.activeSession.hero;
+    const tab = this._activeHeroTab;
     const s = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
 
+    // Header Eroe
     s("sheet-hero-name", h.nomeEroe || "Avventuriero");
     s("sheet-hero-class", `${h.classe || "Avventuriero"} (${h.schieramentoPolitico || "Destra"})`);
     s("sheet-hero-gold", `${h.oro || 0} 🟡`);
 
-    const sheetAvatarImg = document.getElementById("sheet-hero-avatar-img");
-    const sheetAvatarFallback = document.getElementById("sheet-hero-avatar-fallback");
-    if (sheetAvatarImg && sheetAvatarFallback) {
+    const avatarImg = document.getElementById("sheet-hero-avatar-img");
+    const avatarFallback = document.getElementById("sheet-hero-avatar-fallback");
+    if (avatarImg && avatarFallback) {
       if (h.mediaUrl && h.mediaUrl !== "—" && h.mediaUrl.startsWith("http")) {
-        sheetAvatarImg.src = h.mediaUrl;
-        sheetAvatarImg.classList.remove("hidden");
-        sheetAvatarFallback.classList.add("hidden");
+        avatarImg.src = h.mediaUrl;
+        avatarImg.classList.remove("hidden");
+        avatarFallback.classList.add("hidden");
       } else {
-        sheetAvatarImg.classList.add("hidden");
-        sheetAvatarFallback.classList.remove("hidden");
+        avatarImg.classList.add("hidden");
+        avatarFallback.classList.remove("hidden");
       }
     }
 
+    // Calcolo modificatori puri ed effettivi
     const stats = h.stats || { FORZA: 10, DESTREZZA: 10, INTELLIGENZA: 10 };
     const mods = h.modificatori || { FORZA: 0, DESTREZZA: 0, INTELLIGENZA: 0 };
 
@@ -966,128 +1033,143 @@ const Rules2Engine = {
         : "Nessuna abilità attiva.";
     }
 
-    tgHaptic("selection");
-    if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("modal_open");
-    document.getElementById("drawer-hero-sheet")?.showModal();
-  },
-
-  // 2. Zaino
-  openBackpackDrawer: function() {
+    // Selettore visivo per tab interni se presenti
     this.filterBackpack(AppState.activeSession.engineState?.backpackFilter || "ALL");
+  },
+
+  // 2. PILASTRO ASSETTO: PLANCIA OPERATIVA & BANCO DI SINTESI CLANDESTINA
+  openAssettoModal: function() {
+    const h = AppState.activeSession.hero;
+    if (!h) return;
+
+    let modal = document.getElementById("modal-cockpit-assetto");
+    if (!modal) {
+      // Creazione dinamica modale se non ancora presente nel DOM
+      modal = document.createElement("dialog");
+      modal.id = "modal-cockpit-assetto";
+      modal.className = "modal modal-middle";
+      document.body.appendChild(modal);
+    }
+
+    const inv = h.inventario || [];
+
+    // Rileva ricette sintetizzabili (possesso strumento + ingrediente)
+    const availableRecipes = [];
+    for (let ingrKey in RULES2_SYNTHESIS_RECIPES) {
+      const rec = RULES2_SYNTHESIS_RECIPES[ingrKey];
+      const hasTool = inv.some(i => i.toLowerCase().includes(rec.toolName.toLowerCase()));
+      const hasIngr = inv.some(i => i.toLowerCase().includes(ingrKey.toLowerCase()));
+      if (hasTool && hasIngr) {
+        availableRecipes.push(rec);
+      }
+    }
+
+    // Processi di lavorazione in corso
+    const activeSyntheses = h.sintesiInCorso || [];
+
+    modal.innerHTML = `
+      <div class="modal-box drawer-standard-box">
+        <div class="drawer-header-row">
+          <div class="flex items-center space-x-2">
+            <span class="text-lg">🔱</span>
+            <h3 class="drawer-title">Assetto Tattico & Sintesi</h3>
+          </div>
+          <button onclick="document.getElementById('modal-cockpit-assetto').close()" class="btn btn-xs btn-circle btn-ghost">✕</button>
+        </div>
+
+        <!-- SLOT ATTIVI DEL TURNO -->
+        <div class="space-y-2">
+          <div class="text-[9.5px] font-bold text-sky-400 uppercase tracking-wider">Dotazione Operativa del Turno</div>
+          
+          <div class="assetto-slot-card">
+            <div>
+              <span class="text-xs font-bold text-white">🗡️ Arma in pugno:</span>
+              <span class="text-xs text-sky-300 ml-1 font-mono">${h.armaAttiva || 'Pugni nudi'}</span>
+            </div>
+            <button onclick="Rules2Engine.openHeroModal('zaino')" class="btn btn-xs btn-outline border-white/20">Cambia</button>
+          </div>
+
+          <div class="assetto-slot-card">
+            <div>
+              <span class="text-xs font-bold text-white">🛴 Veicolo attivo:</span>
+              <span class="text-xs text-sky-300 ml-1 font-mono">${h.veicoloAttivo || 'A piedi'}</span>
+            </div>
+            <button onclick="Rules2Engine.openHeroModal('zaino')" class="btn btn-xs btn-outline border-white/20">Cambia</button>
+          </div>
+        </div>
+
+        <!-- BANCO SINTESI CHIMICA -->
+        <div class="assetto-crafting-box mt-2">
+          <div class="text-[9.5px] font-bold text-purple-300 uppercase tracking-wider">⚗️ Banco di Sintesi Clandestina</div>
+          
+          ${activeSyntheses.length > 0 ? `
+            <div class="space-y-1 py-1">
+              ${activeSyntheses.map(s => `
+                <div class="text-[11px] text-slate-300 flex justify-between">
+                  <span>⏳ Distillazione <b>${s.prodotto}</b></span>
+                  <span class="font-mono text-amber-300">${s.turniMancanti} snodi</span>
+                </div>
+              `).join('')}
+            </div>
+          ` : ''}
+
+          ${availableRecipes.length > 0 ? `
+            <div class="space-y-1.5 pt-1">
+              ${availableRecipes.map(r => `
+                <div class="flex items-center justify-between bg-black/40 p-2 rounded-lg">
+                  <div class="text-[11px] text-white">
+                    <span>${r.icon}</span> <b>${r.prodName}</b> (${r.turns} snodi)
+                  </div>
+                  <button onclick="Rules2Engine.startSynthesis('${r.prodName}', '${r.toolName}')" class="btn btn-xs btn-secondary font-black uppercase">
+                    Distilla
+                  </button>
+                </div>
+              `).join('')}
+            </div>
+          ` : `
+            <p class="text-[10.5px] text-slate-400 italic">Nessuna combinazione reagente/strumento pronta nello zaino.</p>
+          `}
+        </div>
+
+        <button onclick="document.getElementById('modal-cockpit-assetto').close()" class="btn btn-sm btn-ghost text-slate-400 font-bold uppercase mt-2">
+          Chiudi ✕
+        </button>
+      </div>
+    `;
+
     tgHaptic("selection");
     if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("modal_open");
-    document.getElementById("drawer-backpack")?.showModal();
+    modal.showModal();
   },
 
-  _findEntityData: function(itemName) {
-    if (!itemName) return null;
-    const catalog = AppState.activeSession.shopCatalog || [];
-    const clean = String(itemName).trim().toLowerCase();
-    const found = catalog.find(x => String(x.nome || "").trim().toLowerCase() === clean || String(x.id || "").trim().toLowerCase() === clean);
-    if (found) return found;
-    return { nome: itemName, categoria: Rules2_ClassifyEntity({ nome: itemName }) };
-  },
-
-  filterBackpack: function(cat) {
-    if (!AppState.activeSession.engineState) AppState.activeSession.engineState = {};
-    AppState.activeSession.engineState.backpackFilter = cat || "ALL";
-
-    const tabsContainer = document.getElementById("backpack-tabs");
-    if (tabsContainer) {
-      tabsContainer.querySelectorAll(".rpg-category-chip").forEach(btn => {
-        const btnText = btn.textContent.toUpperCase();
-        const isMatch = (cat === "ALL" && btnText.includes("TUTTI")) || btnText.includes(cat);
-        btn.className = `rpg-category-chip badge ${isMatch ? 'badge-info active' : 'badge-ghost'}`;
-      });
-    }
-
-    const c = document.getElementById("backpack-slots-container");
+  startSynthesis: function(prodName, toolName) {
     const h = AppState.activeSession.hero;
-    if (!c || !h) return;
+    if (!h) return;
 
-    let inv = h.inventario || [];
-    if (inv.length === 0) {
-      c.innerHTML = `<div class="empty-state-card">Zaino vuoto.</div>`;
-      return;
-    }
-
-    if (cat && cat !== "ALL") {
-      inv = inv.filter(itemName => {
-        const ent = this._findEntityData(itemName);
-        return Rules2_ClassifyEntity(ent) === cat;
-      });
-      if (inv.length === 0) {
-        c.innerHTML = `<div class="empty-state-card">Nessun articolo per <b>${cat}</b>.</div>`;
-        return;
+    // Trova ingrediente corrispondente e rimuovilo dallo zaino
+    for (let ingrKey in RULES2_SYNTHESIS_RECIPES) {
+      const rec = RULES2_SYNTHESIS_RECIPES[ingrKey];
+      if (rec.prodName === prodName) {
+        const idx = (h.inventario || []).findIndex(i => i.toLowerCase().includes(ingrKey.toLowerCase()));
+        if (idx !== -1) {
+          h.inventario.splice(idx, 1);
+          h.sintesiInCorso = h.sintesiInCorso || [];
+          h.sintesiInCorso.push({
+            prodotto: rec.prodName,
+            turniMancanti: rec.turns,
+            icon: rec.icon
+          });
+          tgHaptic("success");
+          if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("drug");
+          tgAlert(`⚗️ Avviata lavorazione di ${rec.prodName} (pronta tra ${rec.turns} snodi).`);
+          this.openAssettoModal();
+          return;
+        }
       }
-    }
-
-    c.innerHTML = inv.map(it => {
-      const isArma = (h.armaAttiva && it.toLowerCase() === h.armaAttiva.toLowerCase());
-      const isVeicolo = (h.veicoloAttivo && it.toLowerCase() === h.veicoloAttivo.toLowerCase());
-      const ent = this._findEntityData(it);
-      const category = Rules2_ClassifyEntity(ent);
-
-      return `
-        <div class="backpack-slot-card">
-          <div onclick="Rules2Engine.inspectEntityDetail({ ...Rules2Engine._findEntityData('${Rules2_SafeAttr(it)}'), isFromBackpack: true })" class="slot-info-clickable">
-            <div class="slot-name">${it}</div>
-            <div class="slot-tag ${isArma || isVeicolo ? 'active-gear' : ''}">
-              ${isArma ? '🗡️ [IN PUGNO]' : (isVeicolo ? '🛴 [IN USO]' : category)}
-            </div>
-          </div>
-          <button onclick="Rules2Engine.inspectEntityDetail({ ...Rules2Engine._findEntityData('${Rules2_SafeAttr(it)}'), isFromBackpack: true })" class="btn btn-xs btn-outline border-white/20 text-slate-300 font-bold">
-            Fascicolo
-          </button>
-        </div>
-      `;
-    }).join("");
-  },
-
-  equipItem: async function(itemName, type) {
-    if (!AppState.activeSession.gameKey) return;
-    try {
-      const res = await apiCall("game_action", {
-        subAction: "equip",
-        item: itemName,
-        type: type,
-        gameKey: AppState.activeSession.gameKey,
-        episodio: AppState.activeSession.episodio
-      });
-      if (res?.success) {
-        tgHaptic("selection");
-        if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("click");
-        AppState.activeSession.hero = { ...AppState.activeSession.hero, ...res.statoEroe };
-        this.renderNode(AppState.activeSession.currentNode, AppState.activeSession.hero);
-        this.filterBackpack(AppState.activeSession.engineState.backpackFilter);
-      }
-    } catch (e) {
-      tgAlert("Errore: " + e.message);
     }
   },
 
-  useBackpackItem: async function(itemName) {
-    if (!AppState.activeSession.gameKey) return;
-    try {
-      const res = await apiCall("game_action", {
-        subAction: "use_item",
-        item: itemName,
-        gameKey: AppState.activeSession.gameKey,
-        episodio: AppState.activeSession.episodio
-      });
-      if (res?.success) {
-        tgHaptic("success");
-        if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("drug");
-        AppState.activeSession.hero = { ...AppState.activeSession.hero, ...res.statoEroe };
-        this.renderNode(AppState.activeSession.currentNode, AppState.activeSession.hero);
-        this.filterBackpack(AppState.activeSession.engineState.backpackFilter);
-      }
-    } catch (e) {
-      tgAlert("Errore: " + e.message);
-    }
-  },
-
-  // 3. Emporio Ciccio & Co.
+  // 3. PILASTRO EMPORIO DI CICCIO (Acquisto, Vendita, Cambio)
   openEmporioDrawer: function() {
     const h = AppState.activeSession.hero;
     const goldDisp = document.getElementById("emporio-gold-display");
@@ -1296,104 +1378,177 @@ const Rules2Engine = {
     }
   },
 
-  // 4. Squadra & Zombi
-  openSquadDrawer: function() {
-    const c = document.getElementById("squad-list-container");
-    const h = AppState.activeSession.hero;
-    if (!c || !h) return;
-
-    let html = "";
-    const comp = h.compagni || [];
-    const compData = h.compagniData || {};
-    const zombies = h.zombieSquad || [];
-
-    if (comp.length === 0 && zombies.length === 0) {
-      html = `<div class="empty-state-card">In solitaria. Nessun alleato.</div>`;
-    } else {
-      html += comp.map(a => {
-        const d = compData[a] || {};
-        const hpText = d.pv ? ` (❤️ ${d.pv}/${d.pvMax || 15} PV)` : "";
-        return `<div class="squad-member-card"><span>🤝 ${a}${hpText}</span> <span class="badge-human">Alleato</span></div>`;
-      }).join("");
-      html += zombies.map(z => `
-        <div class="squad-member-card zombie">
-          <span>🧟 ${z.nome}</span> <span class="badge-zombie">Danno x2 (❤️ ${z.pv}/${z.pvMax || 15})</span>
-        </div>
-      `).join("");
-    }
-
-    c.innerHTML = html;
-    tgHaptic("selection");
-    if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("modal_open");
-    document.getElementById("drawer-squad")?.showModal();
-  },
-
-  // 5. Dossier & Inchiesta
-  openDossierDrawer: function() {
-    const c = document.getElementById("dossier-list-container");
-    const h = AppState.activeSession.hero;
-    if (!c || !h) return;
-
-    const inv = h.inventario || [];
-    const infoItems = inv.filter(it => {
-      const ent = this._findEntityData(it);
-      return Rules2_ClassifyEntity(ent) === "INFORMAZIONI";
-    });
-
-    if (infoItems.length === 0) {
-      c.innerHTML = `<div class="empty-state-card">Nessun reperto d'inchiesta.</div>`;
-    } else {
-      c.innerHTML = infoItems.map(p => {
-        const ent = this._findEntityData(p);
-        const sub = String(ent?.sottocategoria || "").toLowerCase();
-        const isPermanent = (sub === "prove" || sub === "prova");
-
-        return `
-          <div onclick="Rules2Engine.inspectEntityDetail(Rules2Engine._findEntityData('${Rules2_SafeAttr(p)}'))" class="dossier-evidence-card">
-            <div class="evidence-header">
-              <span class="evidence-name">📁 ${p}</span>
-              <span class="badge badge-xs badge-info">${ent?.categoria || 'Reperto'}</span>
-            </div>
-            <div class="evidence-desc">
-              ${isPermanent ? 'Organigramma: <b class="text-emerald-400">+1 INT permanente</b>' : `Inchiesta: <b class="text-amber-300">+1 INT situazionale</b>`}
-            </div>
-          </div>
-        `;
-      }).join("");
-    }
-
-    tgHaptic("selection");
-    if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("clue_found");
-    document.getElementById("drawer-dossier")?.showModal();
-  },
-
+  // 4. PILASTRO ESCI: FORFEIT DIEGETICO DEFINITIVO CON NOME GIOCATORE
   openAbandonModal: function() {
     tgHaptic("warning");
     if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("modal_open");
-    document.getElementById("modal-abandon")?.showModal();
+
+    const modal = document.getElementById("modal-abandon");
+    if (!modal) return;
+
+    const heroName = AppState.activeSession.hero?.nomeEroe || AppState.user?.nome || "Avventuriero";
+
+    modal.innerHTML = `
+      <div class="modal-box abandon-modal-box">
+        <span class="text-3xl">⚠️</span>
+        <h3 class="text-sm font-black text-white uppercase">Abbandoni la Darsena?</h3>
+        <p class="text-[11px] text-slate-300 leading-relaxed">
+          Hey <b>${heroName}</b>, sei sicuro di voler abbandonare la partita e perdere tutti i tuoi avanzamenti? Questa decisione è definitiva e archivia la sessione.
+        </p>
+        <div class="space-y-1.5 pt-2">
+          <button onclick="Rules2Engine.confirmAbandon()" class="btn btn-sm btn-error w-full font-black text-xs uppercase shadow-lg">
+            Abbandona Partita 🛑
+          </button>
+          <button onclick="document.getElementById('modal-abandon').close()" class="btn btn-sm btn-ghost w-full text-xs text-slate-400 font-bold uppercase">
+            Continua l'Avventura ›
+          </button>
+        </div>
+      </div>
+    `;
+
+    modal.showModal();
   },
 
-  confirmAbandon: function() {
+  confirmAbandon: async function() {
     document.getElementById("modal-abandon")?.close();
+
+    const gKey = AppState.activeSession.gameKey;
+    const ep = AppState.activeSession.episodio;
+    const pId = AppState.activeSession.partitaId;
+
+    try {
+      if (gKey && pId) {
+        await apiCall("game_action", {
+          subAction: "abandon",
+          gameKey: gKey,
+          episodio: ep,
+          partitaId: pId
+        });
+      }
+    } catch (e) {
+      console.warn("[confirmAbandon] Errore notifica server:", e);
+    }
+
+    // DISTRUZIONE STATO LOCALE: MAI PIÙ TASTO RIPRENDI
+    const saga = (AppState.games.catalog || []).find(g => g.gameKey === gKey);
+    if (saga) {
+      saga.hasActiveGame = false;
+      saga.activePartitaId = null;
+    }
+
     AppState.activeSession.partitaId = null;
     AppState.activeSession.hero = null;
     AppState.activeSession.currentNode = null;
     AppState.activeSession.engineState = null;
+
     if (typeof SoundEngine !== "undefined") SoundEngine.stopHeartbeat();
     this.leaveGameToHub();
   },
 
+  // Sospensione Sessione (Tasto Indietro verso Hub / Home)
   leaveGameToHub: function() {
     if (typeof SoundEngine !== "undefined") {
       SoundEngine.stopHeartbeat();
       SoundEngine.playBgm("hub");
     }
     AppRouter.navigate("games");
+  },
+
+  // Utility Inventario
+  _findEntityData: function(itemName) {
+    if (!itemName) return null;
+    const catalog = AppState.activeSession.shopCatalog || [];
+    const clean = String(itemName).trim().toLowerCase();
+    const found = catalog.find(x => String(x.nome || "").trim().toLowerCase() === clean || String(x.id || "").trim().toLowerCase() === clean);
+    if (found) return found;
+    return { nome: itemName, categoria: Rules2_ClassifyEntity({ nome: itemName }) };
+  },
+
+  filterBackpack: function(cat) {
+    if (!AppState.activeSession.engineState) AppState.activeSession.engineState = {};
+    AppState.activeSession.engineState.backpackFilter = cat || "ALL";
+
+    const c = document.getElementById("backpack-slots-container");
+    const h = AppState.activeSession.hero;
+    if (!c || !h) return;
+
+    let inv = h.inventario || [];
+    if (inv.length === 0) {
+      c.innerHTML = `<div class="empty-state-card">Zaino vuoto.</div>`;
+      return;
+    }
+
+    if (cat && cat !== "ALL") {
+      inv = inv.filter(itemName => {
+        const ent = this._findEntityData(itemName);
+        return Rules2_ClassifyEntity(ent) === cat;
+      });
+      if (inv.length === 0) {
+        c.innerHTML = `<div class="empty-state-card">Nessun articolo per <b>${cat}</b>.</div>`;
+        return;
+      }
+    }
+
+    c.innerHTML = inv.map(it => {
+      const isArma = (h.armaAttiva && it.toLowerCase() === h.armaAttiva.toLowerCase());
+      const isVeicolo = (h.veicoloAttivo && it.toLowerCase() === h.veicoloAttivo.toLowerCase());
+      const ent = this._findEntityData(it);
+      const category = Rules2_ClassifyEntity(ent);
+
+      return `
+        <div class="backpack-slot-card">
+          <div onclick="Rules2Engine.inspectEntityDetail({ ...Rules2Engine._findEntityData('${Rules2_SafeAttr(it)}'), isFromBackpack: true })" class="slot-info-clickable">
+            <div class="slot-name">${it}</div>
+            <div class="slot-tag ${isArma || isVeicolo ? 'active-gear' : ''}">
+              ${isArma ? '🗡️ [IN PUGNO]' : (isVeicolo ? '🛴 [IN USO]' : category)}
+            </div>
+          </div>
+          <button onclick="Rules2Engine.inspectEntityDetail({ ...Rules2Engine._findEntityData('${Rules2_SafeAttr(it)}'), isFromBackpack: true })" class="btn btn-xs btn-outline border-white/20 text-slate-300 font-bold">
+            Fascicolo
+          </button>
+        </div>
+      `;
+    }).join("");
+  },
+
+  equipItem: function(itemName, type) {
+    const h = AppState.activeSession.hero;
+    if (!h) return;
+
+    if (type === "weapon") h.armaAttiva = itemName;
+    if (type === "vehicle") h.veicoloAttivo = itemName;
+
+    tgHaptic("selection");
+    if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("click");
+    this.renderNode(AppState.activeSession.currentNode, h);
+    tgAlert(`Equipaggiato: ${itemName}`);
+  },
+
+  useBackpackItem: function(itemName) {
+    const h = AppState.activeSession.hero;
+    if (!h) return;
+
+    const ent = this._findEntityData(itemName);
+    const cat = Rules2_ClassifyEntity(ent);
+
+    const idx = (h.inventario || []).indexOf(itemName);
+    if (idx !== -1) {
+      h.inventario.splice(idx, 1);
+      if (ent.pv) {
+        h.pv = Math.min(h.pvMax || 25, (h.pv || 0) + ent.pv);
+        tgAlert(`Hai usato ${itemName} (+${ent.pv} PV)!`);
+      } else {
+        tgAlert(`Hai assunto ${itemName}!`);
+      }
+      tgHaptic("success");
+      if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("drug");
+      this.renderNode(AppState.activeSession.currentNode, h);
+    }
   }
 };
 
 // ----------------------------------------------------------------------------
-// 4. REGISTRAZIONE MOTORE & PROXY GLOBALI
+// 5. REGISTRAZIONE MOTORE & PROXY GLOBALI
 // ----------------------------------------------------------------------------
 window.Rules2Engine = Rules2Engine;
 
@@ -1405,11 +1560,16 @@ if (typeof window.EngineRegistry !== "undefined" && typeof window.EngineRegistry
 
 if (typeof window.GameEngine === "undefined") window.GameEngine = {};
 Object.assign(window.GameEngine, {
-  openHeroSheetDrawer: () => Rules2Engine.openHeroSheetDrawer(),
-  openBackpackDrawer: () => Rules2Engine.openBackpackDrawer(),
+  openHeroModal: (tab) => Rules2Engine.openHeroModal(tab),
+  openAssettoModal: () => Rules2Engine.openAssettoModal(),
+  openHeroSheetDrawer: () => Rules2Engine.openHeroModal("scheda"),
+  openBackpackDrawer: () => Rules2Engine.openHeroModal("zaino"),
+  openSquadDrawer: () => Rules2Engine.openHeroModal("squadra"),
+  openDossierDrawer: () => Rules2Engine.openHeroModal("dossier"),
   openEmporioDrawer: () => Rules2Engine.openEmporioDrawer(),
-  openSquadDrawer: () => Rules2Engine.openSquadDrawer(),
-  openDossierDrawer: () => Rules2Engine.openDossierDrawer(),
+  openAbandonModal: () => Rules2Engine.openAbandonModal(),
+  confirmAbandon: () => Rules2Engine.confirmAbandon(),
+  leaveGameToHub: () => Rules2Engine.leaveGameToHub(),
 
   setEmporioMode: (m) => Rules2Engine.setEmporioMode(m),
   buyFromEmporio: (id, p) => Rules2Engine.buyFromEmporio(id, p),
@@ -1426,8 +1586,5 @@ Object.assign(window.GameEngine, {
   executeResurrectZombie: (id) => Rules2Engine.executeResurrectZombie(id),
   skipNecromancy: () => Rules2Engine.skipNecromancy(),
   submitQuizAnswer: (a) => Rules2Engine.submitQuizAnswer(a),
-  advanceToNode: (t) => Rules2Engine.advanceToNode(t),
-  openAbandonModal: () => Rules2Engine.openAbandonModal(),
-  confirmAbandon: () => Rules2Engine.confirmAbandon(),
-  leaveGameToHub: () => Rules2Engine.leaveGameToHub()
+  advanceToNode: (t) => Rules2Engine.advanceToNode(t)
 });
