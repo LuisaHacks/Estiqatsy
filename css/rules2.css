@@ -1,6 +1,6 @@
 /* ============================================================================
    PROJECT: ESTIQATSY SYNDICATE & RPG PLATFORM
-   FILE: css/rules2.css (VERSIONE 11.0 - -5% CARD HEIGHT, MIRRORED LINES & TIGHT GEOMETRY)
+   FILE: css/rules2.css (VERSIONE 12.0 - ABOVE-THE-FOLD ZERO-SCROLL, FACTION GLOW & ZERO-BLEEDING)
    LAYER: ENGINE RULES2, WIZARD FULL-STAGE, COCKPIT & CASSETTI TATTICI
    ============================================================================ */
 
@@ -191,23 +191,24 @@
 }
 
 /* ----------------------------------------------------------------------------
-   3. WIZARD: HEADER COMPATTO & GEOMETRIA PULITA (ZERO VUOTO SOTTO)
+   3. WIZARD: HEADER COMPATTO & GEOMETRIA RIGIDA ABOVE-THE-FOLD (ZERO-SCROLL)
    ---------------------------------------------------------------------------- */
 body[data-active-screen="view-wizard"] .app-scroll-area {
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  overscroll-behavior-y: contain;
+  overflow: hidden !important; /* Disattiva lo scrollbar nel Wizard: tutto fisso nel viewport */
+  overscroll-behavior-y: none;
 }
 body[data-active-screen="view-wizard"] .app-content-wrapper {
-  min-height: 100%;
-  height: auto;
-  padding: 0.25rem 0.5rem 0.5rem 0.5rem;
+  height: 100% !important;
+  max-height: 100% !important;
+  min-height: 100% !important;
+  padding: 0.15rem 0.4rem 0.25rem 0.4rem !important;
   display: flex;
   flex-direction: column;
+  justify-content: space-between;
 }
 body[data-active-screen="view-wizard"] .main-app-footer,
 body[data-active-screen="view-wizard"] .cockpit-footer {
-  display: none;
+  display: none !important;
 }
 body[data-active-screen="view-wizard"] #main-wizard-footer {
   display: flex;
@@ -217,53 +218,56 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
   flex: 1 1 auto;
   display: flex;
   flex-direction: column;
+  justify-content: space-between;
   position: relative;
   width: 100%;
+  min-height: 0;
 }
 
 .wizard-step-panel {
   flex: 1 1 auto;
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  justify-content: space-between;
+  gap: 0.15rem;
+  min-height: 0;
 }
 
 .wizard-single-header {
   flex: none;
-  min-height: 36px;
+  min-height: 34px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.15rem 0.25rem;
+  padding: 0.1rem 0.25rem;
   border-bottom: 1px solid var(--tg-border, rgba(255, 255, 255, 0.08));
   gap: 0.35rem;
 }
 
 @media (max-width: 480px) {
   .wizard-single-header {
-    flex-wrap: wrap;
-    min-height: 38px;
-    gap: 0.2rem 0.35rem;
+    flex-wrap: nowrap;
+    min-height: 34px;
   }
 }
 
 .wizard-step-badge {
   background: var(--tg-amber, #F59E0B);
   color: #090D16;
-  font-size: 9.5px;
+  font-size: 9px;
   font-weight: 900;
-  padding: 0.18rem 0.5rem;
+  padding: 0.15rem 0.45rem;
   border-radius: 9999px;
   line-height: 1;
   flex-shrink: 0;
 }
 
 .wizard-step-title {
-  font-size: 0.82rem;
+  font-size: 0.8rem;
   font-weight: 900;
   color: #FFFFFF;
   margin: 0;
-  line-height: 1.2;
+  line-height: 1.1;
 }
 
 #wizard-shop-gold-display {
@@ -272,10 +276,10 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
   gap: 0.25rem;
   white-space: nowrap;
   font-family: monospace;
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 800;
   line-height: 1;
-  padding: 0.2rem 0.5rem;
+  padding: 0.15rem 0.45rem;
 }
 
 .wizard-view-toggle-pill {
@@ -289,9 +293,9 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
   flex-shrink: 0;
 }
 .toggle-pill-btn {
-  padding: 0.22rem 0.55rem;
+  padding: 0.2rem 0.5rem;
   border-radius: 9999px;
-  font-size: 9.5px;
+  font-size: 9px;
   font-weight: 800;
   color: var(--tg-text-muted, #94A3B8);
   background: transparent;
@@ -319,7 +323,7 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
 }
 
 /* ----------------------------------------------------------------------------
-   4. PALCOSCENICO CILINDRICO 3D (CARTA -5% ALTEZZA, GLOW ETEREO, LINEE SPECULARI)
+   4. PALCOSCENICO CILINDRICO 3D (FIT PROPORZIONALE, FACTION GLOW & ZERO BLEEDING)
    ---------------------------------------------------------------------------- */
 .coverflow-stage-outer {
   position: relative;
@@ -328,7 +332,9 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 8px 0.25rem 0 0.25rem; /* Azzerato il vuoto superiore ed inferiore */
+  padding: 2px 0.25rem 0 0.25rem;
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
 .coverflow-stage-wrapper {
@@ -341,11 +347,11 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
   perspective-origin: center center;
   user-select: none;
   touch-action: pan-y;
-  /* Ridotto del 5% in altezza */
-  height: clamp(450px, 62dvh, 515px);
+  /* Altezza ricalcolata proporzionalmente per evitare scrollbar */
+  height: clamp(375px, 53dvh, 440px) !important;
 }
 
-/* Scheda Collezionabile: 3D Hardware Accelerated & -5% Altezza */
+/* Scheda Collezionabile: 3D Hardware Accelerated & Above-The-Fold Fit */
 .coverflow-stage-wrapper .coverflow-card {
   position: absolute;
   border-radius: 1.15rem;
@@ -358,29 +364,58 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
   transform: translateZ(0);
-  transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.35s ease;
+  transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.35s ease, box-shadow 0.35s ease, border-color 0.35s ease;
   will-change: transform, opacity;
 
-  /* -5% in altezza: proporzione compatta */
-  width: clamp(285px, 82vw, 335px);
-  height: clamp(445px, 61dvh, 510px);
+  /* Proporzioni compatte calibrate */
+  width: clamp(280px, 84vw, 330px) !important;
+  height: clamp(370px, 52dvh, 435px) !important;
 
-  /* Bagliore leggero ed elegante */
   box-shadow: 0 0 1px rgba(255, 255, 255, 0.4), 0 0 12px rgba(255, 255, 255, 0.08);
 }
 
+/* BAGLIORE ATTIVO TEMATICO PER FAZIONE POLITICA (3D & LISTA) */
 .coverflow-stage-wrapper .coverflow-card.glow-active {
-  box-shadow: 0 0 2px rgba(255, 255, 255, 0.6), 0 0 16px rgba(255, 255, 255, 0.16);
+  box-shadow: 0 0 2px rgba(56, 189, 248, 0.8), 0 0 20px rgba(56, 189, 248, 0.35) !important;
+  border-color: rgba(56, 189, 248, 0.6) !important;
+}
+.coverflow-stage-wrapper .coverflow-card.glow-active[data-faction="destra"] {
+  box-shadow: 0 0 2px rgba(56, 189, 248, 0.9), 0 0 22px rgba(56, 189, 248, 0.4) !important;
+  border-color: rgba(56, 189, 248, 0.7) !important;
+}
+.coverflow-stage-wrapper .coverflow-card.glow-active[data-faction="sinistra"] {
+  box-shadow: 0 0 2px rgba(244, 63, 94, 0.9), 0 0 22px rgba(244, 63, 94, 0.4) !important;
+  border-color: rgba(244, 63, 94, 0.7) !important;
+}
+
+/* ZERO-BLEEDING: SILENZIAMENTO TESTUALE TOTALE SULLE CARTE LATERALI */
+.coverflow-stage-wrapper .coverflow-card:not(.glow-active) .coverflow-lore,
+.coverflow-stage-wrapper .coverflow-card:not(.glow-active) .watermark-cover-banner,
+.coverflow-stage-wrapper .coverflow-card:not(.glow-active) .coverflow-stats-row,
+.coverflow-stage-wrapper .coverflow-card:not(.glow-active) .coverflow-footer-row,
+.coverflow-stage-wrapper .coverflow-card:not(.glow-active) .coverflow-header-divider {
+  opacity: 0 !important;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+
+/* Maschera oscurante profonda per le carte laterali */
+.coverflow-stage-wrapper .coverflow-card:not(.glow-active) .coverflow-media-frame::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(9, 13, 22, 0.75);
+  pointer-events: none;
 }
 
 /* Responsive Tablet & Desktop tuning */
 @media (min-width: 640px) and (max-width: 1023px) {
   .coverflow-stage-wrapper {
-    height: clamp(500px, 64dvh, 575px);
+    height: clamp(430px, 56dvh, 480px) !important;
   }
   .coverflow-stage-wrapper .coverflow-card {
-    width: 340px;
-    height: clamp(490px, 62dvh, 565px);
+    width: 330px !important;
+    height: clamp(420px, 55dvh, 470px) !important;
   }
 }
 @media (min-width: 1024px) {
@@ -389,19 +424,19 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
     margin: 0 auto;
   }
   .coverflow-stage-wrapper {
-    height: clamp(540px, 66dvh, 605px);
+    height: clamp(460px, 58dvh, 510px) !important;
   }
   .coverflow-stage-wrapper .coverflow-card {
-    width: 360px;
-    height: clamp(520px, 64dvh, 590px);
+    width: 350px !important;
+    height: clamp(450px, 57dvh, 500px) !important;
   }
 }
 
-/* Media Frame (Immagine) */
+/* Media Frame (Immagine Compatta) */
 .coverflow-media-frame {
   position: relative;
   width: 100%;
-  height: clamp(210px, 29dvh, 245px);
+  height: clamp(160px, 23dvh, 195px) !important;
   background: #090D16;
   flex-shrink: 0;
   overflow: hidden;
@@ -413,31 +448,31 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
   object-position: center center;
 }
 
-/* HEADER CARTA: EMOJI, TITOLO E BADGE PERFETTAMENTE ALLINEATI */
+/* Header Carta */
 .coverflow-header-bar {
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
   z-index: 15;
-  height: 42px;
+  height: 38px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 0.85rem;
+  padding: 0 0.75rem;
 }
 .coverflow-title-group {
   display: flex;
   align-items: center;
-  gap: 0.4rem;
+  gap: 0.35rem;
   max-width: 68%;
 }
 .coverflow-title-icon {
-  font-size: 1rem;
+  font-size: 0.95rem;
   line-height: 1;
 }
 .coverflow-title {
-  font-size: 0.92rem;
+  font-size: 0.88rem;
   font-weight: 900;
   color: #FFFFFF;
   line-height: 1.1;
@@ -449,10 +484,10 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
 }
 
 .coverflow-badge-faction {
-  font-size: 0.72rem;
+  font-size: 0.68rem;
   font-weight: 900;
   letter-spacing: 0.05em;
-  padding: 0.22rem 0.55rem;
+  padding: 0.18rem 0.5rem;
   border-radius: 9999px;
   line-height: 1;
   display: flex;
@@ -472,20 +507,20 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
   box-shadow: 0 0 8px 1px rgba(244, 63, 94, 0.6);
 }
 
-/* RIGA BIANCA IN SOVRIMPRESSIONE SOTTO L'HEADER (SPECULARE AL FOOTER) */
+/* Riga Bianca Speculare */
 .coverflow-header-divider {
   position: absolute;
-  top: 42px;
-  left: 0.85rem;
-  right: 0.85rem;
+  top: 38px;
+  left: 0.75rem;
+  right: 0.75rem;
   height: 1px;
   background: rgba(255, 255, 255, 0.18);
   z-index: 15;
 }
 
-/* Area Lore & Dati (Compattata per assorbire il -5%) */
+/* Area Lore & Dati Compatta */
 .coverflow-details-box {
-  padding: 0.45rem 0.85rem 0.55rem 0.85rem;
+  padding: 0.35rem 0.75rem 0.45rem 0.75rem !important;
   flex: 1 1 auto;
   display: flex;
   flex-direction: column;
@@ -493,63 +528,63 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
   background: #0D131F;
 }
 
-/* Trittico Caratteristiche: FONT UNIFORMI (11px MONO) */
+/* Trittico Caratteristiche: FONT UNIFORMI (10.5px MONO) */
 .coverflow-stats-row {
-  min-height: 2.2rem;
+  min-height: 1.9rem !important;
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.35rem;
-  padding: 0.2rem 0.35rem;
-  border-radius: 0.55rem;
+  gap: 0.25rem;
+  padding: 0.1rem 0.25rem !important;
+  border-radius: 0.5rem;
   background: rgba(0, 0, 0, 0.55);
   border: 1px solid var(--tg-border, rgba(255, 255, 255, 0.08));
   align-items: center;
   font-family: monospace;
-  font-size: 11px;
+  font-size: 10.5px !important;
   font-weight: 800;
-  margin: 0.1rem 0 0.25rem 0;
+  margin: 0 0 0.15rem 0 !important;
 }
 .coverflow-stats-row > div {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.2rem;
+  gap: 0.15rem;
   border-right: 1px solid rgba(255, 255, 255, 0.08);
 }
 .coverflow-stats-row > div:last-child { border-right: none; }
-.stat-mod { font-size: 9.5px; color: #94A3B8; font-weight: 700; }
+.stat-mod { font-size: 9px; color: #94A3B8; font-weight: 700; }
 
-/* Testo Narrativo Lore */
+/* Testo Narrativo Lore Calibrato */
 .coverflow-lore {
   display: block;
   text-align: left;
-  font-size: 12px;
+  font-size: 11px !important;
   color: #CBD5E1;
-  line-height: 1.45;
-  margin: 0.1rem 0;
+  line-height: 1.35 !important;
+  margin: 0.1rem 0 !important;
   word-break: break-word;
-  min-height: 110px;
-  max-height: 145px;
+  min-height: clamp(55px, 9dvh, 75px) !important;
+  max-height: clamp(65px, 11dvh, 85px) !important;
   overflow-y: auto;
   scrollbar-width: none;
   -ms-overflow-style: none;
 }
 .coverflow-lore::-webkit-scrollbar { display: none; }
 
-/* Piede Scheda: DOTAZIONE A SINISTRA, BADGE PV E ORO CON ETICHETTA "ORO" */
+/* Piede Scheda: DOTAZIONE A LARGHEZZA 65% (NON TRONCATA) */
 .coverflow-footer-row {
-  min-height: 2.2rem;
-  padding-top: 0.35rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.18); /* Speculare alla linea superiore */
+  min-height: 1.9rem !important;
+  padding-top: 0.25rem !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.18);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 0.45rem;
+  gap: 0.35rem !important;
 }
 .coverflow-gear-label {
-  font-size: 10px;
+  font-size: 10px !important;
   color: #CBD5E1;
-  max-width: 55%;
+  max-width: 65% !important; /* Esteso dal 55% per eliminare troncamenti */
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -558,16 +593,16 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
 
 .coverflow-kpi-pill {
   display: flex;
-  gap: 0.3rem;
+  gap: 0.25rem;
   align-items: center;
   flex-shrink: 0;
 }
 .pill-pv, .pill-gold {
   background: rgba(9, 13, 22, 0.85);
   font-family: monospace;
-  font-size: 11px;
+  font-size: 9.5px !important;
   font-weight: 800;
-  padding: 0.2rem 0.45rem;
+  padding: 0.15rem 0.35rem !important;
   border-radius: 9999px;
   border: 1px solid var(--tg-border-light, rgba(255, 255, 255, 0.12));
   line-height: 1;
@@ -575,36 +610,37 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
 .pill-pv { color: #FDA4AF; }
 .pill-gold { color: #FDE047; }
 
-/* CONTROLLI INFERIORI: FRECCE AI LATI DEI PALLINI (ZERO SPAZIO SOTTO) */
+/* CONTROLLI INFERIORI: CLUSTER PALLINI AD ALTEZZA ZERO SOTTO */
 .coverflow-nav-cluster {
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 0.65rem;
-  margin-top: 10px;
-  margin-bottom: 8px; /* Esattamente 8px dal footer */
+  gap: 0.55rem;
+  margin-top: 2px !important;
+  margin-bottom: 2px !important;
+  height: 24px;
   flex-shrink: 0;
 }
 .coverflow-dots {
   display: flex;
   align-items: center;
-  gap: 0.35rem;
+  gap: 0.3rem;
 }
 .coverflow-dot {
-  width: 0.35rem;
-  height: 0.35rem;
+  width: 0.32rem;
+  height: 0.32rem;
   border-radius: 9999px;
   background: rgba(255, 255, 255, 0.2);
   cursor: pointer;
   transition: all 0.2s ease;
 }
 .coverflow-dot.active {
-  width: 1rem;
+  width: 0.9rem;
   background: var(--tg-sky, #38BDF8);
 }
 .coverflow-btn-side {
-  width: 24px;
-  height: 24px;
+  width: 22px;
+  height: 22px;
   border-radius: 9999px;
   background: rgba(255, 255, 255, 0.08);
   border: 1px solid rgba(255, 255, 255, 0.15);
@@ -612,18 +648,18 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 12px;
+  font-size: 11px;
   cursor: pointer;
   transition: background 0.15s ease;
 }
 .coverflow-btn-side:active { background: #38BDF8; color: #090D16; }
 
 /* ----------------------------------------------------------------------------
-   5. MENU FILTRI E VISTE LISTA / GRIGLIA
+   5. MENU FILTRI E VISTE LISTA / GRIGLIA (CON GLOW DI FAZIONE)
    ---------------------------------------------------------------------------- */
 .chips-scroll-bar {
   flex: none;
-  height: 38px;
+  height: 36px;
   display: flex;
   align-items: center;
   gap: 0.45rem;
@@ -682,11 +718,23 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
   transition: all 0.15s ease;
 }
 .class-list-card:hover { background: var(--tg-surface-hover, #1F2937); }
+
+/* Glow Selezionato nella vista Lista */
 .class-list-card.selected {
-  border-color: var(--tg-sky, #38BDF8);
-  background: rgba(56, 189, 248, 0.12);
-  box-shadow: 0 0 15px rgba(56, 189, 248, 0.25);
+  border-color: var(--tg-sky, #38BDF8) !important;
+  background: rgba(56, 189, 248, 0.12) !important;
+  box-shadow: 0 0 16px rgba(56, 189, 248, 0.35) !important;
 }
+.class-list-card.selected[data-faction="destra"] {
+  border-color: #38BDF8 !important;
+  box-shadow: 0 0 16px rgba(56, 189, 248, 0.35) !important;
+}
+.class-list-card.selected[data-faction="sinistra"] {
+  border-color: #F43F5E !important;
+  background: rgba(244, 63, 94, 0.12) !important;
+  box-shadow: 0 0 16px rgba(244, 63, 94, 0.35) !important;
+}
+
 .class-list-thumb {
   width: 2.5rem;
   height: 2.5rem;
@@ -801,7 +849,7 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
 }
 
 /* ----------------------------------------------------------------------------
-   6. FOOTER WIZARD STICKY & TASTI SINTETICI (AVANTI / INDIETRO)
+   6. FOOTER WIZARD STICKY & TASTI CTA SKY BLUE (SAFE-AREA IPHONE)
    ---------------------------------------------------------------------------- */
 .wizard-sticky-footer {
   flex: none;
@@ -814,9 +862,10 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.4rem 0.75rem;
-  padding-bottom: max(var(--safe-bottom, 0px), 0.55rem);
-  height: calc(54px + max(var(--safe-bottom, 0px), 0px));
+  padding: 0.35rem 0.75rem;
+  /* Minimo 20px garantito per evitare collisioni con la Home Bar di iOS */
+  padding-bottom: max(var(--safe-bottom, 0px), 1.25rem) !important;
+  height: calc(56px + max(var(--safe-bottom, 0px), 0px)) !important;
 }
 
 .wizard-footer-step-controls {
@@ -826,11 +875,24 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
   gap: 0.5rem;
 }
 .wizard-footer-step-controls .btn {
-  height: 2.5rem;
-  min-height: 2.5rem;
-  font-size: 0.85rem;
+  height: 2.45rem;
+  min-height: 2.45rem;
+  font-size: 0.82rem;
   font-weight: 900;
   text-transform: uppercase;
+}
+
+/* CLASSE DEDICATA PER IL TASTO PRIMARIO (SKY BLUE DARSENA) */
+.btn-wizard-cta {
+  background: var(--tg-sky, #38BDF8) !important;
+  color: #090D16 !important;
+  border: none !important;
+  font-weight: 900 !important;
+  box-shadow: 0 0 16px rgba(56, 189, 248, 0.35) !important;
+}
+.btn-wizard-cta:hover, .btn-wizard-cta:active {
+  background: #7DD3FC !important;
+  transform: scale(0.98);
 }
 
 /* ----------------------------------------------------------------------------
@@ -841,18 +903,19 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
   display: flex;
   justify-content: center;
   align-items: center;
-  padding: 10px 0.5rem 0 0.5rem;
+  padding: 2px 0.25rem 0 0.25rem;
+  flex: 1 1 auto;
 }
 .hero-launch-card {
-  width: clamp(290px, 85vw, 345px);
-  height: clamp(450px, 62dvh, 515px);
+  width: clamp(280px, 84vw, 330px) !important;
+  height: clamp(370px, 52dvh, 435px) !important;
   border-radius: 1.15rem;
   background: #0D131F;
   border: 1px solid rgba(255, 255, 255, 0.2);
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 0 2px rgba(255, 255, 255, 0.6), 0 0 16px rgba(255, 255, 255, 0.16);
+  box-shadow: 0 0 2px rgba(56, 189, 248, 0.8), 0 0 20px rgba(56, 189, 248, 0.35);
   position: relative;
 }
 
