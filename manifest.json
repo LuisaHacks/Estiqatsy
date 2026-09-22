@@ -1,21 +1,27 @@
 {
+  "id": "estiqatsy-syndicate-rpg",
   "name": "Estiqatsy Syndicate",
   "short_name": "Estiqatsy",
-  "start_url": "index.html",
+  "description": "Darsena Noir RPG - Piattaforma Ufficiale Syndicate",
+  "start_url": "./index.html",
+  "scope": "./",
   "display": "standalone",
+  "orientation": "portrait",
   "background_color": "#090D16",
   "theme_color": "#090D16",
-  "orientation": "portrait-primary",
+  "categories": ["games", "entertainment"],
   "icons": [
     {
       "src": "https://image.pollinations.ai/prompt/minimalist-golden-anchor-emblem-dark-navy-background?width=192&height=192&nologo=true",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     },
     {
       "src": "https://image.pollinations.ai/prompt/minimalist-golden-anchor-emblem-dark-navy-background?width=512&height=512&nologo=true",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     }
   ]
 }
