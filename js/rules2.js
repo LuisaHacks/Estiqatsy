@@ -135,7 +135,7 @@ const Rules2Store = {
 };
 
 // ----------------------------------------------------------------------------
-// 3. WIZARD CREAZIONE PERSONAGGIO (MACCHINA A STATI E GESTURES PULITE)
+// 3. WIZARD CREAZIONE PERSONAGGIO (MACCHINA A STATI, GESTURES 360° & CARD MONUMENTALE)
 // ----------------------------------------------------------------------------
 const Rules2Wizard = {
   state: {
@@ -152,11 +152,7 @@ const Rules2Wizard = {
     activeAbilityIndex: 0,
     activeShopIndex: 0,
 
-    viewModes: {
-      class: "3d",
-      abilities: "list",
-      shop: "list"
-    },
+    viewModes: { class: "3d", abilities: "list", shop: "list" },
 
     chosenClass: null,
     chosenAbilities: [],
@@ -164,10 +160,11 @@ const Rules2Wizard = {
     heroName: "",
     remainingPx: 100,
     startingGold: 40,
-    currentGold: 40
-  },
+    currentGold: 40,
 
-  _touchStartX: 0,
+    _autoplayTimer: null,
+    _touchStartX: 0
+  },
 
   open: async function(gameKey, epNum, isVeteran = false, savedHero = null) {
     try {
@@ -184,9 +181,9 @@ const Rules2Wizard = {
         if (wizData) Rules2Store.setCachedWizardData(gameKey, wizData);
       }
 
-      this.state.classes = typeof deduplicateEntities === "function" ? deduplicateEntities(wizData.classes || wizData.classi || []) : (wizData.classes || []);
-      this.state.abilities = typeof deduplicateEntities === "function" ? deduplicateEntities(wizData.abilities || wizData.abilita || []) : (wizData.abilities || []);
-      this.state.shopCatalog = typeof deduplicateEntities === "function" ? deduplicateEntities(wizData.emporioItems || wizData.equipaggiamenti || []) : (wizData.emporioItems || []);
+      this.state.classes = (wizData.classes || wizData.classi || []);
+      this.state.abilities = (wizData.abilities || wizData.abilita || []);
+      this.state.shopCatalog = (wizData.emporioItems || wizData.equipaggiamenti || []);
 
       this.state.chosenAbilities = [];
       this.state.boughtItems = [];
@@ -194,129 +191,84 @@ const Rules2Wizard = {
       this.state.activeAbilityIndex = 0;
       this.state.activeShopIndex = 0;
 
-      if (isVeteran && savedHero) {
-        this.state.chosenClass = {
-          id: savedHero.classeId || "CLS_0001_S1_E0",
-          nome: savedHero.classe || savedHero.nomeEroe,
-          sottocategoria: savedHero.schieramentoPolitico || "Destra",
-          pv: savedHero.pvMax || 25,
-          oro: savedHero.oro || 40,
-          emoji: "🎖️",
-          mediaUrl: savedHero.mediaUrl || "https://image.pollinations.ai/prompt/veteran-coastal-adventurer-portrait?width=800&height=450&nologo=true",
-          equipLoot: savedHero.equipLoot || ""
-        };
-        this.state.heroName = savedHero.nomeEroe;
-        this.state.remainingPx = savedHero.px || 0;
-        this.state.startingGold = savedHero.oro || 40;
-        this.state.currentGold = savedHero.oro || 40;
+      const firstClass = this.state.classes[0] || null;
+      this.state.chosenClass = firstClass;
+      this.state.remainingPx = 100;
+      this.state.startingGold = firstClass ? Number(firstClass.oro || 40) : 40;
+      this.state.currentGold = this.state.startingGold;
+      this.state.heroName = AppState.user?.nome || "Avventuriero";
 
-        this.renderStep2();
-        this.showStep(2);
-      } else {
-        const firstClass = this.state.classes[0] || null;
-        this.state.chosenClass = firstClass;
-        this.state.remainingPx = 100;
-        const initialGold = firstClass ? (typeof cleanNumber === "function" ? cleanNumber(firstClass.oro, 40) : Number(firstClass.oro || 40)) : 40;
-        this.state.startingGold = initialGold;
-        this.state.currentGold = initialGold;
+      this.renderStep1();
+      this.showStep(1);
 
-        this.renderStep1();
-        this.showStep(1);
-      }
-
-      this.initKeyboardShield();
+      this.bindModalBackdropClose();
       AppRouter.navigate("view-wizard");
     } catch (err) {
       console.error("[Rules2Wizard] Errore apertura wizard:", err);
-      tgAlert("Errore setup wizard: " + err.message);
+      tgAlert("Errore wizard: " + err.message);
     }
   },
 
-  // --------------------------------------------------------------------------
-  // RECUPERO STATO MACCHINA WIZARD (BUG "RIPRENDI")
-  // --------------------------------------------------------------------------
   resumeSession: async function(gameKey, epNum, sessionData) {
-    try {
-      await this.open(gameKey, epNum, false, null);
+    await this.open(gameKey, epNum, false, null);
+    const fase = sessionData.activeFase || sessionData.fase || "";
+    const hero = sessionData.statoEroe || sessionData.hero || {};
 
-      const fase = sessionData.activeFase || sessionData.fase || "";
-      const hero = sessionData.statoEroe || sessionData.hero || {};
-
-      if (hero.classeId || hero.classe) {
-        const found = this.state.classes.find(c => c.id === hero.classeId || c.nome === hero.classe);
-        if (found) {
-          const idx = this.state.classes.indexOf(found);
-          this.state.activeClassIndex = idx;
-          this.state.chosenClass = found;
-          this.state.startingGold = typeof cleanNumber === "function" ? cleanNumber(found.oro, 40) : Number(found.oro || 40);
-          this.state.currentGold = hero.oro !== undefined ? hero.oro : this.state.startingGold;
-        }
+    if (hero.classeId || hero.classe) {
+      const found = this.state.classes.find(c => c.id === hero.classeId || c.nome === hero.classe);
+      if (found) {
+        this.state.activeClassIndex = this.state.classes.indexOf(found);
+        this.state.chosenClass = found;
+        this.state.startingGold = Number(found.oro || 40);
+        this.state.currentGold = hero.oro !== undefined ? hero.oro : this.state.startingGold;
       }
-
-      if (Array.isArray(hero.abilita) && hero.abilita.length > 0) {
-        this.state.chosenAbilities = hero.abilita.map(a => {
-          const match = this.state.abilities.find(x => x.nome === a || x.id === a);
-          return match ? match.id : a;
-        });
-        this.state.remainingPx = Math.max(0, 100 - (this.state.chosenAbilities.length * 100));
-      }
-
-      if (Array.isArray(hero.inventario) && hero.inventario.length > 0) {
-        this.state.boughtItems = hero.inventario.map(itName => {
-          const it = this.state.shopCatalog.find(x => x.nome === itName || x.id === itName);
-          return it || { id: itName, nome: itName, costoOro: 0 };
-        });
-      }
-
-      if (hero.nomeEroe) {
-        this.state.heroName = hero.nomeEroe;
-        const nameInput = document.getElementById("wizard-name-input");
-        if (nameInput) nameInput.value = hero.nomeEroe;
-      }
-
-      if (fase === "WIZARD_ABILITA") {
-        this.renderStep2();
-        this.showStep(2);
-      } else if (fase === "WIZARD_SHOP") {
-        this.renderStep3();
-        this.showStep(3);
-      } else if (fase === "WIZARD_NOME") {
-        this.renderStep4();
-        this.showStep(4);
-      } else {
-        this.renderStep1();
-        this.showStep(1);
-      }
-
-      tgHaptic("success");
-    } catch (err) {
-      console.error("[Rules2Wizard] Errore ripristino sessione:", err);
-      this.open(gameKey, epNum, false, null);
     }
+
+    if (fase === "WIZARD_ABILITA") { this.renderStep2(); this.showStep(2); }
+    else if (fase === "WIZARD_SHOP") { this.renderStep3(); this.showStep(3); }
+    else if (fase === "WIZARD_NOME") { this.renderStep4(); this.showStep(4); }
+    else { this.renderStep1(); this.showStep(1); }
   },
 
   showStep: function(stepNum) {
     this.state.step = stepNum;
-
-    const steps = [
-      { num: 1, id: "wizard-step-class" },
-      { num: 2, id: "wizard-step-abilities" },
-      { num: 3, id: "wizard-step-shop" },
-      { num: 4, id: "wizard-step-name" }
-    ];
-
-    steps.forEach(s => {
-      const el = document.getElementById(s.id);
-      if (el) el.classList.toggle("hidden", s.num !== stepNum);
+    [1, 2, 3, 4].forEach(n => {
+      const panel = document.getElementById(`wizard-step-${n === 1 ? 'class' : n === 2 ? 'abilities' : n === 3 ? 'shop' : 'name'}`);
+      if (panel) panel.classList.toggle("hidden", n !== stepNum);
+      const footer = document.getElementById(`wiz-footer-step-${n}`);
+      if (footer) footer.classList.toggle("hidden", n !== stepNum);
     });
 
-    for (let f = 1; f <= 4; f++) {
-      const fEl = document.getElementById(`wiz-footer-step-${f}`);
-      if (fEl) fEl.classList.toggle("hidden", f !== stepNum);
-    }
+    if (stepNum === 1 && this.state.viewModes.class === "3d") this.startAutoplay();
+    else this.stopAutoplay();
 
     const scrollContainer = document.getElementById("app-main-scroll");
     if (scrollContainer) scrollContainer.scrollTop = 0;
+  },
+
+  startAutoplay: function() {
+    this.stopAutoplay();
+    this.state._autoplayTimer = setInterval(() => {
+      this.coverflowNext(true);
+    }, 5000);
+  },
+
+  stopAutoplay: function() {
+    if (this.state._autoplayTimer) {
+      clearInterval(this.state._autoplayTimer);
+      this.state._autoplayTimer = null;
+    }
+  },
+
+  bindModalBackdropClose: function() {
+    document.querySelectorAll("dialog.modal").forEach(dialog => {
+      if (!dialog._hasBackdropClick) {
+        dialog._hasBackdropClick = true;
+        dialog.addEventListener("click", (e) => {
+          if (e.target === dialog) dialog.close();
+        });
+      }
+    });
   },
 
   setWizardViewMode: function(stepKey, mode) {
@@ -340,66 +292,53 @@ const Rules2Wizard = {
     if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("card_flip");
 
     if (stepKey === "class") {
-      if (is3D) this.updateCoverflowStage();
-      else this.renderClassesList();
+      if (is3D) {
+        this.updateCoverflowStage();
+        this.startAutoplay();
+      } else {
+        this.stopAutoplay();
+        this.renderClassesList();
+      }
     } else if (stepKey === "abilities") {
-      if (is3D) this.renderAbilities3D();
-      else this.renderAbilitiesList();
+      this.renderStep2();
     } else if (stepKey === "shop") {
-      if (is3D) this.renderShop3D();
-      else this.renderShopList();
+      this.renderStep3();
     }
   },
 
   // --------------------------------------------------------------------------
-  // PASSO 1: ARCHETIPI
+  // STEP 1: CLASSI (NON ARCHETIPO)
   // --------------------------------------------------------------------------
   renderStep1: function() {
-    this.renderClasses3D();
-    this.renderClassesList();
-    this.setWizardViewMode("class", this.state.viewModes.class || "3d");
-  },
-
-  renderClasses3D: function() {
     const stage = document.getElementById("wizard-classes-stage");
     const dotsBox = document.getElementById("wizard-coverflow-dots");
     if (!stage) return;
 
     const classes = this.state.classes || [];
-    if (classes.length === 0) {
-      stage.innerHTML = `<div class="empty-state-card">Nessun archetipo disponibile.</div>`;
-      return;
-    }
-
     stage.innerHTML = classes.map((cls, idx) => {
-      const pol = String(cls.sottocategoria || cls.schieramento || "Destra").toLowerCase();
-      const isDestra = pol === "destra";
-
-      const forVal = typeof cleanNumber === "function" ? cleanNumber(cls.forza, 10) : Number(cls.forza || 10);
-      const desVal = typeof cleanNumber === "function" ? cleanNumber(cls.destrezza, 10) : Number(cls.destrezza || 10);
-      const intVal = typeof cleanNumber === "function" ? cleanNumber(cls.intelligenza, 10) : Number(cls.intelligenza || 10);
-
-      const forMod = Math.floor((forVal - 10) / 2);
-      const desMod = Math.floor((desVal - 10) / 2);
-      const intMod = Math.floor((intVal - 10) / 2);
-      const fmt = v => (v >= 0 ? "+" + v : String(v));
-
+      const pol = String(cls.sottocategoria || "Destra").toLowerCase();
+      const forVal = Number(cls.forza || 10);
+      const desVal = Number(cls.destrezza || 10);
+      const intVal = Number(cls.intelligenza || 10);
       const cleanQuote = String(cls.citazione || "A Viareggio se non hai il ferro giusto duri poco.").replace(/^["'“”]+|["'“”]+$/g, "");
-      const startingGear = cls.equipLoot || "Pugni nudi";
 
       return `
         <div id="coverflow-card-${idx}" onclick="Rules2Wizard.coverflowSelectIndex(${idx})" class="coverflow-card">
           <div class="coverflow-media-frame">
             <img src="${cls.mediaUrl}" class="coverflow-img" alt="${Rules2_SafeAttr(cls.nome)}" loading="lazy">
             
-            <div class="coverflow-title-overlay">
-              <span class="text-xl">${cls.emoji || '🥋'}</span>
-              <h4 class="coverflow-title">${cls.nome}</h4>
+            <div class="coverflow-header-bar">
+              <div class="coverflow-title-group">
+                <span class="coverflow-title-icon">${cls.emoji || '🥋'}</span>
+                <h4 class="coverflow-title">${cls.nome}</h4>
+              </div>
+              <span class="coverflow-badge-faction" data-faction="${pol}">
+                ${pol.toUpperCase()}
+              </span>
             </div>
 
-            <span class="badge badge-xs coverflow-badge-faction ${isDestra ? 'badge-info' : 'badge-error'}">
-              ${pol.toUpperCase()}
-            </span>
+            <!-- RIGA BIANCA SPECULARE AL FOOTER -->
+            <div class="coverflow-header-divider"></div>
 
             <div class="watermark-cover-banner">
               <div class="quote-text">“${cleanQuote}”</div>
@@ -408,23 +347,22 @@ const Rules2Wizard = {
           </div>
 
           <div id="coverflow-details-${idx}" class="coverflow-details-box">
-            <div class="coverflow-stats-row font-mono">
-              <div>🥊 FOR <b>${forVal}</b> <span class="stat-mod">(${fmt(forMod)})</span></div>
-              <div>🤸 DES <b>${desVal}</b> <span class="stat-mod">(${fmt(desMod)})</span></div>
-              <div>🧠 INT <b>${intVal}</b> <span class="stat-mod">(${fmt(intMod)})</span></div>
+            <!-- TRITTICO KPI UNIFORMI (11px MONO) -->
+            <div class="coverflow-stats-row">
+              <div>🥊 FOR <b>${forVal}</b></div>
+              <div>🤸 DES <b>${desVal}</b></div>
+              <div>🧠 INT <b>${intVal}</b></div>
             </div>
 
-            <p class="coverflow-lore">
-              ${cls.testo || cls.descrizione || ''}
-            </p>
+            <p class="coverflow-lore">${cls.testo || cls.descrizione || ''}</p>
 
             <div class="coverflow-footer-row">
-              <span class="coverflow-gear-label truncate" title="${Rules2_SafeAttr(startingGear)}">
-                🎒 Dotazione: <b>${startingGear}</b>
+              <span class="coverflow-gear-label truncate">
+                🎒 Dotazione: <b>${cls.equipLoot || 'Pugni nudi'}</b>
               </span>
               <div class="coverflow-kpi-pill">
                 <span class="pill-pv">❤️ ${cls.pv} PV</span>
-                <span class="pill-gold">🟡 ${cls.oro}</span>
+                <span class="pill-gold">🟡 ${cls.oro} ORO</span>
               </div>
             </div>
           </div>
@@ -433,30 +371,56 @@ const Rules2Wizard = {
     }).join("");
 
     if (dotsBox) {
-      dotsBox.innerHTML = classes.map((_, i) => `
-        <span onclick="Rules2Wizard.coverflowSelectIndex(${i})" class="coverflow-dot ${i === this.state.activeClassIndex ? 'active' : ''}"></span>
-      `).join("");
+      dotsBox.innerHTML = `
+        <div class="coverflow-nav-cluster">
+          <button onclick="event.stopPropagation(); Rules2Wizard.coverflowPrev();" class="coverflow-btn-side" aria-label="Precedente">‹</button>
+          <div class="coverflow-dots">
+            ${classes.map((_, i) => `
+              <span onclick="Rules2Wizard.coverflowSelectIndex(${i})" class="coverflow-dot ${i === this.state.activeClassIndex ? 'active' : ''}"></span>
+            `).join("")}
+          </div>
+          <button onclick="event.stopPropagation(); Rules2Wizard.coverflowNext();" class="coverflow-btn-side" aria-label="Successivo">›</button>
+        </div>
+      `;
     }
 
-    this.bindStageGestures(stage);
+    this.bindGestures(stage);
     this.updateCoverflowStage();
   },
 
-  bindStageGestures: function(stageEl) {
+  bindGestures: function(stageEl) {
     if (!stageEl || stageEl._hasGestures) return;
     stageEl._hasGestures = true;
 
+    // 1. Swipe Touch Smartphone
     stageEl.addEventListener("touchstart", (e) => {
-      this._touchStartX = e.changedTouches[0].screenX;
+      this.stopAutoplay();
+      this.state._touchStartX = e.changedTouches[0].screenX;
     }, { passive: true });
 
     stageEl.addEventListener("touchend", (e) => {
-      const diff = this._touchStartX - e.changedTouches[0].screenX;
+      const diff = this.state._touchStartX - e.changedTouches[0].screenX;
       if (Math.abs(diff) > 35) {
         if (diff > 0) this.coverflowNext();
         else this.coverflowPrev();
       }
     }, { passive: true });
+
+    // 2. Trackpad / Mouse Wheel Orizzontale (Laptop)
+    stageEl.addEventListener("wheel", (e) => {
+      if (Math.abs(e.deltaX) > 25) {
+        this.stopAutoplay();
+        if (e.deltaX > 0) this.coverflowNext();
+        else this.coverflowPrev();
+      }
+    }, { passive: true });
+
+    // 3. Frecce Tastiera Desktop
+    window.addEventListener("keydown", (e) => {
+      if (this.state.step !== 1) return;
+      if (e.key === "ArrowRight") this.coverflowNext();
+      else if (e.key === "ArrowLeft") this.coverflowPrev();
+    });
   },
 
   updateCoverflowStage: function() {
@@ -465,12 +429,10 @@ const Rules2Wizard = {
     if (total === 0) return;
 
     const activeIdx = this.state.activeClassIndex;
-    const isDesktop = window.innerWidth >= 768;
-    const spacing = isDesktop ? 220 : 160;
+    const spacing = window.innerWidth >= 768 ? 210 : 155;
 
     classes.forEach((cls, i) => {
       const el = document.getElementById(`coverflow-card-${i}`);
-      const detailsBox = document.getElementById(`coverflow-details-${i}`);
       if (!el) return;
 
       let diff = (i - activeIdx) % total;
@@ -480,45 +442,64 @@ const Rules2Wizard = {
       const offset = diff;
       const absOffset = Math.abs(offset);
 
-      if (absOffset > 2 && !isDesktop) {
+      if (absOffset > 2 && window.innerWidth < 768) {
         el.style.display = "none";
         return;
-      } else {
-        el.style.display = "flex";
       }
+      el.style.display = "flex";
 
       const isCenter = (offset === 0);
-
-      if (detailsBox) {
-        detailsBox.style.opacity = isCenter ? "1" : "0.2";
-        detailsBox.style.pointerEvents = isCenter ? "auto" : "none";
-      }
-
       const translateX = offset * spacing;
-      const rotateY = offset * (isDesktop ? -24 : -16);
-      const scale = isCenter ? (isDesktop ? 1.05 : 1.02) : Math.max(0.72, 0.88 - absOffset * 0.08);
-      const zIndex = 30 - Math.round(absOffset * 5);
-      const opacity = isCenter ? 1 : Math.max(0.2, 0.5 - absOffset * 0.15);
+      const rotateY = offset * -18;
+      const scale = isCenter ? 1.02 : Math.max(0.72, 0.88 - absOffset * 0.08);
 
       el.style.transform = `translateX(${translateX}px) translateZ(${isCenter ? 40 : -50}px) rotateY(${rotateY}deg) scale(${scale})`;
-      el.style.zIndex = zIndex;
-      el.style.opacity = opacity;
+      el.style.zIndex = 30 - Math.round(absOffset * 5);
+      el.style.opacity = isCenter ? 1 : Math.max(0.2, 0.5 - absOffset * 0.15);
       el.classList.toggle("glow-active", isCenter);
     });
 
     this.state.chosenClass = classes[activeIdx];
-    const startingGold = classes[activeIdx] ? (typeof cleanNumber === "function" ? cleanNumber(classes[activeIdx].oro, 40) : Number(classes[activeIdx].oro || 40)) : 40;
-    this.state.startingGold = startingGold;
-    this.state.currentGold = startingGold;
+    this.state.startingGold = Number(classes[activeIdx].oro || 40);
+    this.state.currentGold = this.state.startingGold;
 
-    const dotsBox = document.getElementById("wizard-coverflow-dots");
-    if (dotsBox) {
-      dotsBox.querySelectorAll(".coverflow-dot").forEach((d, i) => {
-        d.classList.toggle("active", i === activeIdx);
-      });
+    const dotsContainer = document.querySelector("#wizard-coverflow-dots .coverflow-dots");
+    if (dotsContainer) {
+      dotsContainer.querySelectorAll(".coverflow-dot").forEach((d, i) => d.classList.toggle("active", i === activeIdx));
     }
+  },
 
-    tgHaptic("selection");
+  coverflowSelectIndex: function(idx) {
+    this.stopAutoplay();
+    this.state.activeClassIndex = idx;
+    if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("card_flip");
+    this.updateCoverflowStage();
+  },
+
+  coverflowNext: function(isAuto = false) {
+    if (!isAuto) this.stopAutoplay();
+    const total = (this.state.classes || []).length;
+    if (total <= 1) return;
+    this.state.activeClassIndex = (this.state.activeClassIndex + 1) % total;
+    if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("card_flip");
+    this.updateCoverflowStage();
+  },
+
+  coverflowPrev: function() {
+    this.stopAutoplay();
+    const total = (this.state.classes || []).length;
+    if (total <= 1) return;
+    this.state.activeClassIndex = (this.state.activeClassIndex - 1 + total) % total;
+    if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("card_flip");
+    this.updateCoverflowStage();
+  },
+
+  confirmStep1: function() {
+    this.stopAutoplay();
+    if (!this.state.chosenClass) return tgAlert("Scegli una classe!");
+    if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("success");
+    this.renderStep2();
+    this.showStep(2);
   },
 
   renderClassesList: function() {
@@ -526,18 +507,12 @@ const Rules2Wizard = {
     if (!container) return;
 
     const classes = this.state.classes || [];
-    if (classes.length === 0) {
-      container.innerHTML = `<div class="empty-state-card col-span-full">Nessun archetipo registrato.</div>`;
-      return;
-    }
-
     container.innerHTML = classes.map((cls, idx) => {
       const isSelected = (this.state.chosenClass?.id === cls.id);
-      const pol = String(cls.sottocategoria || cls.schieramento || "Destra").toUpperCase();
-      const isDestra = pol === "DESTRA";
+      const pol = String(cls.sottocategoria || "Destra").toUpperCase();
 
       return `
-        <div onclick="Rules2Wizard.inspectClassDetail('${cls.id}')" class="class-list-card ${isSelected ? 'selected' : ''}">
+        <div onclick="Rules2Wizard.selectClassByIndex(${idx})" class="class-list-card ${isSelected ? 'selected' : ''}">
           <div class="flex items-center space-x-3 min-w-0 flex-1">
             <div class="class-list-thumb">
               <img src="${cls.mediaUrl}" alt="${Rules2_SafeAttr(cls.nome)}" loading="lazy">
@@ -545,16 +520,13 @@ const Rules2Wizard = {
             <div class="class-list-info">
               <div class="class-list-name">${cls.emoji || '🥋'} ${cls.nome}</div>
               <div class="class-list-sub">
-                <span class="${isDestra ? 'text-sky-400' : 'text-rose-400'} font-bold">${pol}</span> • ❤️ ${cls.pv} PV • 🟡 ${cls.oro} Oro
+                <span class="${pol === 'DESTRA' ? 'text-sky-400' : 'text-rose-400'} font-bold">${pol}</span> • ❤️ ${cls.pv} PV • 🟡 ${cls.oro} ORO
               </div>
             </div>
           </div>
-          <div class="flex items-center space-x-2">
-            <button onclick="event.stopPropagation(); Rules2Wizard.selectClassByIndex(${idx})" class="btn btn-xs ${isSelected ? 'btn-success font-black' : 'btn-outline border-white/20 text-slate-300'}">
+          <div>
+            <button class="btn btn-xs ${isSelected ? 'btn-success font-black' : 'btn-outline border-white/20 text-slate-300'}">
               ${isSelected ? 'Scelto' : 'Scegli'}
-            </button>
-            <button onclick="event.stopPropagation(); Rules2Wizard.inspectClassDetail('${cls.id}')" class="btn btn-xs btn-ghost text-slate-400">
-              🔍
             </button>
           </div>
         </div>
@@ -565,123 +537,17 @@ const Rules2Wizard = {
   selectClassByIndex: function(idx) {
     this.state.activeClassIndex = idx;
     this.state.chosenClass = this.state.classes[idx];
-    const initialGold = this.state.chosenClass ? (typeof cleanNumber === "function" ? cleanNumber(this.state.chosenClass.oro, 40) : Number(this.state.chosenClass.oro || 40)) : 40;
-    this.state.startingGold = initialGold;
-    this.state.currentGold = initialGold;
-
+    this.state.startingGold = Number(this.state.chosenClass.oro || 40);
+    this.state.currentGold = this.state.startingGold;
     if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("click");
     this.updateCoverflowStage();
     this.renderClassesList();
   },
 
-  inspectClassDetail: function(clsId) {
-    const cls = this.state.classes.find(c => c.id === clsId);
-    if (!cls) return;
-
-    const pol = String(cls.sottocategoria || cls.schieramento || "Destra").toUpperCase();
-    const isSelected = (this.state.chosenClass?.id === cls.id);
-
-    const forVal = typeof cleanNumber === "function" ? cleanNumber(cls.forza, 10) : Number(cls.forza || 10);
-    const desVal = typeof cleanNumber === "function" ? cleanNumber(cls.destrezza, 10) : Number(cls.destrezza || 10);
-    const intVal = typeof cleanNumber === "function" ? cleanNumber(cls.intelligenza, 10) : Number(cls.intelligenza || 10);
-
-    const forMod = Math.floor((forVal - 10) / 2);
-    const desMod = Math.floor((desVal - 10) / 2);
-    const intMod = Math.floor((intVal - 10) / 2);
-    const fmt = v => (v >= 0 ? "+" + v : String(v));
-
-    const s = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
-    const h = (id, val) => { const el = document.getElementById(id); if (el) el.innerHTML = val; };
-
-    s("uni-detail-icon", cls.emoji || "🥋");
-    s("uni-detail-title", cls.nome);
-    s("uni-detail-badge", `ARCHETIPO • ${pol}`);
-    s("uni-detail-metrics-label", "PARAMETRI BELLICI & DOTAZIONE");
-
-    const statsMetrics = `
-      ❤️ Salute: <b>${cls.pv} PV</b> • 🟡 Borsello: <b class="text-amber-300">${cls.oro} Oro</b><br>
-      🥊 Forza: <b>${forVal} (${fmt(forMod)})</b> • 🤸 Destrezza: <b>${desVal} (${fmt(desMod)})</b> • 🧠 Intelligenza: <b>${intVal} (${fmt(intMod)})</b><br>
-      🎒 Dotazione: <b>${cls.equipLoot || 'Pugni nudi'}</b>
-    `;
-    h("uni-detail-metrics-value", statsMetrics);
-
-    let cleanLore = cls.testo || cls.descrizione || "Nessuna nota d'archivio.";
-    if (cls.citazione && cls.citazione !== "—") {
-      cleanLore = `“${cls.citazione.replace(/^["'“”]+|["'“”]+$/g, '')}”<br><span class="text-amber-400 text-[10px]">— ${cls.autoreCitazione || 'Darsena'}</span><br><br>${cleanLore}`;
-    }
-    h("uni-detail-lore", cleanLore);
-
-    const mediaContainer = document.getElementById("uni-detail-media-container");
-    if (mediaContainer) {
-      if (cls.mediaUrl && cls.mediaUrl !== "—" && cls.mediaUrl.startsWith("http")) {
-        document.getElementById("uni-detail-img").src = cls.mediaUrl;
-        mediaContainer.classList.remove("hidden");
-      } else {
-        mediaContainer.classList.add("hidden");
-      }
-    }
-
-    const btn = document.getElementById("uni-detail-action-btn");
-    if (btn) {
-      btn.textContent = isSelected ? "✓ In Uso" : "Scegli";
-      btn.className = isSelected ? "btn btn-sm btn-success font-black w-full" : "btn btn-sm btn-primary font-black uppercase shadow-lg shadow-sky-600/30 w-full";
-      btn.onclick = () => {
-        const idx = this.state.classes.findIndex(c => c.id === cls.id);
-        if (idx !== -1) this.selectClassByIndex(idx);
-        document.getElementById("modal-universal-detail")?.close();
-      };
-    }
-
-    if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("modal_open");
-    document.getElementById("modal-universal-detail")?.showModal();
-  },
-
-  coverflowSelectIndex: function(idx) {
-    if (idx === this.state.activeClassIndex) return;
-    this.state.activeClassIndex = idx;
-    if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("card_flip");
-    this.updateCoverflowStage();
-    this.renderClassesList();
-  },
-
-  coverflowNext: function() {
-    const total = (this.state.classes || []).length;
-    if (total <= 1) return;
-    this.state.activeClassIndex = (this.state.activeClassIndex + 1) % total;
-    if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("card_flip");
-    this.updateCoverflowStage();
-    this.renderClassesList();
-  },
-
-  coverflowPrev: function() {
-    const total = (this.state.classes || []).length;
-    if (total <= 1) return;
-    this.state.activeClassIndex = (this.state.activeClassIndex - 1 + total) % total;
-    if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("card_flip");
-    this.updateCoverflowStage();
-    this.renderClassesList();
-  },
-
-  confirmStep1: function() {
-    if (!this.state.chosenClass) {
-      tgAlert("Scegli un archetipo!");
-      return;
-    }
-    if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("success");
-    this.renderStep2();
-    this.showStep(2);
-  },
-
   // --------------------------------------------------------------------------
-  // PASSO 2: TALENTI & ABILITÀ
+  // STEP 2: ABILITÀ (NESSUN FASCICOLO, PERK DIRETTI E CHIARI)
   // --------------------------------------------------------------------------
   renderStep2: function() {
-    this.renderAbilitiesList();
-    this.renderAbilities3D();
-    this.setWizardViewMode("abilities", this.state.viewModes.abilities || "list");
-  },
-
-  renderAbilitiesList: function() {
     const grid = document.getElementById("wizard-abilities-grid");
     const budgetBadge = document.getElementById("wizard-px-budget");
     if (!grid) return;
@@ -695,210 +561,22 @@ const Rules2Wizard = {
       const isCompatible = req.includes("tutti") || req.includes(userFaction);
 
       return `
-        <div onclick="Rules2Wizard.inspectAbilityDetail('${abl.id}')" class="wizard-ability-card ${isSelected ? 'selected' : (isCompatible ? 'compatible' : 'locked')}">
+        <div onclick="Rules2Wizard.toggleAbility('${abl.id}')" class="wizard-ability-card ${isSelected ? 'selected' : (isCompatible ? 'compatible' : 'locked')}">
           <div class="ability-card-info">
             <div class="flex items-center space-x-2">
               <span class="text-xl">${abl.emoji || '⚡'}</span>
               <span class="ability-card-title">${abl.nome}</span>
             </div>
-            <div class="ability-card-desc">
-              ${abl.descrizione || abl.testo || ''}
-            </div>
+            <div class="text-[11px] text-slate-300 mt-1">${abl.effettoCodificato || abl.descrizione || ''}</div>
           </div>
-          <div class="ability-card-badge-box">
+          <div>
             <span class="badge badge-sm ${isSelected ? 'badge-primary font-black' : (isCompatible ? 'badge-ghost' : 'badge-neutral')}">
-              ${isSelected ? 'ATTIVO ✓' : (isCompatible ? `${abl.costoPX || 100} PX` : '🔒')}
+              ${isSelected ? 'ATTIVO ✓' : (isCompatible ? '100 PX' : '🔒')}
             </span>
           </div>
         </div>
       `;
     }).join("");
-  },
-
-  renderAbilities3D: function() {
-    const stage = document.getElementById("wizard-abilities-stage");
-    const dotsBox = document.getElementById("wizard-abilities-dots");
-    if (!stage) return;
-
-    const abilities = this.state.abilities || [];
-    if (abilities.length === 0) {
-      stage.innerHTML = `<div class="empty-state-card">Nessun talento a catalogo.</div>`;
-      return;
-    }
-
-    stage.innerHTML = abilities.map((abl, idx) => {
-      const isSelected = this.state.chosenAbilities.includes(abl.id);
-      const userFaction = String(this.state.chosenClass?.sottocategoria || "Destra").toLowerCase();
-      const req = String(abl.requisitiCodificati || abl.effettoCodificato || "tutti").toLowerCase();
-      const isCompatible = req.includes("tutti") || req.includes(userFaction);
-
-      return `
-        <div id="abilities-card-${idx}" onclick="Rules2Wizard.selectAbilityIndex(${idx})" class="coverflow-card">
-          <div class="coverflow-media-frame">
-            <img src="${abl.mediaUrl && abl.mediaUrl !== '—' ? abl.mediaUrl : 'https://image.pollinations.ai/prompt/cyberpunk-noir-secret-agent-skill-icon?width=800&height=450&nologo=true'}" class="coverflow-img" alt="${Rules2_SafeAttr(abl.nome)}" loading="lazy">
-            
-            <div class="coverflow-title-overlay">
-              <span class="text-xl">${abl.emoji || '⚡'}</span>
-              <h4 class="coverflow-title">${abl.nome}</h4>
-            </div>
-
-            <span class="badge badge-xs coverflow-badge-faction badge-info">
-              ${abl.costoPX || 100} PX
-            </span>
-          </div>
-
-          <div class="coverflow-details-box">
-            <p class="coverflow-lore">
-              ${abl.descrizione || abl.testo || ''}
-            </p>
-
-            <div class="coverflow-footer-row">
-              <button onclick="event.stopPropagation(); Rules2Wizard.inspectAbilityDetail('${abl.id}')" class="btn btn-xs btn-outline border-white/20 text-slate-300">
-                Fascicolo
-              </button>
-              <button onclick="event.stopPropagation(); Rules2Wizard.toggleAbility('${abl.id}')" class="btn btn-xs ${isSelected ? 'btn-error font-black' : (isCompatible ? 'btn-primary font-black' : 'btn-disabled')}">
-                ${isSelected ? 'Rimuovi' : 'Attiva'}
-              </button>
-            </div>
-          </div>
-        </div>
-      `;
-    }).join("");
-
-    if (dotsBox) {
-      dotsBox.innerHTML = abilities.map((_, i) => `
-        <span onclick="Rules2Wizard.selectAbilityIndex(${i})" class="coverflow-dot ${i === this.state.activeAbilityIndex ? 'active' : ''}"></span>
-      `).join("");
-    }
-
-    this.bindStageGestures(stage);
-    this.updateAbilitiesCylinder();
-  },
-
-  updateAbilitiesCylinder: function() {
-    const abilities = this.state.abilities || [];
-    const total = abilities.length;
-    if (total === 0) return;
-
-    const activeIdx = this.state.activeAbilityIndex;
-    const isDesktop = window.innerWidth >= 768;
-    const spacing = isDesktop ? 220 : 160;
-
-    abilities.forEach((abl, i) => {
-      const el = document.getElementById(`abilities-card-${i}`);
-      if (!el) return;
-
-      let diff = (i - activeIdx) % total;
-      if (diff > total / 2) diff -= total;
-      if (diff < -total / 2) diff += total;
-
-      const offset = diff;
-      const absOffset = Math.abs(offset);
-
-      if (absOffset > 2 && !isDesktop) {
-        el.style.display = "none";
-        return;
-      } else {
-        el.style.display = "flex";
-      }
-
-      const isCenter = (offset === 0);
-
-      const translateX = offset * spacing;
-      const rotateY = offset * (isDesktop ? -24 : -16);
-      const scale = isCenter ? (isDesktop ? 1.05 : 1.02) : Math.max(0.72, 0.88 - absOffset * 0.08);
-      const zIndex = 30 - Math.round(absOffset * 5);
-      const opacity = isCenter ? 1 : Math.max(0.2, 0.5 - absOffset * 0.15);
-
-      el.style.transform = `translateX(${translateX}px) translateZ(${isCenter ? 40 : -50}px) rotateY(${rotateY}deg) scale(${scale})`;
-      el.style.zIndex = zIndex;
-      el.style.opacity = opacity;
-    });
-
-    const dotsBox = document.getElementById("wizard-abilities-dots");
-    if (dotsBox) {
-      dotsBox.querySelectorAll(".coverflow-dot").forEach((d, i) => {
-        d.classList.toggle("active", i === activeIdx);
-      });
-    }
-  },
-
-  selectAbilityIndex: function(idx) {
-    this.state.activeAbilityIndex = idx;
-    if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("click");
-    this.updateAbilitiesCylinder();
-  },
-
-  cylinderAbilitiesNext: function() {
-    const total = (this.state.abilities || []).length;
-    if (total <= 1) return;
-    this.state.activeAbilityIndex = (this.state.activeAbilityIndex + 1) % total;
-    if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("card_flip");
-    this.updateAbilitiesCylinder();
-  },
-
-  cylinderAbilitiesPrev: function() {
-    const total = (this.state.abilities || []).length;
-    if (total <= 1) return;
-    this.state.activeAbilityIndex = (this.state.activeAbilityIndex - 1 + total) % total;
-    if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("card_flip");
-    this.updateAbilitiesCylinder();
-  },
-
-  inspectAbilityDetail: function(ablId) {
-    const abl = this.state.abilities.find(a => a.id === ablId);
-    if (!abl) return;
-
-    const userFaction = String(this.state.chosenClass?.sottocategoria || "Destra").toLowerCase();
-    const req = String(abl.requisitiCodificati || abl.effettoCodificato || "tutti").toLowerCase();
-    const isCompatible = req.includes("tutti") || req.includes(userFaction);
-    const isSelected = this.state.chosenAbilities.includes(abl.id);
-
-    const s = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
-    const h = (id, val) => { const el = document.getElementById(id); if (el) el.innerHTML = val; };
-
-    s("uni-detail-icon", abl.emoji || "⚡");
-    s("uni-detail-title", abl.nome);
-    s("uni-detail-badge", `TALENTO • ${(req.includes("destra") ? "Destra" : (req.includes("sinistra") ? "Sinistra" : "Comune")).toUpperCase()}`);
-    s("uni-detail-metrics-label", "EFFETTO BELLICO");
-    h("uni-detail-metrics-value", Rules2_FormatHumanEffect(abl.requisitiCodificati || abl.effettoCodificato, userFaction));
-    s("uni-detail-lore", abl.descrizione || abl.testo || "Nessuna nota d'archivio.");
-
-    const mediaContainer = document.getElementById("uni-detail-media-container");
-    if (mediaContainer) {
-      if (abl.mediaUrl && abl.mediaUrl !== "—" && abl.mediaUrl.startsWith("http")) {
-        document.getElementById("uni-detail-img").src = abl.mediaUrl;
-        mediaContainer.classList.remove("hidden");
-      } else {
-        mediaContainer.classList.add("hidden");
-      }
-    }
-
-    const btn = document.getElementById("uni-detail-action-btn");
-    if (btn) {
-      if (!isCompatible) {
-        btn.textContent = `Bloccato (${userFaction === "destra" ? "Sinistra" : "Destra"})`;
-        btn.className = "btn btn-sm btn-outline border-white/10 text-slate-500 cursor-not-allowed w-full";
-        btn.onclick = null;
-      } else if (isSelected) {
-        btn.textContent = "Rimuovi";
-        btn.className = "btn btn-sm btn-error font-black w-full";
-        btn.onclick = () => {
-          this.toggleAbility(abl.id);
-          document.getElementById("modal-universal-detail")?.close();
-        };
-      } else {
-        btn.textContent = "Attiva";
-        btn.className = "btn btn-sm btn-primary font-black shadow-lg shadow-sky-600/30 w-full";
-        btn.onclick = () => {
-          this.toggleAbility(abl.id);
-          document.getElementById("modal-universal-detail")?.close();
-        };
-      }
-    }
-
-    if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("modal_open");
-    document.getElementById("modal-universal-detail")?.showModal();
   },
 
   toggleAbility: function(ablId) {
@@ -917,8 +595,7 @@ const Rules2Wizard = {
       } else {
         tgHaptic("error");
         if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("unlucky");
-        tgAlert("PX insufficienti!");
-        return;
+        return tgAlert("PX insufficienti!");
       }
     }
     this.renderStep2();
@@ -931,52 +608,27 @@ const Rules2Wizard = {
   },
 
   // --------------------------------------------------------------------------
-  // PASSO 3: EMPORIO DI CICCIO
+  // STEP 3: CICCIO & CO. (CHIUSURA AUTOMATICA SCHEDA SU ACQUISTO)
   // --------------------------------------------------------------------------
   renderStep3: function() {
     this.filterShop(this.state.shopCategory || "ARMI");
-    this.setWizardViewMode("shop", this.state.viewModes.shop || "list");
   },
 
-  filterShop: function(targetCategory) {
-    this.state.shopCategory = targetCategory;
-
-    const chipsBox = document.getElementById("wizard-shop-category-chips");
-    if (chipsBox) {
-      chipsBox.querySelectorAll(".rpg-category-chip").forEach(btn => {
-        const isAct = btn.textContent.toUpperCase().includes(targetCategory.toUpperCase());
-        btn.className = `rpg-category-chip badge ${isAct ? 'badge-info active' : 'badge-ghost'}`;
-      });
-    }
-
+  filterShop: function(cat) {
+    this.state.shopCategory = cat;
     const goldDisp = document.getElementById("wizard-shop-gold-display");
-    if (goldDisp) goldDisp.textContent = `💰 ${this.state.currentGold} 🟡`;
+    if (goldDisp) goldDisp.textContent = `🟡 ${this.state.currentGold} ORO`;
 
-    this.renderShopList();
-    this.renderShop3D();
-    this.updateBackpackSummary();
-  },
-
-  renderShopList: function() {
     const container = document.getElementById("wizard-shop-grid");
     if (!container) return;
 
-    const targetCategory = this.state.shopCategory || "ARMI";
-    const filtered = (this.state.shopCatalog || []).filter(item => {
-      return Rules2_ClassifyEntity(item) === targetCategory.toUpperCase();
-    });
-
-    if (filtered.length === 0) {
-      container.innerHTML = `<div class="empty-state-card col-span-full">Nessun articolo per <b>${targetCategory}</b>.</div>`;
-      return;
-    }
-
+    const filtered = (this.state.shopCatalog || []).filter(i => Rules2_ClassifyEntity(i) === cat);
     container.innerHTML = filtered.map(it => {
-      const price = Math.abs(typeof cleanNumber === "function" ? cleanNumber(it.costoOro || it.costo, 15) : Number(it.costoOro || it.costo || 15));
-      const canAfford = (this.state.currentGold >= price);
+      const price = Math.abs(Number(it.costoOro || it.costo || 15));
+      const canAfford = this.state.currentGold >= price;
 
       return `
-        <div class="wizard-shop-card group">
+        <div class="wizard-shop-card">
           <div onclick="Rules2Wizard.inspectItemDetail('${it.id}')" class="shop-card-clickable">
             <div class="shop-card-head">
               <span class="text-lg">${it.emoji || '📦'}</span>
@@ -986,10 +638,7 @@ const Rules2Wizard = {
             <div class="shop-card-desc">${it.descrizione || it.testo || ''}</div>
           </div>
           <div class="shop-card-actions">
-            <button onclick="Rules2Wizard.inspectItemDetail('${it.id}')" class="btn btn-xs btn-outline border-white/10 text-slate-300">
-              Dettagli
-            </button>
-            <button onclick="Rules2Wizard.buyItem('${it.id}', ${price})" class="btn btn-xs ${canAfford ? 'btn-primary font-bold' : 'btn-outline border-white/10 text-slate-500 cursor-not-allowed'}" ${!canAfford ? 'disabled' : ''}>
+            <button onclick="Rules2Wizard.buyItem('${it.id}', ${price})" class="btn btn-xs ${canAfford ? 'btn-primary font-bold' : 'btn-outline border-white/10 opacity-40'}" ${!canAfford ? 'disabled' : ''}>
               ${canAfford ? 'Compra' : 'Oro Insuff.'}
             </button>
           </div>
@@ -998,198 +647,30 @@ const Rules2Wizard = {
     }).join("");
   },
 
-  renderShop3D: function() {
-    const stage = document.getElementById("wizard-shop-stage");
-    const dotsBox = document.getElementById("wizard-shop-dots");
-    if (!stage) return;
-
-    const targetCategory = this.state.shopCategory || "ARMI";
-    const filtered = (this.state.shopCatalog || []).filter(item => {
-      return Rules2_ClassifyEntity(item) === targetCategory.toUpperCase();
-    });
-
-    if (filtered.length === 0) {
-      stage.innerHTML = `<div class="empty-state-card">Nessun articolo in questo reparto.</div>`;
-      return;
-    }
-
-    stage.innerHTML = filtered.map((it, idx) => {
-      const price = Math.abs(typeof cleanNumber === "function" ? cleanNumber(it.costoOro || it.costo, 15) : Number(it.costoOro || it.costo || 15));
-      const canAfford = (this.state.currentGold >= price);
-
-      return `
-        <div id="shop-cylinder-card-${idx}" onclick="Rules2Wizard.selectShopIndex(${idx})" class="coverflow-card">
-          <div class="coverflow-media-frame">
-            <img src="${it.mediaUrl && it.mediaUrl !== '—' ? it.mediaUrl : 'https://image.pollinations.ai/prompt/contraband-weapons-black-market-crate?width=800&height=450&nologo=true'}" class="coverflow-img" alt="${Rules2_SafeAttr(it.nome)}" loading="lazy">
-            
-            <div class="coverflow-title-overlay">
-              <span class="text-xl">${it.emoji || '📦'}</span>
-              <h4 class="coverflow-title">${it.nome}</h4>
-            </div>
-
-            <span class="badge badge-xs coverflow-badge-faction badge-warning">
-              ${price} 🟡
-            </span>
-          </div>
-
-          <div class="coverflow-details-box">
-            <p class="coverflow-lore">${it.descrizione || it.testo || ''}</p>
-
-            <div class="coverflow-footer-row">
-              <button onclick="event.stopPropagation(); Rules2Wizard.inspectItemDetail('${it.id}')" class="btn btn-xs btn-outline border-white/20 text-slate-300">
-                Fascicolo
-              </button>
-              <button onclick="event.stopPropagation(); Rules2Wizard.buyItem('${it.id}', ${price})" class="btn btn-xs ${canAfford ? 'btn-primary font-bold' : 'btn-disabled'}" ${!canAfford ? 'disabled' : ''}>
-                ${canAfford ? 'Compra' : 'Oro Insuff.'}
-              </button>
-            </div>
-          </div>
-        </div>
-      `;
-    }).join("");
-
-    if (dotsBox) {
-      dotsBox.innerHTML = filtered.map((_, i) => `
-        <span onclick="Rules2Wizard.selectShopIndex(${i})" class="coverflow-dot ${i === this.state.activeShopIndex ? 'active' : ''}"></span>
-      `).join("");
-    }
-
-    this.bindStageGestures(stage);
-    this.updateShopCylinder();
-  },
-
-  updateShopCylinder: function() {
-    const targetCategory = this.state.shopCategory || "ARMI";
-    const filtered = (this.state.shopCatalog || []).filter(item => {
-      return Rules2_ClassifyEntity(item) === targetCategory.toUpperCase();
-    });
-    const total = filtered.length;
-    if (total === 0) return;
-
-    const activeIdx = this.state.activeShopIndex;
-    const isDesktop = window.innerWidth >= 768;
-    const spacing = isDesktop ? 220 : 160;
-
-    filtered.forEach((it, i) => {
-      const el = document.getElementById(`shop-cylinder-card-${i}`);
-      if (!el) return;
-
-      let diff = (i - activeIdx) % total;
-      if (diff > total / 2) diff -= total;
-      if (diff < -total / 2) diff += total;
-
-      const offset = diff;
-      const absOffset = Math.abs(offset);
-
-      if (absOffset > 2 && !isDesktop) {
-        el.style.display = "none";
-        return;
-      } else {
-        el.style.display = "flex";
-      }
-
-      const isCenter = (offset === 0);
-
-      const translateX = offset * spacing;
-      const rotateY = offset * (isDesktop ? -24 : -16);
-      const scale = isCenter ? (isDesktop ? 1.05 : 1.02) : Math.max(0.72, 0.88 - absOffset * 0.08);
-      const zIndex = 30 - Math.round(absOffset * 5);
-      const opacity = isCenter ? 1 : Math.max(0.2, 0.5 - absOffset * 0.15);
-
-      el.style.transform = `translateX(${translateX}px) translateZ(${isCenter ? 40 : -50}px) rotateY(${rotateY}deg) scale(${scale})`;
-      el.style.zIndex = zIndex;
-      el.style.opacity = opacity;
-    });
-
-    const dotsBox = document.getElementById("wizard-shop-dots");
-    if (dotsBox) {
-      dotsBox.querySelectorAll(".coverflow-dot").forEach((d, i) => {
-        d.classList.toggle("active", i === activeIdx);
-      });
-    }
-  },
-
-  selectShopIndex: function(idx) {
-    this.state.activeShopIndex = idx;
-    if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("click");
-    this.updateShopCylinder();
-  },
-
-  cylinderShopNext: function() {
-    const targetCategory = this.state.shopCategory || "ARMI";
-    const total = (this.state.shopCatalog || []).filter(item => Rules2_ClassifyEntity(item) === targetCategory.toUpperCase()).length;
-    if (total <= 1) return;
-    this.state.activeShopIndex = (this.state.activeShopIndex + 1) % total;
-    if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("card_flip");
-    this.updateShopCylinder();
-  },
-
-  cylinderShopPrev: function() {
-    const targetCategory = this.state.shopCategory || "ARMI";
-    const total = (this.state.shopCatalog || []).filter(item => Rules2_ClassifyEntity(item) === targetCategory.toUpperCase()).length;
-    if (total <= 1) return;
-    this.state.activeShopIndex = (this.state.activeShopIndex - 1 + total) % total;
-    if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("card_flip");
-    this.updateShopCylinder();
-  },
-
   inspectItemDetail: function(itemId) {
     const it = (this.state.shopCatalog || []).find(i => i.id === itemId);
     if (!it) return;
+    const price = Math.abs(Number(it.costoOro || it.costo || 15));
+    const canAfford = this.state.currentGold >= price;
 
-    const price = Math.abs(typeof cleanNumber === "function" ? cleanNumber(it.costoOro || it.costo, 15) : Number(it.costoOro || it.costo || 15));
-    const canAfford = (this.state.currentGold >= price);
-    const category = Rules2_ClassifyEntity(it);
-
-    const s = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
-    const h = (id, val) => { const el = document.getElementById(id); if (el) el.innerHTML = val; };
-
-    s("uni-detail-icon", it.emoji || "📦");
-    s("uni-detail-title", it.nome);
-    s("uni-detail-badge", `EMPORIO • ${category}`);
-    s("uni-detail-metrics-label", "PARAMETRI");
-
-    const bonuses = [];
-    if (it.danno) bonuses.push(`💥 Danno: <b>${it.danno}</b>`);
-    if (it.pv) bonuses.push(`❤️ PV: <b>${it.pv > 0 ? '+' : ''}${it.pv}</b>`);
-    if (it.forza) bonuses.push(`🥊 Forza: <b>+${it.forza}</b>`);
-    if (it.destrezza) bonuses.push(`🤸 Destrezza: <b>+${it.destrezza}</b>`);
-    if (it.intelligenza) bonuses.push(`🧠 Intelligenza: <b>+${it.intelligenza}</b>`);
-    bonuses.push(`💰 Prezzo: <b class="text-amber-300">${price} 🟡</b>`);
-
-    h("uni-detail-metrics-value", bonuses.join(" • ") + "<br>" + Rules2_FormatHumanEffect(it.requisitiCodificati || it.effettoCodificato, ""));
-    s("uni-detail-lore", it.descrizione || it.testo || "Nessuna nota d'archivio.");
-
-    const mediaContainer = document.getElementById("uni-detail-media-container");
-    if (mediaContainer) {
-      if (it.mediaUrl && it.mediaUrl !== "—" && it.mediaUrl.startsWith("http")) {
-        document.getElementById("uni-detail-img").src = it.mediaUrl;
-        mediaContainer.classList.remove("hidden");
-      } else {
-        mediaContainer.classList.add("hidden");
-      }
-    }
+    document.getElementById("uni-detail-icon").textContent = it.emoji || "📦";
+    document.getElementById("uni-detail-title").textContent = it.nome;
+    document.getElementById("uni-detail-lore").textContent = it.descrizione || it.testo || "";
 
     const btn = document.getElementById("uni-detail-action-btn");
     if (btn) {
-      btn.textContent = canAfford ? "Compra" : "Oro Insuff.";
-      btn.className = `btn btn-sm ${canAfford ? 'btn-primary font-black shadow-lg shadow-sky-600/30' : 'btn-outline border-white/10 text-slate-500 cursor-not-allowed'} w-full`;
-      btn.onclick = canAfford ? () => {
-        this.buyItem(it.id, price);
-        document.getElementById("modal-universal-detail")?.close();
-      } : null;
+      btn.textContent = canAfford ? `Compra (${price} ORO)` : "Oro Insufficiente";
+      btn.className = canAfford ? "btn btn-sm btn-primary font-black w-full" : "btn btn-sm btn-disabled w-full";
+      btn.onclick = canAfford ? () => this.buyItem(it.id, price) : null;
     }
 
-    if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("modal_open");
     document.getElementById("modal-universal-detail")?.showModal();
   },
 
   buyItem: function(itemId, price) {
     if (this.state.currentGold < price) {
       tgHaptic("error");
-      if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("unlucky");
-      tgAlert("Oro insufficiente!");
-      return;
+      return tgAlert("Oro insufficiente!");
     }
 
     const item = (this.state.shopCatalog || []).find(i => i.id === itemId);
@@ -1199,9 +680,7 @@ const Rules2Wizard = {
       const alreadyHasVehicle = this.state.boughtItems.some(x => Rules2_ClassifyEntity(x) === "VEICOLI");
       if (alreadyHasVehicle) {
         tgHaptic("warning");
-        if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("unlucky");
-        tgAlert("Massimo 1 Veicolo consentito!");
-        return;
+        return tgAlert("Massimo 1 Veicolo consentito!");
       }
     }
 
@@ -1210,6 +689,9 @@ const Rules2Wizard = {
     tgHaptic("success");
 
     if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("cash_register");
+
+    // CHIUSURA AUTOMATICA DELLA SCHEDA ALL'ACQUISTO
+    document.getElementById("modal-universal-detail")?.close();
     this.filterShop(this.state.shopCategory);
   },
 
@@ -1233,74 +715,99 @@ const Rules2Wizard = {
   },
 
   // --------------------------------------------------------------------------
-  // PASSO 4: BATTESIMO DELL'EROE
+  // STEP 4: LANCIA IL TUO EROE (CARD MONUMENTALE & MODALE NOME)
   // --------------------------------------------------------------------------
   renderStep4: function() {
     const cls = this.state.chosenClass;
     if (!cls) return;
 
-    const s = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
-    const pol = String(cls.sottocategoria || 'Destra').toUpperCase();
+    const pol = String(cls.sottocategoria || 'Destra').toLowerCase();
+    const heroName = this.state.heroName || AppState.user?.nome || "Avventuriero";
+    const startingGear = cls.equipLoot || "Pugni nudi";
+    const bought = this.state.boughtItems.map(i => i.nome).join(", ");
+    const fullInv = [startingGear, bought].filter(Boolean).join(", ");
 
-    s("wizard-class-recap", `${cls.nome} (${pol})`);
-    s("wizard-recap-avatar", cls.emoji || "🥋");
-    s("wizard-recap-classname", cls.nome);
-    s("wizard-recap-faction", pol);
-    s("wizard-recap-pv", `❤️ ${cls.pv || 25} PV`);
-    s("wizard-recap-gold", `🟡 ${this.state.currentGold} Oro`);
+    const container = document.getElementById("wizard-step-name");
+    if (!container) return;
 
-    const abls = this.state.chosenAbilities.map(id => {
-      const a = this.state.abilities.find(x => x.id === id);
-      return a ? a.nome : id;
-    });
-    s("wizard-recap-abilities", abls.length > 0 ? abls.join(", ") : "Nessuno");
+    container.innerHTML = `
+      <div class="hero-launch-stage">
+        <div class="hero-launch-card">
+          <div class="coverflow-media-frame">
+            <img src="${cls.mediaUrl}" class="coverflow-img" alt="${heroName}">
+            
+            <div class="coverflow-header-bar">
+              <div onclick="Rules2Wizard.openNameEditModal()" class="coverflow-title-group cursor-pointer">
+                <span class="coverflow-title-icon">${cls.emoji || '🥋'}</span>
+                <h4 id="hero-display-name" class="coverflow-title">${heroName} ✏️</h4>
+              </div>
+              <span class="coverflow-badge-faction" data-faction="${pol}">
+                ${pol.toUpperCase()}
+              </span>
+            </div>
 
-    const startingItem = cls.equipLoot && cls.equipLoot !== "—" ? cls.equipLoot : "Pugni nudi";
-    const bought = this.state.boughtItems.map(i => i.nome);
-    const fullInv = [startingItem, ...bought].filter(Boolean);
-    s("wizard-recap-inventory", fullInv.join(", "));
+            <div class="coverflow-header-divider"></div>
 
-    const nameInput = document.getElementById("wizard-name-input");
-    if (nameInput && !nameInput.value.trim()) {
-      nameInput.value = this.state.isVeteran ? this.state.heroName : (AppState.user?.nome || "Avventuriero");
+            <div class="watermark-cover-banner">
+              <div class="quote-text">Classe: <b>${cls.nome}</b></div>
+            </div>
+          </div>
+
+          <div class="coverflow-details-box">
+            <div class="coverflow-stats-row">
+              <div>🥊 FOR <b>${cls.forza || 10}</b></div>
+              <div>🤸 DES <b>${cls.destrezza || 10}</b></div>
+              <div>🧠 INT <b>${cls.intelligenza || 10}</b></div>
+            </div>
+
+            <div class="coverflow-lore">
+              <p>⚡ <b>Abilità:</b> ${this.state.chosenAbilities.length > 0 ? this.state.chosenAbilities.join(', ') : 'Nessuna'}</p>
+              <p class="mt-1">🎒 <b>Dotazione:</b> ${fullInv}</p>
+            </div>
+
+            <div class="coverflow-footer-row">
+              <span class="coverflow-gear-label">Status: <b>Pronto</b></span>
+              <div class="coverflow-kpi-pill">
+                <span class="pill-pv">❤️ ${cls.pv || 25} PV</span>
+                <span class="pill-gold">🟡 ${this.state.currentGold} ORO</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- MODALE MODIFICA NOME EROE -->
+      <dialog id="modal-hero-name" class="modal">
+        <div class="modal-hero-name-box">
+          <h3 class="text-sm font-black text-white uppercase">Nome dell'Eroe</h3>
+          <input id="input-hero-name" type="text" class="input input-sm input-bordered w-full my-3 text-center font-bold text-white bg-slate-900" value="${heroName}">
+          <div class="grid grid-cols-2 gap-2">
+            <button onclick="Rules2Wizard.saveHeroName()" class="btn btn-sm btn-primary font-black uppercase">Salva</button>
+            <button onclick="document.getElementById('modal-hero-name').close()" class="btn btn-sm btn-ghost text-slate-400 font-bold uppercase">Annulla</button>
+          </div>
+        </div>
+      </dialog>
+    `;
+
+    this.bindModalBackdropClose();
+  },
+
+  openNameEditModal: function() {
+    document.getElementById("modal-hero-name")?.showModal();
+  },
+
+  saveHeroName: function() {
+    const input = document.getElementById("input-hero-name");
+    if (input && input.value.trim()) {
+      this.state.heroName = input.value.trim();
+      const disp = document.getElementById("hero-display-name");
+      if (disp) disp.textContent = `${this.state.heroName} ✏️`;
     }
-  },
-
-  initKeyboardShield: function() {
-    const input = document.getElementById("wizard-name-input");
-    if (!input || input._shieldAttached) return;
-    input._shieldAttached = true;
-
-    input.addEventListener("focus", () => {
-      setTimeout(() => {
-        input.scrollIntoView({ behavior: "smooth", block: "center" });
-      }, 250);
-    });
-  },
-
-  useTelegramName: function() {
-    const input = document.getElementById("wizard-name-input");
-    if (input && AppState.user) input.value = AppState.user.nome;
-    tgHaptic("selection");
-    if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("click");
+    document.getElementById("modal-hero-name")?.close();
   },
 
   finalizeHero: function() {
-    const input = document.getElementById("wizard-name-input");
-    const defaultName = this.state.isVeteran ? this.state.heroName : (AppState.user?.nome || "Avventuriero");
-    const heroName = (input && input.value.trim()) ? input.value.trim() : defaultName;
-    const heroAvatarUrl = this.state.chosenClass?.mediaUrl || "";
-
-    const userBalance = Wallet.getMegoin();
-    const isFree = this.state.isVeteran;
-
-    if (!isFree && userBalance < 1) {
-      tgHaptic("error");
-      if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("unlucky");
-      tgAlert("⚠️ Megoin insufficienti!");
-      return;
-    }
-
+    const heroName = this.state.heroName || AppState.user?.nome || "Avventuriero";
     const payload = {
       gameKey: this.state.gameKey,
       episodio: this.state.episodio,
@@ -1308,26 +815,18 @@ const Rules2Wizard = {
       abilityIds: this.state.chosenAbilities.join(","),
       boughtItems: this.state.boughtItems.map(i => i.id || i.nome).join(","),
       heroName: heroName,
-      avatarUrl: heroAvatarUrl
+      avatarUrl: this.state.chosenClass?.mediaUrl || ""
     };
 
-    Rules2Engine.executeStartGame(payload, heroAvatarUrl);
+    Rules2Engine.executeStartGame(payload, payload.avatarUrl);
   },
 
-  nextStep: function(stepNum) {
-    this.state.step = stepNum;
-    if (stepNum === 4) this.renderStep4();
-    this.showStep(stepNum);
-    tgHaptic("selection");
-    if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("click");
+  nextStep: function(s) {
+    if (s === 4) this.renderStep4();
+    this.showStep(s);
   },
-
-  prevStep: function(stepNum) {
-    if (this.state.isVeteran && stepNum === 1) return;
-    this.state.step = stepNum;
-    this.showStep(stepNum);
-    tgHaptic("selection");
-    if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("click");
+  prevStep: function(s) {
+    this.showStep(s);
   }
 };
 
@@ -1357,54 +856,45 @@ const Rules2Engine = {
   launchSession: function(gameKey, epNum, canContinueFree, savedHero) {
     const saga = (AppState.games.catalog || []).find(g => g.gameKey === gameKey);
     const modal = document.getElementById("modal-insert-megoin");
-    if (!modal) {
-      Rules2Wizard.open(gameKey, epNum, canContinueFree, savedHero);
-      return;
-    }
+    if (!modal) return Rules2Wizard.open(gameKey, epNum, canContinueFree, savedHero);
 
     const activeBox = document.getElementById("arcade-active-game-box");
     const insertBox = document.getElementById("arcade-insert-coin-box");
-    const s = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
 
+    // MODALE AVVIO PARTITA: TASTI AFFIANCATI 50/50 [ NUOVA ] [ RIPRENDI ]
     if (saga && saga.hasActiveGame && saga.activePartitaId) {
       if (activeBox) activeBox.classList.remove("hidden");
       if (insertBox) insertBox.classList.add("hidden");
 
-      s("arcade-active-title", `${saga.serie || 'AVVENTURA'}`);
-      s("arcade-active-desc", `Partita attiva (ID: ${saga.activePartitaId}). Vuoi riprendere la marcia o ricominciare?`);
+      activeBox.innerHTML = `
+        <h3 class="arcade-title">${saga.serie || 'AVVENTURA'}</h3>
+        <p class="arcade-subtitle">Partita attiva in corso (ID: ${saga.activePartitaId})</p>
+        <div class="arcade-actions-50-50">
+          <button id="btn-arcade-new" class="btn btn-outline border-amber-500/40 text-amber-300">🪙 Nuova</button>
+          <button id="btn-arcade-resume" class="btn btn-success text-slate-950 font-black">▶️ Riprendi</button>
+        </div>
+      `;
 
-      const btnResume = document.getElementById("arcade-btn-resume");
-      if (btnResume) {
-        btnResume.textContent = "▶️ Riprendi";
-        btnResume.onclick = () => {
-          modal.close();
-          const activeFase = saga.activeFase || saga.fase || (saga.statoPartita && saga.statoPartita.fase) || "IN_GIOCO";
+      document.getElementById("btn-arcade-resume").onclick = () => {
+        modal.close();
+        const activeFase = saga.activeFase || saga.fase || "IN_GIOCO";
+        if (activeFase.startsWith("WIZARD_")) {
+          Rules2Wizard.resumeSession(gameKey, saga.activeEpisodio || epNum, saga);
+        } else {
+          AppState.activeSession.engineKey = "Rules2";
+          AppState.activeSession.gameKey = gameKey;
+          AppState.activeSession.episodio = saga.activeEpisodio || epNum;
+          AppState.activeSession.partitaId = saga.activePartitaId;
+          AppRouter.navigate("view-gameplay");
+          this.advanceToNode(saga.activeNode || `SND_0001_S1_E${epNum}`);
+        }
+      };
 
-          if (activeFase.startsWith("WIZARD_")) {
-            Rules2Wizard.resumeSession(gameKey, saga.activeEpisodio || epNum, saga);
-          } else {
-            AppState.activeSession.engineKey = "Rules2";
-            AppState.activeSession.gameKey = gameKey;
-            AppState.activeSession.episodio = saga.activeEpisodio || epNum;
-            AppState.activeSession.partitaId = saga.activePartitaId;
-            AppState.activeSession.combatRound = 1;
-            AppState.activeSession.combatEnemyId = null;
-
-            AppRouter.navigate("view-gameplay");
-            this.advanceToNode(saga.activeNode || ("SND_0001_S1_E" + (saga.activeEpisodio || epNum)));
-          }
-        };
-      }
-
-      const btnOverwrite = document.getElementById("arcade-btn-overwrite");
-      if (btnOverwrite) {
-        btnOverwrite.textContent = "🪙 Nuova";
-        btnOverwrite.onclick = () => {
-          if (activeBox) activeBox.classList.add("hidden");
-          if (insertBox) insertBox.classList.remove("hidden");
-          this._setupArcadeCoinScreen(gameKey, epNum, canContinueFree, savedHero, modal);
-        };
-      }
+      document.getElementById("btn-arcade-new").onclick = () => {
+        if (activeBox) activeBox.classList.add("hidden");
+        if (insertBox) insertBox.classList.remove("hidden");
+        this._setupArcadeCoinScreen(gameKey, epNum, canContinueFree, savedHero, modal);
+      };
     } else {
       if (activeBox) activeBox.classList.add("hidden");
       if (insertBox) insertBox.classList.remove("hidden");
@@ -1444,8 +934,7 @@ const Rules2Engine = {
           if (userBalance < 1) {
             tgHaptic("error");
             if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("unlucky");
-            tgAlert("⚠️ Megoin insufficienti!");
-            return;
+            return tgAlert("⚠️ Megoin insufficienti!");
           }
           modal.close();
           Rules2Wizard.open(gameKey, epNum, false, null);
@@ -1520,7 +1009,7 @@ const Rules2Engine = {
     const currentHero = AppState.activeSession.hero;
     if (!currentNode) return;
 
-    // MONITOR BATTITO CARDIACO IN CASO DI BASSA SALUTE (PV < 25%)
+    // MONITOR BATTITO CARDIACO IN CASO DI BASSA SALUTE (PV <= 25%)
     if (currentHero && currentHero.pvMax) {
       const pvRatio = (currentHero.pv || 0) / currentHero.pvMax;
       if (pvRatio <= 0.25 && currentHero.pv > 0) {
@@ -1530,8 +1019,55 @@ const Rules2Engine = {
       }
     }
 
-    const s = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+    const isDefeat = (currentHero && currentHero.pv <= 0) || (currentNode.categoria === "Fine" && currentNode.sottocategoria === "morte");
+    const isVictory = (String(currentNode.id).includes("SND_END") || currentNode.sottocategoria === "gancio");
+    const actBox = document.getElementById("scene-actions-container");
 
+    // 1. CASO MORTE: 2 TASTI AFFIANCATI 50/50 [ RETRY ] [ ESCI ]
+    if (isDefeat) {
+      if (typeof SoundEngine !== "undefined") {
+        SoundEngine.stopHeartbeat();
+        SoundEngine.playSfx("zelda_death");
+        SoundEngine.playBgm("defeat");
+      }
+      if (actBox) {
+        actBox.innerHTML = `
+          <div class="arcade-actions-50-50">
+            <button onclick="Rules2Engine.launchSession('${AppState.activeSession.gameKey}', ${AppState.activeSession.episodio}, false, null)" class="btn btn-warning font-black">
+              🔄 Retry
+            </button>
+            <button onclick="Rules2Engine.leaveGameToHub()" class="btn btn-outline border-white/20 text-white font-bold">
+              🚪 Esci
+            </button>
+          </div>
+        `;
+      }
+      return;
+    }
+
+    // 2. CASO VITTORIA: 2 TASTI AFFIANCATI 50/50 [ RETRY GRATIS ] [ AVANZA ]
+    if (isVictory) {
+      if (typeof SoundEngine !== "undefined") {
+        SoundEngine.stopHeartbeat();
+        SoundEngine.playSfx("lucky");
+        SoundEngine.playBgm("victory");
+      }
+      if (actBox) {
+        actBox.innerHTML = `
+          <div class="arcade-actions-50-50">
+            <button onclick="Rules2Wizard.open('${AppState.activeSession.gameKey}', ${AppState.activeSession.episodio}, false, null)" class="btn btn-outline border-emerald-400 text-emerald-300 font-bold">
+              🔄 Rigioca
+            </button>
+            <button onclick="Rules2Wizard.open('${AppState.activeSession.gameKey}', ${AppState.activeSession.episodio + 1}, true, AppState.activeSession.hero)" class="btn btn-success text-slate-950 font-black">
+              ➡️ Avanza
+            </button>
+          </div>
+        `;
+      }
+      return;
+    }
+
+    const s = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
     const saga = (AppState.games.catalog || []).find(g => g.gameKey === AppState.activeSession.gameKey);
     s("game-header-series", (saga ? saga.serie : "AVVENTURA NOIR").toUpperCase());
     s("game-header-episode", `Episodio ${AppState.activeSession.episodio}`);
@@ -1589,14 +1125,13 @@ const Rules2Engine = {
       if (wBanner) wBanner.classList.add("hidden");
     }
 
-    const actBox = document.getElementById("scene-actions-container");
     if (!actBox) return;
 
     const isCombat = (currentNode.tipo === "NEMICO" || (currentNode.id && currentNode.id.includes("NEM_")));
     const isBoss = isCombat && (String(currentNode.id).includes("BOSS") || String(currentNode.sottocategoria || "").toUpperCase().includes("BOSS"));
     const isEvento = (currentNode.tipo === "EVENTO" || (currentNode.id && currentNode.id.includes("EVT_")));
 
-    // CASO 1: COMBATTIMENTO D20
+    // CASO COMBATTIMENTO
     if (isCombat) {
       if (typeof SoundEngine !== "undefined") {
         SoundEngine.playEpisodeBgm(AppState.activeSession.gameKey, AppState.activeSession.episodio, isBoss ? "boss" : "combat");
@@ -1605,9 +1140,7 @@ const Rules2Engine = {
       if (AppState.activeSession.combatEnemyId !== currentNode.id) {
         AppState.activeSession.combatEnemyId = currentNode.id;
         AppState.activeSession.combatRound = 1;
-        if (typeof SoundEngine !== "undefined") {
-          SoundEngine.playSfx(isBoss ? "shock" : "hit");
-        }
+        if (typeof SoundEngine !== "undefined") SoundEngine.playSfx(isBoss ? "shock" : "hit");
       }
 
       let bribeHtml = "";
@@ -1638,12 +1171,12 @@ const Rules2Engine = {
       return;
     }
 
-    // GESTIONE BGM ESPLORAZIONE SNODO NORMALE
+    // GESTIONE BGM ESPLORAZIONE
     if (typeof SoundEngine !== "undefined") {
       SoundEngine.playEpisodeBgm(AppState.activeSession.gameKey, AppState.activeSession.episodio, "explore");
     }
 
-    // CASO 2: EVENTO D20
+    // CASO EVENTO D20
     if (isEvento) {
       const statReq = currentNode.statRichiesta || "DESTREZZA";
       const shortStat = statReq.substring(0, 3).toUpperCase();
@@ -1675,7 +1208,7 @@ const Rules2Engine = {
       return;
     }
 
-    // CASO 3: ENIGMA / QUIZ
+    // CASO ENIGMA
     if (currentNode.quiz) {
       actBox.innerHTML = `
         <div class="quiz-box">
@@ -1694,9 +1227,8 @@ const Rules2Engine = {
       return;
     }
 
-    // CASO 4: BIVIO NARRATIVO STANDARD
-    const rawChoices = currentNode.choices || currentNode.parsedBivio || [];
-    const choices = rawChoices.map(c => ({
+    // CASO BIVIO STANDARD
+    const choices = (currentNode.choices || currentNode.parsedBivio || []).map(c => ({
       testo: c.testo || c.text || c.nome || "Avanza",
       target: c.target || c.id || c.nodo || ""
     })).filter(c => c.target !== "");
@@ -1755,7 +1287,6 @@ const Rules2Engine = {
     }
   },
 
-  // DUCKING AUDIO CINEMATOGRAFICO DURANTE LA SUSPENSE DEL DADO
   showDiceRollSuspense: function(title, desc, durationMs, onComplete) {
     const diceModal = document.getElementById("modal-dice-suspense");
     const diceCube = document.getElementById("dice-visual-cube");
@@ -1797,13 +1328,9 @@ const Rules2Engine = {
       s("dice-roll-result", `${total} • ${isSuccess ? 'SUPERATO!' : 'FALLITO!'}`);
       s("dice-roll-desc", isSuccess ? 'Ostacolo superato!' : 'Danni subiti!');
 
-      // FEEDBACK SONORO DIFFERENZIATO: FORTUNATO VS SFORTUNATO
       if (typeof SoundEngine !== "undefined") {
-        if (isSuccess) {
-          SoundEngine.playSfx(d20 === 20 ? "lucky" : "success");
-        } else {
-          SoundEngine.playSfx(d20 === 1 ? "unlucky" : "hurt");
-        }
+        if (isSuccess) SoundEngine.playSfx(d20 === 20 ? "lucky" : "success");
+        else SoundEngine.playSfx(d20 === 1 ? "unlucky" : "hurt");
       }
 
       setTimeout(() => {
@@ -1829,7 +1356,6 @@ const Rules2Engine = {
     const diceModal = document.getElementById("modal-dice-suspense");
     const diceCube = document.getElementById("dice-visual-cube");
     const s = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
-
     const curRound = AppState.activeSession.combatRound || 1;
 
     if (subAction === "attack_round") {
@@ -1872,9 +1398,7 @@ const Rules2Engine = {
             if (log.isHit) {
               tgHaptic(log.isCrit ? "success" : "light");
               this.showFloatingDamage(`💥 -${log.dmgDealt} PV`, log.isCrit, false);
-              if (typeof SoundEngine !== "undefined") {
-                SoundEngine.playSfx(log.isCrit ? "crit_hit" : "hit");
-              }
+              if (typeof SoundEngine !== "undefined") SoundEngine.playSfx(log.isCrit ? "crit_hit" : "hit");
             } else {
               this.showFloatingDamage("💨 A vuoto", false, false);
               if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("flee");
@@ -1915,7 +1439,7 @@ const Rules2Engine = {
 
             if (typeof SoundEngine !== "undefined") {
               SoundEngine.stopHeartbeat();
-              SoundEngine.playSfx("zelda_death"); // Morte 8-bit Zelda
+              SoundEngine.playSfx("zelda_death");
               SoundEngine.playBgm("defeat");
             }
             this.renderNode(res.nextView.nodo, res.nextView.statoEroe);
@@ -2042,7 +1566,7 @@ const Rules2Engine = {
       this.advanceToNode(node.destSuccesso);
     } else {
       tgHaptic("error");
-      if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("unlucky"); // Sad Trombone
+      if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("unlucky");
       this.showFloatingDamage("❌ Errato!", false, true);
       this.advanceToNode(node.destFallimento);
     }
@@ -2320,7 +1844,7 @@ const Rules2Engine = {
       });
       if (res?.success) {
         tgHaptic("success");
-        if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("drug"); // Deglutizione fisica confermata
+        if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("drug");
         AppState.activeSession.hero = { ...AppState.activeSession.hero, ...res.statoEroe };
         this.renderNode(AppState.activeSession.currentNode, AppState.activeSession.hero);
         this.filterBackpack(AppState.activeSession.engineState.backpackFilter);
@@ -2330,7 +1854,7 @@ const Rules2Engine = {
     }
   },
 
-  // 3. CASSETTO EMPORIO DI CICCIO
+  // 3. CASSETTO EMPORIO DI CICCIO & CO.
   openEmporioDrawer: function() {
     const h = AppState.activeSession.hero;
     const goldDisp = document.getElementById("emporio-gold-display");
@@ -2661,18 +2185,12 @@ window.GameEngine = {
   setWizardViewMode: (step, mode) => Rules2Wizard.setWizardViewMode(step, mode),
   coverflowPrev: () => Rules2Wizard.coverflowPrev(),
   coverflowNext: () => Rules2Wizard.coverflowNext(),
-  cylinderAbilitiesPrev: () => Rules2Wizard.cylinderAbilitiesPrev(),
-  cylinderAbilitiesNext: () => Rules2Wizard.cylinderAbilitiesNext(),
-  cylinderShopPrev: () => Rules2Wizard.cylinderShopPrev(),
-  cylinderShopNext: () => Rules2Wizard.cylinderShopNext(),
-
   wizardConfirmStep1: () => Rules2Wizard.confirmStep1(),
   wizardPrevStep: (s) => Rules2Wizard.prevStep(s),
   wizardConfirmStep2: () => Rules2Wizard.confirmStep2(),
   filterWizardShop: (c) => Rules2Wizard.filterShop(c),
   resetWizardShop: () => Rules2Wizard.resetShop(),
   wizardNextStep: (s) => Rules2Wizard.nextStep(s),
-  wizardUseTelegramName: () => Rules2Wizard.useTelegramName(),
   wizardFinalizeHero: () => Rules2Wizard.finalizeHero(),
 
   openHeroSheetDrawer: () => Rules2Engine.openHeroSheetDrawer(),
