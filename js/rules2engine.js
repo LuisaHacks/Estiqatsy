@@ -1,6 +1,6 @@
 // ============================================================================
 // PROJECT: ESTIQATSY SYNDICATE & RPG PLATFORM
-// FILE: js/rules2engine.js (VERSIONE 4.0 - STANDALONE GOLD & 3-WAY EXIT MODAL)
+// FILE: js/rules2engine.js (VERSIONE 5.0 - SERVER-AUTHORITATIVE & FULL CROSS-SAVE)
 // LAYER: GAMEPLAY LOOP, D20 COMBAT, ASSETTO LOADOUT, CRAFTING & FORFEIT ENGINE
 // NOTE: 100% DISACCOPPIATO DAL WALLET PIATTAFORMA - GESTIONE AUTONOMA DELL'ORO
 // ============================================================================
@@ -141,25 +141,27 @@ const Rules2Engine = {
 
       document.getElementById("btn-arcade-resume").onclick = () => {
         modal.close();
-        const activeFase = saga.activeFase || saga.fase || (saga.statoPartita && saga.statoPartita.fase) || "IN_GIOCO";
+        const activeFase = String(saga.activeFase || saga.fase || (saga.statoPartita && saga.statoPartita.fase) || "").toUpperCase();
 
-        // SE SOSPESA DURANTE IL WIZARD: Riprende dallo Step esatto
-        if (activeFase.startsWith("WIZARD_")) {
+        // 🎯 SE SOSPESA DURANTE IL WIZARD: Riprende dallo Step esatto memorizzato sul server!
+        if (activeFase.indexOf("WIZARD_") !== -1) {
           if (typeof Rules2Wizard !== "undefined") {
             Rules2Wizard.resumeSession(gameKey, saga.activeEpisodio || epNum, saga);
           }
-        } else {
-          // SE IN GIOCO: Ripristina e naviga allo snodo narrativo attivo
-          AppState.activeSession.engineKey = "Rules2";
-          AppState.activeSession.gameKey = gameKey;
-          AppState.activeSession.episodio = saga.activeEpisodio || epNum;
-          AppState.activeSession.partitaId = saga.activePartitaId;
-          AppState.activeSession.combatRound = 1;
-          AppState.activeSession.combatEnemyId = null;
-
-          AppRouter.navigate("view-gameplay");
-          this.advanceToNode(saga.activeNode || `SND_0001_S1_E${saga.activeEpisodio || epNum}`);
+          return;
         }
+
+        // 🎯 SE IN GIOCO: Ripristina e naviga allo snodo narrativo attivo
+        AppState.activeSession.engineKey = "Rules2";
+        AppState.activeSession.gameKey = gameKey;
+        AppState.activeSession.episodio = saga.activeEpisodio || epNum;
+        AppState.activeSession.partitaId = saga.activePartitaId;
+        AppState.activeSession.combatRound = 1;
+        AppState.activeSession.combatEnemyId = null;
+
+        AppRouter.navigate("view-gameplay");
+        const resumeNode = saga.activeNode || `SND_0001_S1_E${saga.activeEpisodio || epNum}`;
+        this.advanceToNode(resumeNode);
       };
 
       document.getElementById("btn-arcade-new").onclick = () => {
@@ -267,6 +269,9 @@ const Rules2Engine = {
           saga.hasActiveGame = true;
           saga.activePartitaId = res.partitaId;
           saga.activeEpisodio = payloadParams.episodio;
+          saga.activeFase = "IN_GIOCO";
+          saga.activeNode = res.nodoIniziale?.id;
+          saga.statoEroe = res.statoEroe;
         }
 
         if (res.nuovoSaldoMegoin !== undefined) {
@@ -477,8 +482,8 @@ const Rules2Engine = {
           <div class="tactical-advantage-box">
             <div class="text-[10px] font-bold text-emerald-300">🛡️ Vantaggio Tattico: possiedi ${bypassTool}!</div>
           </div>
-          <button onclick="Rules2Engine.advanceToNode('${currentNode.destSuccesso}')" class="btn btn-sm btn-block btn-success font-black h-11 uppercase">
-            Bypassa ⚡
+          <button onclick="Rules2Engine.executeEventRoll('${currentNode.id}', '${statReq}', ${cdVal})" class="btn btn-sm btn-block btn-success font-black h-11 uppercase">
+            Bypassa con ${bypassTool} ⚡
           </button>
         `;
       } else {
@@ -619,42 +624,118 @@ const Rules2Engine = {
     }, durationMs || 700);
   },
 
-  // RISOLUZIONE EVENTO D20: DETERMINISMO ANTI-LOOP (MAI RIPETERE SE FALLITO)
+  // 🎯 RISOLUZIONE EVENTO D20 SERVER-AUTHORITATIVE
   executeEventRoll: async function(nodeId, statName, cdVal) {
     if (this._isBusy) return;
     this._setBusy(true);
 
-    const hero = AppState.activeSession.hero;
-    const statMod = hero?.modificatori ? (hero.modificatori[statName] || 0) : 0;
-    const d20 = Math.floor(Math.random() * 20) + 1;
-    const total = d20 + statMod;
-    const isSuccess = (d20 === 20) || (d20 !== 1 && total >= cdVal);
+    const diceModal = document.getElementById("modal-dice-suspense");
+    const diceCube = document.getElementById("dice-visual-cube");
+    const s = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
 
-    this.showDiceRollSuspense(`Prova ${statName} vs CD ${cdVal}`, `D20 (${d20}) ${statMod >= 0 ? '+' : ''}${statMod} = ${total}`, 750, (modal, s) => {
-      s("dice-roll-result", `${total} • ${isSuccess ? 'SUPERATO!' : 'FALLITO!'}`);
-      s("dice-roll-desc", isSuccess ? 'Ostacolo superato!' : 'Danni subiti!');
+    s("dice-roll-title", `Prova ${statName} vs CD ${cdVal}`);
+    s("dice-roll-result", "--");
+    s("dice-roll-desc", "Verifica ostacolo con il server...");
+
+    if (diceCube) diceCube.classList.add("dice-rolling");
+    if (diceModal) diceModal.showModal();
+
+    if (typeof SoundEngine !== "undefined") {
+      SoundEngine.duck(0.08, 900);
+      SoundEngine.playSfx("dice");
+    }
+
+    try {
+      const res = await apiCall("game_action", {
+        subAction: "event_roll",
+        nodeId: nodeId,
+        gameKey: AppState.activeSession.gameKey,
+        episodio: AppState.activeSession.episodio
+      });
+
+      if (diceCube) diceCube.classList.remove("dice-rolling");
+
+      const r = res.rollResult || {};
+      const isSuccess = res.passed;
+      const isBypassed = r.bypassed;
+      const isCrit = (r.d20 === 20);
+      const isFail = (r.d20 === 1);
+
+      if (isBypassed) {
+        s("dice-roll-result", "⚡ VANTAGGIO TATTICO");
+        s("dice-roll-desc", `Bypassato al 100% grazie a ${r.itemId || r.allyId || 'equipaggiamento'}!`);
+      } else {
+        s("dice-roll-result", `D20 (${r.d20 || '--'}) ${r.modStat >= 0 ? '+' : ''}${r.modStat || 0} = ${r.tot || '--'} vs CD ${r.cdD20 || cdVal}`);
+        s("dice-roll-desc", isSuccess ? "SUPERATO!" : `FALLITO! (-${res.dmgTaken || 0} PV)`);
+      }
 
       if (typeof SoundEngine !== "undefined") {
-        if (isSuccess) SoundEngine.playSfx(d20 === 20 ? "lucky" : "success");
-        else SoundEngine.playSfx(d20 === 1 ? "unlucky" : "hurt");
+        if (isSuccess) SoundEngine.playSfx(isCrit || isBypassed ? "lucky" : "success");
+        else SoundEngine.playSfx(isFail ? "unlucky" : "hurt");
       }
 
       setTimeout(() => {
-        modal.close();
-        const node = AppState.activeSession.currentNode;
+        if (diceModal) diceModal.close();
+
         if (isSuccess) {
           tgHaptic("success");
-          this.showFloatingDamage(d20 === 20 ? "🌟 CRITICO!" : "✅ Superato!", d20 === 20, false);
-          this.advanceToNode(node.destSuccesso);
+          this.showFloatingDamage(isCrit ? "🌟 CRITICO!" : (isBypassed ? "⚡ Bypasso!" : "✅ Superato!"), isCrit, false);
         } else {
           tgHaptic("error");
-          this.showFloatingDamage(d20 === 1 ? "💀 FUMBLE!" : "❌ Fallito!", false, true);
-          // Deterministico: se fallito avanza rigidamente verso fallback
-          const targetFail = node.destFallback || node.destFallimento || `SND_0001_S1_E${AppState.activeSession.episodio}`;
-          this.advanceToNode(targetFail);
+          this.showFloatingDamage(isFail ? "💀 FUMBLE!" : `❌ Fallito! -${res.dmgTaken || 0} PV`, false, true);
         }
-      }, 650);
-    });
+
+        if (res.nextView) {
+          this.renderNode(res.nextView.nodo, res.nextView.statoEroe);
+        }
+      }, 700);
+
+    } catch (e) {
+      if (diceModal) diceModal.close();
+      this._setBusy(false);
+      console.error("[Rules2Engine] Errore executeEventRoll:", e);
+      tgAlert("Errore prova evento: " + e.message);
+    }
+  },
+
+  // 🎯 RISOLUZIONE ENIGMA SERVER-AUTHORITATIVE
+  submitQuizAnswer: async function(selectedOpz) {
+    if (this._isBusy) return;
+    const node = AppState.activeSession.currentNode;
+    if (!node?.quiz) return;
+
+    this._setBusy(true);
+
+    try {
+      const res = await apiCall("game_action", {
+        subAction: "quiz_answer",
+        nodeId: node.id,
+        answer: selectedOpz,
+        gameKey: AppState.activeSession.gameKey,
+        episodio: AppState.activeSession.episodio
+      });
+
+      if (res?.correct) {
+        tgHaptic("success");
+        if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("lucky");
+        this.showFloatingDamage("✅ Esatto!", false, false);
+      } else {
+        tgHaptic("error");
+        if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("unlucky");
+        this.showFloatingDamage(`❌ Errato! -${res.dmgTaken || 4} PV`, false, true);
+      }
+
+      setTimeout(() => {
+        if (res?.nextView) {
+          this.renderNode(res.nextView.nodo, res.nextView.statoEroe);
+        }
+      }, 600);
+
+    } catch (e) {
+      this._setBusy(false);
+      console.error("[Rules2Engine] Errore submitQuizAnswer:", e);
+      tgAlert("Errore verifica risposta: " + e.message);
+    }
   },
 
   combatAction: async function(subAction) {
@@ -858,26 +939,6 @@ const Rules2Engine = {
     el.textContent = text;
     box.appendChild(el);
     setTimeout(() => el.remove(), 1200);
-  },
-
-  submitQuizAnswer: function(selectedOpz) {
-    if (this._isBusy) return;
-    const node = AppState.activeSession.currentNode;
-    if (!node?.quiz) return;
-
-    this._setBusy(true);
-    const isCorrect = (selectedOpz.trim().toLowerCase() === node.quiz.rispostaCorretta?.trim().toLowerCase());
-    if (isCorrect) {
-      tgHaptic("success");
-      if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("lucky");
-      this.showFloatingDamage("✅ Esatto!", false, false);
-      this.advanceToNode(node.destSuccesso);
-    } else {
-      tgHaptic("error");
-      if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("unlucky");
-      this.showFloatingDamage("❌ Errato!", false, true);
-      this.advanceToNode(node.destFallimento);
-    }
   },
 
   // --------------------------------------------------------------------------
@@ -1560,6 +1621,8 @@ const Rules2Engine = {
     if (saga) {
       saga.hasActiveGame = false;
       saga.activePartitaId = null;
+      saga.activeFase = null;
+      saga.activeNode = null;
     }
 
     AppState.activeSession.partitaId = null;
