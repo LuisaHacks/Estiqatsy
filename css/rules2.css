@@ -1,24 +1,22 @@
 /* ============================================================================
    PROJECT: ESTIQATSY SYNDICATE & RPG PLATFORM
-   FILE: css/rules2.css (VERSIONE 14.0 - MULTI-DEVICE 9-LINES LORE & 4-PILLAR GLASS COCKPIT)
-   LAYER: ENGINE RULES2, 3D WIZARD, RESPONSIVE COCKPIT & GLASSMORPHISM MODALS
+   FILE: css/rules2.css (VERSIONE 15.0 - UNIFIED UEC & CONSTANT ACTION DECK)
+   LAYER: ENGINE RULES2, UNIVERSAL ENTITY CARD, RESPONSIVE COCKPIT & MODALS
    ============================================================================ */
 
 /* ----------------------------------------------------------------------------
-   1. COCKPIT HEADER (TELEGRAM SAFE-ZONE) & FOOTER A 4 PILASTRI TATTICI
+   1. COCKPIT HEADER (TELEGRAM SAFE-ZONE) & FOOTER FISSO A 42px (ZERO GAP TOP)
    ---------------------------------------------------------------------------- */
 .universal-top-bar {
   flex: none;
   z-index: 40;
   width: 100%;
-  height: calc(var(--safe-top, 0px) + 48px);
+  height: calc(var(--safe-top, 0px) + var(--tg-header-height, 44px));
   padding-top: var(--safe-top, 0px);
   padding-left: 0.75rem;
-  padding-right: 85px; /* SAFE-ZONE: Spazio intoccabile per i tasti nativi Telegram (✕ e •••) */
-  background: rgba(9, 13, 22, 0.98);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border-bottom: 1px solid var(--tg-border, rgba(255, 255, 255, 0.08));
+  padding-right: calc(var(--safe-right, 0px) + 85px); /* SAFE-ZONE CAPSULA TELEGRAM (✕ e •••) */
+  background: #090D16;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -58,73 +56,101 @@
   }
 }
 
-/* Footer Cockpit Sticky: I 4 Pilastri Strategici */
+/* HUD di Stato (Fase & Saldo): ZERO GAP con la Top Bar */
+.stage-hud-strip {
+  flex: none;
+  height: 30px;
+  margin-top: 0 !important; /* ZERO GAP: agganciato direttamente alla barra sopra */
+  margin-bottom: 4px;       /* Micro-stacco di 4px con la card */
+  padding: 0 0.75rem;
+  background: #0D131F;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11px;
+}
+
+/* Footer Cockpit di Gioco: ESATTAMENTE 42px a Filo Schermo (Zero Spazio Morto) */
 .cockpit-footer {
   flex: none;
   z-index: 40;
   width: 100%;
+  max-width: 440px;
+  margin: 0 auto;
+  height: 42px !important; /* 42px FISSI: Nessuna safe area a vuoto che spinge in alto */
   background: rgba(13, 19, 31, 0.98);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border-top: 1px solid var(--tg-border-light, rgba(255, 255, 255, 0.12));
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   align-items: center;
-  padding-top: 0.35rem;
-  padding-bottom: max(var(--safe-bottom, 0px), 1.25rem); /* Safe Area iOS */
-  height: calc(58px + max(var(--safe-bottom, 0px), 0px));
+  gap: 4px;
+  padding: 0 6px;
 }
 
+/* Pulsanti Cockpit Compatto a Riga Singola (Icona + Testo Affiancati) */
 .cockpit-btn {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
   justify-content: center;
-  padding: 0.2rem 0.25rem;
-  background: transparent;
-  border: none;
+  gap: 0.3rem;
+  height: 32px;
+  padding: 0 0.35rem;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 0.4rem;
+  border: 1px solid transparent;
   cursor: pointer;
-  transition: transform 0.15s ease, color 0.15s ease;
+  transition: transform 0.15s ease, background 0.15s ease;
   width: 100%;
 }
-.cockpit-btn:active { transform: scale(0.92); }
+.cockpit-btn:active {
+  transform: scale(0.95);
+  background: rgba(56, 189, 248, 0.15);
+}
+.cockpit-btn svg,
+.cockpit-btn i {
+  width: 14px !important;
+  height: 14px !important;
+  flex-shrink: 0;
+}
 .cockpit-btn-label {
-  font-size: 9px;
+  font-size: 9.5px;
   font-weight: 800;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
-  margin-top: 0.2rem;
+  letter-spacing: 0.02em;
+  margin: 0;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+/* Gutter Esatto di 6px tra Carta e Footer Cockpit */
+.viewport-spacer-6px {
+  flex: none;
+  height: 6px;
+  width: 100%;
 }
 
 /* ----------------------------------------------------------------------------
-   2. SNODI NARRATIVI BORDERLESS (CINEMA FRAME 16:9)
+   2. SNODI NARRATIVI BORDERLESS (CINEMA FRAME 16:9 & DAMAGE LAYER)
    ---------------------------------------------------------------------------- */
 .cinema-frame-rigid {
   position: relative;
   width: 100%;
-  height: clamp(160px, 24dvh, 215px);
+  height: clamp(150px, 22dvh, 220px);
   border-radius: 0.95rem;
   overflow: hidden;
   background: #090D16;
   border: 1px solid rgba(255, 255, 255, 0.08);
   flex-shrink: 0;
 }
-@media (min-width: 768px) {
-  .cinema-frame-rigid {
-    height: clamp(210px, 28dvh, 270px);
-  }
-}
-.cinema-frame-rigid img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: center center;
-}
 
 .scene-badge {
   position: absolute;
-  top: 0.65rem;
-  left: 0.65rem;
+  top: 0.55rem;
+  left: 0.55rem;
   font-size: 9px;
   font-weight: 900;
   text-transform: uppercase;
@@ -136,8 +162,8 @@
   bottom: 0;
   left: 0;
   right: 0;
-  background: linear-gradient(180deg, transparent 0%, rgba(9, 13, 22, 0.82) 30%, rgba(9, 13, 22, 0.98) 100%);
-  padding: 0.5rem 0.85rem 0.4rem 0.85rem;
+  background: linear-gradient(180deg, transparent 0%, rgba(9, 13, 22, 0.85) 35%, rgba(9, 13, 22, 0.98) 100%);
+  padding: 0.4rem 0.75rem 0.35rem 0.75rem;
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
@@ -145,10 +171,10 @@
   z-index: 10;
 }
 .quote-text {
-  font-size: clamp(10.5px, 1.35dvh, 12px);
+  font-size: clamp(10.5px, 1.35dvh, 11.5px);
   color: #F1F5F9;
   font-style: italic;
-  line-height: 1.35;
+  line-height: 1.3;
   text-align: right;
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -157,14 +183,13 @@
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.95);
 }
 .quote-author {
-  font-size: 9px;
+  font-size: 8.5px;
   font-weight: 800;
   color: var(--tg-amber, #F59E0B);
   text-transform: uppercase;
   letter-spacing: 0.08em;
   text-align: right;
-  margin-top: 0.15rem;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9);
+  margin-top: 0.1rem;
 }
 
 /* Layer Danni Fluttuanti & Dado D20 */
@@ -203,7 +228,7 @@
    3. WIZARD: HEADER COMPATTO & GEOMETRIA RIGIDA ABOVE-THE-FOLD (ZERO-SCROLL)
    ---------------------------------------------------------------------------- */
 body[data-active-screen="view-wizard"] .app-scroll-area {
-  overflow: hidden !important; /* Zero scrollbar nel Wizard: tutto calcolato nel viewport */
+  overflow: hidden !important;
   overscroll-behavior-y: none;
 }
 body[data-active-screen="view-wizard"] .app-content-wrapper {
@@ -244,7 +269,7 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
 
 .wizard-single-header {
   flex: none;
-  min-height: 34px;
+  min-height: 32px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -256,16 +281,16 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
 .wizard-step-badge {
   background: var(--tg-amber, #F59E0B);
   color: #090D16;
-  font-size: 9px;
+  font-size: 8.5px;
   font-weight: 900;
-  padding: 0.15rem 0.45rem;
+  padding: 0.15rem 0.4rem;
   border-radius: 9999px;
   line-height: 1;
   flex-shrink: 0;
 }
 
 .wizard-step-title {
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   font-weight: 900;
   color: #FFFFFF;
   margin: 0;
@@ -278,10 +303,10 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
   gap: 0.25rem;
   white-space: nowrap;
   font-family: monospace;
-  font-size: 10.5px;
+  font-size: 10px;
   font-weight: 800;
   line-height: 1;
-  padding: 0.15rem 0.45rem;
+  padding: 0.15rem 0.4rem;
 }
 
 .wizard-view-toggle-pill {
@@ -295,9 +320,9 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
   flex-shrink: 0;
 }
 .toggle-pill-btn {
-  padding: 0.2rem 0.5rem;
+  padding: 0.15rem 0.45rem;
   border-radius: 9999px;
-  font-size: 9px;
+  font-size: 8.5px;
   font-weight: 800;
   color: var(--tg-text-muted, #94A3B8);
   background: transparent;
@@ -325,7 +350,7 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
 }
 
 /* ----------------------------------------------------------------------------
-   4. PALCOSCENICO CILINDRICO 3D, CARD SCHEDA & LORE A 9 RIGHE
+   4. UNIVERSAL ENTITY CARD (UEC): MASSIMA IMMAGINE & 9 RIGHE LORE
    ---------------------------------------------------------------------------- */
 .coverflow-stage-outer {
   position: relative;
@@ -334,12 +359,11 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 2px 0.25rem 0 0.25rem;
+  padding: 0 0.25rem;
   flex: 1 1 auto;
   min-height: 0;
 }
 
-/* Wrapper 3D Proporzionato */
 .coverflow-stage-wrapper {
   position: relative;
   width: 100%;
@@ -350,19 +374,22 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
   perspective-origin: center center;
   user-select: none;
   touch-action: pan-y;
-  /* MOBILE DEFAULT */
-  height: clamp(400px, 57dvh, 465px) !important;
+  height: 100% !important;
+  min-height: 380px;
+  max-height: 520px;
 }
 
-/* Scheda Collezionabile: 3D Hardware Accelerated & Above-The-Fold Fit */
-.coverflow-stage-wrapper .coverflow-card {
+/* La Scheda Universale (UEC): Occupa Tutto lo Spazio Residuo */
+.coverflow-stage-wrapper .coverflow-card,
+.universal-card {
   position: absolute;
-  border-radius: 1.15rem;
+  border-radius: 1rem;
   background: #0D131F;
   border: 1px solid rgba(255, 255, 255, 0.18);
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  justify-content: space-between;
   cursor: pointer;
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
@@ -370,33 +397,39 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
   transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.35s ease, box-shadow 0.35s ease, border-color 0.35s ease;
   will-change: transform, opacity;
 
-  /* MOBILE SIZE */
-  width: clamp(285px, 85vw, 335px) !important;
-  height: clamp(395px, 56dvh, 460px) !important;
+  /* Geometria Dinamica */
+  width: clamp(285px, 86vw, 340px) !important;
+  height: 100% !important;
+  max-height: calc(100% - 6px) !important;
+  margin-bottom: 6px !important; /* Esattamente 6px di distacco dal footer menu */
 
   box-shadow: 0 0 1px rgba(255, 255, 255, 0.4), 0 0 12px rgba(255, 255, 255, 0.08);
 }
 
-/* BAGLIORE ATTIVO TEMATICO PER FAZIONE POLITICA (3D & LISTA) */
-.coverflow-stage-wrapper .coverflow-card.glow-active {
+/* Bagliore Fazione Politica */
+.coverflow-stage-wrapper .coverflow-card.glow-active,
+.universal-card.glow-active {
   box-shadow: 0 0 2px rgba(56, 189, 248, 0.8), 0 0 20px rgba(56, 189, 248, 0.35) !important;
   border-color: rgba(56, 189, 248, 0.6) !important;
 }
-.coverflow-stage-wrapper .coverflow-card.glow-active[data-faction="destra"] {
+.coverflow-stage-wrapper .coverflow-card.glow-active[data-faction="destra"],
+.universal-card.glow-active[data-faction="destra"] {
   box-shadow: 0 0 2px rgba(56, 189, 248, 0.9), 0 0 24px rgba(56, 189, 248, 0.45) !important;
   border-color: rgba(56, 189, 248, 0.75) !important;
 }
-.coverflow-stage-wrapper .coverflow-card.glow-active[data-faction="sinistra"] {
+.coverflow-stage-wrapper .coverflow-card.glow-active[data-faction="sinistra"],
+.universal-card.glow-active[data-faction="sinistra"] {
   box-shadow: 0 0 2px rgba(244, 63, 94, 0.9), 0 0 24px rgba(244, 63, 94, 0.45) !important;
   border-color: rgba(244, 63, 94, 0.75) !important;
 }
 
-/* ZERO-BLEEDING: SILENZIAMENTO TOTALE TESTI SULLE CARTE LATERALI RUOTATE */
+/* Silenziamento Testi sulle Carte Laterali non attive */
 .coverflow-stage-wrapper .coverflow-card:not(.glow-active) .coverflow-lore,
+.coverflow-stage-wrapper .coverflow-card:not(.glow-active) .card-lore-box,
 .coverflow-stage-wrapper .coverflow-card:not(.glow-active) .watermark-cover-banner,
 .coverflow-stage-wrapper .coverflow-card:not(.glow-active) .coverflow-stats-row,
-.coverflow-stage-wrapper .coverflow-card:not(.glow-active) .coverflow-footer-row,
-.coverflow-stage-wrapper .coverflow-card:not(.glow-active) .coverflow-header-divider {
+.coverflow-stage-wrapper .coverflow-card:not(.glow-active) .card-action-deck,
+.coverflow-stage-wrapper .coverflow-card:not(.glow-active) .coverflow-footer-row {
   opacity: 0 !important;
   pointer-events: none;
   transition: opacity 0.2s ease;
@@ -406,85 +439,33 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
   content: "";
   position: absolute;
   inset: 0;
-  background: rgba(9, 13, 22, 0.85); /* Maschera oscurante profonda per le carte secondarie */
+  background: rgba(9, 13, 22, 0.85);
   pointer-events: none;
 }
 
-/* ----------------------------------------------------------------------------
-   CALIBRAZIONE RESPONSIVE: TABLET (640px - 1023px) & DESKTOP (≥ 1024px)
-   ---------------------------------------------------------------------------- */
-@media (min-width: 640px) and (max-width: 1023px) {
-  .coverflow-stage-wrapper {
-    height: clamp(470px, 60dvh, 525px) !important;
-  }
-  .coverflow-stage-wrapper .coverflow-card {
-    width: 340px !important;
-    height: clamp(460px, 59dvh, 515px) !important;
-  }
-  .coverflow-media-frame {
-    height: clamp(170px, 22dvh, 205px) !important;
-  }
-}
-
-@media (min-width: 1024px) {
-  .wizard-stage-container {
-    max-width: 860px;
-    margin: 0 auto;
-  }
-  .coverflow-stage-wrapper {
-    perspective: 1400px;
-    height: clamp(510px, 63dvh, 565px) !important;
-  }
-  .coverflow-stage-wrapper .coverflow-card {
-    width: 360px !important;
-    height: clamp(500px, 62dvh, 555px) !important;
-  }
-  .coverflow-media-frame {
-    height: clamp(190px, 24dvh, 225px) !important;
-  }
-}
-
-/* Media Frame (Cornice Ritratto) */
-.coverflow-media-frame {
+/* 1. Header Carta (30px Fisso) */
+.coverflow-header-bar,
+.uec-meta-bar {
   position: relative;
-  width: 100%;
-  height: clamp(150px, 21dvh, 180px);
-  background: #090D16;
-  flex-shrink: 0;
-  overflow: hidden;
-}
-.coverflow-img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: center center;
-}
-
-/* Header Carta */
-.coverflow-header-bar {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
   z-index: 15;
-  height: 38px;
+  height: 30px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 0.75rem;
+  padding: 0 0.65rem;
+  background: rgba(9, 13, 22, 0.95);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
-.coverflow-title-group {
+.coverflow-title-group,
+.uec-title-group {
   display: flex;
   align-items: center;
   gap: 0.35rem;
   max-width: 68%;
 }
-.coverflow-title-icon {
-  font-size: 0.95rem;
-  line-height: 1;
-}
-.coverflow-title {
-  font-size: 0.88rem;
+.coverflow-title,
+.uec-title {
+  font-size: 0.82rem;
   font-weight: 900;
   color: #FFFFFF;
   line-height: 1.1;
@@ -492,178 +473,191 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.95);
 }
-
 .coverflow-badge-faction {
-  font-size: 0.68rem;
+  font-size: 0.65rem;
   font-weight: 900;
   letter-spacing: 0.05em;
-  padding: 0.18rem 0.5rem;
+  padding: 0.15rem 0.45rem;
   border-radius: 9999px;
   line-height: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 .coverflow-badge-faction[data-faction="destra"],
 .badge-faction-destra {
   background: #38BDF8;
   color: #090D16;
-  box-shadow: 0 0 8px 1px rgba(56, 189, 248, 0.6);
 }
 .coverflow-badge-faction[data-faction="sinistra"],
 .badge-faction-sinistra {
   background: #F43F5E;
   color: #FFFFFF;
-  box-shadow: 0 0 8px 1px rgba(244, 63, 94, 0.6);
 }
 
-/* Riga Bianca Divisoria */
-.coverflow-header-divider {
-  position: absolute;
-  top: 38px;
-  left: 0.75rem;
-  right: 0.75rem;
-  height: 1px;
-  background: rgba(255, 255, 255, 0.18);
-  z-index: 15;
-}
-
-/* Area Lore & Dati: Ancorata Rigidamento in Alto a Sinistra */
-.coverflow-details-box {
-  padding: 0.35rem 0.75rem 0.45rem 0.75rem !important;
-  flex: 1 1 auto;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-start; /* ANCORAGGIO FISSO IN ALTO */
-  align-items: flex-start;
-  background: #0D131F;
-  gap: 0.25rem;
-  min-height: 0;
-}
-
-/* Trittico Caratteristiche: FONT UNIFORMI (10.5px MONO) */
-.coverflow-stats-row {
+/* 2. Media Frame MASSIMO: Riempie tutto lo spazio verticale */
+.coverflow-media-frame,
+.card-media-box {
+  position: relative;
   width: 100%;
-  min-height: 1.9rem !important;
+  flex: 1 1 auto; /* PRENDE TUTTO IL RESIDUO: Immagine enorme e dominante */
+  min-height: 140px;
+  max-height: 240px;
+  background: #090D16;
+  overflow: hidden;
+}
+.coverflow-img,
+.card-media-box img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center center;
+}
+
+/* 3. Trittico KPI Tattici (24px) */
+.coverflow-stats-row,
+.uec-kpi-strip {
+  width: 100%;
+  height: 24px !important;
+  min-height: 24px !important;
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.25rem;
-  padding: 0.1rem 0.25rem !important;
-  border-radius: 0.5rem;
-  background: rgba(0, 0, 0, 0.55);
-  border: 1px solid var(--tg-border, rgba(255, 255, 255, 0.08));
+  gap: 1px;
+  background: rgba(255, 255, 255, 0.08);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   align-items: center;
   font-family: monospace;
-  font-size: 10.5px !important;
+  font-size: 10px !important;
   font-weight: 800;
   margin: 0 !important;
   flex-shrink: 0;
 }
-.coverflow-stats-row > div {
+.coverflow-stats-row > div,
+.uec-kpi-item {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 0.15rem;
-  border-right: 1px solid rgba(255, 255, 255, 0.08);
+  background: #0D131F;
+  height: 100%;
 }
-.coverflow-stats-row > div:last-child { border-right: none; }
-.stat-mod { font-size: 9px; color: #94A3B8; font-weight: 700; }
 
-/* TESTO NARRATIVO LORE: 9 RIGHE REALI ANCORATE IN ALTO A SX */
-.coverflow-lore {
-  display: block;
-  text-align: left !important; /* ANCORATO A SINISTRA */
-  align-self: flex-start !important;
+/* 4. Area Narrativa: ESATTAMENTE 9 RIGHE MASSIME (Scroll Interno Isolato) */
+.coverflow-lore,
+.card-lore-box {
+  flex: none;
   width: 100%;
   font-size: 11px !important;
-  line-height: 1.38 !important; /* ~15.2px a riga -> 9 righe = ~137px */
+  line-height: 1.35 !important;
+  /* 9 RIGHE ESATTE = 11px * 1.35 * 9 = 133.65px */
+  max-height: calc(11px * 1.35 * 9) !important;
+  padding: 0.35rem 0.65rem !important;
   color: #CBD5E1;
-  margin: 0.1rem 0 !important;
-  word-break: break-word;
-  /* SPAZIO FISSO PER 9 RIGHE SENZA TRONCAMENTI */
-  min-height: 135px !important;
-  max-height: 148px !important;
+  text-align: left;
   overflow-y: auto;
   scrollbar-width: none;
   -ms-overflow-style: none;
-  flex: 1 1 auto;
+  word-break: break-word;
+  background: #0D131F;
 }
-.coverflow-lore::-webkit-scrollbar { display: none; }
+.coverflow-lore::-webkit-scrollbar,
+.card-lore-box::-webkit-scrollbar {
+  display: none;
+}
 
-/* Piede Scheda: DOTAZIONE A LARGHEZZA 65% (NON TRONCATA) */
-.coverflow-footer-row {
+/* 5. ACTION DECK COSTANTE (~46px FISSI IN PRIMO PIANO) */
+.card-action-deck,
+.uec-action-surface {
+  flex: none;
   width: 100%;
-  min-height: 1.9rem !important;
-  padding-top: 0.25rem !important;
-  border-top: 1px solid rgba(255, 255, 255, 0.18);
-  display: flex;
+  height: 46px !important;
+  padding: 3px 6px;
+  background: rgba(9, 13, 22, 0.98);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  display: grid;
+  gap: 3px;
   align-items: center;
-  justify-content: space-between;
-  gap: 0.35rem !important;
-  flex-shrink: 0;
 }
-.coverflow-gear-label {
-  font-size: 10px !important;
-  color: #CBD5E1;
-  max-width: 65% !important; /* Esteso per non troncare armi composte */
+
+/* CASO 1 & 2 SCELTE: Bottoni Standard da 38px */
+.card-action-deck[data-choices="1"],
+.uec-action-surface[data-grid="1"] {
+  grid-template-columns: 1fr;
+}
+.card-action-deck[data-choices="2"],
+.uec-action-surface[data-grid="2"] {
+  grid-template-columns: 1fr 1fr;
+}
+.card-action-deck[data-choices="1"] .btn,
+.card-action-deck[data-choices="2"] .btn,
+.uec-action-surface[data-grid="1"] .btn,
+.uec-action-surface[data-grid="2"] .btn {
+  height: 38px !important;
+  min-height: 38px !important;
+  font-size: 11px !important;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+/* CASO 4 SCELTE (QUIZ): Altezza Dimezzata a 19px */
+.card-action-deck[data-choices="4"],
+.uec-action-surface[data-grid="4"] {
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 19px 19px;
+}
+.card-action-deck[data-choices="4"] .btn,
+.uec-action-surface[data-grid="4"] .btn {
+  height: 19px !important;
+  min-height: 19px !important;
+  padding: 0 4px !important;
+  font-size: 9.5px !important;
+  font-weight: 800;
+  line-height: 1;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.coverflow-gear-label b { color: var(--tg-amber, #F59E0B); }
 
-.coverflow-kpi-pill {
-  display: flex;
-  gap: 0.25rem;
-  align-items: center;
-  flex-shrink: 0;
+/* CASO 3 SCELTE: 2 Sopra (19px) + 1 Sotto Largo a Due Slot (19px) */
+.card-action-deck[data-choices="3"],
+.uec-action-surface[data-grid="3"] {
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 19px 19px;
 }
-.pill-pv, .pill-gold {
-  background: rgba(9, 13, 22, 0.85);
-  font-family: monospace;
+.card-action-deck[data-choices="3"] .btn,
+.uec-action-surface[data-grid="3"] .btn {
+  height: 19px !important;
+  min-height: 19px !important;
+  padding: 0 4px !important;
   font-size: 9.5px !important;
-  font-weight: 800;
-  padding: 0.15rem 0.35rem !important;
-  border-radius: 9999px;
-  border: 1px solid var(--tg-border-light, rgba(255, 255, 255, 0.12));
-  line-height: 1;
 }
-.pill-pv { color: #FDA4AF; }
-.pill-gold { color: #FDE047; }
+.card-action-deck[data-choices="3"] .btn:nth-child(3),
+.uec-action-surface[data-grid="3"] .btn:nth-child(3) {
+  grid-column: span 2; /* Largo quanto i due superiori affiancati */
+}
 
-/* CLUSTER NAVIGAZIONE PALLINI: RESPIRO PERFETTO (+8px DA CARTA E TASTO) */
+/* Cluster Navigazione Compatto a 5 / 11 */
 .coverflow-nav-cluster {
   display: flex;
   justify-content: center;
   align-items: center;
   gap: 0.55rem;
-  margin-top: 8px !important;    /* Respiro garantito dall'alone inferiore della carta */
-  margin-bottom: 6px !important; /* Respiro dal tasto CTA sticky */
-  height: 24px;
+  margin-top: 4px !important;
+  margin-bottom: 2px !important;
+  height: 20px;
   flex-shrink: 0;
 }
-.coverflow-dots {
-  display: flex;
-  align-items: center;
-  gap: 0.3rem;
-}
-.coverflow-dot {
-  width: 0.32rem;
-  height: 0.32rem;
+.coverflow-counter-pill {
+  font-family: monospace;
+  font-size: 10px;
+  font-weight: 800;
+  color: var(--tg-sky, #38BDF8);
+  padding: 0.1rem 0.4rem;
+  background: rgba(0, 0, 0, 0.4);
   border-radius: 9999px;
-  background: rgba(255, 255, 255, 0.2);
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-.coverflow-dot.active {
-  width: 0.95rem;
-  background: var(--tg-sky, #38BDF8);
 }
 .coverflow-btn-side {
-  width: 22px;
-  height: 22px;
+  width: 20px;
+  height: 20px;
   border-radius: 9999px;
   background: rgba(255, 255, 255, 0.08);
   border: 1px solid rgba(255, 255, 255, 0.15);
@@ -671,24 +665,23 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 11px;
+  font-size: 10px;
   cursor: pointer;
-  transition: background 0.15s ease;
 }
-.coverflow-btn-side:active { background: #38BDF8; color: #090D16; }
 
 /* ----------------------------------------------------------------------------
-   5. MENU FILTRI E VISTE LISTA / GRIGLIA (CON FACTION GLOW)
+   5. MENU FILTRI E VISTE LISTA / GRIGLIA
    ---------------------------------------------------------------------------- */
 .chips-scroll-bar {
   flex: none;
-  height: 36px;
+  height: 34px;
   display: flex;
   align-items: center;
   gap: 0.45rem;
   overflow-x: auto;
   scrollbar-width: none;
   padding: 0 0.25rem;
+  mask-image: linear-gradient(to right, black 85%, transparent 100%);
 }
 .chips-scroll-bar::-webkit-scrollbar { display: none; }
 
@@ -700,7 +693,7 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
   min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 0.35rem 0.25rem 5.5rem 0.25rem;
+  padding: 0.35rem 0.25rem 4.5rem 0.25rem;
   display: grid;
   gap: 0.55rem;
   -webkit-overflow-scrolling: touch;
@@ -717,13 +710,6 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
     gap: 0.75rem;
   }
 }
-@media (min-width: 1024px) {
-  .wizard-list-scroll-grid,
-  .abilities-scroll-grid {
-    grid-template-columns: repeat(3, 1fr);
-    gap: 1rem;
-  }
-}
 
 .shop-cards-grid {
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -734,543 +720,79 @@ body[data-active-screen="view-wizard"] #main-wizard-footer {
     gap: 0.75rem;
   }
 }
-@media (min-width: 1024px) {
-  .shop-cards-grid {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 1rem;
-  }
-}
 
 .class-list-card {
   background: var(--tg-surface, #111827);
   border: 1px solid var(--tg-border, rgba(255, 255, 255, 0.08));
-  border-radius: 0.95rem;
-  padding: 0.65rem 0.8rem;
+  border-radius: 0.85rem;
+  padding: 0.55rem 0.75rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 0.65rem;
   cursor: pointer;
-  transition: all 0.15s ease;
 }
-.class-list-card:hover { background: var(--tg-surface-hover, #1F2937); }
-
-/* Glow Selezionato nella vista Lista */
 .class-list-card.selected {
   border-color: var(--tg-sky, #38BDF8) !important;
   background: rgba(56, 189, 248, 0.12) !important;
   box-shadow: 0 0 16px rgba(56, 189, 248, 0.35) !important;
 }
-.class-list-card.selected[data-faction="destra"] {
-  border-color: #38BDF8 !important;
-  box-shadow: 0 0 16px rgba(56, 189, 248, 0.35) !important;
-}
-.class-list-card.selected[data-faction="sinistra"] {
-  border-color: #F43F5E !important;
-  background: rgba(244, 63, 94, 0.12) !important;
-  box-shadow: 0 0 16px rgba(244, 63, 94, 0.35) !important;
-}
-
-.class-list-thumb {
-  width: 2.5rem;
-  height: 2.5rem;
-  border-radius: 0.6rem;
-  background: #090D16;
-  overflow: hidden;
-  flex-shrink: 0;
-  border: 1px solid var(--tg-border, rgba(255, 255, 255, 0.08));
-}
-.class-list-thumb img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-.class-list-info { flex: 1 1 0%; min-width: 0; }
-.class-list-name {
-  font-size: 0.82rem;
-  font-weight: 900;
-  color: #FFFFFF;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.class-list-sub {
-  font-size: 9.5px;
-  color: var(--tg-text-muted, #94A3B8);
-  margin-top: 0.1rem;
-}
-
-.wizard-ability-card {
-  padding: 0.75rem 0.85rem;
-  border-radius: 0.95rem;
-  border: 1px solid var(--tg-border, rgba(255, 255, 255, 0.08));
-  background: var(--tg-surface, #111827);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-.wizard-ability-card:hover { background: var(--tg-surface-hover, #1F2937); }
-.wizard-ability-card.selected {
-  border-color: var(--tg-sky, #38BDF8);
-  background: rgba(56, 189, 248, 0.12);
-  box-shadow: 0 0 15px rgba(56, 189, 248, 0.25);
-}
-.wizard-ability-card.locked { opacity: 0.45; cursor: not-allowed; }
-.ability-card-info { overflow: hidden; flex: 1 1 0%; }
-.ability-card-title {
-  font-size: 0.82rem;
-  font-weight: 900;
-  color: #FFFFFF;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
 
 .wizard-shop-card {
   background: var(--tg-surface, #111827);
-  border-radius: 0.95rem;
+  border-radius: 0.85rem;
   border: 1px solid var(--tg-border, rgba(255, 255, 255, 0.08));
-  padding: 0.65rem 0.75rem;
+  padding: 0.55rem 0.65rem;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  gap: 0.45rem;
-}
-.wizard-shop-card:hover { background: var(--tg-surface-hover, #1F2937); }
-.shop-card-clickable {
-  cursor: pointer;
-  display: flex;
-  flex-direction: column;
-  gap: 0.2rem;
-}
-.shop-card-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-.shop-card-price {
-  font-family: monospace;
-  font-size: 10.5px;
-  font-weight: 800;
-  color: #FDE047;
-}
-.shop-card-title {
-  font-size: 0.8rem;
-  font-weight: 900;
-  color: #FFFFFF;
-  margin-top: 0.1rem;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.wizard-shop-card:hover .shop-card-title { color: var(--tg-sky, #38BDF8); }
-.shop-card-desc {
-  font-size: 10.5px;
-  color: #CBD5E1;
-  line-height: 1.35;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-.shop-card-actions {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.35rem;
-  padding-top: 0.35rem;
-  border-top: 1px solid var(--tg-border, rgba(255, 255, 255, 0.08));
 }
 
 /* ----------------------------------------------------------------------------
-   6. FOOTER WIZARD STICKY & TASTI CTA SKY BLUE (SAFE-AREA IPHONE)
+   6. FOOTER WIZARD STICKY & TASTI CTA
    ---------------------------------------------------------------------------- */
 .wizard-sticky-footer {
   flex: none;
   z-index: 40;
   width: 100%;
+  max-width: 440px;
+  margin: 0 auto;
   background: rgba(9, 13, 22, 0.98);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
   border-top: 1px solid rgba(255, 255, 255, 0.12);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.35rem 0.75rem;
-  padding-bottom: max(var(--safe-bottom, 0px), 1.25rem) !important;
-  height: calc(56px + max(var(--safe-bottom, 0px), 0px)) !important;
+  padding: 0 0.5rem;
+  height: 42px !important; /* 42px a filo schermo */
 }
 
 .wizard-footer-step-controls {
   width: 100%;
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.4rem;
 }
 .wizard-footer-step-controls .btn {
-  height: 2.45rem;
-  min-height: 2.45rem;
-  font-size: 0.82rem;
+  height: 32px;
+  min-height: 32px;
+  font-size: 0.75rem;
   font-weight: 900;
   text-transform: uppercase;
 }
 
-/* Tasto Primario Sky Blue Darsena */
 .btn-wizard-cta {
   background: var(--tg-sky, #38BDF8) !important;
   color: #090D16 !important;
   border: none !important;
   font-weight: 900 !important;
-  box-shadow: 0 0 16px rgba(56, 189, 248, 0.35) !important;
-}
-.btn-wizard-cta:hover, .btn-wizard-cta:active {
-  background: #7DD3FC !important;
-  transform: scale(0.98);
 }
 
 /* ----------------------------------------------------------------------------
-   7. CARD MONUMENTALE STEP 4 ("LANCIA IL TUO EROE")
+   7. MODALI DI SISTEMA, BANCO CAMBIO & CASSETTI
    ---------------------------------------------------------------------------- */
-.hero-launch-stage {
-  width: 100%;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 2px 0.25rem 0 0.25rem;
-  flex: 1 1 auto;
-}
-.hero-launch-card {
-  width: clamp(285px, 85vw, 335px) !important;
-  height: clamp(395px, 56dvh, 460px) !important;
-  border-radius: 1.15rem;
-  background: #0D131F;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  box-shadow: 0 0 2px rgba(56, 189, 248, 0.8), 0 0 20px rgba(56, 189, 248, 0.35);
-  position: relative;
-}
-
-/* ----------------------------------------------------------------------------
-   8. MODALI CABINATO ARCADE & ABBANDONO (WIDESCREEN RESPONSIVE)
-   ---------------------------------------------------------------------------- */
-.arcade-coin-modal-box {
-  background: linear-gradient(180deg, #0F172A 0%, #090D16 100%);
-  border: 1px solid rgba(245, 158, 11, 0.5);
-  padding: 1.35rem 1.25rem 1.65rem 1.25rem;
-  border-radius: 1.35rem;
-  text-align: center;
-  max-width: 22rem;
-  width: 100%;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.9), 0 0 24px rgba(245, 158, 11, 0.25);
-  position: relative;
-}
-
-.arcade-coin-frame {
-  width: 4.5rem;
-  height: 4.5rem;
-  margin: 0 auto 0.65rem auto;
-  border-radius: 9999px;
-  background: radial-gradient(circle, rgba(245, 158, 11, 0.25) 0%, transparent 70%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.arcade-coin-huge {
-  font-size: 3rem;
-  display: inline-block;
-  animation: pulseArcadeCoin 2s ease-in-out infinite;
-  filter: drop-shadow(0 0 12px rgba(245, 158, 11, 0.6));
-}
-@keyframes pulseArcadeCoin {
-  0%, 100% { transform: scale(1) rotate(0deg); }
-  50% { transform: scale(1.12) rotate(6deg); }
-}
-
-.arcade-kicker {
-  font-size: 9px;
-  font-weight: 900;
-  letter-spacing: 0.2em;
-  color: var(--tg-amber, #F59E0B);
-  text-transform: uppercase;
-}
-.arcade-title {
-  font-size: 1.15rem;
-  font-weight: 900;
-  color: #FFFFFF;
-  margin: 0.15rem 0 0 0;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-.arcade-subtitle {
-  font-size: 11.5px;
-  color: #CBD5E1;
-  line-height: 1.45;
-  margin: 0.35rem 0 0 0;
-}
-
-.arcade-wallet-pill {
-  padding: 0.45rem 0.75rem;
-  border-radius: 0.65rem;
-  background: rgba(0, 0, 0, 0.6);
-  border: 1px solid var(--tg-border, rgba(255, 255, 255, 0.08));
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  font-family: monospace;
-  font-size: 11px;
-  color: #FFFFFF;
-}
-
-.arcade-actions-50-50 {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.5rem;
-  width: 100%;
-  margin-top: 0.75rem;
-}
-.arcade-actions-50-50 .btn {
-  height: 2.65rem;
-  min-height: 2.65rem;
-  font-size: 0.82rem;
-  font-weight: 900;
-  text-transform: uppercase;
-}
-
-/* Modale Abbandono Diegetico Tripartito */
-.abandon-modal-box {
-  background: linear-gradient(180deg, #1E1B4B 0%, #090D16 100%);
-  border: 1px solid rgba(244, 63, 94, 0.5);
-  padding: 1.35rem 1.25rem 1.65rem 1.25rem;
-  border-radius: 1.35rem;
-  text-align: center;
-  max-width: 22rem;
-  width: 100%;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.95), 0 0 24px rgba(244, 63, 94, 0.25);
-  position: relative;
-}
-
-/* ----------------------------------------------------------------------------
-   9. COCKPIT GAMEPLAY BORDERLESS
-   ---------------------------------------------------------------------------- */
-.gameplay-container {
-  display: flex;
-  flex-direction: column;
-  gap: 0.45rem;
-  width: 100%;
-}
-
-.hud-cockpit {
-  background: rgba(17, 24, 39, 0.95);
-  border: 1px solid var(--tg-border-light, rgba(255, 255, 255, 0.12));
-  border-radius: 0.95rem;
-  padding: 0.45rem 0.75rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.3rem;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-}
-
-.hud-row-identity {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.65rem;
-}
-.hud-avatar-box {
-  width: 2.1rem;
-  height: 2.1rem;
-  border-radius: 0.6rem;
-  background: #0F172A;
-  border: 1.5px solid var(--tg-sky, #38BDF8);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  overflow: hidden;
-  box-shadow: 0 0 8px rgba(56, 189, 248, 0.35);
-}
-.hud-avatar-img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-.hud-avatar-fallback { font-size: 1.15rem; }
-.hud-hero-name {
-  font-size: 0.82rem;
-  font-weight: 900;
-  color: #FFFFFF;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.hud-gold-display {
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-  font-family: monospace;
-  font-size: 0.82rem;
-  font-weight: 800;
-  color: #FDE047;
-  flex-shrink: 0;
-}
-.gold-suffix { font-size: 9.5px; color: var(--tg-text-muted, #94A3B8); }
-
-.hud-row-vitals {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.65rem;
-  padding-top: 0.25rem;
-  border-top: 1px solid var(--tg-border, rgba(255, 255, 255, 0.08));
-}
-.hud-vitals-box {
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
-  flex: 0 0 44%;
-  max-width: 46%;
-}
-.heart-icon { font-size: 0.85rem; flex-shrink: 0; }
-.progress-bar-container { flex: 1 1 0%; }
-.hud-pv-number {
-  font-family: monospace;
-  font-size: 9.5px;
-  font-weight: 700;
-  color: #CBD5E1;
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-
-.hud-d20-trio {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 0.25rem;
-  flex: 1 1 0%;
-}
-.d20-chip {
-  padding: 0.15rem 0.35rem;
-  border-radius: 0.45rem;
-  background: rgba(0, 0, 0, 0.6);
-  border: 1px solid var(--tg-border, rgba(255, 255, 255, 0.08));
-  font-size: 9px;
-  font-family: monospace;
-  white-space: nowrap;
-}
-
-/* Scatola Narrativa Borderless a Tutta Larghezza */
-.narrative-box-flexible {
-  flex: 1 1 auto;
-  min-height: 110px;
-  max-height: clamp(140px, 22dvh, 220px);
-  background: rgba(17, 24, 39, 0.45);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 0.95rem;
-  padding: 0.75rem 0.95rem;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-}
-.narrative-title {
-  font-size: 10px;
-  font-weight: 900;
-  color: #FFFFFF;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-}
-.narrative-prose {
-  font-size: 13px;
-  color: #E2E8F0;
-  line-height: 1.55;
-  margin: 0;
-}
-
-.scene-actions-area {
-  flex: none;
-  display: flex;
-  flex-direction: column;
-  gap: 0.45rem;
-  min-height: 48px;
-}
-
-.combat-actions-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.45rem;
-  align-items: stretch;
-}
-.combat-actions-grid .btn {
-  min-height: 2.75rem;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  line-height: 1.25;
-  padding: 0.35rem 0.5rem;
-  font-size: 0.82rem;
-  font-weight: 900;
-  text-transform: uppercase;
-}
-
-.btn-inspect-enemy {
-  border: 1px solid var(--tg-border, rgba(255, 255, 255, 0.08));
-  color: #CBD5E1;
-  font-size: 10px;
-  font-weight: 700;
-}
-.tactical-advantage-box {
-  padding: 0.55rem;
-  border-radius: 0.75rem;
-  background: rgba(6, 78, 59, 0.85);
-  border: 1px solid rgba(168, 85, 247, 0.4);
-  text-align: center;
-}
-.quiz-box {
-  padding: 0.65rem;
-  border-radius: 0.85rem;
-  background: rgba(0, 0, 0, 0.6);
-  border: 1px solid var(--tg-border, rgba(255, 255, 255, 0.08));
-  display: flex;
-  flex-direction: column;
-  gap: 0.45rem;
-}
-.quiz-question {
-  font-size: 11px;
-  font-weight: 700;
-  color: #FDE047;
-  display: flex;
-  align-items: center;
-  gap: 0.3rem;
-}
-.quiz-options-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.35rem;
-}
-.necromancy-prompt-box {
-  padding: 0.65rem;
-  border-radius: 0.85rem;
-  background: rgba(88, 28, 135, 0.85);
-  border: 1px solid rgba(168, 85, 247, 0.4);
-  text-align: center;
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-}
-
-/* ----------------------------------------------------------------------------
-   10. MODALI UNIVERSALI & CASSETTI COCKPIT (FULL GLASSMORPHISM CENTERED)
-   ---------------------------------------------------------------------------- */
-/* ELIMINAZIONE DEI BOTTOM-SHEETS: TUTTO A SCHERMO CENTRATO CON GLASS BLUR 16px */
 dialog.modal,
-dialog.modal.modal-middle,
-dialog.modal.modal-bottom {
+dialog.modal.modal-middle {
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
@@ -1286,409 +808,154 @@ dialog.modal:not([open]) {
   display: none !important;
 }
 
-/* Modale Fascicolo Universale (Singola Carta Monumentale) */
-.modal-dossier .dossier-box {
-  background: var(--tg-sec-bg, #0F172A);
-  border: 1px solid rgba(56, 189, 248, 0.4);
-  padding: 1.15rem;
-  border-radius: 1.25rem;
-  max-width: 32rem;
-  width: 100%;
-  max-height: 88dvh;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 0.65rem;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.95);
-  position: relative;
-  text-align: left;
-  -webkit-overflow-scrolling: touch;
-}
-
-.dossier-header {
-  flex: none;
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding-bottom: 0.45rem;
-  border-bottom: 1px solid var(--tg-border, rgba(255, 255, 255, 0.08));
-  padding-right: 2.5rem;
-}
-.dossier-icon { font-size: 1.65rem; flex-shrink: 0; }
-.dossier-title {
-  font-size: 0.95rem;
-  font-weight: 900;
-  color: #FFFFFF;
-  margin: 0;
-  line-height: 1.2;
-}
-
-#uni-detail-media-container {
-  flex: none;
-  height: clamp(130px, 19dvh, 180px);
-}
-
-.dossier-metrics-box {
-  flex: none;
-  padding: 0.6rem 0.8rem;
-  border-radius: 0.75rem;
-  background: rgba(0, 0, 0, 0.55);
-  border: 1px solid var(--tg-border, rgba(255, 255, 255, 0.08));
-  display: flex;
-  flex-direction: column;
-  gap: 0.2rem;
-}
-.metrics-label {
-  font-size: 9px;
-  font-weight: 800;
-  color: var(--tg-amber, #F59E0B);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-}
-.metrics-value {
-  font-family: monospace;
-  font-size: 11px;
-  font-weight: 700;
-  color: #FFFFFF;
-  line-height: 1.45;
-}
-
-.dossier-lore-prose {
-  font-size: 12px;
-  color: #CBD5E1;
-  line-height: 1.5;
-  margin: 0;
-  overflow: visible;
-  word-break: break-word;
-}
-
-/* Dado Suspense */
-.dice-modal-box {
-  background: rgba(13, 19, 31, 0.96);
-  border: 1px solid rgba(56, 189, 248, 0.4);
-  padding: 1.35rem;
-  border-radius: 1.25rem;
-  text-align: center;
-  display: flex;
-  flex-direction: column;
-  gap: 0.85rem;
-  max-width: 17rem;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.9);
-}
-.dice-wrapper {
-  width: 4rem;
-  height: 4rem;
-  margin: 0 auto;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.dice-cube {
-  width: 3.5rem;
-  height: 3.5rem;
-  border-radius: 0.85rem;
-  background: linear-gradient(135deg, #0284C7, #4F46E5, #D97706);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.65rem;
-}
-.dice-title {
-  font-size: 10px;
-  font-weight: 900;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: var(--tg-sky, #38BDF8);
-  margin: 0;
-}
-.dice-result {
-  font-size: 1.4rem;
-  font-weight: 900;
-  font-family: monospace;
-  color: #FFFFFF;
-  margin-top: 0.2rem;
-}
-.dice-desc {
-  font-size: 9.5px;
-  color: var(--tg-text-muted, #94A3B8);
-  margin: 0.2rem 0 0 0;
-}
-
-/* Cassetti Cockpit: Nuova Scatola Centrata Glassmorphism */
+/* Drawer Cockpit Standard */
 .drawer-standard-box {
   background: var(--tg-sec-bg, #0F172A);
   border: 1px solid var(--tg-border-light, rgba(255, 255, 255, 0.15));
-  padding: 1.15rem 1.25rem 1.5rem 1.25rem;
-  border-radius: 1.25rem;
+  padding: 1rem 1.15rem;
+  border-radius: 1.15rem;
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 0.65rem;
   max-width: 30rem;
   width: 100%;
-  max-height: 88dvh;
+  max-height: 86dvh;
   overflow-y: auto;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.95);
   position: relative;
-}
-@media (min-width: 1024px) {
-  .drawer-standard-box {
-    max-width: 44rem; /* Respiro widescreen su desktop */
-  }
-}
-
-.drawer-header-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding-bottom: 0.4rem;
-  border-bottom: 1px solid var(--tg-border, rgba(255, 255, 255, 0.08));
-}
-.drawer-title {
-  font-size: 0.85rem;
-  font-weight: 900;
-  color: #FFFFFF;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  margin: 0;
-}
-.drawer-subtitle {
-  font-size: 10.5px;
-  color: var(--tg-text-muted, #94A3B8);
-  line-height: 1.45;
-}
-
-/* Modale Eroe (4 Tab Interni: Scheda, Zaino, Squadra, Dossier) */
-.hero-sheet-profile-card {
-  padding: 0.75rem 0.85rem;
-  border-radius: 0.85rem;
-  background: rgba(0, 0, 0, 0.4);
-  border: 1px solid var(--tg-border, rgba(255, 255, 255, 0.08));
-}
-.hero-sheet-avatar-box {
-  width: 2.6rem;
-  height: 2.6rem;
-  border-radius: 0.7rem;
-  background: #0F172A;
-  border: 1.5px solid var(--tg-sky, #38BDF8);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-  flex-shrink: 0;
-}
-.hero-sheet-name {
-  font-size: 0.88rem;
-  font-weight: 900;
-  color: #FFFFFF;
-  margin: 0;
-}
-.hero-sheet-class-badge {
-  font-size: 9.5px;
-  font-weight: 800;
-  color: var(--tg-sky, #38BDF8);
-  text-transform: uppercase;
-  margin-top: 0.1rem;
-}
-.hero-sheet-wallet-box {
-  padding: 0.65rem 0.85rem;
-  border-radius: 0.75rem;
-  background: rgba(0, 0, 0, 0.55);
-  border: 1px solid var(--tg-border, rgba(255, 255, 255, 0.08));
-}
-.hero-sheet-stats-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.45rem;
-}
-.sheet-stat-card {
-  padding: 0.55rem 0.45rem;
-  border-radius: 0.75rem;
-  background: rgba(0, 0, 0, 0.4);
-  border: 1px solid var(--tg-border, rgba(255, 255, 255, 0.08));
-  text-align: center;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.15rem;
-}
-.stat-icon { font-size: 1rem; }
-.stat-label { font-size: 9px; font-weight: 800; color: var(--tg-text-muted, #94A3B8); text-transform: uppercase; }
-.stat-val { font-size: 0.88rem; font-weight: 900; font-family: monospace; color: var(--tg-sky, #38BDF8); }
-.stat-pure { font-size: 8.5px; font-family: monospace; color: #64748B; }
-
-/* Modale Assetto Tattico & Laboratorio */
-.assetto-slot-card {
-  padding: 0.65rem 0.8rem;
-  border-radius: 0.75rem;
-  background: var(--tg-surface, #111827);
-  border: 1px solid var(--tg-border, rgba(255, 255, 255, 0.08));
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-.assetto-crafting-box {
-  padding: 0.75rem;
-  border-radius: 0.85rem;
-  background: rgba(88, 28, 135, 0.35);
-  border: 1px solid rgba(168, 85, 247, 0.3);
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-}
-
-/* Modale Emporio Ciccio */
-.emporio-drawer-box {
-  background: var(--tg-sec-bg, #0F172A);
-  border: 1px solid var(--tg-border-light, rgba(255, 255, 255, 0.15));
-  padding: 1.15rem 1.25rem 1.5rem 1.25rem;
-  border-radius: 1.25rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-  max-width: 44rem;
-  width: 100%;
-  max-height: 88dvh;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.95);
-}
-.emporio-gold-bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0.55rem 0.75rem;
-  border-radius: 0.65rem;
-  background: rgba(0, 0, 0, 0.45);
-  font-size: 11px;
-}
-.emporio-items-scroll-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.55rem;
-  max-height: 18rem;
-  overflow-y: auto;
-  padding: 0.2rem;
-}
-@media (min-width: 640px) {
-  .emporio-items-scroll-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.75rem; }
-}
-@media (min-width: 1024px) {
-  .emporio-items-scroll-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-}
-
-.emporio-item-card {
-  background: var(--tg-surface, #111827);
-  border-radius: 0.85rem;
-  border: 1px solid var(--tg-border, rgba(255, 255, 255, 0.08));
-  padding: 0.65rem 0.75rem;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  gap: 0.45rem;
-}
-.item-card-price {
-  font-family: monospace;
-  font-size: 10.5px;
-  font-weight: 800;
-  color: #FDE047;
-}
-.item-card-name {
-  font-size: 0.78rem;
-  font-weight: 900;
-  color: #FFFFFF;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.item-card-desc {
-  font-size: 10.5px;
-  color: #CBD5E1;
-  line-height: 1.35;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-.item-card-actions {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.35rem;
-  padding-top: 0.35rem;
-  border-top: 1px solid var(--tg-border, rgba(255, 255, 255, 0.08));
-}
-.emporio-sell-row {
-  padding: 0.6rem 0.75rem;
-  border-radius: 0.65rem;
-  background: var(--tg-surface, #111827);
-  border: 1px solid var(--tg-border, rgba(255, 255, 255, 0.08));
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  font-size: 0.78rem;
 }
 
 /* Modale Banco Cambio */
 .modal-cambio-box {
   background: linear-gradient(180deg, #0F172A 0%, #090D16 100%);
   border: 1px solid rgba(245, 158, 11, 0.5);
-  padding: 1.35rem 1.25rem 1.65rem 1.25rem;
-  border-radius: 1.35rem;
+  padding: 1.15rem 1.25rem 1.4rem 1.25rem;
+  border-radius: 1.25rem;
   text-align: center;
   display: flex;
   flex-direction: column;
-  gap: 0.65rem;
+  gap: 0.55rem;
   max-width: 20rem;
   width: 100%;
   position: relative;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.95);
 }
 .cambio-balance-box {
-  padding: 0.45rem;
-  border-radius: 0.55rem;
+  padding: 0.4rem;
+  border-radius: 0.5rem;
   background: rgba(0, 0, 0, 0.5);
   font-family: monospace;
   font-size: 0.78rem;
   color: #FDE047;
 }
 
-/* Squadra & Dossier Reperti */
-.squad-member-card {
-  padding: 0.7rem 0.85rem;
-  border-radius: 0.75rem;
-  background: var(--tg-surface, #111827);
-  border: 1px solid var(--tg-border, rgba(255, 255, 255, 0.08));
-  font-size: 0.78rem;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-.squad-member-card.zombie { border-color: rgba(244, 63, 94, 0.35); }
-.badge-human { font-size: 9.5px; font-weight: 800; color: var(--tg-emerald, #10B981); }
-.badge-zombie { font-size: 9.5px; font-weight: 800; color: var(--tg-rose, #F43F5E); }
-
-.dossier-evidence-card {
-  padding: 0.7rem 0.85rem;
-  border-radius: 0.75rem;
-  background: var(--tg-surface, #111827);
-  border: 1px solid rgba(56, 189, 248, 0.3);
+/* Modale Emporio Ciccio */
+.emporio-drawer-box {
+  background: var(--tg-sec-bg, #0F172A);
+  border: 1px solid var(--tg-border-light, rgba(255, 255, 255, 0.15));
+  padding: 1rem;
+  border-radius: 1.15rem;
   display: flex;
   flex-direction: column;
-  gap: 0.3rem;
-  cursor: pointer;
-  transition: background 0.15s ease;
+  gap: 0.65rem;
+  max-width: 44rem;
+  width: 100%;
+  max-height: 86dvh;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.95);
 }
-.dossier-evidence-card:hover { background: var(--tg-surface-hover, #1F2937); }
-.evidence-header {
+.emporio-gold-bar {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  padding: 0.45rem 0.65rem;
+  border-radius: 0.55rem;
+  background: rgba(0, 0, 0, 0.45);
+  font-size: 11px;
 }
-.evidence-name {
-  font-size: 0.78rem;
-  font-weight: 800;
-  color: var(--tg-sky, #38BDF8);
+.emporio-items-scroll-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+  max-height: 18rem;
+  overflow-y: auto;
+  padding: 0.2rem;
 }
-.evidence-desc {
-  font-size: 10.5px;
-  color: #CBD5E1;
-  line-height: 1.4;
+
+/* Modale Abbandono Diegetico */
+.abandon-modal-box {
+  background: linear-gradient(180deg, #1E1B4B 0%, #090D16 100%);
+  border: 1px solid rgba(244, 63, 94, 0.5);
+  padding: 1.25rem 1.15rem;
+  border-radius: 1.25rem;
+  text-align: center;
+  max-width: 20rem;
+  width: 100%;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.95);
+  position: relative;
+}
+
+/* Fascicolo Universale Dossier */
+.modal-dossier .dossier-box {
+  background: var(--tg-sec-bg, #0F172A);
+  border: 1px solid rgba(56, 189, 248, 0.4);
+  padding: 1rem;
+  border-radius: 1.15rem;
+  max-width: 30rem;
+  width: 100%;
+  max-height: 86dvh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  position: relative;
+  text-align: left;
+}
+
+/* Dado Suspense */
+.dice-modal-box {
+  background: rgba(13, 19, 31, 0.96);
+  border: 1px solid rgba(56, 189, 248, 0.4);
+  padding: 1.15rem;
+  border-radius: 1.15rem;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  max-width: 16rem;
+}
+.dice-wrapper {
+  width: 3.5rem;
+  height: 3.5rem;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.dice-cube {
+  width: 3rem;
+  height: 3rem;
+  border-radius: 0.75rem;
+  background: linear-gradient(135deg, #0284C7, #4F46E5, #D97706);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+}
+
+/* ----------------------------------------------------------------------------
+   8. RESPONSIVE DESKTOP & WIDESCREEN (>= 1024px)
+   ---------------------------------------------------------------------------- */
+@media (min-width: 1024px) {
+  .wizard-stage-container,
+  .gameplay-container {
+    max-width: 900px;
+    margin: 0 auto;
+  }
+  .coverflow-stage-wrapper {
+    perspective: 1400px;
+  }
+  .coverflow-stage-wrapper .coverflow-card,
+  .universal-card {
+    width: 360px !important;
+  }
 }
