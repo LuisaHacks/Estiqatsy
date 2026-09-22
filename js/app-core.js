@@ -1,8 +1,8 @@
 // ============================================================================
 // PROJECT: ESTIQATSY SYNDICATE & RPG PLATFORM
-// FILE: js/app-core.js (VERSIONE 11.0 - PURE AGNOSTIC PLATFORM LAYER)
+// FILE: js/app-core.js (VERSIONE 12.0 - POST ATOMIC GATEWAY & TELEGRAM 8.0 FIT)
 // LAYER 1: SISTEMA OPERATIVO CLIENT-SIDE, ROUTER SPA, STATO & MEGOIN WALLET
-// NOTE: 100% DISACCOPPIATO DALLE REGOLE DI GIOCO - NESSUN RIFERIMENTO ALL'ORO
+// NOTE: 100% DISACCOPPIATO DALLE REGOLE DI GIOCO - GESTIONE RETE ATOMICA
 // ============================================================================
 
 // ----------------------------------------------------------------------------
@@ -14,7 +14,8 @@ const AppConfig = {
     VAULT: "est_cache_vault",
     AUDIO_MUTED: "estiqatsy_audio_muted",
     AUDIO_VOLUME: "estiqatsy_audio_volume",
-    LAST_SERIES: "est_last_series"
+    LAST_SERIES: "est_last_series",
+    WIZARD_DRAFT: "est_wizard_draft"
   },
   THEME: {
     BG_COLOR: "#090D16",
@@ -76,12 +77,15 @@ if (tg) {
     tg.setHeaderColor(AppConfig.THEME.HEADER_COLOR);
     tg.setBackgroundColor(AppConfig.THEME.BG_COLOR);
 
-    // Propagazione safe-area hardware alle variabili CSS (SDK 7.0+)
+    // Propagazione safe-area hardware alle variabili CSS (SDK 7.0+ / 8.0)
     const updateSafeArea = () => {
       const topInset = tg.safeAreaInset?.top || tg.contentSafeAreaInset?.top || 0;
       const bottomInset = tg.safeAreaInset?.bottom || tg.contentSafeAreaInset?.bottom || 0;
+      const rightInset = tg.safeAreaInset?.right || tg.contentSafeAreaInset?.right || 0;
+
       document.documentElement.style.setProperty("--tg-safe-area-inset-top", `${topInset}px`);
       document.documentElement.style.setProperty("--tg-safe-area-inset-bottom", `${bottomInset}px`);
+      document.documentElement.style.setProperty("--tg-safe-area-inset-right", `${rightInset}px`);
     };
 
     updateSafeArea();
@@ -126,12 +130,14 @@ function setupTelegramBackButton(targetScreenId) {
       } else if (targetScreenId === "subview-game-detail") {
         AppRouter.navigate("games");
       } else if (targetScreenId === "view-wizard") {
-        // Sospensione del Wizard: torna alla scheda gioco preservando i dati
+        // Torna alla scheda di dettaglio del gioco preservando il draft
         AppRouter.navigate("subview-game-detail");
       } else if (targetScreenId === "view-gameplay") {
-        // SOSPENSIONE MORBIDA: Sospende la partita attiva senza abbandonare!
+        // Mostra la modale tripartita (Sospendi / Abbandona / Annulla) per evitare chiusure accidentali
         const currentEngine = EngineRegistry.get(AppState.activeSession.engineKey);
-        if (currentEngine && typeof currentEngine.leaveGameToHub === "function") {
+        if (currentEngine && typeof currentEngine.openAbandonModal === "function") {
+          currentEngine.openAbandonModal();
+        } else if (currentEngine && typeof currentEngine.leaveGameToHub === "function") {
           currentEngine.leaveGameToHub();
         } else {
           AppRouter.navigate("games");
@@ -283,34 +289,39 @@ const AppRouter = {
 };
 
 // ----------------------------------------------------------------------------
-// 6. COMUNICAZIONE API BACKEND (APICALL) CON TIMEOUT E DEBOUNCE
+// 6. COMUNICAZIONE API BACKEND ATOMICA (POST JSON SU GOOGLE APPS SCRIPT)
 // ----------------------------------------------------------------------------
 let _isApiInProgress = false;
 
 async function apiCall(action, extraParams = {}) {
-  const isCritical = ["shop_buy", "currency_exchange", "game_start", "game_action"].includes(action);
+  const isCritical = ["shop_buy", "currency_exchange", "game_start", "game_action", "game_node"].includes(action);
   if (isCritical && _isApiInProgress) {
-    console.warn(`[apiCall] Richiesta "${action}" bloccata: operazione già in corso.`);
+    console.warn(`[apiCall] Richiesta "${action}" bloccata: transazione già in corso.`);
     throw new Error("Operazione in corso. Attendi un istante...");
   }
 
   if (isCritical) _isApiInProgress = true;
 
   const initData = (tg && tg.initData) ? tg.initData : "";
-  let url = `${AppConfig.GAS_URL}?action=${encodeURIComponent(action)}&initData=${encodeURIComponent(initData)}`;
-
-  for (let param in extraParams) {
-    if (extraParams[param] !== undefined && extraParams[param] !== null) {
-      url += `&${encodeURIComponent(param)}=${encodeURIComponent(extraParams[param])}`;
-    }
-  }
+  const payload = {
+    action: action,
+    initData: initData,
+    params: extraParams,
+    timestamp: Date.now()
+  };
 
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), AppConfig.TIMEOUT_MS);
 
   try {
-    const response = await fetch(url, {
-      method: "GET",
+    // POST con 'text/plain;charset=utf-8' per compatibilità assoluta con Google Apps Script
+    // ed evitare blocchi CORS preflight OPTIONS.
+    const response = await fetch(AppConfig.GAS_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "text/plain;charset=utf-8"
+      },
+      body: JSON.stringify(payload),
       redirect: "follow",
       signal: controller.signal
     });
@@ -321,7 +332,17 @@ async function apiCall(action, extraParams = {}) {
       throw new Error(`Errore di rete HTTP: ${response.status}`);
     }
 
-    const result = await response.json();
+    const rawText = await response.text();
+    let result;
+    try {
+      result = JSON.parse(rawText);
+    } catch (jsonErr) {
+      if (rawText.includes("<!DOCTYPE") || rawText.includes("<html")) {
+        throw new Error("Il server Google ha restituito una risposta HTML non valida (errore script).");
+      }
+      throw new Error("Formato risposta del server non valido.");
+    }
+
     if (!result.success && result.error) {
       throw new Error(result.error);
     }
@@ -341,7 +362,6 @@ async function apiCall(action, extraParams = {}) {
 
 // ----------------------------------------------------------------------------
 // 7. GESTIONE CENTRALIZZATA MEGOIN (WALLET DI PIATTAFORMA)
-// Gestisce ESCLUSIVAMENTE la valuta di piattaforma. Nessuna logica di gioco.
 // ----------------------------------------------------------------------------
 const Wallet = {
   getMegoin: function() {
@@ -355,9 +375,10 @@ const Wallet = {
     AppState.user.saldoMegoin = num;
     AppState.user.megoin = num;
 
-    ["home-megoin-card", "user-megoin-desk", "profile-card-megoin", "cambio-megoin-balance"].forEach(id => {
+    // Aggiornamento sincronizzato di tutti i KPI grafici, incluso il cabinato arcade
+    ["home-megoin-card", "user-megoin-desk", "profile-card-megoin", "cambio-megoin-balance", "arcade-user-balance"].forEach(id => {
       const el = document.getElementById(id);
-      if (el) el.textContent = (id === "cambio-megoin-balance") ? num : `${num} 🪙`;
+      if (el) el.textContent = (id === "cambio-megoin-balance" || id === "arcade-user-balance") ? num : `${num} 🪙`;
     });
   },
 
@@ -387,6 +408,16 @@ function cleanNumber(v, defaultVal = 0) {
   return isNaN(n) ? defaultVal : n;
 }
 
+function escapeHTML(str) {
+  if (!str) return "";
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
 // ----------------------------------------------------------------------------
 // 9. ESPOSIZIONE GLOBALE SU WINDOW
 // ----------------------------------------------------------------------------
@@ -397,6 +428,7 @@ window.Wallet = Wallet;
 window.apiCall = apiCall;
 window.deduplicateEntities = deduplicateEntities;
 window.cleanNumber = cleanNumber;
+window.escapeHTML = escapeHTML;
 
 // ----------------------------------------------------------------------------
 // 10. BOOTSTRAP DELL'APPLICAZIONE ALL'AVVIO
