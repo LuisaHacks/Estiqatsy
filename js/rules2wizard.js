@@ -1,7 +1,7 @@
 // ============================================================================
 // PROJECT: ESTIQATSY SYNDICATE & RPG PLATFORM
-// FILE: js/rules2wizard.js (VERSIONE 1.0 - DEDICATED CHARACTER CREATION ENGINE)
-// LAYER: WIZARD FULL-STAGE, PERSISTENT 3D VIEW, 360° GESTURES & HERO LAUNCH CARD
+// FILE: js/rules2wizard.js (VERSIONE 2.0 - FAST VETERAN LOOP & HERO CARD STAGE)
+// LAYER: WIZARD FULL-STAGE, PERSISTENT 3D VIEW, MONUMENTAL HERO CARD & GESTURES
 // ============================================================================
 
 // ----------------------------------------------------------------------------
@@ -100,7 +100,7 @@ const Rules2Store = {
 };
 
 // ----------------------------------------------------------------------------
-// 3. WIZARD PERSONAGGIO (MACCHINA A STATI, VISTA PERSISTENTE & GESTURES 360°)
+// 3. WIZARD PERSONAGGIO (MACCHINA A STATI CON SUPPORTO VETERANO)
 // ----------------------------------------------------------------------------
 const Rules2Wizard = {
   state: {
@@ -117,7 +117,7 @@ const Rules2Wizard = {
     activeAbilityIndex: 0,
     activeShopIndex: 0,
 
-    globalViewMode: "3d", // PERSISTENTE: 3d di default per Classi, Abilità e Ciccio & Co.
+    globalViewMode: "3d",
 
     chosenClass: null,
     chosenAbilities: [],
@@ -137,8 +137,7 @@ const Rules2Wizard = {
 
       this.state.gameKey = gameKey;
       this.state.episodio = epNum;
-      this.state.isVeteran = isVeteran;
-      this.state.step = 1;
+      this.state.isVeteran = Boolean(isVeteran || (savedHero && epNum > 1));
 
       let wizData = Rules2Store.loadCachedWizardData(gameKey);
       if (!wizData) {
@@ -156,15 +155,30 @@ const Rules2Wizard = {
       this.state.activeAbilityIndex = 0;
       this.state.activeShopIndex = 0;
 
-      const firstClass = this.state.classes[0] || null;
-      this.state.chosenClass = firstClass;
-      this.state.remainingPx = 100;
-      this.state.startingGold = firstClass ? Number(firstClass.oro || 40) : 40;
-      this.state.currentGold = this.state.startingGold;
-      this.state.heroName = AppState.user?.nome || "Avventuriero";
+      // GESTIONE DISTINTA: EROE VETERANO vs NUOVO EROE
+      if (this.state.isVeteran && savedHero) {
+        const matchingClass = this.state.classes.find(c => c.id === savedHero.classeId || c.nome === savedHero.classe) || this.state.classes[0];
+        this.state.chosenClass = matchingClass;
+        this.state.heroName = savedHero.nomeEroe || AppState.user?.nome || "Veterano";
+        this.state.currentGold = savedHero.oro !== undefined ? Number(savedHero.oro) : Number(matchingClass.oro || 40);
+        this.state.startingGold = this.state.currentGold;
+        this.state.remainingPx = Number(savedHero.px || 100);
+        this.state.chosenAbilities = [...(savedHero.abilitaIds || savedHero.abilita || [])];
 
-      this.renderStep1();
-      this.showStep(1);
+        // Salto immediato al Passo 2 (Talenti)
+        this.renderStep2();
+        this.showStep(2);
+      } else {
+        const firstClass = this.state.classes[0] || null;
+        this.state.chosenClass = firstClass;
+        this.state.remainingPx = 100;
+        this.state.startingGold = firstClass ? Number(firstClass.oro || 40) : 40;
+        this.state.currentGold = this.state.startingGold;
+        this.state.heroName = AppState.user?.nome || "Avventuriero";
+
+        this.renderStep1();
+        this.showStep(1);
+      }
 
       this.bindModalBackdropClose();
       AppRouter.navigate("view-wizard");
@@ -204,6 +218,20 @@ const Rules2Wizard = {
       if (footer) footer.classList.toggle("hidden", n !== stepNum);
     });
 
+    // Se veterano allo Step 3, aggiorna il tasto per il lancio diretto
+    if (stepNum === 3) {
+      const nextBtn = document.getElementById("wizard-step3-next-btn");
+      if (nextBtn) {
+        if (this.state.isVeteran) {
+          nextBtn.textContent = `Inizia Ep. ${this.state.episodio} 🚀`;
+          nextBtn.onclick = () => Rules2Wizard.finalizeHero();
+        } else {
+          nextBtn.textContent = "Riepilogo ›";
+          nextBtn.onclick = () => Rules2Wizard.nextStep(4);
+        }
+      }
+    }
+
     if (stepNum <= 3 && this.state.globalViewMode === "3d") {
       this.startAutoplay();
     } else {
@@ -242,10 +270,9 @@ const Rules2Wizard = {
   },
 
   setWizardViewMode: function(stepKey, mode) {
-    this.state.globalViewMode = mode; // Salva la preferenza globale
+    this.state.globalViewMode = mode;
     const is3D = (mode === "3d");
 
-    // Aggiorna tutti i pill toggle dei tre step
     ["class", "abilities", "shop"].forEach(k => {
       const btn3D = document.getElementById(`toggle-view-btn-${k}-3d`);
       const btnList = document.getElementById(`toggle-view-btn-${k}-list`);
@@ -272,7 +299,7 @@ const Rules2Wizard = {
   },
 
   // --------------------------------------------------------------------------
-  // STEP 1: CLASSI (NON ARCHETIPI)
+  // STEP 1: CLASSI (FACTION GLOW & ZERO FRECCE SPURIE)
   // --------------------------------------------------------------------------
   renderStep1: function() {
     const stage = document.getElementById("wizard-classes-stage");
@@ -288,7 +315,7 @@ const Rules2Wizard = {
       const cleanQuote = String(cls.citazione || "A Viareggio se non hai il ferro giusto duri poco.").replace(/^["'“”]+|["'“”]+$/g, "");
 
       return `
-        <div id="coverflow-card-${idx}" onclick="Rules2Wizard.coverflowSelectIndex(${idx})" class="coverflow-card">
+        <div id="coverflow-card-${idx}" data-faction="${pol}" onclick="Rules2Wizard.coverflowSelectIndex(${idx})" class="coverflow-card">
           <div class="coverflow-media-frame">
             <img src="${cls.mediaUrl}" class="coverflow-img" alt="${Rules2_SafeAttr(cls.nome)}" loading="lazy">
             
@@ -302,7 +329,6 @@ const Rules2Wizard = {
               </span>
             </div>
 
-            <!-- RIGA BIANCA SPECULARE AL FOOTER -->
             <div class="coverflow-header-divider"></div>
 
             <div class="watermark-cover-banner">
@@ -312,7 +338,6 @@ const Rules2Wizard = {
           </div>
 
           <div id="coverflow-details-${idx}" class="coverflow-details-box">
-            <!-- TRITTICO KPI UNIFORMI (11px MONO) -->
             <div class="coverflow-stats-row">
               <div>🥊 FOR <b>${forVal}</b></div>
               <div>🤸 DES <b>${desVal}</b></div>
@@ -323,7 +348,7 @@ const Rules2Wizard = {
 
             <div class="coverflow-footer-row">
               <span class="coverflow-gear-label truncate">
-                🎒 Dotazione: <b>${cls.equipLoot || 'Pugni nudi'}</b>
+                🎒 <b>${cls.equipLoot || 'Pugni nudi'}</b>
               </span>
               <div class="coverflow-kpi-pill">
                 <span class="pill-pv">❤️ ${cls.pv} PV</span>
@@ -357,7 +382,6 @@ const Rules2Wizard = {
     if (!stageEl || stageEl._hasGestures) return;
     stageEl._hasGestures = true;
 
-    // 1. Swipe Touch Smartphone
     stageEl.addEventListener("touchstart", (e) => {
       this.stopAutoplay();
       this.state._touchStartX = e.changedTouches[0].screenX;
@@ -371,7 +395,6 @@ const Rules2Wizard = {
       }
     }, { passive: true });
 
-    // 2. Trackpad / Mouse Wheel Orizzontale (Laptop)
     stageEl.addEventListener("wheel", (e) => {
       if (Math.abs(e.deltaX) > 25) {
         this.stopAutoplay();
@@ -380,7 +403,6 @@ const Rules2Wizard = {
       }
     }, { passive: true });
 
-    // 3. Frecce Tastiera Desktop
     window.addEventListener("keydown", (e) => {
       if (this.state.step > 3) return;
       if (e.key === "ArrowRight") onNext();
@@ -394,7 +416,7 @@ const Rules2Wizard = {
     if (total === 0) return;
 
     const activeIdx = this.state.activeClassIndex;
-    const spacing = window.innerWidth >= 768 ? 210 : 155;
+    const spacing = window.innerWidth >= 768 ? 200 : 145;
 
     classes.forEach((cls, i) => {
       const el = document.getElementById(`coverflow-card-${i}`);
@@ -425,8 +447,10 @@ const Rules2Wizard = {
     });
 
     this.state.chosenClass = classes[activeIdx];
-    this.state.startingGold = Number(classes[activeIdx].oro || 40);
-    this.state.currentGold = this.state.startingGold;
+    if (!this.state.isVeteran) {
+      this.state.startingGold = Number(classes[activeIdx].oro || 40);
+      this.state.currentGold = this.state.startingGold;
+    }
 
     const dotsContainer = document.querySelector("#wizard-coverflow-dots .coverflow-dots");
     if (dotsContainer) {
@@ -466,10 +490,10 @@ const Rules2Wizard = {
     const classes = this.state.classes || [];
     container.innerHTML = classes.map((cls, idx) => {
       const isSelected = (this.state.chosenClass?.id === cls.id);
-      const pol = String(cls.sottocategoria || "Destra").toUpperCase();
+      const pol = String(cls.sottocategoria || "Destra").toLowerCase();
 
       return `
-        <div onclick="Rules2Wizard.selectClassByIndex(${idx})" class="class-list-card ${isSelected ? 'selected' : ''}">
+        <div data-faction="${pol}" onclick="Rules2Wizard.selectClassByIndex(${idx})" class="class-list-card ${isSelected ? 'selected' : ''}">
           <div class="flex items-center space-x-3 min-w-0 flex-1">
             <div class="class-list-thumb">
               <img src="${cls.mediaUrl}" alt="${Rules2_SafeAttr(cls.nome)}" loading="lazy">
@@ -477,13 +501,13 @@ const Rules2Wizard = {
             <div class="class-list-info">
               <div class="class-list-name">${cls.emoji || '🥋'} ${cls.nome}</div>
               <div class="class-list-sub">
-                <span class="${pol === 'DESTRA' ? 'text-sky-400' : 'text-rose-400'} font-bold">${pol}</span> • ❤️ ${cls.pv} PV • 🟡 ${cls.oro} ORO
+                <span class="${pol === 'destra' ? 'text-sky-400' : 'text-rose-400'} font-bold">${pol.toUpperCase()}</span> • ❤️ ${cls.pv} PV • 🟡 ${cls.oro} ORO
               </div>
             </div>
           </div>
           <div>
             <button class="btn btn-xs ${isSelected ? 'btn-success font-black' : 'btn-outline border-white/20 text-slate-300'}">
-              ${isSelected ? 'Scelto' : 'Scegli'}
+              ${isSelected ? 'Attivo ✓' : 'Seleziona'}
             </button>
           </div>
         </div>
@@ -494,8 +518,10 @@ const Rules2Wizard = {
   selectClassByIndex: function(idx) {
     this.state.activeClassIndex = idx;
     this.state.chosenClass = this.state.classes[idx];
-    this.state.startingGold = Number(this.state.chosenClass.oro || 40);
-    this.state.currentGold = this.state.startingGold;
+    if (!this.state.isVeteran) {
+      this.state.startingGold = Number(this.state.chosenClass.oro || 40);
+      this.state.currentGold = this.state.startingGold;
+    }
     if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("click");
     this.updateCoverflowStage();
     this.renderClassesList();
@@ -510,7 +536,7 @@ const Rules2Wizard = {
   },
 
   // --------------------------------------------------------------------------
-  // STEP 2: ABILITÀ (PERSISTENZA 3D, NESSUN FASCICOLO, PERK DIRETTI)
+  // STEP 2: ABILITÀ & TALENTI
   // --------------------------------------------------------------------------
   renderStep2: function() {
     const is3D = (this.state.globalViewMode === "3d");
@@ -546,7 +572,7 @@ const Rules2Wizard = {
       const perkText = Rules2_FormatHumanEffect(abl.requisitiCodificati || abl.effettoCodificato, userFaction);
 
       return `
-        <div id="abilities-card-${idx}" onclick="Rules2Wizard.selectAbilityIndex(${idx})" class="coverflow-card">
+        <div id="abilities-card-${idx}" data-faction="${userFaction}" onclick="Rules2Wizard.selectAbilityIndex(${idx})" class="coverflow-card">
           <div class="coverflow-media-frame">
             <img src="${abl.mediaUrl && abl.mediaUrl !== '—' ? abl.mediaUrl : 'https://image.pollinations.ai/prompt/cyberpunk-noir-skill-icon?width=800&height=450&nologo=true'}" class="coverflow-img" alt="${Rules2_SafeAttr(abl.nome)}" loading="lazy">
             
@@ -564,7 +590,7 @@ const Rules2Wizard = {
           </div>
 
           <div class="coverflow-details-box">
-            <div class="text-[12px] text-slate-200 leading-relaxed overflow-y-auto max-h-[145px] pr-1">
+            <div class="text-[11px] text-slate-200 leading-relaxed overflow-y-auto max-h-[140px] pr-1">
               ${perkText}
             </div>
 
@@ -603,7 +629,7 @@ const Rules2Wizard = {
     if (total === 0) return;
 
     const activeIdx = this.state.activeAbilityIndex;
-    const spacing = window.innerWidth >= 768 ? 210 : 155;
+    const spacing = window.innerWidth >= 768 ? 200 : 145;
 
     abilities.forEach((abl, i) => {
       const el = document.getElementById(`abilities-card-${i}`);
@@ -686,7 +712,7 @@ const Rules2Wizard = {
           </div>
           <div>
             <span class="badge badge-sm ${isSelected ? 'badge-primary font-black' : (isCompatible ? 'badge-ghost font-mono' : 'badge-neutral')}">
-              ${isSelected ? 'ATTIVO ✓' : (isCompatible ? '100 PX' : '🔒')}
+              ${isSelected ? 'Appreso ✓' : (isCompatible ? '100 PX' : '🔒')}
             </span>
           </div>
         </div>
@@ -724,7 +750,7 @@ const Rules2Wizard = {
   },
 
   // --------------------------------------------------------------------------
-  // STEP 3: CICCIO & CO. (PERSISTENZA 3D, CHIUSURA MODALE SU ACQUISTO)
+  // STEP 3: MERCATO NERO DI CICCIO
   // --------------------------------------------------------------------------
   renderStep3: function() {
     this.filterShop(this.state.shopCategory || "ARMI");
@@ -767,13 +793,14 @@ const Rules2Wizard = {
     if (!stage) return;
 
     const filtered = (this.state.shopCatalog || []).filter(i => Rules2_ClassifyEntity(i) === this.state.shopCategory);
+    const userFaction = String(this.state.chosenClass?.sottocategoria || "Destra").toLowerCase();
 
     stage.innerHTML = filtered.map((it, idx) => {
       const price = Math.abs(Number(it.costoOro || it.costo || 15));
       const canAfford = this.state.currentGold >= price;
 
       return `
-        <div id="shop-card-${idx}" onclick="Rules2Wizard.selectShopIndex(${idx})" class="coverflow-card">
+        <div id="shop-card-${idx}" data-faction="${userFaction}" onclick="Rules2Wizard.selectShopIndex(${idx})" class="coverflow-card">
           <div class="coverflow-media-frame">
             <img src="${it.mediaUrl && it.mediaUrl !== '—' ? it.mediaUrl : 'https://image.pollinations.ai/prompt/black-market-crate?width=800&height=450&nologo=true'}" class="coverflow-img" alt="${Rules2_SafeAttr(it.nome)}" loading="lazy">
             
@@ -828,7 +855,7 @@ const Rules2Wizard = {
     if (total === 0) return;
 
     const activeIdx = this.state.activeShopIndex;
-    const spacing = window.innerWidth >= 768 ? 210 : 155;
+    const spacing = window.innerWidth >= 768 ? 200 : 145;
 
     filtered.forEach((it, i) => {
       const el = document.getElementById(`shop-card-${i}`);
@@ -963,8 +990,6 @@ const Rules2Wizard = {
     tgHaptic("success");
 
     if (typeof SoundEngine !== "undefined") SoundEngine.playSfx("cash_register");
-
-    // CHIUSURA AUTOMATICA DELLA SCHEDA ALL'ACQUISTO
     document.getElementById("modal-universal-detail")?.close();
     this.filterShop(this.state.shopCategory);
   },
@@ -987,7 +1012,7 @@ const Rules2Wizard = {
   },
 
   // --------------------------------------------------------------------------
-  // STEP 4: LANCIA IL TUO EROE (CARD MONUMENTALE & MODALE NOME)
+  // STEP 4: LANCIO EROE (SCHEDA MONUMENTALE DINAMICA CON IDENTICO SHELL 3D)
   // --------------------------------------------------------------------------
   renderStep4: function() {
     this.stopAutoplay();
@@ -997,15 +1022,23 @@ const Rules2Wizard = {
     const pol = String(cls.sottocategoria || 'Destra').toLowerCase();
     const heroName = this.state.heroName || AppState.user?.nome || "Avventuriero";
     const startingGear = cls.equipLoot || "Pugni nudi";
-    const bought = this.state.boughtItems.map(i => i.nome).join(", ");
-    const fullInv = [startingGear, bought].filter(Boolean).join(", ");
+
+    const ablNames = (this.state.chosenAbilities || []).map(id => {
+      const a = (this.state.abilities || []).find(x => x.id === id);
+      return a ? a.nome : id;
+    });
+
+    const gearNames = [startingGear, ...this.state.boughtItems.map(i => i.nome)].filter(Boolean);
+    const dynamicBio = `Antieroe cresciuto tra i canali della Darsena, fedele alla causa di ${pol.toUpperCase()}. ` +
+      (ablNames.length > 0 ? `Abilità: ${ablNames.join(', ')}. ` : 'Nessun talento clandestino. ') +
+      (gearNames.length > 0 ? `Equipaggiamento: ${gearNames.join(', ')}.` : '');
 
     const container = document.getElementById("wizard-step-name");
     if (!container) return;
 
     container.innerHTML = `
       <div class="hero-launch-stage">
-        <div class="hero-launch-card">
+        <div data-faction="${pol}" class="hero-launch-card">
           <div class="coverflow-media-frame">
             <img src="${cls.mediaUrl}" class="coverflow-img" alt="${heroName}">
             
@@ -1034,12 +1067,11 @@ const Rules2Wizard = {
             </div>
 
             <div class="coverflow-lore">
-              <p>⚡ <b>Abilità:</b> ${this.state.chosenAbilities.length > 0 ? this.state.chosenAbilities.join(', ') : 'Nessuna'}</p>
-              <p class="mt-1">🎒 <b>Dotazione:</b> ${fullInv}</p>
+              <p>${dynamicBio}</p>
             </div>
 
             <div class="coverflow-footer-row">
-              <span class="coverflow-gear-label">Status: <b>Pronto</b></span>
+              <span class="coverflow-gear-label">Status: <b>Pronto al Duello</b></span>
               <div class="coverflow-kpi-pill">
                 <span class="pill-pv">❤️ ${cls.pv || 25} PV</span>
                 <span class="pill-gold">🟡 ${this.state.currentGold} ORO</span>
@@ -1050,7 +1082,7 @@ const Rules2Wizard = {
       </div>
 
       <!-- MODALE MODIFICA NOME EROE -->
-      <dialog id="modal-hero-name" class="modal">
+      <dialog id="modal-hero-name" class="modal modal-middle">
         <div class="modal-hero-name-box">
           <h3 class="text-sm font-black text-white uppercase">Nome dell'Eroe</h3>
           <input id="input-hero-name" type="text" class="input input-sm input-bordered w-full my-3 text-center font-bold text-white bg-slate-900" value="${heroName}">
@@ -1089,10 +1121,10 @@ const Rules2Wizard = {
       abilityIds: this.state.chosenAbilities.join(","),
       boughtItems: this.state.boughtItems.map(i => i.id || i.nome).join(","),
       heroName: heroName,
-      avatarUrl: this.state.chosenClass?.mediaUrl || ""
+      avatarUrl: this.state.chosenClass?.mediaUrl || "",
+      isVeteran: this.state.isVeteran
     };
 
-    // BRIDGE VERSO IL MOTORE DI GIOCO RUNTIME
     if (typeof Rules2Engine !== "undefined" && typeof Rules2Engine.executeStartGame === "function") {
       Rules2Engine.executeStartGame(payload, payload.avatarUrl);
     }
@@ -1117,7 +1149,6 @@ const Rules2Wizard = {
 // ----------------------------------------------------------------------------
 window.Rules2Wizard = Rules2Wizard;
 
-// Proxy backward-compatible per i pulsanti inline già presenti nell'HTML
 if (typeof window.GameEngine === "undefined") window.GameEngine = {};
 Object.assign(window.GameEngine, {
   setWizardViewMode: (step, mode) => Rules2Wizard.setWizardViewMode(step, mode),
