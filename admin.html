@@ -211,13 +211,13 @@
     </section>
 
     <!-- ===================================================================== -->
-    <!-- SEZIONE 2: DIRECTORY & CRM UTENTI CON AZIONI OPERATIVE RAPIDE        -->
+    <!-- SEZIONE 2: DIRECTORY & CRM UTENTI                                     -->
     <!-- ===================================================================== -->
     <section id="sec-users" class="space-y-4 hidden">
-      <!-- Filtri Avanzati -->
+      <!-- Filtri Avanzati & Ricerca Server-Side -->
       <div class="flex flex-col sm:flex-row gap-3">
         <div class="relative flex-1">
-          <input type="text" id="input-crm-search" oninput="AdminApp.filterUsers()" placeholder="Cerca Nome, Username o Chat ID..." class="input input-bordered input-sm w-full bg-slate-900 text-white font-mono text-xs">
+          <input type="text" id="input-crm-search" oninput="AdminApp.filterUsers()" onkeydown="if(event.key==='Enter') AdminApp.fetchUsers(true)" placeholder="Cerca Nome, Username o Chat ID (premi Invio per cercare su tutto il database)..." class="input input-bordered input-sm w-full bg-slate-900 text-white font-mono text-xs">
         </div>
         <div class="flex gap-2">
           <select id="filter-user-plan" onchange="AdminApp.filterUsers()" class="select select-bordered select-sm bg-slate-900 text-white text-xs font-bold">
@@ -227,8 +227,8 @@
             <option value="Gold Master">Gold Master</option>
             <option value="Admin">Admin</option>
           </select>
-          <button onclick="AdminApp.fetchUsers()" class="btn btn-sm btn-primary font-bold text-xs">
-            <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i> Sincronizza
+          <button onclick="AdminApp.fetchUsers(true)" class="btn btn-sm btn-primary font-bold text-xs" title="Cerca su tutto il database di Google Sheets">
+            <i data-lucide="search" class="w-3.5 h-3.5"></i> Cerca
           </button>
         </div>
       </div>
@@ -255,7 +255,7 @@
     </section>
 
     <!-- ===================================================================== -->
-    <!-- SEZIONE 3: COMUNICAZIONI TELEGRAM (CON ANTEPRIMA SMARTPHONE & TEMPLATE)-->
+    <!-- SEZIONE 3: COMUNICAZIONI TELEGRAM                                     -->
     <!-- ===================================================================== -->
     <section id="sec-comms" class="space-y-4 hidden">
       <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
@@ -264,7 +264,6 @@
         <div class="lg:col-span-7 glass-card p-6 space-y-4">
           <div class="flex items-center justify-between">
             <h3 class="text-xs font-black text-white uppercase tracking-wider">Componi Messaggio Telegram</h3>
-            <!-- Preset Templates -->
             <div class="dropdown dropdown-end">
               <label tabindex="0" class="btn btn-xs btn-outline border-white/20 text-slate-300">⚡ Template Rapidi</label>
               <ul tabindex="0" class="dropdown-content z-[1] menu p-2 shadow bg-slate-950 border border-white/10 rounded-box w-52 text-xs">
@@ -275,7 +274,6 @@
             </div>
           </div>
 
-          <!-- Tipo Destinatario -->
           <div class="space-y-1 text-xs">
             <label class="font-bold text-slate-300">Canale di Destinazione:</label>
             <div class="grid grid-cols-3 gap-2">
@@ -340,7 +338,7 @@
             </div>
           </div>
           <div class="text-[11px] text-slate-500 italic mt-4">
-            Nota: I tag non validi verranno ignorati o rimossi per evitare errori di parsing dalle API di Telegram.
+            Nota: I tag non validi verranno ignorati per evitare errori dalle API di Telegram.
           </div>
         </div>
 
@@ -348,7 +346,7 @@
     </section>
 
     <!-- ===================================================================== -->
-    <!-- SEZIONE 4: GESTIONE TICKET ASSISTENZA (DESK CON MACRO RISPOSTE)       -->
+    <!-- SEZIONE 4: GESTIONE TICKET ASSISTENZA                                  -->
     <!-- ===================================================================== -->
     <section id="sec-tickets" class="space-y-4 hidden">
       <div class="flex items-center justify-between gap-3">
@@ -367,7 +365,7 @@
     </section>
 
     <!-- ===================================================================== -->
-    <!-- SEZIONE 5: STANZE MULTIPLAYER                                          -->
+    <!-- SEZIONE 5: STANZE MULTIPLAYER CON CHIUSURA ATTIVA                     -->
     <!-- ===================================================================== -->
     <section id="sec-multiplayer" class="space-y-4 hidden">
       <div class="glass-card p-4 space-y-3">
@@ -385,10 +383,11 @@
                 <th>Stato</th>
                 <th>Host</th>
                 <th>Guest</th>
+                <th class="text-right">Azioni</th>
               </tr>
             </thead>
             <tbody id="rooms-table-body" class="divide-y divide-white/5">
-              <tr><td colspan="6" class="text-center py-6 text-slate-500">Nessuna stanza caricata.</td></tr>
+              <tr><td colspan="7" class="text-center py-6 text-slate-500">Nessuna stanza caricata.</td></tr>
             </tbody>
           </table>
         </div>
@@ -754,7 +753,6 @@
       },
 
       renderCharts: function(plansDist) {
-        // Grafico Piani SaaS
         const ctxPlans = document.getElementById('chart-plans');
         if (ctxPlans) {
           if (ctxPlans._chart) ctxPlans._chart.destroy();
@@ -780,7 +778,6 @@
           });
         }
 
-        // Grafico Borsellino Megoin Attività
         const ctxAct = document.getElementById('chart-activity');
         if (ctxAct) {
           if (ctxAct._chart) ctxAct._chart.destroy();
@@ -810,14 +807,15 @@
       },
 
       // -------------------------------------------------------------
-      // 2. GESTIONE DIRECTORY CRM CON QUICK ACTIONS ATTIVE
+      // 2. GESTIONE DIRECTORY CRM (RICERCA ANCHE SU SERVER)
       // -------------------------------------------------------------
-      fetchUsers: async function() {
+      fetchUsers: async function(forceServerSearch = false) {
         const tbody = document.getElementById('crm-users-table-body');
+        const q = (document.getElementById('input-crm-search')?.value || '').trim();
         tbody.innerHTML = `<tr><td colspan="7" class="text-center py-6 text-slate-500 font-mono">Sincronizzazione in corso...</td></tr>`;
 
         try {
-          const d = await this.apiCall("admin_get_users");
+          const d = await this.apiCall("admin_get_users", { query: forceServerSearch ? q : "" });
           this.cachedUsers = d?.users || [];
           this.renderUsersTable(this.cachedUsers);
         } catch (e) {
@@ -885,7 +883,6 @@
         this.renderUsersTable(filtered);
       },
 
-      // Azione Rapida: Accredito Diretto in RAM e Sheets
       quickAddMegoin: async function(chatId, amount) {
         if (!confirm(`Vuoi accreditare istantaneamente +${amount} Megoin a questo utente?`)) return;
         try {
@@ -983,7 +980,7 @@
       },
 
       // -------------------------------------------------------------
-      // 3. COMUNICAZIONI, ANTEPRIMA TELEGRAM & TEMPLATE
+      // 3. COMUNICAZIONI & ANTEPRIMA TELEGRAM
       // -------------------------------------------------------------
       setMsgTarget: function(type) {
         this.msgTargetType = type;
@@ -1273,7 +1270,7 @@
       },
 
       // -------------------------------------------------------------
-      // 6. STANZE MULTIPLAYER & STRUMENTI
+      // 6. STANZE MULTIPLAYER CON CHIUSURA ATTIVA
       // -------------------------------------------------------------
       fetchRooms: async function() {
         const tbody = document.getElementById('rooms-table-body');
@@ -1281,21 +1278,44 @@
           const d = await this.apiCall("admin_get_multiplayer_rooms");
           const rooms = d?.rooms || [];
           if (rooms.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="6" class="text-center py-6 text-slate-500 font-mono">Nessuna stanza attiva trovata.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="7" class="text-center py-6 text-slate-500 font-mono">Nessuna stanza attiva trovata.</td></tr>`;
             return;
           }
-          tbody.innerHTML = rooms.map(r => `
-            <tr>
-              <td class="font-bold text-sky-400">${escapeHTML(r.roomId)}</td>
-              <td>${escapeHTML(r.modalita)}</td>
-              <td>${escapeHTML(r.titolo)}</td>
-              <td><span class="badge badge-xs badge-info">${escapeHTML(r.stato)}</span></td>
-              <td>${escapeHTML(r.hostNome)} (${escapeHTML(r.hostId)})</td>
-              <td>${escapeHTML(r.guestNome || 'In attesa')}</td>
-            </tr>
-          `).join('');
+          tbody.innerHTML = rooms.map(r => {
+            const safeRoomId = escapeHTML(r.roomId);
+            const isFinished = String(r.stato).toLowerCase().includes('terminat');
+
+            return `
+              <tr>
+                <td class="font-bold text-sky-400">${safeRoomId}</td>
+                <td>${escapeHTML(r.modalita)}</td>
+                <td>${escapeHTML(r.titolo)}</td>
+                <td><span class="badge badge-xs ${isFinished ? 'badge-ghost text-slate-500' : 'badge-info'}">${escapeHTML(r.stato)}</span></td>
+                <td>${escapeHTML(r.hostNome)} (${escapeHTML(r.hostId)})</td>
+                <td>${escapeHTML(r.guestNome || 'In attesa')}</td>
+                <td class="text-right">
+                  ${!isFinished ? `
+                    <button onclick="AdminApp.closeRoom('${safeRoomId}')" class="btn btn-xs btn-outline border-rose-500/40 text-rose-400 hover:bg-rose-500/20 font-bold" title="Termina stanza">
+                      Chiudi ✕
+                    </button>
+                  ` : '<span class="text-slate-600 text-[10px]">—</span>'}
+                </td>
+              </tr>
+            `;
+          }).join('');
         } catch (e) {
-          tbody.innerHTML = `<tr><td colspan="6" class="text-center py-6 text-rose-400 font-mono">Errore: ${escapeHTML(e.message)}</td></tr>`;
+          tbody.innerHTML = `<tr><td colspan="7" class="text-center py-6 text-rose-400 font-mono">Errore: ${escapeHTML(e.message)}</td></tr>`;
+        }
+      },
+
+      closeRoom: async function(roomId) {
+        if (!confirm(`Vuoi terminare forzatamente la stanza ${roomId}?`)) return;
+        try {
+          await this.apiCall("admin_close_room", { roomId: roomId });
+          this.showToast(`Stanza ${roomId} terminata con successo!`);
+          this.fetchRooms();
+        } catch (e) {
+          this.showToast(e.message, 'error');
         }
       },
 
