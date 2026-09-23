@@ -1,6 +1,6 @@
 // ============================================================================
 // PROJECT: ESTIQATSY SYNDICATE & RPG PLATFORM
-// FILE: js/app-modules.js (VERSIONE 20.0 - ATOMIC BOOTSTRAP, ZERO-FLICKER & CAROUSEL)
+// FILE: js/app-modules.js (VERSIONE 23.0 - STABLE BOOTSTRAP, ZERO-FLICKER & CLEAN VAULT)
 // LAYER 2: SINGLE BOOTSTRAP, UNIFIED CATALOGS, CLICKABLE CARDS & DIGITAL VAULT
 // ============================================================================
 
@@ -72,7 +72,7 @@
         this.initCarousel();
         this.initRadio();
 
-        // 4. Solo adesso che l'app è completamente popolata, togliamo la rotellina
+        // 4. Solo adesso che l'app è popolata, sincronizziamo e togliamo il loader
         if (window.AppCore) {
           AppCore.syncUI();
           AppCore.dismissLoader();
@@ -81,7 +81,7 @@
     },
 
     // ------------------------------------------------------------------------
-    // GESTIONE DELLA CACHE CLIENT (MEMORIZZA ANCHE L'UTENTE PER EVITARE RESET A 0)
+    // GESTIONE DELLA CACHE CLIENT
     // ------------------------------------------------------------------------
     loadLocalCache: function() {
       try {
@@ -89,7 +89,6 @@
         if (raw) {
           const cached = JSON.parse(raw);
           
-          // Ripristino Utente e Saldi Reali (Mai più 0 Megoin al refresh!)
           if (cached.user) {
             AppState.user = { ...AppState.user, ...cached.user };
           }
@@ -99,7 +98,6 @@
             this.applyHardLocking(AppState.allowedModules);
           }
 
-          // Ripristino Cataloghi
           if (cached.games && cached.games.length > 0) AppState.games.catalog = cached.games;
           if (cached.genres && cached.genres.length > 0) AppState.games.genres = cached.genres;
           if (cached.shop && cached.shop.length > 0) {
@@ -114,7 +112,6 @@
             AppState.transactions = cached.transactions;
           }
 
-          // Render immediato a 0 millisecondi
           this.renderGamesCatalog();
           this.renderShop();
           this.renderRecipes();
@@ -142,7 +139,6 @@
     },
 
     applyBootstrapData: function(data) {
-      // 1. Profilo Utente & Permessi Reali
       if (data.user) {
         AppState.user = {
           ...AppState.user,
@@ -172,7 +168,6 @@
         AppState.plans = data.plans;
       }
 
-      // 2. Catalogo Giochi
       if (data.games) {
         AppState.games.catalog = data.games;
         AppState.games.genres = data.genres || [];
@@ -180,28 +175,23 @@
         if (gc) gc.textContent = data.games.length;
       }
 
-      // 3. Catalogo Shop
       if (data.shop) {
         AppState.shop.items = data.shop;
         AppState.shop.categories = data.shopCategories || [];
       }
 
-      // 4. Catalogo Ricettario
       if (data.recipes) {
         AppState.recipes.items = data.recipes;
         AppState.recipes.categories = data.recipeCategories || [];
       }
 
-      // 5. Transazioni & Idratazione Caveau Download
       if (data.transactions) {
         AppState.transactions = data.transactions;
         this.hydrateVaultFromTransactions(data.transactions);
       }
 
-      // Salva nella memoria locale per i successivi accessi
       this.saveLocalCache(data);
 
-      // Render completo nel DOM
       this.renderGamesCatalog();
       this.renderShop();
       this.renderRecipes();
@@ -219,7 +209,7 @@
     },
 
     // ------------------------------------------------------------------------
-    // GESTIONE PROFILO UTENTE & CAVEAU DOWNLOADS
+    // GESTIONE PROFILO UTENTE & CAVEAU DOWNLOADS (BONIFICATO)
     // ------------------------------------------------------------------------
     renderProfile: function() {
       if (window.AppCore) AppCore.syncUI();
@@ -237,38 +227,72 @@
 
     addVault: function(nome, url) {
       if (!AppState.digitalVault) AppState.digitalVault = [];
-      AppState.digitalVault.unshift({ nome, url, data: new Date().toLocaleDateString("it-IT") });
-      localStorage.setItem(AppConfig.CACHE_KEYS.VAULT, JSON.stringify(AppState.digitalVault));
-      this.renderVault();
-      if (window.AppCore) AppCore.syncUI();
+      const cleanNome = String(nome || "").trim();
+      const cleanUrl = String(url || "").trim();
+      
+      const exists = AppState.digitalVault.some(v => v.nome.toLowerCase() === cleanNome.toLowerCase());
+      if (!exists && cleanNome) {
+        AppState.digitalVault.unshift({ 
+          id: `VAULT_${Date.now()}`,
+          nome: cleanNome, 
+          url: cleanUrl || "#", 
+          data: new Date().toLocaleDateString("it-IT") 
+        });
+        localStorage.setItem(AppConfig.CACHE_KEYS.VAULT, JSON.stringify(AppState.digitalVault));
+        this.renderVault();
+        if (window.AppCore) AppCore.syncUI();
+      }
     },
 
-    // Sincronizzazione automatica del Caveau con le transazioni reali del server
+    // Sincronizzazione protetta del Caveau: ESCLUDE TASSATIVAMENTE LE PARTITE
     hydrateVaultFromTransactions: function(transactions) {
       if (!AppState.digitalVault) AppState.digitalVault = [];
+      
       if (transactions && transactions.length > 0) {
         transactions.forEach(tx => {
-          const detail = String(tx.dettaglio || tx.tipo || "");
-          if (detail && detail !== "—" && detail !== "-") {
-            const isRelevant = detail.toLowerCase().includes("partita") ||
-                               detail.toLowerCase().includes("ebook") ||
-                               detail.toLowerCase().includes("corso") ||
-                               detail.toLowerCase().includes("digital") ||
-                               detail.toLowerCase().includes("acquisto");
-            if (isRelevant) {
-              const exists = AppState.digitalVault.some(v => v.nome === detail);
-              if (!exists) {
-                AppState.digitalVault.push({
-                  nome: detail,
-                  url: "#",
-                  data: tx.data || "Disponibile"
-                });
-              }
+          const detail = String(tx.dettaglio || tx.tipo || "").trim();
+          const tipo = String(tx.tipo || "").toLowerCase();
+          const detLow = detail.toLowerCase();
+
+          // 🔒 REGOLA 1: Se riguarda una partita, una sessione, un cambio valuta o un accredito, viene ignorato
+          if (!detail || detail === "—" || detail === "-" ||
+              detLow.includes("partita") ||
+              detLow.includes("sessione") ||
+              detLow.includes("start game") ||
+              detLow.includes("banco cambio") ||
+              detLow.includes("conversione") ||
+              detLow.includes("airdrop") ||
+              detLow.includes("benvenuto") ||
+              detLow.includes("bonus")) {
+            return;
+          }
+
+          // 🔒 REGOLA 2: Solo veri beni digitali acquistati (Ebook, Guide, Manuali, Corsi)
+          const isDigitalAsset = detLow.includes("ebook") ||
+                                 detLow.includes("guida") ||
+                                 detLow.includes("manuale") ||
+                                 detLow.includes("corso") ||
+                                 detLow.includes("pdf") ||
+                                 (tipo.includes("acquisto") && detLow.includes("digital"));
+
+          if (isDigitalAsset) {
+            const txIdentifier = tx.id || tx.ID_TX || detail;
+            const exists = AppState.digitalVault.some(v => v.id === txIdentifier || v.nome.toLowerCase() === detail.toLowerCase());
+            
+            if (!exists) {
+              AppState.digitalVault.push({
+                id: txIdentifier,
+                nome: detail,
+                url: tx.urlDownload || "#",
+                data: tx.data || "Disponibile"
+              });
             }
           }
         });
+
         localStorage.setItem(AppConfig.CACHE_KEYS.VAULT, JSON.stringify(AppState.digitalVault));
       }
+
       this.renderVault();
       if (window.AppCore) AppCore.syncUI();
     },
@@ -283,24 +307,26 @@
       const c = document.getElementById("profile-vault-container");
       if (!c) return;
       const vault = AppState.digitalVault || [];
+
       if (vault.length === 0) {
         c.innerHTML = `
-          <div class="p-4 text-center text-xs text-slate-400 font-mono space-y-2">
-            <div>Nessun file scaricato o riscattato al momento.</div>
-            <button onclick="document.getElementById('modal-vault-downloads').close(); AppRouter.navigate('shop');" class="btn btn-xs btn-primary font-bold">
+          <div class="p-6 text-center text-xs text-slate-400 font-mono space-y-2">
+            <div>Nessun prodotto digitale o guida riscattata al momento.</div>
+            <button onclick="document.getElementById('modal-vault-downloads').close(); AppRouter.navigate('shop');" class="btn btn-xs btn-primary font-bold mt-2">
               Esplora Mercato Digitale ›
             </button>
           </div>
         `;
         return;
       }
+
       c.innerHTML = vault.map(v => `
         <div class="p-3 rounded-xl bg-slate-900 border border-white/10 flex items-center justify-between text-xs gap-2">
           <div class="min-w-0 pr-2">
             <div class="font-bold text-white truncate">${v.nome}</div>
             <div class="text-[10px] font-mono text-slate-400 mt-0.5">${v.data || 'Disponibile'}</div>
           </div>
-          <a href="${v.url}" target="_blank" class="btn btn-xs btn-success font-black text-slate-950 shrink-0">
+          <a href="${v.url !== '#' ? v.url : 'javascript:void(0)'}" ${v.url !== '#' ? 'target="_blank"' : ''} onclick="${v.url === '#' ? 'AppCore.toast(\'Download in fase di preparazione o completato.\', \'info\')' : ''}" class="btn btn-xs btn-success font-black text-slate-950 shrink-0">
             Scarica 📥
           </a>
         </div>
@@ -311,17 +337,19 @@
       const c = document.getElementById("profile-transactions-container");
       if (!c) return;
       const list = AppState.transactions || [];
+
       if (list.length === 0) {
         c.innerHTML = `<div class="text-xs text-slate-500 font-mono py-2">Nessuna transazione registrata finora.</div>`;
         return;
       }
+
       c.innerHTML = list.map(tx => `
         <div class="flex justify-between items-center py-2 text-xs border-b border-white/5 last:border-none">
-          <div>
-            <div class="font-bold text-slate-200">${tx.dettaglio || tx.tipo}</div>
+          <div class="min-w-0 pr-2">
+            <div class="font-bold text-slate-200 truncate">${tx.dettaglio || tx.tipo}</div>
             <div class="text-[10px] text-slate-500 font-mono">${tx.data}</div>
           </div>
-          <div class="font-mono font-black ${String(tx.megoin).includes('+') ? 'text-emerald-400' : 'text-amber-400'}">
+          <div class="font-mono font-black shrink-0 ${String(tx.megoin).includes('+') ? 'text-emerald-400' : 'text-amber-400'}">
             ${tx.megoin}
           </div>
         </div>
@@ -343,7 +371,7 @@
     },
 
     // ------------------------------------------------------------------------
-    // CAROSELLO HOME DINAMICO (TIMER AUTO-SLIDE & LARGHEZZA 100%)
+    // CAROSELLO HOME DINAMICO (BLINDATURA 100% LARGHEZZA)
     // ------------------------------------------------------------------------
     initCarousel: function() {
       const track = document.getElementById("carousel-track");
@@ -392,9 +420,9 @@
 
       if (slides.length === 0) return;
 
-      // Iniezione con larghezza forzata al 100%
+      // 🔒 Forzatura esplicita a piena larghezza per eliminare l'accavallamento dello Screenshot 2
       track.innerHTML = slides.map((s, idx) => `
-        <div class="carousel-slide" onclick="AppModules.handleCarouselClick(${idx})">
+        <div class="carousel-slide w-full min-w-full max-w-full flex-shrink-0 shrink-0" style="flex: 0 0 100%; min-width: 100%; width: 100%; max-width: 100%;" onclick="AppModules.handleCarouselClick(${idx})">
           <img src="${s.img}" class="carousel-slide-img" alt="${s.titolo}">
           <div class="carousel-slide-overlay"></div>
           <span class="carousel-slide-badge">${s.badge}</span>
@@ -418,7 +446,6 @@
       this._carouselIndex = 0;
       this.goToCarouselSlide(0);
 
-      // Auto-slide ogni 4 secondi solo se ci sono più di 1 slide
       if (slides.length > 1) {
         this._carouselTimer = setInterval(() => {
           this.nextCarouselSlide();
@@ -450,7 +477,7 @@
     },
 
     // ------------------------------------------------------------------------
-    // CATALOGO GIOCHI (FILTRI CHIP & CARD STEAM 16:9)
+    // CATALOGO GIOCHI
     // ------------------------------------------------------------------------
     setGameGenre: function(genre) {
       currentGameGenre = genre;
@@ -596,6 +623,7 @@
       if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
     },
 
+    // Modale Regole: Chiusura Unificata (Solo "X" in alto a destra)
     openSagaRulesModal: function(gameKey) {
       const saga = (AppState.games.catalog || []).find(s => s.gameKey === gameKey);
       if (!saga) return;
@@ -610,8 +638,8 @@
 
       modal.innerHTML = `
         <div class="modal-box p-5 bg-slate-950 border border-sky-400/40 rounded-2xl max-w-lg space-y-3 relative">
-          <button onclick="document.getElementById('modal-saga-rules').close()" class="modal-close-btn">✕</button>
-          <div class="flex items-center gap-2">
+          <button onclick="document.getElementById('modal-saga-rules').close()" class="modal-close-btn absolute top-3 right-3 w-7 h-7 rounded-full bg-slate-800/80 border border-white/10 flex items-center justify-center text-slate-300 hover:text-white z-50">✕</button>
+          <div class="flex items-center gap-2 pr-8">
             <span class="text-2xl">📜</span>
             <div>
               <span class="text-[10px] font-mono text-sky-400 uppercase font-bold tracking-wider">REGOLAMENTO SAGA</span>
@@ -624,14 +652,12 @@
             • Gestione dell'Oro sonante in-game disaccoppiata dal borsello Megoin di piattaforma.
             • Combattimenti a round con supporto a sgherri, corruzione tramite sostanze e rianimazione zombi.
           </div>
-          <button onclick="document.getElementById('modal-saga-rules').close()" class="btn btn-sm btn-primary w-full font-black uppercase text-xs">
-            Chiudi Regole
-          </button>
         </div>
       `;
       modal.showModal();
     },
 
+    // Modale Scheda Tecnica: Chiusura Unificata (Solo "X" in alto a destra)
     openSagaFeaturesModal: function(gameKey) {
       const saga = (AppState.games.catalog || []).find(s => s.gameKey === gameKey);
       if (!saga) return;
@@ -646,8 +672,8 @@
 
       modal.innerHTML = `
         <div class="modal-box p-5 bg-slate-950 border border-amber-400/40 rounded-2xl max-w-lg space-y-3 relative">
-          <button onclick="document.getElementById('modal-saga-features').close()" class="modal-close-btn">✕</button>
-          <div class="flex items-center gap-2">
+          <button onclick="document.getElementById('modal-saga-features').close()" class="modal-close-btn absolute top-3 right-3 w-7 h-7 rounded-full bg-slate-800/80 border border-white/10 flex items-center justify-center text-slate-300 hover:text-white z-50">✕</button>
+          <div class="flex items-center gap-2 pr-8">
             <span class="text-2xl">🔍</span>
             <div>
               <span class="text-[10px] font-mono text-amber-300 uppercase font-bold tracking-wider">SCHEDA TECNICA</span>
@@ -660,9 +686,6 @@
             <div><b>Citazione d'apertura:</b> ${saga.citazione || '—'}</div>
             <div><b>Archivio:</b> ${saga.autoreCitazione || 'Darsena Noir'}</div>
           </div>
-          <button onclick="document.getElementById('modal-saga-features').close()" class="btn btn-sm btn-ghost text-slate-400 w-full font-bold uppercase text-xs">
-            Chiudi Scheda
-          </button>
         </div>
       `;
       modal.showModal();
@@ -685,7 +708,7 @@
     },
 
     // ------------------------------------------------------------------------
-    // SHOP (FILTRI CHIP & ZERO CHIAMATE DI RETE AL CAMBIO CATEGORIA)
+    // SHOP
     // ------------------------------------------------------------------------
     setShopCategory: function(cat) {
       currentShopCategory = cat;
@@ -729,7 +752,6 @@
         return;
       }
 
-      // Card Capsule Standard Steam (16:9 centrato, tag, corpo 2 righe, footer con CTA uniforme)
       grid.innerHTML = list.map(p => `
         <div onclick="AppModules.openShopDetail('${p.id}')" class="item-card group">
           <div class="item-card-media">
@@ -787,7 +809,7 @@
         const res = await apiCall("shop_buy", { id: prodId, qty: 1 });
         if (res && res.success) {
           Wallet.setMegoin(res.nuovoSaldoMegoin);
-          if (res.digitalDownloads) {
+          if (res.digitalDownloads && res.digitalDownloads.length > 0) {
             res.digitalDownloads.forEach(d => this.addVault(d.nome, d.url));
           }
           this.showFulfillment(res.riepilogo, res.digitalDownloads);
@@ -811,7 +833,7 @@
     },
 
     // ------------------------------------------------------------------------
-    // PIANI SAAS REALI
+    // PIANI SAAS
     // ------------------------------------------------------------------------
     openPlansCatalogModal: function() {
       this.renderPlansCatalog();
@@ -879,7 +901,7 @@
     },
 
     // ------------------------------------------------------------------------
-    // RICETTARIO (FILTRI CHIP, CARD STEAM 16:9 & BONIFICA DATI)
+    // RICETTARIO
     // ------------------------------------------------------------------------
     setRecipeCategory: function(cat) {
       currentRecipeCategory = cat;
@@ -923,7 +945,6 @@
         return;
       }
 
-      // Card Capsule Standard Steam (16:9 centrato, tag, corpo 2 righe, footer con CTA uniforme)
       grid.innerHTML = list.map(r => {
         const tempoClean = (r.tempo && !String(r.tempo).includes("%")) ? r.tempo : "15 min";
         const diffClean = (r.difficolta && !String(r.difficolta).includes("%")) ? r.difficolta : "Media";
@@ -1701,7 +1722,7 @@
     },
 
     // ------------------------------------------------------------------------
-    // RADIO NOIR & JUKEBOX COMPLETA (HOME, PROFILO E MIXER SPOTIFY SLIDERS)
+    // RADIO NOIR & JUKEBOX
     // ------------------------------------------------------------------------
     initRadio: function() {
       this.updateRadioDisplay();
@@ -1734,7 +1755,6 @@
       this.updateRadioDisplay();
     },
 
-    // Sincronizzazione in tempo reale di Home, Profilo e Slider del modale
     updateRadioDisplay: function() {
       if (!window.SoundEngine) return;
       const track = (typeof SoundEngine.getCurrentTrack === 'function') 
@@ -1763,7 +1783,7 @@
       const muteBtnProf = document.getElementById('profile-radio-mute-btn');
       if (muteBtnProf) muteBtnProf.textContent = isMuted ? '🔇' : '🔊';
 
-      // 3. Barre Equalizzatore animate solo se l'audio sta effettivamente suonando
+      // 3. Barre Equalizzatore animate
       document.querySelectorAll('.jukebox-eq-bars').forEach(eq => {
         eq.classList.toggle('animated', effectivePlaying);
       });
@@ -1776,7 +1796,7 @@
       const jukePlayBtn = document.getElementById('jukebox-btn-play');
       if (jukePlayBtn) jukePlayBtn.textContent = effectivePlaying ? '⏸ Pausa' : '▶️ Riproduci';
 
-      // 5. Sincronizzazione Cursori Volume
+      // 5. Cursori Volume
       const slMaster = document.getElementById('juke-slider-master');
       const slBgm = document.getElementById('juke-slider-bgm');
       const slSfx = document.getElementById('juke-slider-sfx');
@@ -1784,7 +1804,7 @@
       if (slBgm && SoundEngine.bgmVolume !== undefined) slBgm.value = SoundEngine.bgmVolume;
       if (slSfx && SoundEngine.sfxVolume !== undefined) slSfx.value = SoundEngine.sfxVolume;
 
-      // 6. Evidenzia la traccia attiva nella lista del Jukebox
+      // 6. Evidenzia traccia attiva
       const tracklist = document.getElementById('jukebox-tracklist-container');
       if (tracklist) {
         tracklist.querySelectorAll('.audio-track-item').forEach(item => {
