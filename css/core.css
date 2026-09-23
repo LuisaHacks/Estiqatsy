@@ -1,8 +1,8 @@
 /* ============================================================================
    PROJECT: ESTIQATSY SYNDICATE & RPG PLATFORM
-   FILE: css/core.css (VERSIONE 23.3 - SHELL, CATALOGS, AUDIO & BASE LAYOUT)
+   FILE: css/core.css (VERSIONE 23.4 - SHELL, CATALOGS, AUDIO & BASE LAYOUT)
    LAYER: APP SHELL, UNIVERSAL BARS, 16:9 CAROUSEL & SHARED CATALOG COMPONENTS
-   NOTE: CONTIENE SOLO GLI STILI DELL'INTERA PIATTAFORMA (NON IL GAMEPLAY RULES2)
+   NOTE: 100% DEDICATO ALLA PIATTAFORMA - ELEMENTI RULES2 DELEGATI A RULES2.CSS
    ============================================================================ */
 
 /* ----------------------------------------------------------------------------
@@ -37,9 +37,11 @@ html, body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* 🔒 REGOLA CARDINE: Nessuna classe specifica può annullare la classe .hidden */
+/* 🔒 REGOLA CARDINE: La classe .hidden deve sempre prevalere senza eccezioni */
 .hidden,
-.universal-top-bar.hidden {
+[hidden],
+.universal-top-bar.hidden,
+.main-app-footer.hidden {
   display: none !important;
 }
 
@@ -57,14 +59,14 @@ html, body {
 }
 
 /* ----------------------------------------------------------------------------
-   2. TOP BAR SUPERIORE (44px CON DISCESA SOTTO IL NOTCH / OROLOGIO iOS)
+   2. TOP BAR SUPERIORE INVARIANTE (44px CON DISCESA SOTTO IL NOTCH iOS)
    ---------------------------------------------------------------------------- */
 .universal-top-bar {
-  /* Altezza calcolata: 44px di contenuto + Safe Area notch iPhone */
+  /* Altezza calcolata: 44px di contenuto visibile + Safe Area notch iPhone/Android */
   height: calc(44px + max(env(safe-area-inset-top, 0px), var(--tg-safe-area-inset-top, 0px))) !important;
   min-height: calc(44px + max(env(safe-area-inset-top, 0px), var(--tg-safe-area-inset-top, 0px))) !important;
   padding-top: max(env(safe-area-inset-top, 0px), var(--tg-safe-area-inset-top, 0px)) !important;
-  /* Margini di rispetto per i comandi nativi Telegram (✕ Chiudi a sx e ••• a dx) */
+  /* Margini laterali di rispetto: isolano il titolo tra i comandi nativi Telegram (✕ e •••) */
   padding-left: 72px !important;
   padding-right: 72px !important;
   display: flex;
