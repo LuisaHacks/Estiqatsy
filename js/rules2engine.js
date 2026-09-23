@@ -1,8 +1,8 @@
 // ============================================================================
 // PROJECT: ESTIQATSY SYNDICATE & RPG PLATFORM
-// FILE: js/rules2engine.js (VERSIONE 24.0 - MOVERINA STAGE, 48px HUD & TOP FX)
-// LAYER: GAMEPLAY LOOP, D20 COMBAT, TCG CARD STAGE, CRAFTING & FORFEIT ENGINE
-// NOTE: 100% DISACCOPPIATO DAL WALLET PIATTAFORMA - GESTIONE AUTONOMA ORO 🟡
+// FILE: js/rules2engine.js (VERSIONE 26.0 - AGNOSTIC TCG STAGE, 48px HUD & ADAPTIVE MATRIX)
+// LAYER: GAMEPLAY LOOP, D20 COMBAT, 1-2-3-4 ACTION MATRIX, TOP-ARC FX & TACTICAL SHEETS
+// NOTE: 100% DINAMICO, ZERO HARDCODING, DISACCOPPIATO DAL WALLET PIATTAFORMA
 // ============================================================================
 
 // ----------------------------------------------------------------------------
@@ -66,22 +66,6 @@ function rulesFormatMod(val) {
   return (mod >= 0 ? "+" : "") + mod;
 }
 
-// Iniezione dinamica dei keyframes per la traiettoria dei danni fluttuanti
-(function initFloatingDamageStyles() {
-  if (document.getElementById("rules2-floating-fx-keyframes")) return;
-  const style = document.createElement("style");
-  style.id = "rules2-floating-fx-keyframes";
-  style.textContent = `
-    @keyframes floatTowardHeader {
-      0% { opacity: 0; transform: translate(-50%, 0) scale(0.85); }
-      15% { opacity: 1; transform: translate(-50%, -20px) scale(1.1); }
-      75% { opacity: 0.9; transform: translate(-50%, -65px) scale(1); }
-      100% { opacity: 0; transform: translate(-50%, -95px) scale(0.9); }
-    }
-  `;
-  document.head.appendChild(style);
-})();
-
 // ----------------------------------------------------------------------------
 // 2. MOTORE RUNTIME RULES2
 // ----------------------------------------------------------------------------
@@ -132,7 +116,7 @@ const Rules2Engine = {
   },
 
   // --------------------------------------------------------------------------
-  // CABINATO: INSERISCI GETTONE / RIPRESA PARTITA
+  // FLUSSO CABINATO & RIPRESA SESSIONE
   // --------------------------------------------------------------------------
   launchSession: function(gameKey, epNum, canContinueFree, savedHero) {
     const saga = (AppState.games.catalog || []).find(g => g.gameKey === gameKey);
@@ -208,11 +192,11 @@ const Rules2Engine = {
 
     if (canContinueFree || (savedHero && epNum > 1)) {
       s("arcade-coin-title", "EROE VETERANO");
-      s("arcade-coin-desc", `Prosegui l'inchiesta con l'Eroe veterano "${savedHero ? (savedHero.nomeEroe || savedHero.classe) : 'In Memoria'}".`);
+      s("arcade-coin-desc", `Prosegui l'avventura con l'Eroe veterano "${savedHero ? (savedHero.nomeEroe || savedHero.classe) : 'In Memoria'}".`);
       s("arcade-cost-badge", "GRATIS");
       const btnLaunch = document.getElementById("arcade-btn-launch");
       if (btnLaunch) {
-        btnLaunch.textContent = "Continua l'Inchiesta 🎖️";
+        btnLaunch.textContent = "Continua l'Avventura 🎖️";
         btnLaunch.onclick = () => {
           modal.close();
           if (typeof Rules2Wizard !== "undefined") {
@@ -310,19 +294,19 @@ const Rules2Engine = {
   },
 
   // --------------------------------------------------------------------------
-  // HUD A 2 RIGHE (48px - IDENTICO AL WIZARD PER DIMENSIONI E POSIZIONE)
+  // HUD A 2 RIGHE (48px - 100% IDENTICO AL WIZARD PER DIMENSIONI E LAYOUT)
   // --------------------------------------------------------------------------
   syncHUD: function() {
     const hero = AppState.activeSession?.hero;
     if (!hero) return;
 
-    const hudBox = document.querySelector("#view-gameplay .hud-cockpit-36px, #view-gameplay .hud-cockpit-48px");
+    const hudBox = document.querySelector("#view-gameplay .hud-cockpit-48px, #view-gameplay .hud-cockpit-36px");
     if (!hudBox) return;
 
     const heroName = hero.nomeEroe || "Avventuriero";
     const avatar = (hero.mediaUrl && hero.mediaUrl.startsWith("http"))
       ? `<img src="${hero.mediaUrl}" class="w-full h-full object-cover rounded-full" alt="Avatar">`
-      : `<span class="text-xs">🥋</span>`;
+      : `<span class="text-xs">👤</span>`;
 
     const pv = parseInt(hero.pv, 10) || 0;
     const pvMax = parseInt(hero.pvMax, 10) || 25;
@@ -339,7 +323,7 @@ const Rules2Engine = {
     const desMod = rulesFormatMod(desVal);
     const intMod = rulesFormatMod(intVal);
 
-    hudBox.className = "hud-cockpit-48px w-full max-w-[340px] mx-auto p-2 rounded-xl bg-slate-900/90 border border-white/10 shadow-lg mb-2";
+    hudBox.className = "hud-cockpit-48px w-full p-2 rounded-xl bg-slate-900/90 border border-white/10 shadow-lg mb-1";
     hudBox.innerHTML = `
       <!-- RIGA 1: NOME LUNGO FLESSIBILE A SX & RISORSE A DX -->
       <div class="flex items-center justify-between w-full min-w-0 leading-none">
@@ -351,7 +335,7 @@ const Rules2Engine = {
         </div>
         <div class="flex items-center gap-2 shrink-0 font-mono text-[10.5px]">
           <span class="text-sky-300 font-bold">✨ ${px} PX</span>
-          <span class="text-amber-300 font-bold">💰 <b id="kpi-hero-gold">${oro}</b> 🟡</span>
+          <span class="text-amber-300 font-bold">🟡 <b id="kpi-hero-gold">${oro}</b> ORO</span>
         </div>
       </div>
 
@@ -372,7 +356,7 @@ const Rules2Engine = {
   },
 
   // --------------------------------------------------------------------------
-  // CARTA TAVOLO DI GIOCO "MOVERINA" (300x424px - ALONE BIANCO PLATINO NEUTRO)
+  // CARTA TAVOLO DI GIOCO FOCALE (ZOOMATA A 335px, ZERO FONDINO, ALONE PLATINO)
   // --------------------------------------------------------------------------
   renderNode: function(node, hero) {
     this._setBusy(false);
@@ -389,7 +373,7 @@ const Rules2Engine = {
 
     this.syncHUD();
 
-    // Battito Cardiaco Bassa Salute (PV <= 25%)
+    // Allarme sonoro e battito cardiaco se PV <= 25%
     if (currentHero && currentHero.pvMax) {
       const pvRatio = (currentHero.pv || 0) / currentHero.pvMax;
       if (pvRatio <= 0.25 && currentHero.pv > 0) {
@@ -410,8 +394,9 @@ const Rules2Engine = {
         SoundEngine.playError();
       }
       if (actBox) {
+        actBox.className = "scene-actions-area";
         actBox.innerHTML = `
-          <div class="grid grid-cols-2 gap-2 pt-1">
+          <div class="actions-grid-2">
             <button onclick="Rules2Engine.launchSession('${AppState.activeSession.gameKey}', ${AppState.activeSession.episodio}, false, null)" class="scene-action-btn action-danger font-black justify-center">
               Riprova (1 🪙) 🔄
             </button>
@@ -434,8 +419,9 @@ const Rules2Engine = {
         try { window.confetti({ particleCount: 75, spread: 60 }); } catch (e) {}
       }
       if (actBox) {
+        actBox.className = "scene-actions-area";
         actBox.innerHTML = `
-          <div class="grid grid-cols-2 gap-2 pt-1">
+          <div class="actions-grid-2">
             <button onclick="Rules2Engine.launchSession('${AppState.activeSession.gameKey}', ${AppState.activeSession.episodio}, false, null)" class="scene-action-btn font-bold justify-center">
               Rigioca Ep. ${AppState.activeSession.episodio} 🔄
             </button>
@@ -448,7 +434,6 @@ const Rules2Engine = {
       return;
     }
 
-    // 3. POPOLAMENTO DELLA CARTA TCG "MOVERINA" IN GAMEPLAY
     const isCombat = (currentNode.tipo === "NEMICO" || (currentNode.id && currentNode.id.includes("NEM_")));
     const isEvento = (currentNode.tipo === "EVENTO" || (currentNode.id && currentNode.id.includes("EVT_")));
 
@@ -475,8 +460,8 @@ const Rules2Engine = {
 
     let cleanText = (currentNode.testo || "").replace(/\s*\([A-Z]{3,4}_\d{4}_S\d+_E\d+\)/gi, "");
 
-    // Iniezione o aggiornamento della carta tavolo da gioco a 5 fasce
-    let cardWrapper = document.getElementById("gameplay-moverina-card");
+    // Struttura Carta Focale di Gioco (Senza fondino, immagine a Y=0, zoom a 335px)
+    let cardWrapper = document.getElementById("gameplay-card-stage");
     if (!cardWrapper) {
       const sceneImg = document.getElementById("scene-image");
       const parentContainer = sceneImg ? sceneImg.closest(".cinema-frame-rigid")?.parentElement : null;
@@ -487,40 +472,41 @@ const Rules2Engine = {
         if (oldNarrative) oldNarrative.remove();
 
         cardWrapper = document.createElement("div");
-        cardWrapper.id = "gameplay-moverina-card";
+        cardWrapper.id = "gameplay-card-stage";
         parentContainer.insertBefore(cardWrapper, actBox);
       }
     }
 
     if (cardWrapper) {
       cardWrapper.innerHTML = `
-        <div class="coverflow-card tcg-card selected max-w-[300px] mx-auto shadow-2xl relative my-2">
-          <!-- FASCIA 1: Testata -->
-          <div class="tcg-card-header">
-            <h4 class="tcg-card-title truncate">${currentNode.nome || "Avventura"}</h4>
-            <span class="tcg-card-faction-badge ${isCombat ? 'sinistra' : 'destra'}">${currentNode.tipo || "SNODO"}</span>
-          </div>
+        <div class="tcg-card gameplay-focal selected relative my-1">
+          <!-- FASCIA 2: Media a Schermo Pieno Alto con Angoli Tondi Superiori -->
+          <div class="tcg-card-media">
+            <!-- FASCIA 1: Testata Fluttuante Trasparente in Sovraimpressione -->
+            <div class="tcg-card-header">
+              <h4 class="tcg-card-title truncate">${currentNode.nome || "Avventura"}</h4>
+              <span class="tcg-card-faction-badge ${isCombat ? 'sinistra' : 'destra'}">${currentNode.tipo || "SNODO"}</span>
+            </div>
 
-          <!-- FASCIA 2: Immagine & Citazione Sfumata -->
-          <div class="tcg-card-media relative">
-            <img id="scene-image" src="${currentNode.mediaUrl || 'https://image.pollinations.ai/prompt/noir-docks-night-cinematic?width=800&height=500&nologo=true'}" class="tcg-card-img" alt="Scena">
+            <img id="scene-image" src="${currentNode.mediaUrl || 'https://image.pollinations.ai/prompt/dark-rpg-investigation-scene?width=800&height=500&nologo=true'}" class="tcg-card-img" alt="Scena">
+            
             ${(currentNode.citazione && currentNode.citazione !== "—" && currentNode.citazione !== "-") ? `
               <div class="tcg-card-quote-overlay">
                 <div class="tcg-card-quote-text">“${currentNode.citazione.replace(/^["'“”]+|["'“”]+$/g, "")}”</div>
-                <div class="tcg-card-quote-author">${currentNode.autoreCitazione || 'DARSENA NOIR'}</div>
+                ${currentNode.autoreCitazione ? `<div class="tcg-card-quote-author">${currentNode.autoreCitazione}</div>` : ''}
               </div>
             ` : ''}
           </div>
 
-          <!-- FASCIA 3: Piastra Metrica Incastonata -->
+          <!-- FASCIA 3: Piastra Metrica Tattica Incastonata -->
           <div class="tcg-stats-plate">
             ${statPlateHtml}
           </div>
 
-          <!-- FASCIA 4: Corpo Narrativo -->
+          <!-- FASCIA 4: Narrazione Ambientale -->
           <p class="tcg-card-desc">${cleanText}</p>
 
-          <!-- FASCIA 5: Piede Scheda -->
+          <!-- FASCIA 5: Piede Scheda con Vitali e Loot -->
           <div class="tcg-card-footer">
             <div class="tcg-card-loot truncate">${currentNode.equipLoot || (isCombat ? '💀 Bottino' : '🧭 Inchiesta')}</div>
             <div class="tcg-card-vitals">
@@ -532,8 +518,11 @@ const Rules2Engine = {
     }
 
     if (!actBox) return;
+    actBox.className = "scene-actions-area";
 
-    // CASO 1: COMBATTIMENTO D20
+    // ------------------------------------------------------------------------
+    // CASO 1: COMBATTIMENTO D20 (MATRICE 1, 2 O 3 COLONNE SU RIGA UNICA)
+    // ------------------------------------------------------------------------
     if (isCombat) {
       if (AppState.activeSession.combatEnemyId !== currentNode.id) {
         AppState.activeSession.combatEnemyId = currentNode.id;
@@ -541,34 +530,43 @@ const Rules2Engine = {
         if (window.SoundEngine) SoundEngine.playDice();
       }
 
-      let bribeHtml = "";
-      if (currentNode.corruption?.canCorrupt && currentNode.corruption.validDrugs?.length > 0) {
-        bribeHtml = currentNode.corruption.validDrugs.map(d => `
-          <button onclick="Rules2Engine.combatBribe('${Rules2_SafeAttr(d.nome)}')" class="scene-action-btn border-amber-400/40 text-amber-300">
-            <span>Offri ${Rules2_SafeAttr(d.nome.split(" ")[0])} 💊</span>
-            <span class="text-[10px] font-mono uppercase">Corrompi</span>
-          </button>
-        `).join("");
-      }
+      const hasBribe = (currentNode.corruption?.canCorrupt && currentNode.corruption.validDrugs?.length > 0);
+      const bribeDrug = hasBribe ? currentNode.corruption.validDrugs[0] : null;
 
-      actBox.innerHTML = `
-        <div class="grid grid-cols-2 gap-2">
-          <button onclick="Rules2Engine.combatAction('attack_round')" class="scene-action-btn action-danger font-black justify-center">
-            ⚔️ Attacca
-          </button>
-          <button onclick="Rules2Engine.combatAction('flee')" class="scene-action-btn font-bold justify-center">
-            Fuggi 🏃
-          </button>
-        </div>
-        ${bribeHtml}
-        <button onclick="Rules2Engine.inspectCurrentEnemyDetail()" class="scene-action-btn text-slate-300 justify-center text-xs">
-          Fascicolo Nemico 🔍
-        </button>
-      `;
+      if (hasBribe && bribeDrug) {
+        // 🔒 3 AZIONI: RIGA SINGOLA A 3 COLONNE (33% ciascuna a 42px)
+        actBox.innerHTML = `
+          <div class="actions-grid-3">
+            <button onclick="Rules2Engine.combatAction('attack_round')" class="scene-action-btn action-danger font-black">
+              ⚔️ Attacca
+            </button>
+            <button onclick="Rules2Engine.combatAction('flee')" class="scene-action-btn font-bold">
+              🏃 Fuggi
+            </button>
+            <button onclick="Rules2Engine.combatBribe('${Rules2_SafeAttr(bribeDrug.nome)}')" class="scene-action-btn border-amber-400/50 text-amber-300 font-bold" title="${Rules2_SafeAttr(bribeDrug.nome)}">
+              💊 Corrompi
+            </button>
+          </div>
+        `;
+      } else {
+        // 🔒 2 AZIONI: BIVIO A 2 COLONNE (50% ciascuna a 42px)
+        actBox.innerHTML = `
+          <div class="actions-grid-2">
+            <button onclick="Rules2Engine.combatAction('attack_round')" class="scene-action-btn action-danger font-black">
+              ⚔️ Attacca
+            </button>
+            <button onclick="Rules2Engine.combatAction('flee')" class="scene-action-btn font-bold">
+              🏃 Fuggi
+            </button>
+          </div>
+        `;
+      }
       return;
     }
 
-    // CASO 2: EVENTO D20
+    // ------------------------------------------------------------------------
+    // CASO 2: EVENTO D20 (PROVA DI ABILITÀ)
+    // ------------------------------------------------------------------------
     if (isEvento) {
       const statReq = currentNode.statRichiesta || "DESTREZZA";
       const shortStat = statReq.substring(0, 3).toUpperCase();
@@ -577,22 +575,23 @@ const Rules2Engine = {
       const hasTool = bypassTool && (currentHero?.inventario || []).some(it => it.toLowerCase().includes(bypassTool.toLowerCase()));
 
       if (hasTool) {
+        // 1 AZIONE: TUTTA LARGHEZZA (Bypass immediato)
         actBox.innerHTML = `
-          <div class="p-2 rounded-xl bg-emerald-950/40 border border-emerald-500/40 text-[11px] font-bold text-emerald-300 mb-1">
-            🛡️ Vantaggio Tattico: possiedi ${bypassTool}!
+          <div class="actions-grid-1">
+            <button onclick="Rules2Engine.executeEventRoll('${currentNode.id}', '${statReq}', ${cdVal})" class="scene-action-btn border-emerald-500 text-emerald-300 font-black justify-between">
+              <span>Bypassa con ${bypassTool} ⚡</span>
+              <span>100% Successo ›</span>
+            </button>
           </div>
-          <button onclick="Rules2Engine.executeEventRoll('${currentNode.id}', '${statReq}', ${cdVal})" class="scene-action-btn border-emerald-500 text-emerald-300 font-black">
-            <span>Bypassa con ${bypassTool} ⚡</span>
-            <span>100% Successo</span>
-          </button>
         `;
       } else {
+        // 2 AZIONI: PROVA D20 VS SCHIVA
         actBox.innerHTML = `
-          <div class="grid grid-cols-2 gap-2">
-            <button onclick="Rules2Engine.executeEventRoll('${currentNode.id}', '${statReq}', ${cdVal})" class="scene-action-btn border-sky-400 text-sky-300 font-black justify-center">
+          <div class="actions-grid-2">
+            <button onclick="Rules2Engine.executeEventRoll('${currentNode.id}', '${statReq}', ${cdVal})" class="scene-action-btn border-sky-400 text-sky-300 font-black">
               Tira D20 (${shortStat}) 🎲
             </button>
-            <button onclick="Rules2Engine.advanceToNode('${currentNode.destFallback || currentNode.destFallimento}')" class="scene-action-btn font-bold justify-center">
+            <button onclick="Rules2Engine.advanceToNode('${currentNode.destFallback || currentNode.destFallimento}')" class="scene-action-btn font-bold">
               Schiva 🏃
             </button>
           </div>
@@ -601,38 +600,77 @@ const Rules2Engine = {
       return;
     }
 
-    // CASO 3: ENIGMA
-    if (currentNode.quiz) {
+    // ------------------------------------------------------------------------
+    // CASO 3: ENIGMA / QUIZ (GRIGLIA 2x2 COMPATTA)
+    // ------------------------------------------------------------------------
+    if (currentNode.quiz && currentNode.quiz.opzioni && currentNode.quiz.opzioni.length > 0) {
+      const opz = currentNode.quiz.opzioni;
+      const gridClass = (opz.length === 4) ? "actions-grid-quiz" : (opz.length === 2 ? "actions-grid-2" : "actions-grid-1");
+
       actBox.innerHTML = `
-        <div class="p-3 bg-slate-900 rounded-xl border border-white/10 space-y-2">
-          <div class="text-xs font-bold text-sky-300">🔐 ${currentNode.quiz.domanda}</div>
-          <div class="grid grid-cols-2 gap-2 pt-1">
-            ${currentNode.quiz.opzioni.map(opz => `
-              <button onclick="Rules2Engine.submitQuizAnswer('${Rules2_SafeAttr(opz)}')" class="scene-action-btn text-xs font-bold truncate">
-                ${opz}
-              </button>
-            `).join("")}
-          </div>
+        <div class="${gridClass}">
+          ${opz.map(o => `
+            <button onclick="Rules2Engine.submitQuizAnswer('${Rules2_SafeAttr(o)}')" class="scene-action-btn font-bold text-xs truncate">
+              ${o}
+            </button>
+          `).join("")}
         </div>
       `;
       return;
     }
 
-    // CASO 4: BIVIO NARRATIVO
+    // ------------------------------------------------------------------------
+    // CASO 4: BIVI NARRATIVI ADATTIVI (1, 2 O 3 COLONNE SU RIGA UNICA)
+    // ------------------------------------------------------------------------
     const choices = (currentNode.choices || []).filter(c => c.target);
 
-    if (choices.length > 0) {
-      actBox.innerHTML = choices.map(c => `
-        <button onclick="Rules2Engine.advanceToNode('${c.target}')" class="scene-action-btn">
-          <span class="truncate">${c.testo}</span>
-          <span>›</span>
-        </button>
-      `).join("");
+    if (choices.length === 1) {
+      actBox.innerHTML = `
+        <div class="actions-grid-1">
+          <button onclick="Rules2Engine.advanceToNode('${choices[0].target}')" class="scene-action-btn font-black justify-between">
+            <span class="truncate">${choices[0].testo}</span>
+            <span>›</span>
+          </button>
+        </div>
+      `;
+    } else if (choices.length === 2) {
+      actBox.innerHTML = `
+        <div class="actions-grid-2">
+          ${choices.map(c => `
+            <button onclick="Rules2Engine.advanceToNode('${c.target}')" class="scene-action-btn truncate">
+              ${c.testo}
+            </button>
+          `).join("")}
+        </div>
+      `;
+    } else if (choices.length === 3) {
+      // 🔒 3 SCELTE NARRATIVE SU RIGA SINGOLA
+      actBox.innerHTML = `
+        <div class="actions-grid-3">
+          ${choices.map(c => `
+            <button onclick="Rules2Engine.advanceToNode('${c.target}')" class="scene-action-btn truncate" title="${Rules2_SafeAttr(c.testo)}">
+              ${c.testo}
+            </button>
+          `).join("")}
+        </div>
+      `;
+    } else if (choices.length >= 4) {
+      actBox.innerHTML = `
+        <div class="actions-grid-quiz">
+          ${choices.slice(0, 4).map(c => `
+            <button onclick="Rules2Engine.advanceToNode('${c.target}')" class="scene-action-btn truncate">
+              ${c.testo}
+            </button>
+          `).join("")}
+        </div>
+      `;
     } else {
       actBox.innerHTML = `
-        <button onclick="Rules2Engine.leaveGameToHub()" class="scene-action-btn justify-center font-black">
-          Torna alla Libreria 🏠
-        </button>
+        <div class="actions-grid-1">
+          <button onclick="Rules2Engine.leaveGameToHub()" class="scene-action-btn justify-center font-black">
+            Torna alla Libreria 🏠
+          </button>
+        </div>
       `;
     }
   },
@@ -644,7 +682,7 @@ const Rules2Engine = {
     tgHaptic("selection");
     if (window.SoundEngine) SoundEngine.playClick();
 
-    // Progressione lavorazione sintesi chimica
+    // Progressione lavorazione sintesi chimica ad ogni snodo
     const h = AppState.activeSession.hero;
     if (h && h.sintesiInCorso && h.sintesiInCorso.length > 0) {
       const stillCrafting = [];
@@ -680,6 +718,9 @@ const Rules2Engine = {
     }
   },
 
+  // --------------------------------------------------------------------------
+  // RISOLUZIONE PROVE D20 ED ENIGMI
+  // --------------------------------------------------------------------------
   executeEventRoll: async function(nodeId, statName, cdVal) {
     if (this._isBusy) return;
     this._setBusy(true);
@@ -789,6 +830,9 @@ const Rules2Engine = {
     }
   },
 
+  // --------------------------------------------------------------------------
+  // COMBATTIMENTO D20 & CORRUZIONE
+  // --------------------------------------------------------------------------
   combatAction: async function(subAction) {
     if (!AppState.activeSession.gameKey || this._isBusy) return;
     this._setBusy(true);
@@ -895,18 +939,15 @@ const Rules2Engine = {
     const actBox = document.getElementById("scene-actions-container");
     if (!actBox) return;
 
+    actBox.className = "scene-actions-area";
     actBox.innerHTML = `
-      <div class="p-3 rounded-xl bg-purple-950/40 border border-purple-500/40 space-y-2">
-        <div class="font-black text-purple-300 text-xs">🧟 RIANIMAZIONE DISPONIBILE</div>
-        <div class="text-[11px] text-slate-300">Rianima <b>${deadEnemy ? deadEnemy.nome : 'nemico'}</b> come Zombi (Danno x2).</div>
-        <div class="grid grid-cols-2 gap-2 pt-1">
-          <button onclick="Rules2Engine.executeResurrectZombie('${deadEnemy ? deadEnemy.id : ''}')" class="scene-action-btn border-purple-400 text-purple-300 font-black justify-center">
-            Rianima (-1 PV) 🧟
-          </button>
-          <button onclick="Rules2Engine.skipNecromancy()" class="scene-action-btn text-slate-300 font-bold justify-center">
-            Lascia Cadavere ›
-          </button>
-        </div>
+      <div class="actions-grid-2">
+        <button onclick="Rules2Engine.executeResurrectZombie('${deadEnemy ? deadEnemy.id : ''}')" class="scene-action-btn border-purple-400 text-purple-300 font-black">
+          Rianima Zombi (-1 PV) 🧟
+        </button>
+        <button onclick="Rules2Engine.skipNecromancy()" class="scene-action-btn text-slate-300 font-bold">
+          Lascia Cadavere ›
+        </button>
       </div>
     `;
   },
@@ -963,12 +1004,12 @@ const Rules2Engine = {
       }
     } catch (e) {
       this._setBusy(false);
-      rulesNotify("Corruzione fallita: " + e.message, "error");
+      rulesNotify("Corruzione fallita o droga non compatibile: " + e.message, "error");
     }
   },
 
   // --------------------------------------------------------------------------
-  // NUMERI FLUTTUANTI (SORGONO DALLA CARTA E SFUMANO SOTTO L'HEADER)
+  // NUMERI FLUTTUANTI AD ARCO (DAL BORDO SUPERIORE CARTA ALL'HEADER)
   // --------------------------------------------------------------------------
   showFloatingDamage: function(text, isCrit, isHeroDmg) {
     let box = document.getElementById("floating-damage-box");
@@ -986,27 +1027,12 @@ const Rules2Engine = {
     el.className = `floating-fx-number ${colorClass}`;
     el.innerHTML = text;
 
-    // 🔒 Nasce esattamente al bordo alto della carta (Y: 175px) e sale verso l'header
-    el.style.cssText = `
-      position: absolute;
-      left: 50%;
-      top: 175px;
-      transform: translateX(-50%);
-      font-family: monospace;
-      font-size: 15px;
-      font-weight: 900;
-      text-shadow: 0 2px 8px rgba(0,0,0,0.9);
-      pointer-events: none;
-      z-index: 100;
-      animation: floatTowardHeader 1.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-    `;
-
     box.appendChild(el);
     setTimeout(() => el.remove(), 1450);
   },
 
   // --------------------------------------------------------------------------
-  // FASCICOLO APPROFONDITO UNIVERSALE
+  // ISPEZIONE FASCICOLO ENTITÀ
   // --------------------------------------------------------------------------
   inspectCurrentEnemyDetail: function() {
     const enemy = AppState.activeSession.currentNode;
@@ -1016,7 +1042,7 @@ const Rules2Engine = {
       id: enemy.id,
       nome: enemy.nome,
       tipo: "NEMICO",
-      categoria: enemy.categoria || "Mazzu",
+      categoria: enemy.categoria || "Bersaglio",
       pv: enemy.pv,
       danno: enemy.danno,
       forza: enemy.forza,
@@ -1051,7 +1077,7 @@ const Rules2Engine = {
     if (it.costoOro) bonuses.push(`💰 Prezzo: <b class="text-amber-300">${it.costoOro} 🟡</b>`);
 
     h("uni-detail-metrics-value", bonuses.join(" • ") || "Nessun parametro");
-    s("uni-detail-lore", (it.descrizione || it.testo || "Nessun fascicolo allegato.").replace(/\s*\([A-Z]{3,4}_\d{4}_S\d+_E\d+\)/gi, ""));
+    s("uni-detail-lore", (it.descrizione || it.testo || "").replace(/\s*\([A-Z]{3,4}_\d{4}_S\d+_E\d+\)/gi, ""));
 
     const btn = document.getElementById("uni-detail-action-btn");
     if (btn) {
@@ -1084,7 +1110,7 @@ const Rules2Engine = {
   },
 
   // --------------------------------------------------------------------------
-  // MODALI TATTICHE DI GIOCO (SCHEDA, ASSETTO, EMPORIO)
+  // MODALI TATTICHE (SCHEDA EROE, ASSETTO, EMPORIO)
   // --------------------------------------------------------------------------
   openHeroModal: function(tabName = "scheda") {
     this._activeHeroTab = tabName;
@@ -1119,7 +1145,7 @@ const Rules2Engine = {
     });
 
     s("sheet-hero-name", h.nomeEroe || "Avventuriero");
-    s("sheet-hero-class", `${h.classe || "Avventuriero"} (${h.schieramentoPolitico || "Destra"})`);
+    s("sheet-hero-class", `${h.classe || "Avventuriero"} (${h.schieramentoPolitico || "Neutrale"})`);
     s("sheet-hero-gold", `${h.oro || 0} 🟡`);
 
     const stats = h.stats || { FORZA: 10, DESTREZZA: 10, INTELLIGENZA: 10 };
@@ -1227,7 +1253,7 @@ const Rules2Engine = {
 
         <div class="space-y-2 pt-1 text-xs">
           <div class="p-2.5 rounded-xl bg-slate-900 border border-white/10 flex items-center justify-between">
-            <div><span class="text-slate-400">🗡️ Arma in pugno:</span> <b class="text-sky-300 ml-1 font-mono">${h.armaAttiva || 'Pugni nudi'}</b></div>
+            <div><span class="text-slate-400">🗡️ Arma attiva:</span> <b class="text-sky-300 ml-1 font-mono">${h.armaAttiva || 'Pugni nudi'}</b></div>
             <button onclick="Rules2Engine.openHeroModal('zaino')" class="btn btn-xs btn-outline border-white/20">Cambia</button>
           </div>
           <div class="p-2.5 rounded-xl bg-slate-900 border border-white/10 flex items-center justify-between">
@@ -1237,10 +1263,10 @@ const Rules2Engine = {
         </div>
 
         <div class="p-3 rounded-xl bg-purple-950/20 border border-purple-500/30 space-y-2 mt-2">
-          <div class="text-[10px] font-mono font-bold text-purple-300 uppercase">⚗️ Banco di Sintesi Clandestina</div>
+          <div class="text-[10px] font-mono font-bold text-purple-300 uppercase">⚗️ Banco di Sintesi</div>
           ${availableRecipes.length > 0 ? availableRecipes.map(r => `
             <div class="flex items-center justify-between p-2 rounded-lg bg-black/40 text-xs">
-              <span>${r.icon} <b>${r.prodName}</b> (${r.turns} snodi)</span>
+              <span>${r.icon} <b>${r.prodName}</b> (${r.turns} turni)</span>
               <button onclick="Rules2Engine.startSynthesis('${r.prodName}', '${r.toolName}')" class="btn btn-xs btn-secondary font-black">Distilla</button>
             </div>
           `).join("") : '<div class="text-[11px] text-slate-400 italic">Nessun reagente combinabile nello zaino.</div>'}
@@ -1265,7 +1291,7 @@ const Rules2Engine = {
           h.sintesiInCorso = h.sintesiInCorso || [];
           h.sintesiInCorso.push({ prodotto: rec.prodName, turniMancanti: rec.turns, icon: rec.icon });
           tgHaptic("success");
-          rulesNotify(`⚗️ Avviata lavorazione di ${rec.prodName} (pronta tra ${rec.turns} snodi).`, "success");
+          rulesNotify(`⚗️ Avviata lavorazione di ${rec.prodName} (pronta tra ${rec.turns} turni).`, "success");
           this.openAssettoModal();
           return;
         }
@@ -1447,7 +1473,7 @@ const Rules2Engine = {
   },
 
   // --------------------------------------------------------------------------
-  // ESCI / GESTIONE ABBANDONO SESSIONE
+  // ABBANDONO & SOSPENSIONE
   // --------------------------------------------------------------------------
   openAbandonModal: function() {
     tgHaptic("warning");
@@ -1503,7 +1529,7 @@ const Rules2Engine = {
   },
 
   // --------------------------------------------------------------------------
-  // UTILITY INVENTARIO & ASSETTO
+  // INVENTARIO & ASSETTO TATTICO
   // --------------------------------------------------------------------------
   _findEntityData: function(itemName) {
     if (!itemName) return null;
