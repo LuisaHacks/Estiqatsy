@@ -1,7 +1,7 @@
 /* ============================================================================
    PROJECT: ESTIQATSY SYNDICATE & RPG PLATFORM
-   FILE: css/core.css (VERSIONE 23.0 - VIEWPORT STABILITY, 44px DOCKS & CAROUSEL)
-   LAYER: BASE STYLES, SHELL LAYOUT, RIGID 44px BARS, 16:9 MEDIA & UNIFIED MODALS
+   FILE: css/core.css (VERSIONE 23.1 - STRICT BOUNDS, RIGID 16:9 & SAFE BARS)
+   LAYER: BASE STYLES, SHELL LAYOUT, RIGID 44px DOCKS, MEDIA CONTAINMENT & CHIPS
    ============================================================================ */
 
 /* ----------------------------------------------------------------------------
@@ -148,7 +148,7 @@ html, body {
   will-change: transform;
 }
 
-/* 🔒 Forzatura tassativa a schermo intero per singola slide (Risolve il collasso visivo) */
+/* 🔒 Forzatura tassativa a schermo intero per singola slide */
 .carousel-slide {
   flex: 0 0 100% !important;
   min-width: 100% !important;
@@ -371,17 +371,19 @@ dialog.modal {
 }
 
 /* ----------------------------------------------------------------------------
-   7. ITEM CARDS 16:9 (SAGHE, MERCATO, RICETTE)
+   7. ITEM CARDS 16:9 RIGIDE (SHOP, SAGHE, RICETTE)
    ---------------------------------------------------------------------------- */
 .item-card {
   background: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: 0.875rem;
-  overflow: hidden;
+  overflow: hidden !important;
   display: flex;
   flex-direction: column;
   cursor: pointer;
   transition: border-color 0.2s ease, transform 0.15s ease;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .item-card:hover {
@@ -389,19 +391,27 @@ dialog.modal {
   transform: translateY(-1px);
 }
 
+/* 🔒 GABBIA RIGIDA 16:9 PER L'IMMAGINE: Risolve l'esplosione dell'immagine DEMO */
 .item-card-media {
-  position: relative;
-  width: 100%;
-  aspect-ratio: 16 / 9;
-  background: #000000;
-  overflow: hidden;
+  position: relative !important;
+  width: 100% !important;
+  aspect-ratio: 16 / 9 !important;
+  height: auto !important;
+  max-height: 190px !important;
+  background: #000000 !important;
+  overflow: hidden !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
 }
 
 .item-card-img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
+  width: 100% !important;
+  height: 100% !important;
+  max-height: 100% !important;
+  object-fit: cover !important;
+  object-position: center !important;
+  display: block !important;
 }
 
 .item-card-badge {
@@ -417,6 +427,7 @@ dialog.modal {
   font-weight: 800;
   color: var(--accent-sky);
   text-transform: uppercase;
+  z-index: 10;
 }
 
 .item-card-body {
@@ -542,7 +553,7 @@ dialog.modal {
 }
 
 /* ----------------------------------------------------------------------------
-   10. SUBHEADERS & CHIP FILTRI RAPIDI
+   10. SUBHEADERS & CHIP FILTRI RAPIDI (FIX PER LE CATEGORIE DELLO SHOP)
    ---------------------------------------------------------------------------- */
 .subheader-3col {
   display: flex;
@@ -570,36 +581,53 @@ dialog.modal {
   color: #94A3B8;
 }
 
+/* 🔒 NASTRO SCORREVOLE: Impedisce ai chip di andare a capo verticalmente */
 .chips-scroll-bar {
-  display: flex;
-  gap: 4px;
-  overflow-x: auto;
-  scrollbar-width: none;
-  -webkit-overflow-scrolling: touch;
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: nowrap !important;
+  gap: 6px !important;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  padding: 4px 2px 8px 2px !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  scrollbar-width: none !important;
+  -webkit-overflow-scrolling: touch !important;
 }
 
 .chips-scroll-bar::-webkit-scrollbar {
-  display: none;
+  display: none !important;
 }
 
+/* 🔒 CAPSULA BOTTONE: Restituisce l'aspetto a pillola ordinata */
 .rpg-category-chip {
-  padding: 4px 10px;
-  border-radius: 9999px;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  color: #94A3B8;
-  font-family: monospace;
-  font-size: 9.5px;
-  font-weight: 700;
-  white-space: nowrap;
-  cursor: pointer;
-  transition: all 0.15s ease;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex: 0 0 auto !important;
+  flex-shrink: 0 !important;
+  white-space: nowrap !important;
+  padding: 5px 12px !important;
+  border-radius: 9999px !important;
+  background: rgba(255, 255, 255, 0.05) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  color: #94A3B8 !important;
+  font-family: monospace !important;
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  cursor: pointer !important;
+  user-select: none !important;
+  transition: all 0.15s ease !important;
 }
 
+.rpg-category-chip:active,
 .rpg-category-chip.active {
-  background: rgba(56, 189, 248, 0.15);
-  border-color: var(--accent-sky);
-  color: var(--accent-sky);
+  background: rgba(56, 189, 248, 0.18) !important;
+  border-color: var(--accent-sky) !important;
+  color: var(--accent-sky) !important;
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.25) !important;
 }
 
 /* ----------------------------------------------------------------------------
