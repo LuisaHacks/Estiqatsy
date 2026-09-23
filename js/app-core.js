@@ -254,13 +254,14 @@ if (tg) {
       if (u.photo_url) AppState.user.photo_url = u.photo_url;
     }
 
+    // 🔒 Assicura che la Safe Area inferiore non scenda MAI sotto i 24px richiesti
     const updateSafeArea = () => {
       const topInset = tg.safeAreaInset?.top || tg.contentSafeAreaInset?.top || 0;
-      const bottomInset = tg.safeAreaInset?.bottom || tg.contentSafeAreaInset?.bottom || 0;
+      const rawBottom = tg.safeAreaInset?.bottom || tg.contentSafeAreaInset?.bottom || 0;
+      const bottomInset = Math.max(rawBottom, 24); // 🔒 Minimo 24px garantiti
       document.documentElement.style.setProperty("--tg-safe-area-inset-top", `${topInset}px`);
       document.documentElement.style.setProperty("--tg-safe-area-inset-bottom", `${bottomInset}px`);
     };
-    updateSafeArea();
 
     if (typeof tg.onEvent === "function") {
       tg.onEvent("fullscreenChanged", updateSafeArea);
