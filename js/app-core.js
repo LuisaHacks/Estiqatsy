@@ -1,7 +1,7 @@
 // ============================================================================
 // PROJECT: ESTIQATSY SYNDICATE & RPG PLATFORM
-// FILE: js/app-core.js (VERSIONE 23.0 - UNIVERSAL BACK-STACK & STABLE VIEWPORT)
-// LAYER 1: ARCHITETTURA A MACROSTATO, ROUTER DETERMINISTICO, TELEGRAM LIFO BACK
+// FILE: js/app-core.js (VERSIONE 23.1 - NATIVE FULLSCREEN & HIERARCHICAL ROUTER)
+// LAYER 1: ARCHITETTURA A MACROSTATO, PWA FULLSCREEN, TELEGRAM LIFO BACK-STACK
 // ============================================================================
 
 const AppConfig = {
@@ -99,11 +99,11 @@ const AppState = {
 };
 
 // ----------------------------------------------------------------------------
-// 3. INTEGRAZIONE TELEGRAM WEBAPP SDK & GESTORE "INDIETRO" A CASCATA (LIFO)
+// 3. INTEGRAZIONE TELEGRAM SDK & GESTORE "INDIETRO" A CASCATA (LIFO)
 // ----------------------------------------------------------------------------
 const tg = (window.Telegram && window.Telegram.WebApp) ? window.Telegram.WebApp : null;
 
-// Intercettatore globale di apertura modali per aggiornare il tasto Indietro
+// Intercettatore globale di apertura modali per aggiornare reattivamente il tasto Indietro
 if (typeof HTMLDialogElement !== "undefined" && !HTMLDialogElement.prototype._showModalIntercepted) {
   const originalShowModal = HTMLDialogElement.prototype.showModal;
   HTMLDialogElement.prototype.showModal = function() {
@@ -115,22 +115,46 @@ if (typeof HTMLDialogElement !== "undefined" && !HTMLDialogElement.prototype._sh
   HTMLDialogElement.prototype._showModalIntercepted = true;
 }
 
-// 🔒 FUNZIONE CHIAVE: Calcolo dello stato del tasto "Indietro" di Telegram
+// 🔒 FUNZIONE CHIAVE: Calcolo dello stato del tasto "Indietro" di Telegram (1° vs 2° Livello)
 function updateTelegramBackButtonState() {
   if (!tg || !tg.BackButton) return;
   try {
+    // 1. Modale aperta a schermo: Mostra SEMPRE il tasto per chiuderla
     const hasOpenDialog = document.querySelector("dialog[open]") !== null;
+    if (hasOpenDialog) {
+      tg.BackButton.show();
+      return;
+    }
+
     const currentScreen = document.body.dataset.activeScreen || "view-home";
     const currentContext = AppState.currentContext || "app";
-    const isWizardDeep = (currentScreen === "view-wizard" && window.Rules2Wizard && Rules2Wizard.state && Rules2Wizard.state.step > 1);
 
-    const shouldShow = hasOpenDialog ||
-                       currentScreen !== "view-home" ||
-                       currentContext !== "app" ||
-                       AppState.activeTab !== "home" ||
-                       isWizardDeep;
+    // 2. SCHERMATE DI 1° LIVELLO (I 5 tab primari)
+    // Su Home, Giochi, Shop, Ricette e Profilo il tasto DEVE essere rigorosamente nascosto!
+    const isLevel1Tab = (
+      currentScreen === "view-home" ||
+      currentScreen === "view-hub" ||
+      currentScreen === "view-shop" ||
+      currentScreen === "view-recipes" ||
+      currentScreen === "view-profile"
+    ) && currentContext === "app";
 
-    if (shouldShow) {
+    if (isLevel1Tab) {
+      tg.BackButton.hide();
+      return;
+    }
+
+    // 3. SCHERMATE DI 2° LIVELLO (Dettagli, Wizard, Gameplay, Multiplayer)
+    const isLevel2View = (
+      currentScreen.startsWith("subview-") ||
+      currentScreen === "view-wizard" ||
+      currentScreen === "view-gameplay" ||
+      currentScreen === "view-multiplayer" ||
+      currentContext === "wizard" ||
+      currentContext === "gameplay"
+    );
+
+    if (isLevel2View) {
       tg.BackButton.show();
     } else {
       tg.BackButton.hide();
@@ -138,7 +162,7 @@ function updateTelegramBackButtonState() {
   } catch (e) {}
 }
 
-// 🔒 FUNZIONE CHIAVE: Gestore LIFO universale al clic sul tasto "Indietro" di Telegram
+// 🔒 FUNZIONE CHIAVE: Gestore LIFO universale al tocco del tasto "Indietro" di Telegram
 function handleUniversalTelegramBack() {
   safePlayClick();
   safeHaptic("selection");
@@ -157,7 +181,7 @@ function handleUniversalTelegramBack() {
   const currentScreen = document.body.dataset.activeScreen || "view-home";
   const currentContext = AppState.currentContext || "app";
 
-  // 2. PRIORITÀ 2: Wizard Eroe attivo oltre lo Step 1 (Torna allo step precedente)
+  // 2. PRIORITÀ 2: Wizard Eroe attivo (Arretra di uno step alla volta)
   if (currentScreen === "view-wizard" || currentContext === "wizard") {
     if (window.Rules2Wizard && Rules2Wizard.state && Rules2Wizard.state.step > 1) {
       Rules2Wizard.prevStep(Rules2Wizard.state.step - 1);
@@ -177,7 +201,7 @@ function handleUniversalTelegramBack() {
     return;
   }
 
-  // 4. PRIORITÀ 4: Subviews e dettagli (Ritorno al tab genitore)
+  // 4. PRIORITÀ 4: Subviews e schede di dettaglio -> Ritorno al tab genitore
   if (currentScreen === "subview-shop-detail") {
     AppRouter.navigate("shop");
     return;
@@ -191,22 +215,31 @@ function handleUniversalTelegramBack() {
     return;
   }
 
-  // 5. PRIORITÀ 5: Tab secondari attivi (Ritorno alla Home)
-  if (currentScreen !== "view-home" && AppState.activeTab !== "home") {
+  // 5. PRIORITÀ 5: Se per qualsiasi motivo si trova su uno schermo non identificato
+  if (currentScreen !== "view-home") {
     AppRouter.navigate("home");
     return;
   }
 
-  // 6. PRIORITÀ 6: Home pulita senza modali (Nascondi tasto, lascia uscire dall'app)
   updateTelegramBackButtonState();
 }
 
+// ----------------------------------------------------------------------------
+// INIZIALIZZAZIONE SDK TELEGRAM CON VERO FULLSCREEN PWA
+// ----------------------------------------------------------------------------
 if (tg) {
   try {
     tg.ready();
     tg.expand();
-    // 🔒 RIMOSSO tg.requestFullscreen() per non sfondare sotto i comandi nativi Telegram di iOS!
-    if (typeof tg.disableVerticalSwipes === "function") tg.disableVerticalSwipes();
+
+    // 🔒 FULLSCREEN NATIVO (Telegram 8.0+): Estende l'app al 100% dell'altezza (Zero chat di sfondo)
+    if (typeof tg.requestFullscreen === "function") {
+      tg.requestFullscreen();
+    }
+    if (typeof tg.disableVerticalSwipes === "function") {
+      tg.disableVerticalSwipes();
+    }
+
     tg.setHeaderColor(AppConfig.THEME.HEADER_COLOR);
     tg.setBackgroundColor(AppConfig.THEME.BG_COLOR);
 
@@ -228,6 +261,12 @@ if (tg) {
       document.documentElement.style.setProperty("--tg-safe-area-inset-bottom", `${bottomInset}px`);
     };
     updateSafeArea();
+
+    // Listener reattivo sui cambi di fullscreen e safe area da Telegram
+    if (typeof tg.onEvent === "function") {
+      tg.onEvent("fullscreenChanged", updateSafeArea);
+      tg.onEvent("safeAreaChanged", updateSafeArea);
+    }
 
     // Registrazione univoca del listener del BackButton di Telegram
     if (tg.BackButton) {
@@ -251,7 +290,7 @@ const EngineRegistry = {
 window.EngineRegistry = EngineRegistry;
 
 // ----------------------------------------------------------------------------
-// 5. ROUTER DETERMINISTICO CON MACROSTATO & COLLEGAMENTO AUDIO TAB
+// 5. ROUTER DETERMINISTICO CON MACROSTATO & CONTROLLO LIVELLI
 // ----------------------------------------------------------------------------
 const SCREEN_TO_TAB_MAP = {
   "home": "home",
@@ -299,6 +338,15 @@ const AppRouter = {
     if (targetId === "games" || targetId === "view-games") {
       targetId = "view-hub";
       if (window.AppModules && typeof AppModules.renderGamesCatalog === "function") AppModules.renderGamesCatalog();
+    } else if (targetId === "shop" || targetId === "view-shop") {
+      targetId = "view-shop";
+      if (window.AppModules && typeof AppModules.renderShop === "function") AppModules.renderShop();
+    } else if (targetId === "recipes" || targetId === "view-recipes") {
+      targetId = "view-recipes";
+      if (window.AppModules && typeof AppModules.renderRecipes === "function") AppModules.renderRecipes();
+    } else if (targetId === "profile" || targetId === "view-profile") {
+      targetId = "view-profile";
+      if (window.AppModules && typeof AppModules.renderProfile === "function") AppModules.renderProfile();
     } else if (targetId === "multiplayer" || targetId === "view-multiplayer") {
       targetId = "view-multiplayer";
       if (window.AppModules && typeof AppModules.renderMultiplayerRoom === "function") AppModules.renderMultiplayerRoom();
@@ -503,7 +551,6 @@ const AppCore = {
           rect.top <= e.clientY && e.clientY <= rect.bottom &&
           rect.left <= e.clientX && e.clientX <= rect.right
         );
-        // Se si clicca al di fuori del contenuto modale, la modale si chiude
         if (!clickedInsideDialog) {
           e.target.close();
           updateTelegramBackButtonState();
@@ -511,7 +558,6 @@ const AppCore = {
       }
     });
 
-    // Ascolto eventi di chiusura di tutti i dialoghi
     document.querySelectorAll("dialog").forEach(d => {
       d.addEventListener("close", () => {
         updateTelegramBackButtonState();
