@@ -1,13 +1,13 @@
 // ============================================================================
 // PROJECT: ESTIQATSY SYNDICATE & RPG PLATFORM
-// FILE: js/app-core.js (VERSIONE 18.0 - FULL PROFILE SYNC & ZERO-BOUNCE ROUTER)
-// LAYER 1: ARCHITETTURA A MACROSTATO, ROUTER SPA DETERMINISTICO & TELEGRAM CORE
+// FILE: js/app-core.js (VERSIONE 20.0 - AUDIO ROUTER & FULL PROFILE SYNC)
+// LAYER 1: ARCHITETTURA A MACROSTATO, ROUTER SPA DETERMINISTICO & AUDIO ENGINE
 // ============================================================================
 
 const AppConfig = {
   GAS_URL: "https://script.google.com/macros/s/AKfycbyeCWHM9X4ycwWT7IOMwg24pySL78bJT5BRyiIR5eb0UJALWuaORzfJ2lkqLrjLv0xN/exec",
   CACHE_KEYS: {
-    APP_STATE: "est_app_state_v18",
+    APP_STATE: "est_app_state_v20",
     VAULT: "est_cache_vault",
     CONFIG: "est_admin_config"
   },
@@ -24,8 +24,7 @@ const AppConfig = {
 function safePlayClick() {
   try {
     if (window.SoundEngine) {
-      if (typeof SoundEngine.playClick === "function") SoundEngine.playClick();
-      else if (typeof SoundEngine.playSfx === "function") SoundEngine.playSfx("click");
+      if (typeof SoundEngine.playSfx === "function") SoundEngine.playSfx("click");
     }
   } catch (e) {}
 }
@@ -78,7 +77,7 @@ const AppState = {
   digitalVault: [],
   transactions: [],
 
-  games: { catalog: [], activeGameKey: null, activeEpisode: 1 },
+  games: { catalog: [], genres: [], activeGameKey: null, activeEpisode: 1 },
   activeSeriesId: null,
   activeEpisodeId: 1,
   activeSession: { 
@@ -184,7 +183,7 @@ const EngineRegistry = {
 window.EngineRegistry = EngineRegistry;
 
 // ----------------------------------------------------------------------------
-// 5. ROUTER DETERMINISTICO CON MACROSTATO (SINGLE SOURCE OF TRUTH)
+// 5. ROUTER DETERMINISTICO CON MACROSTATO & COLLEGAMENTO AUDIO TAB
 // ----------------------------------------------------------------------------
 const SCREEN_TO_TAB_MAP = {
   "home": "home",
@@ -302,6 +301,15 @@ const AppRouter = {
       btn.classList.toggle("active", btn.dataset.tab === matchedTab);
     });
 
+    // ⭐ 6. ROUTER SONORO: MIXAGGIO ASIMMETRICO (FADE-OUT 180ms / FADE-IN 800ms)
+    if (window.SoundEngine && typeof SoundEngine.playTabBgm === "function") {
+      if (macroContext === "app") {
+        SoundEngine.playTabBgm(matchedTab);
+      } else if (macroContext === "wizard") {
+        SoundEngine.playBgm("bass_walker", 800, 180);
+      }
+    }
+
     setupTelegramBackButton(targetId);
     setTimeout(() => { if (window.lucide) lucide.createIcons(); }, 15);
   }
@@ -374,7 +382,7 @@ const AppCore = {
     if (!container) {
       container = document.createElement("div");
       container.id = "app-toast-container";
-      container.style.cssText = "position:fixed;top:calc(var(--safe-top, 0px) + 56px);left:50%;transform:translateX(-50%);z-index:9999;display:flex;flex-direction:column;gap:8px;pointer-events:none;width:90%;max-width:380px;";
+      container.style.cssText = "position:fixed;top:calc(var(--safe-top, 0px) + 52px);left:50%;transform:translateX(-50%);z-index:9999;display:flex;flex-direction:column;gap:8px;pointer-events:none;width:90%;max-width:380px;";
       document.body.appendChild(container);
     }
     const toast = document.createElement("div");
@@ -412,7 +420,7 @@ const AppCore = {
     } catch (e) {}
   },
 
-  // 🔒 SINCRONIZZAZIONE VISIVA DI TUTTI GLI ELEMENTI DEL PROFILO E HOME
+  // 🔒 SINCRONIZZAZIONE VISIVA INTEGRALE (NOME, USERNAME, AVATAR, SALDI, PIANO)
   syncUI: function() {
     const u = AppState.user;
     if (!u) return;
@@ -423,14 +431,14 @@ const AppCore = {
     const usernameVal = u.username ? (u.username.startsWith("@") ? u.username : `@${u.username}`) : "@anonimo";
     const pianoVal = (u.piano || u.plan || "Free").toUpperCase();
 
-    // 1. Dati Dashboard Home
+    // 1. Dashboard Home
     s("home-username", nomeVal);
     s("home-rank-points", puntiVal);
     s("home-plan-badge", `PIANO ${pianoVal}`);
     s("home-megoin-card", `${megoinVal} 🪙`);
     s("home-punti-card", `${puntiVal} Pt`);
 
-    // 2. Dati Scheda Profilo (Fix @username e Piano sincronizzato)
+    // 2. Profilo Utente
     s("profile-card-name", nomeVal);
     s("profile-card-username", usernameVal);
     s("profile-card-plan", `PIANO ${pianoVal}`);
@@ -439,13 +447,14 @@ const AppCore = {
     s("profile-card-points", `${puntiVal} Pt`);
     s("profile-action-plan-name", `Piano: ${pianoVal}`);
 
-    // Conteggio download digitali
+    // Conteggio download digitali Caveau
     const vaultCount = (AppState.digitalVault && AppState.digitalVault.length > 0)
       ? AppState.digitalVault.length 
       : (u.prodottiAcquistati || 0);
     s("profile-action-vault-count", vaultCount);
+    s("home-purchases-count", vaultCount);
 
-    // 3. Avatar Dinamico (Iniziale del nome o Foto Telegram)
+    // 3. Avatar Dinamico (Iniziale o Foto Profilo)
     const avMob = document.getElementById("profile-card-avatar");
     if (avMob) {
       if (u.photo_url) {
@@ -455,7 +464,7 @@ const AppCore = {
       }
     }
 
-    // 4. Dati Desktop Sidebar
+    // 4. Desktop Sidebar
     s("user-name-desk", nomeVal);
     s("user-plan-desk", `PIANO ${pianoVal}`);
     s("user-megoin-desk", `${megoinVal} 🪙`);
@@ -489,14 +498,13 @@ window.AppCore = AppCore;
 window.apiCall = apiCall;
 
 // ----------------------------------------------------------------------------
-// 9. BOOTSTRAP ALL'AVVIO (SENZA RIMBALZO FORZATO IN HOME)
+// 9. BOOTSTRAP ALL'AVVIO
 // ----------------------------------------------------------------------------
 window.addEventListener("DOMContentLoaded", async () => {
   AppCore.load();
   AppCore.syncUI();
   if (window.lucide) lucide.createIcons();
 
-  // Imposta la vista iniziale su Home solo all'avvio pulito
   if (!AppState.activeTab || AppState.activeTab === "home") {
     AppRouter.navigate("home");
   }
@@ -508,11 +516,6 @@ window.addEventListener("DOMContentLoaded", async () => {
   } catch (err) {
     console.warn("[DOMContentLoaded] Inizializzazione parziale:", err);
   } finally {
-    // Spegnimento sicuro della schermata di caricamento
     AppCore.dismissLoader();
   }
-
-  // 🔒 FIX RIMBALZO AUTOMATICO:
-  // Non chiamiamo più AppRouter.navigate("home") qui al termine della Promise.
-  // Se l'utente mentre i dati si caricavano ha toccato "Giochi" o "Shop", rimane lì.
 });
