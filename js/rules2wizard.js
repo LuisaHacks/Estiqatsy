@@ -687,27 +687,6 @@ const Rules2Wizard = {
     }).join("");
 
     // Slot Azione Decisionale sottostante alla carta
-    let actionSlot = document.getElementById("wizard-action-slot-step-1");
-    if (!actionSlot) {
-      actionSlot = document.createElement("div");
-      actionSlot.id = "wizard-action-slot-step-1";
-      actionSlot.className = "scene-actions-area";
-      outerStage.parentNode.insertBefore(actionSlot, outerStage.nextSibling);
-    }
-    const currentClass = classes[this.state.activeClassIndex] || classes[0];
-    actionSlot.innerHTML = `
-      <div class="actions-grid-1">
-        <button onclick="Rules2Wizard.confirmStep1()" class="scene-action-btn font-black text-xs">
-          <span>Conferma Classe: <b>${currentClass ? currentClass.nome : 'Avventuriero'}</b></span>
-          <span>›</span>
-        </button>
-      </div>
-    `;
-
-    this.bindScrollDetection("wizard-classes-stage", 1);
-    this.syncLiveHUD();
-  },
-
   selectClassByIndex: function(idx, shouldScroll = true) {
     this.state.activeClassIndex = idx;
     const list = this.getFilteredClasses();
