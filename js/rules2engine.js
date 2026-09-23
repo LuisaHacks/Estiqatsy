@@ -1,7 +1,7 @@
 // ============================================================================
 // PROJECT: ESTIQATSY SYNDICATE & RPG PLATFORM
-// FILE: js/rules2engine.js (VERSIONE 14.0 - FULL GAS REST & NATIVE HUD ALIGNED)
-// LAYER: GAMEPLAY LOOP, D20 COMBAT, ASSETTO TATTICO, CRAFTING & FORFEIT ENGINE
+// FILE: js/rules2engine.js (VERSIONE 20.0 - TCG MOVERINA STAGE & 36px MICRO-HUD)
+// LAYER: GAMEPLAY LOOP, D20 COMBAT, TCG CARD STAGE, CRAFTING & FORFEIT ENGINE
 // NOTE: 100% DISACCOPPIATO DAL WALLET PIATTAFORMA - GESTIONE AUTONOMA DELL'ORO 🟡
 // ============================================================================
 
@@ -128,14 +128,14 @@ const Rules2Engine = {
     const activeBox = document.getElementById("arcade-active-game-box");
     const insertBox = document.getElementById("arcade-insert-coin-box");
 
-    // Se c'è una partita attiva su GAS: opzione Riprendi o Ricomincia
+    // Se c'è una sessione aperta su GAS: opzione Riprendi o Ricomincia
     if (saga && saga.hasActiveGame && saga.activePartitaId) {
       if (activeBox) activeBox.classList.remove("hidden");
       if (insertBox) insertBox.classList.add("hidden");
 
       activeBox.innerHTML = `
-        <h3 class="arcade-title">${saga.serie || 'AVVENTURA'}</h3>
-        <p class="arcade-subtitle">Sessione attiva sul server (ID: ${saga.activePartitaId})</p>
+        <h3 class="text-sm font-black text-white">${saga.serie || 'AVVENTURA'}</h3>
+        <p class="text-[11px] text-slate-400 mt-0.5">Sessione attiva sul server (ID: ${saga.activePartitaId})</p>
         <div class="grid grid-cols-2 gap-2 pt-2">
           <button id="btn-arcade-new" class="btn btn-outline border-amber-500/40 text-amber-300 font-bold text-xs">Ricomincia (1 🪙)</button>
           <button id="btn-arcade-resume" class="btn btn-success text-slate-950 font-black text-xs">Riprendi ▶️</button>
@@ -146,7 +146,6 @@ const Rules2Engine = {
         modal.close();
         const activeFase = String(saga.activeFase || "").toUpperCase();
 
-        // Se era sospesa durante il Wizard, riprende dallo step salvato su GAS
         if (activeFase.indexOf("WIZARD_") !== -1) {
           if (typeof Rules2Wizard !== "undefined") {
             Rules2Wizard.resumeSession(gameKey, saga.activeEpisodio || epNum, saga);
@@ -154,7 +153,6 @@ const Rules2Engine = {
           return;
         }
 
-        // Se in gioco, naviga allo snodo attivo
         AppState.activeSession.engineKey = "Rules2";
         AppState.activeSession.gameKey = gameKey;
         AppState.activeSession.episodio = saga.activeEpisodio || epNum;
@@ -190,7 +188,7 @@ const Rules2Engine = {
 
     if (canContinueFree || (savedHero && epNum > 1)) {
       s("arcade-coin-title", "EROE VETERANO");
-      s("arcade-coin-desc", `Prosegui con l'Eroe veterano "${savedHero ? (savedHero.nomeEroe || savedHero.classe) : 'In Memoria'}".`);
+      s("arcade-coin-desc", `Prosegui l'inchiesta con l'Eroe veterano "${savedHero ? (savedHero.nomeEroe || savedHero.classe) : 'In Memoria'}".`);
       s("arcade-cost-badge", "GRATIS");
       const btnLaunch = document.getElementById("arcade-btn-launch");
       if (btnLaunch) {
@@ -234,7 +232,6 @@ const Rules2Engine = {
         }
       }
 
-      // Chiamata Server-Authoritative: avvio atomico su Modulo_WebApp.gs
       const res = await apiCall("game_start", payloadParams);
       if (res && res.success) {
         const wizardCatalog = (typeof Rules2Wizard !== "undefined" && Rules2Wizard.state.shopCatalog) || [];
@@ -287,11 +284,14 @@ const Rules2Engine = {
         AppRouter.navigate("view-gameplay");
       }
     } catch (err) {
-      console.error("[Rules2Engine] Errore avvio partita su GAS:", err);
+      console.error("[Rules2Engine] Errore avvio partita:", err);
       rulesNotify("Errore avvio: " + err.message, "error");
     }
   },
 
+  // --------------------------------------------------------------------------
+  // ⭐ SINCRONIZZAZIONE MICRO-HUD DA 36px RIGIDI
+  // --------------------------------------------------------------------------
   syncHUD: function() {
     const hero = AppState.activeSession?.hero;
     if (!hero) return;
@@ -302,6 +302,7 @@ const Rules2Engine = {
     s("game-header-series", (saga ? saga.serie : "AVVENTURA NOIR").toUpperCase());
     s("game-header-episode", `Episodio ${AppState.activeSession.episodio}`);
 
+    // Avatar Circolare da 28px
     const avatarImg = document.getElementById("kpi-hero-avatar-img");
     const avatarFallback = document.getElementById("kpi-hero-avatar-fallback");
     const media = hero.mediaUrl;
@@ -334,6 +335,9 @@ const Rules2Engine = {
     }
   },
 
+  // --------------------------------------------------------------------------
+  // ⭐ RENDERING SNODO NARRATIVO SU CARTA TCG "MOVERINA" UNIVERSALE
+  // --------------------------------------------------------------------------
   renderNode: function(node, hero) {
     this._setBusy(false);
 
@@ -349,7 +353,7 @@ const Rules2Engine = {
 
     this.syncHUD();
 
-    // Monitor Cardiaco Bassa Salute (PV <= 25%)
+    // Battito Cardiaco Bassa Salute (PV <= 25%)
     if (currentHero && currentHero.pvMax) {
       const pvRatio = (currentHero.pv || 0) / currentHero.pvMax;
       if (pvRatio <= 0.25 && currentHero.pv > 0) {
@@ -408,11 +412,12 @@ const Rules2Engine = {
       return;
     }
 
+    // 3. POPOLAMENTO DELLA CARTA TCG SNODO (SAGOMA "MOVERINA")
     const s = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
 
     const img = document.getElementById("scene-image");
     if (img) {
-      img.src = currentNode.mediaUrl || "https://image.pollinations.ai/prompt/noir-docks-night-cinematic?width=800&height=450&nologo=true";
+      img.src = currentNode.mediaUrl || "https://image.pollinations.ai/prompt/noir-docks-night-cinematic?width=800&height=500&nologo=true";
     }
 
     s("scene-type-badge", currentNode.tipo || "SNODO");
@@ -424,7 +429,7 @@ const Rules2Engine = {
     const wBanner = document.getElementById("scene-watermark-banner");
     if (currentNode.citazione && currentNode.citazione !== "—" && currentNode.citazione !== "-") {
       s("scene-quote", `“${currentNode.citazione.replace(/^["'“”]+|["'“”]+$/g, "")}”`);
-      s("scene-author", currentNode.autoreCitazione || "");
+      s("scene-author", currentNode.autoreCitazione || "DARSENA NOIR");
       if (wBanner) wBanner.classList.remove("hidden");
     } else {
       if (wBanner) wBanner.classList.add("hidden");
@@ -433,7 +438,6 @@ const Rules2Engine = {
     if (!actBox) return;
 
     const isCombat = (currentNode.tipo === "NEMICO" || (currentNode.id && currentNode.id.includes("NEM_")));
-    const isBoss = isCombat && (String(currentNode.id).includes("BOSS") || String(currentNode.sottocategoria || "").toUpperCase().includes("BOSS"));
     const isEvento = (currentNode.tipo === "EVENTO" || (currentNode.id && currentNode.id.includes("EVT_")));
 
     // CASO 1: COMBATTIMENTO D20
@@ -521,7 +525,7 @@ const Rules2Engine = {
       return;
     }
 
-    // CASO 4: BIVIO NARRATIVO STANDARD (DAL NODO GAS)
+    // CASO 4: BIVIO NARRATIVO STANDARD ALLA BASE DELLA CARTA
     const choices = (currentNode.choices || []).filter(c => c.target);
 
     if (choices.length > 0) {
@@ -578,7 +582,7 @@ const Rules2Engine = {
       }
     } catch (e) {
       this._setBusy(false);
-      console.error("[Rules2Engine] Errore advanceToNode su GAS:", e);
+      console.error("[Rules2Engine] Errore advanceToNode:", e);
       rulesNotify("Errore avanzamento: " + e.message, "error");
     }
   },
@@ -962,13 +966,13 @@ const Rules2Engine = {
   },
 
   // --------------------------------------------------------------------------
-  // 4. PILASTRI TATTICI DEL COCKPIT (FOOTER RULES2)
+  // 4. ⭐ MODALI TATTICHE GLASSMORPHIC ESTESE (90dvh A SCHERMO QUASI INTERO)
   // --------------------------------------------------------------------------
 
   // 1. SCHEDA EROE A 4 TAB
   openHeroModal: function(tabName = "scheda") {
     this._activeHeroTab = tabName;
-    const h = AppState.activeSession.hero;
+    const h = AppState.activeSession?.hero;
     if (!h) return;
 
     const modal = document.getElementById("drawer-hero-sheet");
@@ -986,7 +990,7 @@ const Rules2Engine = {
   },
 
   renderHeroModalContent: function() {
-    const h = AppState.activeSession.hero;
+    const h = AppState.activeSession?.hero;
     const tab = this._activeHeroTab || "scheda";
     const s = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
 
@@ -1031,7 +1035,7 @@ const Rules2Engine = {
 
   renderSquadSubView: function() {
     const c = document.getElementById("squad-list-container");
-    const h = AppState.activeSession.hero;
+    const h = AppState.activeSession?.hero;
     if (!c || !h) return;
 
     let html = "";
@@ -1049,7 +1053,7 @@ const Rules2Engine = {
 
   renderDossierSubView: function() {
     const c = document.getElementById("dossier-list-container");
-    const h = AppState.activeSession.hero;
+    const h = AppState.activeSession?.hero;
     if (!c || !h) return;
 
     const inv = h.inventario || [];
@@ -1076,7 +1080,7 @@ const Rules2Engine = {
 
   // 2. ASSETTO TATTICO & SINTESI
   openAssettoModal: function() {
-    const h = AppState.activeSession.hero;
+    const h = AppState.activeSession?.hero;
     if (!h) return;
 
     let modal = document.getElementById("modal-cockpit-assetto");
@@ -1132,7 +1136,7 @@ const Rules2Engine = {
   },
 
   startSynthesis: function(prodName, toolName) {
-    const h = AppState.activeSession.hero;
+    const h = AppState.activeSession?.hero;
     if (!h) return;
 
     for (let ingrKey in RULES2_SYNTHESIS_RECIPES) {
@@ -1168,7 +1172,7 @@ const Rules2Engine = {
     const btnBuy = document.getElementById("emporio-tab-buy");
     const btnSell = document.getElementById("emporio-tab-sell");
     const container = document.getElementById("emporio-items-container");
-    const h = AppState.activeSession.hero;
+    const h = AppState.activeSession?.hero;
 
     if (btnBuy) btnBuy.className = `flex-1 btn btn-xs ${mode === 'buy' ? 'btn-primary font-black uppercase' : 'btn-ghost text-slate-400 font-bold uppercase'}`;
     if (btnSell) btnSell.className = `flex-1 btn btn-xs ${mode === 'sell' ? 'btn-primary font-black uppercase' : 'btn-ghost text-slate-400 font-bold uppercase'}`;
@@ -1397,7 +1401,7 @@ const Rules2Engine = {
     AppState.activeSession.engineState.backpackFilter = cat || "ALL";
 
     const c = document.getElementById("backpack-slots-container");
-    const h = AppState.activeSession.hero;
+    const h = AppState.activeSession?.hero;
     if (!c || !h) return;
 
     let inv = h.inventario || [];
@@ -1437,7 +1441,7 @@ const Rules2Engine = {
   },
 
   equipItem: function(itemName, type) {
-    const h = AppState.activeSession.hero;
+    const h = AppState.activeSession?.hero;
     if (!h) return;
 
     if (type === "weapon") h.armaAttiva = (h.armaAttiva === itemName) ? "" : itemName;
@@ -1457,7 +1461,7 @@ const Rules2Engine = {
   },
 
   useBackpackItem: function(itemName) {
-    const h = AppState.activeSession.hero;
+    const h = AppState.activeSession?.hero;
     if (!h) return;
 
     const ent = this._findEntityData(itemName);
