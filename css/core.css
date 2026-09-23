@@ -1,7 +1,8 @@
 /* ============================================================================
    PROJECT: ESTIQATSY SYNDICATE & RPG PLATFORM
-   FILE: css/core.css (VERSIONE 23.1 - STRICT BOUNDS, RIGID 16:9 & SAFE BARS)
-   LAYER: BASE STYLES, SHELL LAYOUT, RIGID 44px DOCKS, MEDIA CONTAINMENT & CHIPS
+   FILE: css/core.css (VERSIONE 23.3 - SHELL, CATALOGS, AUDIO & BASE LAYOUT)
+   LAYER: APP SHELL, UNIVERSAL BARS, 16:9 CAROUSEL & SHARED CATALOG COMPONENTS
+   NOTE: CONTIENE SOLO GLI STILI DELL'INTERA PIATTAFORMA (NON IL GAMEPLAY RULES2)
    ============================================================================ */
 
 /* ----------------------------------------------------------------------------
@@ -36,6 +37,12 @@ html, body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* 🔒 REGOLA CARDINE: Nessuna classe specifica può annullare la classe .hidden */
+.hidden,
+.universal-top-bar.hidden {
+  display: none !important;
+}
+
 /* Custom Scrollbars Discrete */
 ::-webkit-scrollbar {
   width: 4px;
@@ -50,47 +57,48 @@ html, body {
 }
 
 /* ----------------------------------------------------------------------------
-   2. TOP BAR SUPERIORE (44px - CENTRATA TRA I COMANDI TELEGRAM)
+   2. TOP BAR SUPERIORE (44px CON DISCESA SOTTO IL NOTCH / OROLOGIO iOS)
    ---------------------------------------------------------------------------- */
 .universal-top-bar {
-  height: 44px !important;
-  min-height: 44px !important;
-  max-height: 44px !important;
-  /* 🔒 Margini di rispetto per i controlli nativi Telegram (✕ Chiudi a sx e ••• a dx) */
+  /* Altezza calcolata: 44px di contenuto + Safe Area notch iPhone */
+  height: calc(44px + max(env(safe-area-inset-top, 0px), var(--tg-safe-area-inset-top, 0px))) !important;
+  min-height: calc(44px + max(env(safe-area-inset-top, 0px), var(--tg-safe-area-inset-top, 0px))) !important;
+  padding-top: max(env(safe-area-inset-top, 0px), var(--tg-safe-area-inset-top, 0px)) !important;
+  /* Margini di rispetto per i comandi nativi Telegram (✕ Chiudi a sx e ••• a dx) */
   padding-left: 72px !important;
   padding-right: 72px !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  position: relative !important;
-  width: 100% !important;
-  background: rgba(7, 10, 18, 0.95) !important;
-  backdrop-filter: blur(12px) !important;
-  -webkit-backdrop-filter: blur(12px) !important;
-  border-bottom: 1px solid var(--border-color) !important;
-  z-index: 40 !important;
-  box-sizing: border-box !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  width: 100%;
+  background: rgba(7, 10, 18, 0.95);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border-color);
+  z-index: 40;
+  box-sizing: border-box;
 }
 
 /* ----------------------------------------------------------------------------
-   3. FOOTER DI NAVIGAZIONE (44px CON CENTRATURA TOTALE & SAFE AREA iOS)
+   3. FOOTER DI NAVIGAZIONE (44px CON RESPIRO DALLA BARRA HOME DI iOS)
    ---------------------------------------------------------------------------- */
 .main-app-footer {
   height: 44px !important;
   min-height: 44px !important;
-  /* 🔒 Protezione gesture bar orizzontale di iPhone */
-  padding-bottom: env(safe-area-inset-bottom, 0px) !important;
+  /* Protezione per la barra orizzontale bianca di sistema iOS */
+  padding-bottom: max(env(safe-area-inset-bottom, 0px), var(--tg-safe-area-inset-bottom, 0px), 12px) !important;
   box-sizing: content-box !important;
-  background: rgba(7, 10, 18, 0.95) !important;
-  backdrop-filter: blur(16px) !important;
-  -webkit-backdrop-filter: blur(16px) !important;
-  border-top: 1px solid var(--border-color) !important;
-  display: grid !important;
-  grid-template-columns: repeat(5, 1fr) !important;
-  align-items: center !important;
-  position: relative !important;
-  z-index: 40 !important;
-  width: 100% !important;
+  background: rgba(7, 10, 18, 0.95);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-top: 1px solid var(--border-color);
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  align-items: center;
+  position: relative;
+  z-index: 40;
+  width: 100%;
 }
 
 .nav-tab {
@@ -125,7 +133,7 @@ html, body {
   font-size: 10px !important;
   line-height: 1 !important;
   font-weight: 700;
-  margin-top: 2px !important;
+  margin-top: 3px !important;
   display: block;
 }
 
@@ -148,7 +156,6 @@ html, body {
   will-change: transform;
 }
 
-/* 🔒 Forzatura tassativa a schermo intero per singola slide */
 .carousel-slide {
   flex: 0 0 100% !important;
   min-width: 100% !important;
@@ -259,7 +266,7 @@ html, body {
 }
 
 /* ----------------------------------------------------------------------------
-   5. STANDARD MODALI: CHIUSURA UNIFICATA ("X" IN ALTO A DESTRA + BACKDROP)
+   5. STANDARD MODALI PIATTAFORMA: CHIUSURA UNIFICATA ("X" IN ALTO + BACKDROP)
    ---------------------------------------------------------------------------- */
 dialog.modal {
   background: rgba(4, 6, 11, 0.78) !important;
@@ -275,7 +282,6 @@ dialog.modal {
   position: relative !important;
 }
 
-/* 🔒 Tasto standard uniforme per tutte le modali */
 .modal-close-btn {
   position: absolute !important;
   top: 12px !important;
@@ -303,7 +309,7 @@ dialog.modal {
 }
 
 /* ----------------------------------------------------------------------------
-   6. RADIO MINIPLAYER & SPOTIFY DECK
+   6. RADIO MINIPLAYER & SPOTIFY DECK PIATTAFORMA
    ---------------------------------------------------------------------------- */
 .jukebox-eq-bars {
   display: inline-flex;
@@ -371,7 +377,7 @@ dialog.modal {
 }
 
 /* ----------------------------------------------------------------------------
-   7. ITEM CARDS 16:9 RIGIDE (SHOP, SAGHE, RICETTE)
+   7. ITEM CARDS 16:9 CONDIVISE (SHOP, GIOCHI SAGHE, RICETTE)
    ---------------------------------------------------------------------------- */
 .item-card {
   background: var(--bg-card);
@@ -391,7 +397,7 @@ dialog.modal {
   transform: translateY(-1px);
 }
 
-/* 🔒 GABBIA RIGIDA 16:9 PER L'IMMAGINE: Risolve l'esplosione dell'immagine DEMO */
+/* 🔒 Gabbia rigida 16:9: impedisce alle immagini di sfondare il layout */
 .item-card-media {
   position: relative !important;
   width: 100% !important;
@@ -456,7 +462,7 @@ dialog.modal {
 }
 
 /* ----------------------------------------------------------------------------
-   8. FRAME CINEMATOGRAFICO RIGIDO 16:9 & CITAZIONI
+   8. FRAME CINEMATOGRAFICO RIGIDO 16:9 CONDIVISO (HUB SAGHE & DETTAGLIO)
    ---------------------------------------------------------------------------- */
 .cinema-frame-rigid {
   position: relative;
@@ -503,57 +509,7 @@ dialog.modal {
 }
 
 /* ----------------------------------------------------------------------------
-   9. MICRO-HUD 36px COCKPIT DI GIOCO
-   ---------------------------------------------------------------------------- */
-.hud-cockpit-36px {
-  height: 36px;
-  min-height: 36px;
-  max-height: 36px;
-  background: rgba(15, 23, 42, 0.92);
-  border: 1px solid var(--border-color);
-  border-radius: 0.75rem;
-  padding: 0 10px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-}
-
-.hud-avatar-30px {
-  width: 24px;
-  height: 24px;
-  border-radius: 9999px;
-  background: #1E293B;
-  border: 1px solid rgba(56, 189, 248, 0.4);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-  flex-shrink: 0;
-}
-
-.hud-hero-name-36px {
-  font-size: 11px;
-  font-weight: 800;
-  color: #FFFFFF;
-  max-width: 90px;
-}
-
-.hud-vitals-36px {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex: 1;
-  max-width: 140px;
-}
-
-.hud-pv-bar-36px {
-  height: 5px;
-  border-radius: 9999px;
-}
-
-/* ----------------------------------------------------------------------------
-   10. SUBHEADERS & CHIP FILTRI RAPIDI (FIX PER LE CATEGORIE DELLO SHOP)
+   9. SUBHEADERS & CHIP FILTRI RAPIDI (SHOP, RICETTE, GIOCHI)
    ---------------------------------------------------------------------------- */
 .subheader-3col {
   display: flex;
@@ -581,7 +537,7 @@ dialog.modal {
   color: #94A3B8;
 }
 
-/* 🔒 NASTRO SCORREVOLE: Impedisce ai chip di andare a capo verticalmente */
+/* 🔒 Nastro scorrevole a riga singola: impedisce il wrapping verticale */
 .chips-scroll-bar {
   display: flex !important;
   flex-direction: row !important;
@@ -600,7 +556,7 @@ dialog.modal {
   display: none !important;
 }
 
-/* 🔒 CAPSULA BOTTONE: Restituisce l'aspetto a pillola ordinata */
+/* 🔒 Bottone a capsula ben delimitato */
 .rpg-category-chip {
   display: inline-flex !important;
   align-items: center !important;
@@ -631,7 +587,7 @@ dialog.modal {
 }
 
 /* ----------------------------------------------------------------------------
-   11. WIDGET FLUTTUANTE MULTIPLAYER STICKY
+   10. WIDGET FLUTTUANTE MULTIPLAYER STICKY (SALA GIOCHI HUB)
    ---------------------------------------------------------------------------- */
 .multiplayer-floating-dock {
   position: sticky;
@@ -651,7 +607,7 @@ dialog.modal {
 }
 
 /* ----------------------------------------------------------------------------
-   12. DESKTOP SIDEBAR (LAYOUT PC & TABLET)
+   11. DESKTOP SIDEBAR (LAYOUT PC & TABLET)
    ---------------------------------------------------------------------------- */
 @media (min-width: 1024px) {
   .desktop-sidebar {
