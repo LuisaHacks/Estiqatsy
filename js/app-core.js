@@ -1,13 +1,13 @@
 // ============================================================================
 // PROJECT: ESTIQATSY SYNDICATE & RPG PLATFORM
-// FILE: js/app-core.js (VERSIONE 17.0 - MACROSTATE CONTEXT & DETERMINISTIC ROUTER)
+// FILE: js/app-core.js (VERSIONE 18.0 - FULL PROFILE SYNC & ZERO-BOUNCE ROUTER)
 // LAYER 1: ARCHITETTURA A MACROSTATO, ROUTER SPA DETERMINISTICO & TELEGRAM CORE
 // ============================================================================
 
 const AppConfig = {
   GAS_URL: "https://script.google.com/macros/s/AKfycbyeCWHM9X4ycwWT7IOMwg24pySL78bJT5BRyiIR5eb0UJALWuaORzfJ2lkqLrjLv0xN/exec",
   CACHE_KEYS: {
-    APP_STATE: "est_app_state_v17",
+    APP_STATE: "est_app_state_v18",
     VAULT: "est_cache_vault",
     CONFIG: "est_admin_config"
   },
@@ -66,7 +66,6 @@ const AppState = {
     combatStats: { wins: 0, losses: 0, attack: 14, defense: 12, hacking: 10, readiness: 12, rank: "Agente Syndicate" }
   },
 
-  // Sblocco navigazione libera
   allowedModules: { home: true, games: true, hub: true, shop: true, recipes: true, profile: true, multiplayer: true },
   plans: [],
   billingCycle: "monthly",
@@ -119,6 +118,7 @@ if (tg) {
       AppState.user.chatId = String(u.id);
       AppState.user.first_name = u.first_name || "Avventuriero";
       AppState.user.nome = u.first_name || "Avventuriero";
+      AppState.user.cognome = u.last_name || "";
       AppState.user.username = u.username ? `@${u.username}` : "@anonimo";
       if (u.photo_url) AppState.user.photo_url = u.photo_url;
     }
@@ -152,7 +152,11 @@ function setupTelegramBackButton(targetScreenId) {
         safePlayClick();
         if (targetScreenId === "view-gameplay" && window.Rules2Engine && typeof Rules2Engine.openAbandonModal === "function") {
           Rules2Engine.openAbandonModal();
-        } else if (targetScreenId === "view-multiplayer" || targetScreenId.includes("game")) {
+        } else if (targetScreenId === "subview-shop-detail") {
+          AppRouter.navigate("shop");
+        } else if (targetScreenId === "subview-recipe-detail") {
+          AppRouter.navigate("recipes");
+        } else if (targetScreenId === "subview-game-detail" || targetScreenId === "view-multiplayer" || targetScreenId.includes("game")) {
           AppRouter.navigate("games");
         } else {
           AppRouter.navigate("home");
@@ -182,8 +186,6 @@ window.EngineRegistry = EngineRegistry;
 // ----------------------------------------------------------------------------
 // 5. ROUTER DETERMINISTICO CON MACROSTATO (SINGLE SOURCE OF TRUTH)
 // ----------------------------------------------------------------------------
-
-// Mappa esplicita tra schermata e relativo Tab principale da evidenziare
 const SCREEN_TO_TAB_MAP = {
   "home": "home",
   "view-home": "home",
@@ -206,7 +208,6 @@ const SCREEN_TO_TAB_MAP = {
   "profile": "profile",
   "view-profile": "profile",
 
-  // Schermate speciali di gioco
   "view-wizard": "games",
   "wizard": "games",
   "view-gameplay": "games",
@@ -226,7 +227,6 @@ const AppRouter = {
     safePlayClick();
     safeHaptic("selection");
 
-    // Risoluzione ID vista target
     let targetId = subScreenName || screenName;
 
     if (targetId === "games" || targetId === "view-games") {
@@ -244,11 +244,10 @@ const AppRouter = {
       targetId = "view-" + targetId;
     }
 
-    // Reset dello scroll della pagina
     const scrollContainer = document.getElementById("app-main-scroll");
     if (scrollContainer) scrollContainer.scrollTop = 0;
 
-    // 1. DETERMINAZIONE DEL MACROSTATO (Fonte Unica di Verità)
+    // 1. DETERMINAZIONE DEL MACROSTATO (Fonte Unica per il CSS)
     let macroContext = "app";
     if (targetId === "view-gameplay") {
       macroContext = "gameplay";
@@ -257,11 +256,10 @@ const AppRouter = {
     }
     AppState.currentContext = macroContext;
 
-    // Registra il macrostato sul DOM per delegare al CSS visibilità e layout
     document.body.dataset.context = macroContext;
     document.body.dataset.activeScreen = targetId;
 
-    // 2. CHIUSURA DI SICUREZZA DI MODALI E CASSETTI ORFANI AL CAMBIO CONTESTO
+    // 2. CHIUSURA DI SICUREZZA CASSETTI E MODALI AL CAMBIO VISTA
     if (macroContext === "app") {
       const drawersToClose = ["drawer-hero-sheet", "drawer-emporio", "modal-cockpit-assetto", "modal-abandon"];
       drawersToClose.forEach(dId => {
@@ -279,7 +277,6 @@ const AppRouter = {
     });
 
     // 4. COORDINAMENTO VISIBILITÀ HEADER & FOOTER
-    // (Supporta la transizione mantenendo compatibilità se il CSS non è ancora aggiornato)
     const appHeader = document.getElementById("main-app-header");
     const gameHeader = document.getElementById("main-game-header");
     const appFooter = document.getElementById("main-app-footer");
@@ -297,19 +294,14 @@ const AppRouter = {
     const matchedTab = SCREEN_TO_TAB_MAP[targetId] || SCREEN_TO_TAB_MAP[screenName] || "home";
     AppState.activeTab = matchedTab;
 
-    // Sincronizzazione pulsanti Mobile
     document.querySelectorAll(".nav-tab").forEach(btn => {
-      const isTarget = (btn.dataset.tab === matchedTab);
-      btn.classList.toggle("active", isTarget);
+      btn.classList.toggle("active", btn.dataset.tab === matchedTab);
     });
 
-    // Sincronizzazione menu Desktop
     document.querySelectorAll(".desk-nav-btn").forEach(btn => {
-      const isTarget = (btn.dataset.tab === matchedTab);
-      btn.classList.toggle("active", isTarget);
+      btn.classList.toggle("active", btn.dataset.tab === matchedTab);
     });
 
-    // Setup tasto back nativo Telegram e icone
     setupTelegramBackButton(targetId);
     setTimeout(() => { if (window.lucide) lucide.createIcons(); }, 15);
   }
@@ -351,7 +343,7 @@ async function apiCall(action, extraParams = {}) {
 }
 
 // ----------------------------------------------------------------------------
-// 7. GESTIONE BORSALE MEGOIN (DISACCOPPIATO DALL'ORO IN-GAME)
+// 7. GESTIONE BORSALE MEGOIN
 // ----------------------------------------------------------------------------
 const Wallet = {
   getMegoin: function() { 
@@ -374,7 +366,7 @@ const Wallet = {
 };
 
 // ----------------------------------------------------------------------------
-// 8. APPCORE: TOAST, STORAGE & SINCRONIZZAZIONE UI
+// 8. APPCORE: TOAST, STORAGE & SINCRONIZZAZIONE UI COMPLETA
 // ----------------------------------------------------------------------------
 const AppCore = {
   toast: function(message, type = "info") {
@@ -413,14 +405,14 @@ const AppCore = {
       if (raw) {
         const s = JSON.parse(raw);
         if (s.user) {
-          AppState.user.chatId = s.user.chatId || AppState.user.chatId;
-          AppState.user.nome = s.user.nome || AppState.user.nome;
+          AppState.user = { ...AppState.user, ...s.user };
         }
         if (s.digitalVault) AppState.digitalVault = s.digitalVault;
       }
     } catch (e) {}
   },
 
+  // 🔒 SINCRONIZZAZIONE VISIVA DI TUTTI GLI ELEMENTI DEL PROFILO E HOME
   syncUI: function() {
     const u = AppState.user;
     if (!u) return;
@@ -428,26 +420,56 @@ const AppCore = {
     const megoinVal = Wallet.getMegoin();
     const puntiVal = u.puntiFedelta || u.loyalty_points || 0;
     const nomeVal = u.nome || u.first_name || "Avventuriero";
+    const usernameVal = u.username ? (u.username.startsWith("@") ? u.username : `@${u.username}`) : "@anonimo";
+    const pianoVal = (u.piano || u.plan || "Free").toUpperCase();
 
+    // 1. Dati Dashboard Home
     s("home-username", nomeVal);
     s("home-rank-points", puntiVal);
-    s("home-plan-badge", `PIANO ${(u.piano || u.plan || "Free").toUpperCase()}`);
+    s("home-plan-badge", `PIANO ${pianoVal}`);
     s("home-megoin-card", `${megoinVal} 🪙`);
     s("home-punti-card", `${puntiVal} Pt`);
+
+    // 2. Dati Scheda Profilo (Fix @username e Piano sincronizzato)
     s("profile-card-name", nomeVal);
+    s("profile-card-username", usernameVal);
+    s("profile-card-plan", `PIANO ${pianoVal}`);
+    s("profile-card-id", `ID: ${u.chatId || u.id || "-"}`);
     s("profile-card-megoin", `${megoinVal} 🪙`);
     s("profile-card-points", `${puntiVal} Pt`);
-    s("profile-card-plan", `PIANO ${(u.piano || u.plan || "Free").toUpperCase()}`);
-    s("profile-card-id", `ID: ${u.chatId || u.id || "-"}`);
-    
-    // UI Desktop
+    s("profile-action-plan-name", `Piano: ${pianoVal}`);
+
+    // Conteggio download digitali
+    const vaultCount = (AppState.digitalVault && AppState.digitalVault.length > 0)
+      ? AppState.digitalVault.length 
+      : (u.prodottiAcquistati || 0);
+    s("profile-action-vault-count", vaultCount);
+
+    // 3. Avatar Dinamico (Iniziale del nome o Foto Telegram)
+    const avMob = document.getElementById("profile-card-avatar");
+    if (avMob) {
+      if (u.photo_url) {
+        avMob.innerHTML = `<img src="${u.photo_url}" class="w-full h-full object-cover rounded-xl" alt="Avatar">`;
+      } else {
+        avMob.textContent = (nomeVal.trim().charAt(0) || "A").toUpperCase();
+      }
+    }
+
+    // 4. Dati Desktop Sidebar
     s("user-name-desk", nomeVal);
-    s("user-plan-desk", `PIANO ${(u.piano || u.plan || "Free").toUpperCase()}`);
+    s("user-plan-desk", `PIANO ${pianoVal}`);
     s("user-megoin-desk", `${megoinVal} 🪙`);
     s("user-points-desk", `${puntiVal} Pt`);
+    const avDesk = document.getElementById("user-avatar-desk");
+    if (avDesk) {
+      if (u.photo_url) {
+        avDesk.innerHTML = `<img src="${u.photo_url}" class="w-full h-full object-cover rounded-xl" alt="Avatar">`;
+      } else {
+        avDesk.textContent = (nomeVal.trim().charAt(0) || "A").toUpperCase();
+      }
+    }
   },
 
-  // Rimozione sicura del loader
   dismissLoader: function() {
     const loader = document.getElementById("app-loading");
     if (loader) {
@@ -467,12 +489,17 @@ window.AppCore = AppCore;
 window.apiCall = apiCall;
 
 // ----------------------------------------------------------------------------
-// 9. BOOTSTRAP ALL'AVVIO
+// 9. BOOTSTRAP ALL'AVVIO (SENZA RIMBALZO FORZATO IN HOME)
 // ----------------------------------------------------------------------------
 window.addEventListener("DOMContentLoaded", async () => {
   AppCore.load();
   AppCore.syncUI();
   if (window.lucide) lucide.createIcons();
+
+  // Imposta la vista iniziale su Home solo all'avvio pulito
+  if (!AppState.activeTab || AppState.activeTab === "home") {
+    AppRouter.navigate("home");
+  }
 
   try {
     if (window.AppModules && typeof AppModules.init === "function") {
@@ -481,10 +508,11 @@ window.addEventListener("DOMContentLoaded", async () => {
   } catch (err) {
     console.warn("[DOMContentLoaded] Inizializzazione parziale:", err);
   } finally {
-    // Sblocco garantito: il loader non bloccherà MAI i tap sul footer
+    // Spegnimento sicuro della schermata di caricamento
     AppCore.dismissLoader();
   }
 
-  // Avvio garantito sulla Home
-  AppRouter.navigate("home");
+  // 🔒 FIX RIMBALZO AUTOMATICO:
+  // Non chiamiamo più AppRouter.navigate("home") qui al termine della Promise.
+  // Se l'utente mentre i dati si caricavano ha toccato "Giochi" o "Shop", rimane lì.
 });
