@@ -423,12 +423,6 @@ html, body.rpg-app-body {
   padding-bottom: var(--safe-bottom, 0px);
   height: calc(var(--tg-footer-height, 52px) + var(--safe-bottom, 0px));
 }
-@media (min-width: 768px) {
-  .main-app-footer {
-    display: none !important;
-  }
-}
-
 .nav-tab {
   display: flex;
   flex-direction: column;
