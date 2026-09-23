@@ -168,6 +168,9 @@ const Rules2Wizard = {
   // --------------------------------------------------------------------------
   // HUD A 2 RIGHE (48px - A TUTTA LARGHEZZA, A FILO DELLO STEPPER)
   // --------------------------------------------------------------------------
+  // --------------------------------------------------------------------------
+  // HUD A 2 RIGHE (48px - KPI BLOCCATI E VISIBILI AL 100%)
+  // --------------------------------------------------------------------------
   syncLiveHUD: function() {
     const cls = this.state.chosenClass;
     const hudContainer = document.getElementById("wizard-live-hud");
@@ -192,22 +195,22 @@ const Rules2Wizard = {
     const desMod = Rules2_FormatMod(effDes);
     const intMod = Rules2_FormatMod(effInt);
 
-    hudContainer.className = "hud-cockpit-48px w-full p-2 rounded-xl bg-slate-900/90 border border-white/10 shadow-lg mb-1";
+    hudContainer.className = "hud-cockpit-48px";
     hudContainer.innerHTML = `
-      <!-- RIGA 1: NOME LUNGO FLESSIBILE A SX & RISORSE BLOCCATE A DX -->
+      <!-- RIGA 1: NOME A SX & ORO/PX A DX -->
       <div class="flex items-center justify-between w-full min-w-0 leading-none">
         <div class="flex items-center gap-1.5 min-w-0 flex-1 pr-2">
           <span class="text-sm shrink-0">${avatarEmoji}</span>
-          <span class="text-xs font-black text-white truncate max-w-[170px]">${heroName}</span>
+          <span class="text-xs font-black text-white truncate max-w-[140px]">${heroName}</span>
         </div>
         <div class="flex items-center gap-2 shrink-0 font-mono text-[10.5px]">
-          <span class="text-sky-300 font-bold">✨ ${this.state.remainingPx} PX</span>
-          <span class="text-amber-300 font-bold">🟡 ${this.state.currentGold} ORO</span>
+          <span class="text-sky-300 font-bold whitespace-nowrap">✨ ${this.state.remainingPx} PX</span>
+          <span class="text-amber-300 font-bold whitespace-nowrap">🟡 ${this.state.currentGold} ORO</span>
         </div>
       </div>
 
-      <!-- RIGA 2: VITALI GRADIENTE & STATISTICHE D20 TRA PARENTESI -->
-      <div class="flex items-center justify-between w-full pt-1.5 mt-1 border-t border-white/5 text-[10px] font-mono leading-none">
+      <!-- RIGA 2: VITALI GRADIENTE A SX & MODIFICATORI D20 A DX -->
+      <div class="flex items-center justify-between w-full pt-1 mt-0.5 border-t border-white/5 text-[9.5px] font-mono leading-none">
         <div class="flex items-center gap-1.5 shrink-0">
           <span class="text-rose-400">❤️</span>
           <div class="w-12 h-1.5 rounded-full bg-slate-800 overflow-hidden">
@@ -609,7 +612,7 @@ const Rules2Wizard = {
       if (parentPanel) {
         filterBar = document.createElement("div");
         filterBar.id = "wizard-class-faction-chips";
-        filterBar.className = "chips-scroll-bar flex gap-1.5 overflow-x-auto py-1 mb-1 justify-center";
+        filterBar.className = "chips-scroll-bar flex gap-1.5 overflow-x-auto py-1 mb-1 justify-start";
         parentPanel.insertBefore(filterBar, parentPanel.firstChild);
       }
     }
