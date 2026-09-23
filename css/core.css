@@ -1,12 +1,12 @@
 /* ============================================================================
    PROJECT: ESTIQATSY SYNDICATE & RPG PLATFORM
-   FILE: css/core.css (VERSIONE 30.0 - SHELL, CATALOGS, AUDIO & BASE LAYOUT)
+   FILE: css/core.css (VERSIONE 31.0 - APP SHELL, RESPONSIVE GUTTERS & ZERO-SCROLL)
    LAYER: APP SHELL, UNIVERSAL BARS, 16:9 CAROUSEL & SHARED CATALOG COMPONENTS
    NOTE: 100% DEDICATO ALLA PIATTAFORMA - ELEMENTI RULES2 DELEGATI A RULES2.CSS
    ============================================================================ */
 
 /* ----------------------------------------------------------------------------
-   1. VARIABILI, RESET & BASE VIEWPORT
+   1. VARIABILI, RESET, BASE VIEWPORT & LOCK CONTESTUALE
    ---------------------------------------------------------------------------- */
 :root {
   --bg-base: #070A12;
@@ -45,10 +45,10 @@ html, body {
   display: none !important;
 }
 
-/* Custom Scrollbars Discrete */
+/* Scrollbar discrete ed eleganti */
 ::-webkit-scrollbar {
-  width: 4px;
-  height: 4px;
+  width: 3px;
+  height: 3px;
 }
 ::-webkit-scrollbar-track {
   background: transparent;
@@ -58,17 +58,63 @@ html, body {
   border-radius: 9999px;
 }
 
+/* 🔒 PADDING GENERALE DI RESPIRO: IMPEDISCE LO SCHIACCIAMENTO SUI BORDI TELEFONO */
+.app-content-wrapper {
+  padding-left: 12px !important;
+  padding-right: 12px !important;
+  padding-top: 6px !important;
+  padding-bottom: 14px !important;
+  box-sizing: border-box !important;
+  width: 100%;
+}
+
+@media (min-width: 640px) {
+  .app-content-wrapper {
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+  }
+}
+
+/* 🔒 ZERO SCROLL NEI MACROSTATI WIZARD E GAMEPLAY (TUTTO ABOVE-THE-FOLD) */
+body[data-context="wizard"] .app-scroll-area,
+body[data-context="gameplay"] .app-scroll-area {
+  overflow-y: hidden !important;
+  overflow-x: hidden !important;
+  display: flex !important;
+  flex-direction: column !important;
+  height: 100% !important;
+}
+
+body[data-context="wizard"] .app-content-wrapper,
+body[data-context="gameplay"] .app-content-wrapper {
+  height: 100% !important;
+  max-height: 100% !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: space-between !important;
+  padding-top: 4px !important;
+  padding-bottom: 4px !important;
+  gap: 0 !important;
+}
+
+/* Disattiva l'interlinea space-y di Tailwind nei contesti a schermo intero */
+body[data-context="wizard"] .app-content-wrapper > :not([hidden]) ~ :not([hidden]),
+body[data-context="gameplay"] .app-content-wrapper > :not([hidden]) ~ :not([hidden]) {
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+}
+
 /* ----------------------------------------------------------------------------
-   2. TOP BAR SUPERIORE INVARIANTE (44px CON DISCESA SOTTO IL NOTCH iOS)
+   2. TOP BAR SUPERIORE INVARIANTE (CON DISCESA SOTTO IL NOTCH iOS)
    ---------------------------------------------------------------------------- */
 .universal-top-bar {
-  /* Altezza calcolata: 44px di contenuto visibile + Safe Area notch iPhone/Android */
-  height: calc(44px + max(env(safe-area-inset-top, 0px), var(--tg-safe-area-inset-top, 0px))) !important;
-  min-height: calc(44px + max(env(safe-area-inset-top, 0px), var(--tg-safe-area-inset-top, 0px))) !important;
+  /* Altezza calcolata: 42px di visuale + Safe Area notch iPhone/Android */
+  height: calc(42px + max(env(safe-area-inset-top, 0px), var(--tg-safe-area-inset-top, 0px))) !important;
+  min-height: calc(42px + max(env(safe-area-inset-top, 0px), var(--tg-safe-area-inset-top, 0px))) !important;
   padding-top: max(env(safe-area-inset-top, 0px), var(--tg-safe-area-inset-top, 0px)) !important;
   /* Margini laterali di rispetto: isolano il titolo tra i comandi nativi Telegram (✕ e •••) */
-  padding-left: 72px !important;
-  padding-right: 72px !important;
+  padding-left: 64px !important;
+  padding-right: 64px !important;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -80,16 +126,16 @@ html, body {
   border-bottom: 1px solid var(--border-color);
   z-index: 40;
   box-sizing: border-box;
+  flex-shrink: 0;
 }
 
 /* ----------------------------------------------------------------------------
-   3. FOOTER DI NAVIGAZIONE (44px CON RESPIRO DALLA BARRA HOME DI iOS)
+   3. FOOTER DI NAVIGAZIONE A 5 TAB (CON RESPIRO DALLA HOME BAR iOS)
    ---------------------------------------------------------------------------- */
 .main-app-footer {
   height: 44px !important;
   min-height: 44px !important;
-  /* Protezione per la barra orizzontale bianca di sistema iOS */
-  padding-bottom: max(env(safe-area-inset-bottom, 0px), var(--tg-safe-area-inset-bottom, 0px), 12px) !important;
+  padding-bottom: max(env(safe-area-inset-bottom, 0px), var(--tg-safe-area-inset-bottom, 0px), 10px) !important;
   box-sizing: content-box !important;
   background: rgba(7, 10, 18, 0.95);
   backdrop-filter: blur(16px);
@@ -101,6 +147,7 @@ html, body {
   position: relative;
   z-index: 40;
   width: 100%;
+  flex-shrink: 0;
 }
 
 .nav-tab {
@@ -126,16 +173,16 @@ html, body {
 
 .nav-tab i,
 .nav-tab svg {
-  width: 18px !important;
-  height: 18px !important;
+  width: 17px !important;
+  height: 17px !important;
   display: block;
 }
 
 .nav-tab-label {
-  font-size: 10px !important;
+  font-size: 9.5px !important;
   line-height: 1 !important;
   font-weight: 700;
-  margin-top: 3px !important;
+  margin-top: 2px !important;
   display: block;
 }
 
@@ -146,7 +193,7 @@ html, body {
   position: relative;
   width: 100%;
   overflow: hidden !important;
-  border-radius: 1rem;
+  border-radius: 0.85rem;
   border: 1px solid var(--border-color);
   background: var(--bg-surface);
 }
@@ -180,36 +227,36 @@ html, body {
 .carousel-slide-overlay {
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, rgba(7, 10, 18, 0.1) 0%, rgba(7, 10, 18, 0.88) 100%);
+  background: linear-gradient(180deg, rgba(7, 10, 18, 0.10) 0%, rgba(7, 10, 18, 0.88) 100%);
   pointer-events: none;
 }
 
 .carousel-slide-badge {
   position: absolute;
-  top: 10px;
-  left: 10px;
-  padding: 2px 8px;
+  top: 8px;
+  left: 8px;
+  padding: 2px 6px;
   background: rgba(0, 0, 0, 0.75);
-  border: 1px solid rgba(56, 189, 248, 0.4);
+  border: 1px solid rgba(56, 189, 248, 0.40);
   color: var(--accent-sky);
   font-family: monospace;
-  font-size: 9px;
+  font-size: 8.5px;
   font-weight: 900;
   text-transform: uppercase;
-  border-radius: 6px;
+  border-radius: 4px;
   letter-spacing: 0.05em;
   z-index: 10;
 }
 
 .carousel-slide-content {
   position: absolute;
-  bottom: 10px;
-  left: 12px;
-  right: 12px;
+  bottom: 8px;
+  left: 10px;
+  right: 10px;
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
-  gap: 8px;
+  gap: 6px;
   z-index: 10;
 }
 
@@ -219,10 +266,10 @@ html, body {
 }
 
 .carousel-slide-title {
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 900;
   color: #FFFFFF;
-  line-height: 1.25;
+  line-height: 1.2;
   margin: 0;
   white-space: nowrap;
   overflow: hidden;
@@ -230,22 +277,21 @@ html, body {
 }
 
 .carousel-slide-sub {
-  font-size: 10.5px;
+  font-size: 9.5px;
   color: #CBD5E1;
-  margin-top: 2px;
-  margin-bottom: 0;
+  margin: 2px 0 0 0;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .carousel-slide-btn {
-  padding: 4px 10px;
+  padding: 3px 8px;
   background: var(--accent-sky);
   color: #070A12;
-  font-size: 10px;
+  font-size: 9.5px;
   font-weight: 900;
-  border-radius: 6px;
+  border-radius: 5px;
   border: none;
   white-space: nowrap;
   cursor: pointer;
@@ -253,8 +299,8 @@ html, body {
 }
 
 .carousel-dot {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
   border-radius: 9999px;
   background: rgba(255, 255, 255, 0.25);
   transition: all 0.25s ease;
@@ -262,7 +308,7 @@ html, body {
 }
 
 .carousel-dot.active {
-  width: 16px;
+  width: 14px;
   background: var(--accent-sky);
   box-shadow: 0 0 8px rgba(56, 189, 248, 0.6);
 }
@@ -271,25 +317,25 @@ html, body {
    5. STANDARD MODALI PIATTAFORMA: CHIUSURA UNIFICATA ("X" IN ALTO + BACKDROP)
    ---------------------------------------------------------------------------- */
 dialog.modal {
-  background: rgba(4, 6, 11, 0.78) !important;
-  backdrop-filter: blur(14px) !important;
-  -webkit-backdrop-filter: blur(14px) !important;
+  background: rgba(4, 6, 11, 0.80) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
   border: none !important;
 }
 
 .modal-box {
   background: #0B1222 !important;
   border: 1px solid rgba(56, 189, 248, 0.35) !important;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.8) !important;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.85) !important;
   position: relative !important;
 }
 
 .modal-close-btn {
   position: absolute !important;
-  top: 12px !important;
-  right: 12px !important;
-  width: 28px !important;
-  height: 28px !important;
+  top: 10px !important;
+  right: 10px !important;
+  width: 26px !important;
+  height: 26px !important;
   border-radius: 9999px !important;
   background: rgba(15, 23, 42, 0.85) !important;
   border: 1px solid rgba(255, 255, 255, 0.15) !important;
@@ -297,7 +343,7 @@ dialog.modal {
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
-  font-size: 12px !important;
+  font-size: 11px !important;
   font-weight: 900 !important;
   cursor: pointer !important;
   z-index: 50 !important;
@@ -375,7 +421,7 @@ dialog.modal {
 .audio-track-item:hover,
 .audio-track-item.active {
   background: rgba(56, 189, 248, 0.12);
-  border-color: rgba(56, 189, 248, 0.3);
+  border-color: rgba(56, 189, 248, 0.30);
 }
 
 /* ----------------------------------------------------------------------------
@@ -384,7 +430,7 @@ dialog.modal {
 .item-card {
   background: var(--bg-card);
   border: 1px solid var(--border-color);
-  border-radius: 0.875rem;
+  border-radius: 0.80rem;
   overflow: hidden !important;
   display: flex;
   flex-direction: column;
@@ -399,13 +445,13 @@ dialog.modal {
   transform: translateY(-1px);
 }
 
-/* 🔒 Gabbia rigida 16:9: impedisce alle immagini di sfondare il layout */
+/* Gabbia rigida 16:9 per le illustrazioni di catalogo */
 .item-card-media {
   position: relative !important;
   width: 100% !important;
   aspect-ratio: 16 / 9 !important;
   height: auto !important;
-  max-height: 190px !important;
+  max-height: 180px !important;
   background: #000000 !important;
   overflow: hidden !important;
   display: flex !important;
@@ -424,14 +470,14 @@ dialog.modal {
 
 .item-card-badge {
   position: absolute;
-  top: 8px;
-  left: 8px;
-  padding: 2px 6px;
+  top: 6px;
+  left: 6px;
+  padding: 2px 5px;
   border-radius: 4px;
   background: rgba(0, 0, 0, 0.75);
   border: 1px solid rgba(255, 255, 255, 0.15);
   font-family: monospace;
-  font-size: 8.5px;
+  font-size: 8px;
   font-weight: 800;
   color: var(--accent-sky);
   text-transform: uppercase;
@@ -439,7 +485,7 @@ dialog.modal {
 }
 
 .item-card-body {
-  padding: 10px 12px;
+  padding: 8px 10px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -449,10 +495,12 @@ dialog.modal {
 .item-card-title {
   font-weight: 800;
   color: #FFFFFF;
+  font-size: 12.5px;
 }
 
 .item-card-desc {
   color: #94A3B8;
+  font-size: 10.5px;
 }
 
 .item-card-footer {
@@ -460,7 +508,7 @@ dialog.modal {
   align-items: center;
   justify-content: space-between;
   border-top: 1px solid rgba(255, 255, 255, 0.05);
-  padding-top: 8px;
+  padding-top: 6px;
 }
 
 /* ----------------------------------------------------------------------------
@@ -472,6 +520,7 @@ dialog.modal {
   aspect-ratio: 16 / 9;
   background: #000000;
   overflow: hidden;
+  border-radius: 0.85rem;
 }
 
 .cinema-frame-rigid img {
@@ -486,7 +535,7 @@ dialog.modal {
   bottom: 0;
   left: 0;
   right: 0;
-  padding: 8px 12px;
+  padding: 6px 10px;
   background: linear-gradient(180deg, transparent 0%, rgba(7, 10, 18, 0.88) 100%);
   display: flex;
   flex-direction: column;
@@ -496,18 +545,18 @@ dialog.modal {
 }
 
 .watermark-cover-banner .quote-text {
-  font-size: 10.5px;
+  font-size: 10px;
   font-style: italic;
   color: #F1F5F9;
 }
 
 .watermark-cover-banner .quote-author {
   font-family: monospace;
-  font-size: 9px;
+  font-size: 8px;
   font-weight: 900;
   color: var(--accent-amber);
   text-transform: uppercase;
-  margin-top: 2px;
+  margin-top: 1px;
 }
 
 /* ----------------------------------------------------------------------------
@@ -517,13 +566,13 @@ dialog.modal {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  height: 32px;
-  padding: 0 4px;
+  height: 30px;
+  padding: 0 2px;
   font-family: monospace;
-  font-size: 10px;
+  font-size: 9.5px;
   font-weight: 800;
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-  margin-bottom: 6px;
+  margin-bottom: 4px;
 }
 
 .subheader-left {
@@ -539,15 +588,15 @@ dialog.modal {
   color: #94A3B8;
 }
 
-/* 🔒 Nastro scorrevole a riga singola: impedisce il wrapping verticale */
+/* Nastro scorrevole orizzontale a riga singola */
 .chips-scroll-bar {
   display: flex !important;
   flex-direction: row !important;
   flex-wrap: nowrap !important;
-  gap: 6px !important;
+  gap: 5px !important;
   overflow-x: auto !important;
   overflow-y: hidden !important;
-  padding: 4px 2px 8px 2px !important;
+  padding: 2px 1px 4px 1px !important;
   width: 100% !important;
   box-sizing: border-box !important;
   scrollbar-width: none !important;
@@ -558,7 +607,6 @@ dialog.modal {
   display: none !important;
 }
 
-/* 🔒 Bottone a capsula ben delimitato */
 .rpg-category-chip {
   display: inline-flex !important;
   align-items: center !important;
@@ -566,13 +614,13 @@ dialog.modal {
   flex: 0 0 auto !important;
   flex-shrink: 0 !important;
   white-space: nowrap !important;
-  padding: 5px 12px !important;
+  padding: 4px 10px !important;
   border-radius: 9999px !important;
   background: rgba(255, 255, 255, 0.05) !important;
   border: 1px solid rgba(255, 255, 255, 0.12) !important;
   color: #94A3B8 !important;
   font-family: monospace !important;
-  font-size: 10px !important;
+  font-size: 9.5px !important;
   font-weight: 700 !important;
   text-transform: uppercase !important;
   cursor: pointer !important;
@@ -593,13 +641,13 @@ dialog.modal {
    ---------------------------------------------------------------------------- */
 .multiplayer-floating-dock {
   position: sticky;
-  bottom: 8px;
-  margin-top: 10px;
-  padding: 8px 12px;
-  border-radius: 0.875rem;
+  bottom: 6px;
+  margin-top: 8px;
+  padding: 6px 10px;
+  border-radius: 0.75rem;
   background: linear-gradient(135deg, rgba(24, 15, 38, 0.95), rgba(15, 23, 42, 0.95));
   border: 1px solid rgba(168, 85, 247, 0.35);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -614,7 +662,7 @@ dialog.modal {
 @media (min-width: 1024px) {
   .desktop-sidebar {
     display: flex !important;
-    width: 260px;
+    width: 250px;
     background: var(--bg-base);
     border-right: 1px solid var(--border-color);
   }
