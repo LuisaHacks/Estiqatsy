@@ -1,8 +1,8 @@
 /* ============================================================================
    PROJECT: ESTIQATSY SYNDICATE & RPG PLATFORM
-   FILE: css/rules2.css (VERSIONE 30.0 - RESPONSIVE FLUID CLAMP & GAMEPLAY ZOOM)
-   LAYER: ENGINE RULES 2, RESPONSIVE WIZARD, 48px FULL-HUD, 1-2-3-4 ACTION MATRIX
-   NOTE: COMPATIBILITÀ TOTALE (DA iPHONE SE AD ANDROID & PC) - ZERO TAGLI SUL FOOTER
+   FILE: css/rules2.css (VERSIONE 27.0 - SPLIT ACTION CLUSTER & ELASTIC MOVERINA)
+   LAYER: ENGINE RULES 2, WIZARD STAGE, SPLIT ACTION SLOT, FULL HUD & COCKPIT
+   NOTE: ZERO FONDINO, ZERO SACCHE VUOTE, SPESA DIVISA DA AZIONE & ALONE PLATINO
    ============================================================================ */
 
 /* ----------------------------------------------------------------------------
@@ -33,6 +33,7 @@
   gap: 2px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
   box-sizing: border-box;
+  margin-bottom: 8px !important; /* 🔒 Respiro costante: 8px sotto l'HUD */
 }
 
 /* ----------------------------------------------------------------------------
@@ -43,6 +44,7 @@
   width: 100%;
   padding: 2px 0;
   overflow: hidden;
+  margin-top: 8px !important; /* 🔒 Respiro costante: 8px sopra la carta */
 }
 
 .coverflow-stage-wrapper {
@@ -56,14 +58,14 @@
   overscroll-behavior-x: contain;
 }
 
-/* 🔒 BASE CARTA TCG CON FISICA A FISARMONICA (CLAMP DINAMICO ANTI-GHIGLIOTTINA) */
+/* 🔒 BASE CARTA TCG CON FISICA ELASTICA ANTI-GHIGLIOTTINA */
 .coverflow-card,
 .tcg-card {
   position: relative !important;
   flex: 0 0 290px;
   width: 290px;
   max-width: 290px;
-  /* 🔒 Scala fluidamente tra 380px (iPhone SE/8) e 480px (iPhone 12-16 / Pro Max) */
+  /* Scala fluidamente tra 380px (iPhone SE) e 480px (iPhone standard/Pro Max) */
   height: clamp(380px, 58dvh, 480px) !important;
   min-height: 380px !important;
   max-height: 480px !important;
@@ -88,7 +90,7 @@
   box-sizing: border-box;
 }
 
-/* ⭐ STATO SELEZIONATO NEL WIZARD: ELEVAZIONE & ALONE LUNARE BIANCO PLATINO */
+/* ⭐ STATO SELEZIONATO: ALONE LUNARE BIANCO PLATINO PURO AD ALTA DEFINIZIONE */
 .coverflow-card.selected,
 .tcg-card.selected {
   opacity: 1 !important;
@@ -99,12 +101,11 @@
 }
 
 /* ----------------------------------------------------------------------------
-   4. ⭐ IL "GAMEPLAY ZOOM": LA CARTA SI ALLARGA A TUTTO CAMPO SUL TAVOLO
+   4. IL "GAMEPLAY ZOOM": LA CARTA SI ALLARGA A TUTTO CAMPO SUL TAVOLO (335px)
    ---------------------------------------------------------------------------- */
 #gameplay-moverina-card .tcg-card,
 #view-gameplay .tcg-card,
 .tcg-card.gameplay-focal {
-  /* Nel gameplay la carta non deve sbirciare: si allarga e domina lo schermo */
   flex: 0 0 min(335px, calc(100vw - 28px)) !important;
   width: min(335px, calc(100vw - 28px)) !important;
   max-width: 340px !important;
@@ -116,16 +117,16 @@
 }
 
 /* ----------------------------------------------------------------------------
-   5. ANATOMIA MOVERINA A LIVELLI SOVRAPPOSTI (ZERO FONDINI OPACHI)
+   5. ANATOMIA MOVERINA A LIVELLI SOVRAPPOSTI (ZERO FONDINO, ZERO SACCHE VUOTE)
    ---------------------------------------------------------------------------- */
 
-/* 🔒 FASCIA 2: Media a Schermo Pieno Alto (Proporzionale con clamp) */
+/* 🔒 FASCIA 2: Media a Schermo Pieno Alto (Proporzionale ed elastica) */
 .tcg-card-media {
   position: relative !important;
   width: 100% !important;
-  height: clamp(140px, 23dvh, 185px) !important;
-  min-height: 140px !important;
-  max-height: 185px !important;
+  height: clamp(150px, 25dvh, 200px) !important;
+  min-height: 150px !important;
+  max-height: 200px !important;
   background: #000000;
   overflow: hidden !important;
   box-sizing: border-box;
@@ -269,26 +270,29 @@
   color: #FFFFFF;
 }
 
-/* 🔒 FASCIA 4: Corpo Narrativo Elastico (flex-grow assorbe lo spazio senza sfondare) */
+/* 🔒 FASCIA 4: Corpo Narrativo Fluido (Elimina la sacca vuota interna) */
 .tcg-card-desc {
   flex: 1 1 auto !important;
   min-height: 0 !important;
-  padding: 4px 14px;
+  padding: 6px 14px;
   font-size: 11.5px;
-  line-height: 1.40;
+  line-height: 1.42;
   color: #CBD5E1;
   text-align: left;
   margin: 0;
   overflow-y: auto !important;
   scrollbar-width: none;
   box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
 }
 
 .tcg-card-desc::-webkit-scrollbar {
   display: none;
 }
 
-/* 🔒 FASCIA 5: Piede Scheda Ancorato al Fondo (margin-top: auto impedisce i tagli) */
+/* 🔒 FASCIA 5: Piede Scheda Ancorato al Fondo (Saldato alla base, zero tagli) */
 .tcg-card-footer {
   height: 44px;
   min-height: 44px;
@@ -364,46 +368,138 @@
 }
 
 /* ----------------------------------------------------------------------------
-   7. SLOT DECISIONALE / SPESA SOTTO LA CARTA (MATRICE ADATTIVA 1-2-3-4)
+   7. LO SLOT DECISIONALE DIVISO (AZIONE A SX + DELTA CONTABILE A DX)
    ---------------------------------------------------------------------------- */
 .scene-actions-area {
   width: 100%;
   max-width: min(335px, calc(100vw - 28px));
-  margin: 4px auto 0 auto;
+  /* 🔒 12px di respiro: l'alone bianco platino sfuma dolcemente senza toccare il tasto */
+  margin: 12px auto 0 auto !important;
   box-sizing: border-box;
 }
 
-/* 1 Bottone: Tutta larghezza (42px) */
-.actions-grid-1 {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 6px;
+/* Cluster Diviso Orizzontale */
+.action-split-cluster {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  width: 100% !important;
 }
 
-/* 2 Bottoni: Bivio a 2 Colonne (50% / 50% - 42px) */
-.actions-grid-2 {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 6px;
+/* Tasto Azione Principale (Flessibile) */
+.btn-action-main {
+  flex: 1 1 auto !important;
+  height: 42px !important;
+  min-height: 42px !important;
+  padding: 0 12px !important;
+  border-radius: 0.75rem !important;
+  font-size: 11.5px !important;
+  font-weight: 900 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.04em !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px !important;
+  cursor: pointer !important;
+  transition: all 0.15s ease !important;
+  box-sizing: border-box !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35) !important;
 }
 
-/* 3 Bottoni: RIGA SINGOLA A 3 COLONNE (33% ciascuno - 42px) */
-.actions-grid-3 {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 5px;
+.btn-action-main.primary {
+  background: #38BDF8 !important;
+  color: #070A12 !important;
+  border: none !important;
 }
 
-/* 4 Bottoni: Griglia Quiz 2x2 Compatta (~78px) */
-.actions-grid-4,
-.actions-grid-quiz {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  grid-template-rows: repeat(2, auto);
-  gap: 6px;
+.btn-action-main.refund {
+  background: rgba(45, 26, 16, 0.85) !important;
+  border: 1px solid rgba(245, 158, 11, 0.4) !important;
+  color: #FBBF24 !important;
 }
 
-/* Stile Base Pulsante Azione / Bivio / Spesa */
+.btn-action-main.disabled {
+  background: rgba(30, 41, 59, 0.4) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  color: #64748B !important;
+  cursor: not-allowed !important;
+  opacity: 0.5 !important;
+}
+
+/* Tasto Ausiliario Svuota (Emporio) */
+.btn-action-aux {
+  flex: 0 0 auto !important;
+  height: 42px !important;
+  min-height: 42px !important;
+  padding: 0 10px !important;
+  border-radius: 0.75rem !important;
+  background: rgba(45, 16, 28, 0.75) !important;
+  border: 1px solid rgba(244, 63, 94, 0.35) !important;
+  color: #FB7185 !important;
+  font-size: 11px !important;
+  font-weight: 800 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 4px !important;
+  cursor: pointer !important;
+  transition: all 0.15s ease !important;
+  box-sizing: border-box !important;
+}
+
+.btn-action-aux:hover {
+  background: rgba(244, 63, 94, 0.25) !important;
+  border-color: #F43F5E !important;
+}
+
+/* Badge Contabile Delta (Spesa / Rimborso) */
+.badge-cost-delta {
+  flex: 0 0 auto !important;
+  height: 42px !important;
+  min-height: 42px !important;
+  padding: 0 12px !important;
+  border-radius: 0.75rem !important;
+  background: rgba(11, 18, 34, 0.95) !important;
+  border: 1px solid rgba(255, 255, 255, 0.14) !important;
+  font-family: monospace !important;
+  font-size: 12px !important;
+  font-weight: 900 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  box-sizing: border-box !important;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5) !important;
+  white-space: nowrap !important;
+}
+
+.badge-cost-delta.spend {
+  color: #38BDF8 !important;
+  border-color: rgba(56, 189, 248, 0.4) !important;
+}
+
+.badge-cost-delta.refund {
+  color: #10B981 !important;
+  border-color: rgba(16, 185, 129, 0.45) !important;
+  background: rgba(6, 78, 59, 0.3) !important;
+}
+
+.badge-cost-delta.gold {
+  color: #FBBF24 !important;
+  border-color: rgba(245, 158, 11, 0.45) !important;
+}
+
+.badge-cost-delta.locked {
+  color: #64748B !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+/* Griglie Bivi Gameplay Dinamiche (1, 2, 3 Colonne o Quiz 2x2) */
+.actions-grid-1 { display: grid; grid-template-columns: 1fr; gap: 6px; }
+.actions-grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; }
+.actions-grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; }
+.actions-grid-4, .actions-grid-quiz { display: grid; grid-template-columns: repeat(2, 1fr); grid-template-rows: repeat(2, auto); gap: 6px; }
+
 .scene-action-btn {
   height: 42px;
   min-height: 42px;
@@ -438,11 +534,6 @@
   background: rgba(45, 16, 28, 0.75);
 }
 
-.scene-action-btn.action-danger:hover {
-  background: rgba(244, 63, 94, 0.25);
-  border-color: #F43F5E;
-}
-
 .actions-grid-3 .scene-action-btn {
   font-size: 10px;
   padding: 0 4px;
@@ -456,15 +547,16 @@
 }
 
 /* ----------------------------------------------------------------------------
-   FOOTER WIZARD CONSOLE (STEPPER-DOCK STACCATO DAI BORDI CON GAP FISSO)
+   8. FOOTER CONSOLE INTEGRATO: STEPPER-DOCK (WIZARD & COCKPIT - 44px)
    ---------------------------------------------------------------------------- */
-#main-wizard-footer,
-.wizard-sticky-footer {
+.wizard-sticky-footer,
+.cockpit-footer {
   flex: none;
   z-index: 40;
   width: 100%;
   max-width: 600px;
-  margin: 0 auto;
+  /* 🔒 10px di respiro sopra per non toccare lo slot d'azione */
+  margin: 10px auto 0 auto !important;
   background: rgba(7, 10, 18, 0.98);
   border-top: 1px solid rgba(255, 255, 255, 0.10);
   /* 🔒 16px di respiro da entrambi i bordi dello schermo + safe-area iOS */
