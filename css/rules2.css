@@ -1,9 +1,17 @@
 /* ============================================================================
    PROJECT: ESTIQATSY SYNDICATE & RPG PLATFORM
-   FILE: css/rules2.css (VERSIONE 23.3 - RULES 2 ENGINE, TCG STAGE & GAMEPLAY)
+   FILE: css/rules2.css (VERSIONE 23.4 - RULES 2 ENGINE, TCG STAGE & GAMEPLAY)
    LAYER: ENGINE RULES 2, WIZARD STAGES, MICRO-HUD 36px, COMBAT & TACTICAL DRAWERS
-   NOTE: 100% SPECIFICO PER IL GIOCO - NESSUNA DUPLICAZIONE CON CSS/CORE.CSS
+   NOTE: 100% SPECIFICO PER IL GIOCO - NESSUNA INTERFERENZA CON CSS/CORE.CSS
    ============================================================================ */
+
+/* 🔒 Protezione di visibilità contestuale */
+.wizard-sticky-footer.hidden,
+.cockpit-footer.hidden,
+#view-wizard.hidden,
+#view-gameplay.hidden {
+  display: none !important;
+}
 
 /* ----------------------------------------------------------------------------
    1. PALCO DELLA CARTA UNIVERSALE TCG (MODELLO "MOVERINA" NEL WIZARD)
@@ -310,17 +318,20 @@
 }
 
 /* ----------------------------------------------------------------------------
-   4. FOOTER & PULSANTI DEL WIZARD (44px)
+   4. FOOTER DEDICATO WIZARD (PULSANTE CTA A TUTTA LARGHEZZA)
    ---------------------------------------------------------------------------- */
 .wizard-sticky-footer {
   flex: none;
-  z-index: 50;
+  z-index: 40;
   width: 100%;
   max-width: 600px;
   margin: 0 auto;
   background: rgba(7, 10, 18, 0.98);
   border-top: 1px solid rgba(255, 255, 255, 0.10);
-  padding-bottom: max(env(safe-area-inset-bottom, 0px), 12px);
+  padding-bottom: max(env(safe-area-inset-bottom, 0px), var(--tg-safe-area-inset-bottom, 0px), 12px);
+  box-sizing: content-box;
+  height: 44px;
+  min-height: 44px;
   display: flex;
   align-items: center;
   padding-left: 12px;
@@ -348,7 +359,7 @@
 }
 
 /* ----------------------------------------------------------------------------
-   5. MICRO-HUD 36px COCKPIT DI GIOCO RULES 2
+   5. MICRO-HUD 36px COCKPIT DI GIOCO (SLOT SUBHEADER GAMEPLAY)
    ---------------------------------------------------------------------------- */
 .hud-cockpit-36px {
   height: 36px;
@@ -398,17 +409,20 @@
 }
 
 /* ----------------------------------------------------------------------------
-   6. FOOTER COCKPIT DI GIOCO RULES 2 (44px)
+   6. FOOTER COCKPIT DI GIOCO RULES 2 (4 PULSANTI TATTICI - 44px)
    ---------------------------------------------------------------------------- */
 .cockpit-footer {
   flex: none;
-  z-index: 50;
+  z-index: 40;
   width: 100%;
   max-width: 600px;
   margin: 0 auto;
   background: rgba(7, 10, 18, 0.98);
   border-top: 1px solid rgba(255, 255, 255, 0.10);
-  padding-bottom: max(env(safe-area-inset-bottom, 0px), 12px);
+  padding-bottom: max(env(safe-area-inset-bottom, 0px), var(--tg-safe-area-inset-bottom, 0px), 12px);
+  box-sizing: content-box;
+  height: 44px;
+  min-height: 44px;
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   align-items: center;
@@ -534,4 +548,61 @@
 @keyframes diceRoll {
   0% { transform: rotateX(0deg) rotateY(0deg) scale(0.9); }
   100% { transform: rotateX(360deg) rotateY(180deg) scale(1.15); }
+}
+
+/* ----------------------------------------------------------------------------
+   9. MODALI TATTICHE ESTESE (SCHEDA EROE, ASSETTO, EMPORIO)
+   ---------------------------------------------------------------------------- */
+dialog.game-modal-sheet {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  margin: 0;
+  padding: 0;
+  background: rgba(4, 6, 11, 0.88);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  z-index: 100;
+  border: none;
+}
+
+dialog.game-modal-sheet:not([open]) {
+  display: none !important;
+}
+
+.game-sheet-container {
+  width: 100%;
+  max-width: 640px;
+  height: 90vh;
+  height: 90dvh;
+  max-height: 90dvh;
+  background: rgba(11, 18, 34, 0.96);
+  border-top: 1px solid rgba(56, 189, 248, 0.35);
+  border-left: 1px solid rgba(255, 255, 255, 0.10);
+  border-right: 1px solid rgba(255, 255, 255, 0.10);
+  border-radius: 1.35rem 1.35rem 0 0;
+  padding: 16px 18px 24px 18px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.85);
+  overflow: hidden;
+}
+
+.game-sheet-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.10);
+  margin-bottom: 12px;
+}
+
+.game-sheet-scroll {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  padding-right: 4px;
 }
