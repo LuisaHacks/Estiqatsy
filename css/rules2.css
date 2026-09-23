@@ -1,8 +1,8 @@
 /* ============================================================================
    PROJECT: ESTIQATSY SYNDICATE & RPG PLATFORM
-   FILE: css/rules2.css (VERSIONE 25.5 - MOVERINA 480px, ACTION SLOT & LUNAR GLOW)
-   LAYER: ENGINE RULES 2, WIZARD 480px STAGE, FULL HUD 48px, ADAPTIVE ACTION DRAWER
-   NOTE: 100% SPECIFICO PER IL GIOCO - NESSUNA DUPLICAZIONE CON CSS/CORE.CSS
+   FILE: css/rules2.css (VERSIONE 26.0 - RESPONSIVE FLUID CLAMP & GAMEPLAY ZOOM)
+   LAYER: ENGINE RULES 2, RESPONSIVE WIZARD, 48px FULL-HUD, 1-2-3-4 ACTION MATRIX
+   NOTE: COMPATIBILITÀ TOTALE (DA iPHONE SE AD ANDROID & PC) - ZERO TAGLI SUL FOOTER
    ============================================================================ */
 
 /* ----------------------------------------------------------------------------
@@ -36,7 +36,7 @@
 }
 
 /* ----------------------------------------------------------------------------
-   3. PALCO CAROSELLO CARTA (480px - 100% ABOVE THE FOLD, ZERO TAGLI)
+   3. PALCO CAROSELLO WIZARD (PEEKING LATERALE DELLE CARTE ADIACENTI)
    ---------------------------------------------------------------------------- */
 .coverflow-stage-outer {
   position: relative;
@@ -48,7 +48,7 @@
 .coverflow-stage-wrapper {
   display: flex;
   align-items: stretch;
-  gap: 16px;
+  gap: 14px;
   overflow-x: auto;
   scroll-snap-type: x mandatory;
   padding: 4px 24px 6px 24px;
@@ -56,15 +56,16 @@
   overscroll-behavior-x: contain;
 }
 
-/* 🔒 CARTA MOVERINA A BORDI CONTINUI (300x480px: 100% VISIBILE SENZA SCROLL) */
+/* 🔒 BASE CARTA TCG CON FISICA A FISARMONICA (CLAMP DINAMICO ANTI-GHIGLIOTTINA) */
 .coverflow-card,
 .tcg-card {
   position: relative !important;
-  flex: 0 0 300px;
-  width: 300px;
-  max-width: 300px;
-  height: 480px !important;
-  min-height: 480px !important;
+  flex: 0 0 290px;
+  width: 290px;
+  max-width: 290px;
+  /* 🔒 Scala fluidamente tra 380px (iPhone SE/8) e 480px (iPhone 12-16 / Pro Max) */
+  height: clamp(380px, 58dvh, 480px) !important;
+  min-height: 380px !important;
   max-height: 480px !important;
   scroll-snap-align: center;
   background: #0B1222;
@@ -72,54 +73,64 @@
   border-radius: 1.25rem;
   overflow: hidden !important;
   cursor: pointer;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: space-between !important;
   margin: 2px auto;
   transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), 
               box-shadow 0.25s ease, 
               border-color 0.25s ease,
-              opacity 0.25s ease;
+              opacity 0.25s ease,
+              width 0.25s ease;
   user-select: none;
-  opacity: 0.55;
-  transform: scale(0.95);
+  opacity: 0.50;
+  transform: scale(0.92);
   box-sizing: border-box;
 }
 
-@media (min-width: 768px) {
-  .coverflow-card,
-  .tcg-card {
-    flex: 0 0 320px;
-    width: 320px;
-    max-width: 320px;
-  }
-}
-
-/* ⭐ STATO SELEZIONATO: ALONE LUNARE BIANCO PLATINO PURO AD ALTA DEFINIZIONE */
+/* ⭐ STATO SELEZIONATO NEL WIZARD: ELEVAZIONE & ALONE LUNARE BIANCO PLATINO */
 .coverflow-card.selected,
 .tcg-card.selected {
   opacity: 1 !important;
-  transform: scale(1) translateY(-3px) !important;
-  border-color: rgba(255, 255, 255, 0.85) !important;
-  box-shadow: 0 0 16px 2px rgba(255, 255, 255, 0.38),
-              0 18px 40px rgba(0, 0, 0, 0.88) !important;
+  transform: scale(1) translateY(-2px) !important;
+  border-color: rgba(255, 255, 255, 0.88) !important;
+  box-shadow: 0 0 16px 2px rgba(255, 255, 255, 0.35),
+              0 16px 36px rgba(0, 0, 0, 0.88) !important;
 }
 
 /* ----------------------------------------------------------------------------
-   4. ANATOMIA MOVERINA A LIVELLI SOVRAPPOSTI (SOMMA TOTALE: 480px)
+   4. ⭐ IL "GAMEPLAY ZOOM": LA CARTA SI ALLARGA A TUTTO CAMPO SUL TAVOLO
+   ---------------------------------------------------------------------------- */
+#gameplay-moverina-card .tcg-card,
+#view-gameplay .tcg-card,
+.tcg-card.gameplay-focal {
+  /* Nel gameplay la carta non deve sbirciare: si allarga e domina lo schermo */
+  flex: 0 0 min(335px, calc(100vw - 28px)) !important;
+  width: min(335px, calc(100vw - 28px)) !important;
+  max-width: 340px !important;
+  opacity: 1 !important;
+  transform: scale(1) !important;
+  margin: 4px auto !important;
+  box-shadow: 0 0 18px 2px rgba(255, 255, 255, 0.40),
+              0 20px 42px rgba(0, 0, 0, 0.90) !important;
+}
+
+/* ----------------------------------------------------------------------------
+   5. ANATOMIA MOVERINA A LIVELLI SOVRAPPOSTI (ZERO FONDINI OPACHI)
    ---------------------------------------------------------------------------- */
 
-/* 🔒 FASCIA 2: Media a Schermo Pieno Alto (185px: parte dal bordo superiore tondo) */
+/* 🔒 FASCIA 2: Media a Schermo Pieno Alto (Proporzionale con clamp) */
 .tcg-card-media {
   position: relative !important;
   width: 100% !important;
-  height: 185px !important;
-  min-height: 185px !important;
+  height: clamp(140px, 23dvh, 185px) !important;
+  min-height: 140px !important;
   max-height: 185px !important;
   background: #000000;
   overflow: hidden !important;
   box-sizing: border-box;
   border-radius: 1.20rem 1.20rem 0 0;
+  flex-shrink: 0;
 }
 
 .tcg-card-img {
@@ -143,8 +154,7 @@
   display: flex !important;
   align-items: center !important;
   justify-content: space-between !important;
-  /* Sfumatura morbida dal nero verso il trasparente: contrasto puro senza tagliare l'opera */
-  background: linear-gradient(180deg, rgba(7, 10, 18, 0.85) 0%, rgba(7, 10, 18, 0.40) 65%, transparent 100%) !important;
+  background: linear-gradient(180deg, rgba(7, 10, 18, 0.88) 0%, rgba(7, 10, 18, 0.40) 65%, transparent 100%) !important;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
   z-index: 10 !important;
   box-sizing: border-box !important;
@@ -190,7 +200,7 @@
   bottom: 0;
   left: 0;
   right: 0;
-  background: linear-gradient(180deg, transparent 0%, rgba(7, 10, 18, 0.75) 40%, #070A12 100%);
+  background: linear-gradient(180deg, transparent 0%, rgba(7, 10, 18, 0.78) 40%, #070A12 100%);
   padding: 6px 12px 6px 12px;
   display: flex;
   flex-direction: column;
@@ -226,7 +236,7 @@
   height: 34px;
   min-height: 34px;
   max-height: 34px;
-  margin: 6px 12px;
+  margin: 4px 12px;
   padding: 0 8px;
   background: rgba(0, 0, 0, 0.65);
   border: 1px solid rgba(255, 255, 255, 0.08);
@@ -240,6 +250,7 @@
   font-weight: 800;
   color: #E2E8F0;
   box-sizing: border-box;
+  flex-shrink: 0;
 }
 
 .tcg-stats-plate span {
@@ -258,29 +269,30 @@
   color: #FFFFFF;
 }
 
-/* FASCIA 4: Corpo Narrativo & Regole (215px - CAPIENZA REALE 8–9 RIGHE DISTESE) */
+/* 🔒 FASCIA 4: Corpo Narrativo Elastico (flex-grow assorbe lo spazio senza sfondare) */
 .tcg-card-desc {
-  height: 215px !important;
-  min-height: 215px !important;
-  max-height: 215px !important;
-  padding: 6px 14px;
-  font-size: 12px;
-  line-height: 1.42;
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  padding: 4px 14px;
+  font-size: 11.5px;
+  line-height: 1.40;
   color: #CBD5E1;
   text-align: left;
   margin: 0;
-  display: -webkit-box;
-  -webkit-line-clamp: 9;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
+  overflow-y: auto !important;
+  scrollbar-width: none;
   box-sizing: border-box;
 }
 
-/* FASCIA 5: Piede Scheda di Sola Lettura / Vetrina (46px - ZERO BOTTONI COMPRESSI) */
+.tcg-card-desc::-webkit-scrollbar {
+  display: none;
+}
+
+/* 🔒 FASCIA 5: Piede Scheda Ancorato al Fondo (margin-top: auto impedisce i tagli) */
 .tcg-card-footer {
-  height: 46px;
-  min-height: 46px;
-  max-height: 46px;
+  height: 44px;
+  min-height: 44px;
+  max-height: 44px;
   padding: 0 14px;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
   display: flex;
@@ -290,7 +302,8 @@
   font-size: 10px;
   font-weight: 800;
   background: rgba(0, 0, 0, 0.40);
-  margin-top: auto;
+  margin-top: auto !important;
+  flex-shrink: 0 !important;
   box-sizing: border-box;
 }
 
@@ -320,7 +333,7 @@
 }
 
 /* ----------------------------------------------------------------------------
-   5. FRECCE DI NAVIGAZIONE FLUTTUANTI IN SOVRAIMPRESSIONE (CAROSELLO INFINITO)
+   6. FRECCE DI NAVIGAZIONE FLUTTUANTI IN SOVRAIMPRESSIONE (CAROSELLO INFINITO)
    ---------------------------------------------------------------------------- */
 .carousel-arrow-btn {
   width: 32px;
@@ -351,11 +364,11 @@
 }
 
 /* ----------------------------------------------------------------------------
-   6. SLOT DECISIONALE / SPESA SOTTO LA CARTA (MATRICE ADATTIVA 1-2-3-4)
+   7. SLOT DECISIONALE / SPESA SOTTO LA CARTA (MATRICE ADATTIVA 1-2-3-4)
    ---------------------------------------------------------------------------- */
 .scene-actions-area {
   width: 100%;
-  max-width: 300px;
+  max-width: min(335px, calc(100vw - 28px));
   margin: 4px auto 0 auto;
   box-sizing: border-box;
 }
@@ -378,7 +391,7 @@
 .actions-grid-3 {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 6px;
+  gap: 5px;
 }
 
 /* 4 Bottoni: Griglia Quiz 2x2 Compatta (~78px) */
@@ -394,7 +407,7 @@
 .scene-action-btn {
   height: 42px;
   min-height: 42px;
-  padding: 0 10px;
+  padding: 0 8px;
   background: rgba(22, 36, 66, 0.85);
   border: 1px solid rgba(56, 189, 248, 0.25);
   border-radius: 0.75rem;
@@ -431,7 +444,7 @@
 }
 
 .actions-grid-3 .scene-action-btn {
-  font-size: 10.5px;
+  font-size: 10px;
   padding: 0 4px;
 }
 
@@ -439,11 +452,11 @@
 .actions-grid-quiz .scene-action-btn {
   height: 38px;
   min-height: 38px;
-  font-size: 11px;
+  font-size: 10.5px;
 }
 
 /* ----------------------------------------------------------------------------
-   7. FOOTER CONSOLE INTEGRATO: STEPPER-DOCK (WIZARD & COCKPIT - 44px)
+   8. FOOTER CONSOLE INTEGRATO: STEPPER-DOCK (WIZARD & COCKPIT - 44px)
    ---------------------------------------------------------------------------- */
 .wizard-sticky-footer,
 .cockpit-footer {
@@ -495,7 +508,7 @@
 }
 
 /* ----------------------------------------------------------------------------
-   8. NUMERI FLUTTUANTI (SORGONO DAL BORDO SUPERIORE CARTA E SFUMANO SOTTO L'HEADER)
+   9. NUMERI FLUTTUANTI (SORGONO DAL BORDO CARTA E SFUMANO SOTTO L'HEADER)
    ---------------------------------------------------------------------------- */
 .floating-damage-layer {
   position: absolute;
@@ -508,7 +521,7 @@
 .floating-fx-number {
   position: absolute;
   left: 50%;
-  top: 175px;
+  top: 170px;
   transform: translateX(-50%);
   font-family: monospace;
   font-size: 15px;
@@ -527,7 +540,7 @@
 }
 
 /* ----------------------------------------------------------------------------
-   9. ANIMAZIONE DADO D20 SUSPENSE
+   10. ANIMAZIONE DADO D20 SUSPENSE
    ---------------------------------------------------------------------------- */
 .dice-wrapper {
   perspective: 600px;
@@ -549,7 +562,7 @@
 }
 
 /* ----------------------------------------------------------------------------
-   10. CASSETTI TATTICI IN-GAME (SCHEDA EROE, ASSETTO, EMPORIO)
+   11. CASSETTI TATTICI IN-GAME (SCHEDA EROE, ASSETTO, EMPORIO)
    ---------------------------------------------------------------------------- */
 dialog.game-modal-sheet {
   position: fixed;
