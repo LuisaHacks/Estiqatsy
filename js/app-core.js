@@ -1,13 +1,13 @@
 // ============================================================================
 // PROJECT: ESTIQATSY SYNDICATE & RPG PLATFORM
-// FILE: js/app-core.js (VERSIONE 20.0 - AUDIO ROUTER & FULL PROFILE SYNC)
-// LAYER 1: ARCHITETTURA A MACROSTATO, ROUTER SPA DETERMINISTICO & AUDIO ENGINE
+// FILE: js/app-core.js (VERSIONE 23.0 - UNIVERSAL BACK-STACK & STABLE VIEWPORT)
+// LAYER 1: ARCHITETTURA A MACROSTATO, ROUTER DETERMINISTICO, TELEGRAM LIFO BACK
 // ============================================================================
 
 const AppConfig = {
   GAS_URL: "https://script.google.com/macros/s/AKfycbyeCWHM9X4ycwWT7IOMwg24pySL78bJT5BRyiIR5eb0UJALWuaORzfJ2lkqLrjLv0xN/exec",
   CACHE_KEYS: {
-    APP_STATE: "est_app_state_v20",
+    APP_STATE: "est_app_state_v23",
     VAULT: "est_cache_vault",
     CONFIG: "est_admin_config"
   },
@@ -23,8 +23,8 @@ const AppConfig = {
 // ----------------------------------------------------------------------------
 function safePlayClick() {
   try {
-    if (window.SoundEngine) {
-      if (typeof SoundEngine.playSfx === "function") SoundEngine.playSfx("click");
+    if (window.SoundEngine && typeof SoundEngine.playSfx === "function") {
+      SoundEngine.playSfx("click");
     }
   } catch (e) {}
 }
@@ -99,14 +99,113 @@ const AppState = {
 };
 
 // ----------------------------------------------------------------------------
-// 3. INTEGRAZIONE TELEGRAM WEBAPP SDK
+// 3. INTEGRAZIONE TELEGRAM WEBAPP SDK & GESTORE "INDIETRO" A CASCATA (LIFO)
 // ----------------------------------------------------------------------------
 const tg = (window.Telegram && window.Telegram.WebApp) ? window.Telegram.WebApp : null;
+
+// Intercettatore globale di apertura modali per aggiornare il tasto Indietro
+if (typeof HTMLDialogElement !== "undefined" && !HTMLDialogElement.prototype._showModalIntercepted) {
+  const originalShowModal = HTMLDialogElement.prototype.showModal;
+  HTMLDialogElement.prototype.showModal = function() {
+    originalShowModal.apply(this, arguments);
+    if (typeof updateTelegramBackButtonState === "function") {
+      updateTelegramBackButtonState();
+    }
+  };
+  HTMLDialogElement.prototype._showModalIntercepted = true;
+}
+
+// 🔒 FUNZIONE CHIAVE: Calcolo dello stato del tasto "Indietro" di Telegram
+function updateTelegramBackButtonState() {
+  if (!tg || !tg.BackButton) return;
+  try {
+    const hasOpenDialog = document.querySelector("dialog[open]") !== null;
+    const currentScreen = document.body.dataset.activeScreen || "view-home";
+    const currentContext = AppState.currentContext || "app";
+    const isWizardDeep = (currentScreen === "view-wizard" && window.Rules2Wizard && Rules2Wizard.state && Rules2Wizard.state.step > 1);
+
+    const shouldShow = hasOpenDialog ||
+                       currentScreen !== "view-home" ||
+                       currentContext !== "app" ||
+                       AppState.activeTab !== "home" ||
+                       isWizardDeep;
+
+    if (shouldShow) {
+      tg.BackButton.show();
+    } else {
+      tg.BackButton.hide();
+    }
+  } catch (e) {}
+}
+
+// 🔒 FUNZIONE CHIAVE: Gestore LIFO universale al clic sul tasto "Indietro" di Telegram
+function handleUniversalTelegramBack() {
+  safePlayClick();
+  safeHaptic("selection");
+
+  // 1. PRIORITÀ 1: Modali aperte (Chiudi la modale più recente)
+  const openDialogs = Array.from(document.querySelectorAll("dialog[open]"));
+  if (openDialogs.length > 0) {
+    const topDialog = openDialogs[openDialogs.length - 1];
+    if (topDialog && typeof topDialog.close === "function") {
+      topDialog.close();
+      updateTelegramBackButtonState();
+      return;
+    }
+  }
+
+  const currentScreen = document.body.dataset.activeScreen || "view-home";
+  const currentContext = AppState.currentContext || "app";
+
+  // 2. PRIORITÀ 2: Wizard Eroe attivo oltre lo Step 1 (Torna allo step precedente)
+  if (currentScreen === "view-wizard" || currentContext === "wizard") {
+    if (window.Rules2Wizard && Rules2Wizard.state && Rules2Wizard.state.step > 1) {
+      Rules2Wizard.prevStep(Rules2Wizard.state.step - 1);
+      updateTelegramBackButtonState();
+      return;
+    } else {
+      AppRouter.navigate("games");
+      return;
+    }
+  }
+
+  // 3. PRIORITÀ 3: Cockpit Gameplay attivo (Apre modale sospensione protetta)
+  if (currentScreen === "view-gameplay" || currentContext === "gameplay") {
+    if (window.Rules2Engine && typeof Rules2Engine.openAbandonModal === "function") {
+      Rules2Engine.openAbandonModal();
+    }
+    return;
+  }
+
+  // 4. PRIORITÀ 4: Subviews e dettagli (Ritorno al tab genitore)
+  if (currentScreen === "subview-shop-detail") {
+    AppRouter.navigate("shop");
+    return;
+  }
+  if (currentScreen === "subview-recipe-detail") {
+    AppRouter.navigate("recipes");
+    return;
+  }
+  if (currentScreen === "subview-game-detail" || currentScreen === "view-multiplayer") {
+    AppRouter.navigate("games");
+    return;
+  }
+
+  // 5. PRIORITÀ 5: Tab secondari attivi (Ritorno alla Home)
+  if (currentScreen !== "view-home" && AppState.activeTab !== "home") {
+    AppRouter.navigate("home");
+    return;
+  }
+
+  // 6. PRIORITÀ 6: Home pulita senza modali (Nascondi tasto, lascia uscire dall'app)
+  updateTelegramBackButtonState();
+}
+
 if (tg) {
   try {
     tg.ready();
     tg.expand();
-    if (typeof tg.requestFullscreen === "function") tg.requestFullscreen();
+    // 🔒 RIMOSSO tg.requestFullscreen() per non sfondare sotto i comandi nativi Telegram di iOS!
     if (typeof tg.disableVerticalSwipes === "function") tg.disableVerticalSwipes();
     tg.setHeaderColor(AppConfig.THEME.HEADER_COLOR);
     tg.setBackgroundColor(AppConfig.THEME.BG_COLOR);
@@ -129,41 +228,10 @@ if (tg) {
       document.documentElement.style.setProperty("--tg-safe-area-inset-bottom", `${bottomInset}px`);
     };
     updateSafeArea();
-  } catch (e) {}
-}
 
-let telegramBackButtonHandler = null;
-function setupTelegramBackButton(targetScreenId) {
-  if (!tg || !tg.BackButton) return;
-  try {
-    if (telegramBackButtonHandler) {
-      tg.BackButton.offClick(telegramBackButtonHandler);
-      telegramBackButtonHandler = null;
-    }
-    const isSub = targetScreenId.startsWith("subview-") || 
-                  targetScreenId === "view-gameplay" || 
-                  targetScreenId === "view-wizard" || 
-                  targetScreenId === "view-multiplayer";
-
-    if (isSub) {
-      tg.BackButton.show();
-      telegramBackButtonHandler = () => {
-        safePlayClick();
-        if (targetScreenId === "view-gameplay" && window.Rules2Engine && typeof Rules2Engine.openAbandonModal === "function") {
-          Rules2Engine.openAbandonModal();
-        } else if (targetScreenId === "subview-shop-detail") {
-          AppRouter.navigate("shop");
-        } else if (targetScreenId === "subview-recipe-detail") {
-          AppRouter.navigate("recipes");
-        } else if (targetScreenId === "subview-game-detail" || targetScreenId === "view-multiplayer" || targetScreenId.includes("game")) {
-          AppRouter.navigate("games");
-        } else {
-          AppRouter.navigate("home");
-        }
-      };
-      tg.BackButton.onClick(telegramBackButtonHandler);
-    } else {
-      tg.BackButton.hide();
+    // Registrazione univoca del listener del BackButton di Telegram
+    if (tg.BackButton) {
+      tg.BackButton.onClick(handleUniversalTelegramBack);
     }
   } catch (e) {}
 }
@@ -246,7 +314,7 @@ const AppRouter = {
     const scrollContainer = document.getElementById("app-main-scroll");
     if (scrollContainer) scrollContainer.scrollTop = 0;
 
-    // 1. DETERMINAZIONE DEL MACROSTATO (Fonte Unica per il CSS)
+    // 1. DETERMINAZIONE DEL MACROSTATO
     let macroContext = "app";
     if (targetId === "view-gameplay") {
       macroContext = "gameplay";
@@ -289,7 +357,7 @@ const AppRouter = {
     if (wizardFooter) wizardFooter.classList.toggle("hidden", macroContext !== "wizard");
     if (gameFooter) gameFooter.classList.toggle("hidden", macroContext !== "gameplay");
 
-    // 5. DETERMINAZIONE DETERMINISTICA DEL TAB ATTIVO
+    // 5. DETERMINAZIONE DEL TAB ATTIVO
     const matchedTab = SCREEN_TO_TAB_MAP[targetId] || SCREEN_TO_TAB_MAP[screenName] || "home";
     AppState.activeTab = matchedTab;
 
@@ -301,7 +369,7 @@ const AppRouter = {
       btn.classList.toggle("active", btn.dataset.tab === matchedTab);
     });
 
-    // ⭐ 6. ROUTER SONORO: MIXAGGIO ASIMMETRICO (FADE-OUT 180ms / FADE-IN 800ms)
+    // 6. ROUTER SONORO: MIXAGGIO ASIMMETRICO
     if (window.SoundEngine && typeof SoundEngine.playTabBgm === "function") {
       if (macroContext === "app") {
         SoundEngine.playTabBgm(matchedTab);
@@ -310,8 +378,14 @@ const AppRouter = {
       }
     }
 
-    setupTelegramBackButton(targetId);
-    setTimeout(() => { if (window.lucide) lucide.createIcons(); }, 15);
+    // 7. Sincronizzazione dinamica del tasto Indietro Telegram
+    updateTelegramBackButtonState();
+
+    setTimeout(() => { 
+      if (window.lucide && typeof lucide.createIcons === "function") {
+        lucide.createIcons(); 
+      }
+    }, 20);
   }
 };
 
@@ -420,7 +494,32 @@ const AppCore = {
     } catch (e) {}
   },
 
-  // 🔒 SINCRONIZZAZIONE VISIVA INTEGRALE (NOME, USERNAME, AVATAR, SALDI, PIANO)
+  // 🔒 REGOLA: Chiusura modale al tocco sul backdrop scuro esterno
+  initModalBackdropListeners: function() {
+    document.addEventListener("click", function(e) {
+      if (e.target && e.target.tagName === "DIALOG" && e.target.open) {
+        const rect = e.target.getBoundingClientRect();
+        const clickedInsideDialog = (
+          rect.top <= e.clientY && e.clientY <= rect.bottom &&
+          rect.left <= e.clientX && e.clientX <= rect.right
+        );
+        // Se si clicca al di fuori del contenuto modale, la modale si chiude
+        if (!clickedInsideDialog) {
+          e.target.close();
+          updateTelegramBackButtonState();
+        }
+      }
+    });
+
+    // Ascolto eventi di chiusura di tutti i dialoghi
+    document.querySelectorAll("dialog").forEach(d => {
+      d.addEventListener("close", () => {
+        updateTelegramBackButtonState();
+      });
+    });
+  },
+
+  // 🔒 SINCRONIZZAZIONE VISIVA INTEGRALE
   syncUI: function() {
     const u = AppState.user;
     if (!u) return;
@@ -447,14 +546,14 @@ const AppCore = {
     s("profile-card-points", `${puntiVal} Pt`);
     s("profile-action-plan-name", `Piano: ${pianoVal}`);
 
-    // Conteggio download digitali Caveau
-    const vaultCount = (AppState.digitalVault && AppState.digitalVault.length > 0)
+    // Conteggio download digitali reali nel Caveau
+    const vaultCount = (AppState.digitalVault && Array.isArray(AppState.digitalVault))
       ? AppState.digitalVault.length 
-      : (u.prodottiAcquistati || 0);
+      : 0;
     s("profile-action-vault-count", vaultCount);
     s("home-purchases-count", vaultCount);
 
-    // 3. Avatar Dinamico (Iniziale o Foto Profilo)
+    // 3. Avatar Dinamico
     const avMob = document.getElementById("profile-card-avatar");
     if (avMob) {
       if (u.photo_url) {
@@ -477,6 +576,11 @@ const AppCore = {
         avDesk.textContent = (nomeVal.trim().charAt(0) || "A").toUpperCase();
       }
     }
+
+    // 5. Rigenerazione icone vettoriali Lucide protetta
+    if (window.lucide && typeof lucide.createIcons === "function") {
+      lucide.createIcons();
+    }
   },
 
   dismissLoader: function() {
@@ -485,6 +589,9 @@ const AppCore = {
       loader.style.pointerEvents = "none";
       loader.style.opacity = "0";
       setTimeout(() => { if (loader.parentNode) loader.remove(); }, 250);
+    }
+    if (window.lucide && typeof lucide.createIcons === "function") {
+      lucide.createIcons();
     }
   }
 };
@@ -496,14 +603,15 @@ window.AppRouter = AppRouter;
 window.Wallet = Wallet;
 window.AppCore = AppCore;
 window.apiCall = apiCall;
+window.updateTelegramBackButtonState = updateTelegramBackButtonState;
 
 // ----------------------------------------------------------------------------
 // 9. BOOTSTRAP ALL'AVVIO
 // ----------------------------------------------------------------------------
 window.addEventListener("DOMContentLoaded", async () => {
   AppCore.load();
+  AppCore.initModalBackdropListeners();
   AppCore.syncUI();
-  if (window.lucide) lucide.createIcons();
 
   if (!AppState.activeTab || AppState.activeTab === "home") {
     AppRouter.navigate("home");
