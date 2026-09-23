@@ -19,8 +19,8 @@
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
 
   <!-- FOGLI DI STILE VERSIONATI -->
-  <link rel="stylesheet" href="css/core.css?v=23.0">
-  <link rel="stylesheet" href="css/rules2.css?v=23.0">
+  <link rel="stylesheet" href="css/core.css?v=23.2">
+  <link rel="stylesheet" href="css/rules2.css?v=23.2">
 </head>
 
 <body class="rpg-app-body bg-[#070A12] text-slate-100 flex flex-col h-screen overflow-hidden select-none" data-context="app" data-active-screen="view-home">
@@ -49,8 +49,8 @@
     }, 4000);
   </script>
 
-  <!-- 2.A TOP BAR PIATTAFORMA (44px - CENTRATA TRA I TASTI NATIVI TELEGRAM) -->
-  <header id="main-app-header" class="universal-top-bar relative w-full h-[44px] min-h-[44px] z-40 flex items-center justify-center px-[72px] bg-[#070A12]/95 backdrop-blur-md border-b border-white/10">
+  <!-- 2.A TOP BAR PIATTAFORMA (CENTRATA TRA I TASTI NATIVI TELEGRAM) -->
+  <header id="main-app-header" class="universal-top-bar relative w-full z-40 flex items-center justify-center bg-[#070A12]/95 backdrop-blur-md border-b border-white/10">
     <div class="flex items-center justify-center pointer-events-none select-none" id="top-bar-title-box">
       <span class="text-xs font-black tracking-widest text-white uppercase text-center truncate">⚓ ESTIQATSY</span>
     </div>
@@ -62,7 +62,7 @@
   </header>
 
   <!-- 2.B TOP BAR COCKPIT DI GIOCO RULES 2 -->
-  <header id="main-game-header" class="universal-top-bar hidden relative w-full h-[44px] min-h-[44px] z-40 flex items-center justify-center px-[72px] bg-[#070A12]/95 backdrop-blur-md border-b border-white/10">
+  <header id="main-game-header" class="universal-top-bar hidden relative w-full z-40 flex items-center justify-center bg-[#070A12]/95 backdrop-blur-md border-b border-white/10">
     <div class="flex flex-col items-center justify-center pointer-events-none text-center">
       <div class="text-[9px] font-black tracking-wider text-amber-400 uppercase leading-none" id="game-header-series">GIOCO</div>
       <div class="text-xs font-bold text-white truncate max-w-[160px] leading-tight mt-0.5" id="game-header-episode">Episodio 1</div>
@@ -120,7 +120,7 @@
             <span class="badge badge-xs badge-primary font-bold text-[8px]">PLAY</span>
           </button>
           <button id="desk-nav-shop" data-module="shop" onclick="AppRouter.navigate('shop')" class="desk-nav-btn flex items-center gap-3 w-full p-2.5 rounded-xl text-xs font-bold text-slate-300 hover:text-white transition" data-tab="shop">
-            <i data-lucide="shopping-bag" class="w-4 h-4 text-amber-400"></i> <span>Mercato Syndicate</span>
+            <i data-lucide="shopping-bag" class="w-4 h-4 text-amber-400"></i> <span>Shop Syndicate</span>
           </button>
           <button id="desk-nav-recipes" data-module="recipes" onclick="AppRouter.navigate('recipes')" class="desk-nav-btn flex items-center gap-3 w-full p-2.5 rounded-xl text-xs font-bold text-slate-300 hover:text-white transition" data-tab="recipes">
             <i data-lucide="chef-hat" class="w-4 h-4 text-emerald-400"></i> <span>Workshop Barlady</span>
@@ -136,7 +136,7 @@
           <i data-lucide="volume-2" class="w-4 h-4 text-sky-400"></i>
           <span>Audio Radio</span>
         </button>
-        <span class="font-mono text-[9px]">v23.0</span>
+        <span class="font-mono text-[9px]">v23.2</span>
       </div>
     </aside>
 
@@ -165,7 +165,7 @@
 
               <div class="pt-0.5 flex gap-2">
                 <button onclick="AppRouter.navigate('games')" class="btn btn-xs sm:btn-sm btn-primary font-bold">🎮 Saghe & Stanze</button>
-                <button onclick="AppRouter.navigate('shop')" class="btn btn-xs sm:btn-sm btn-outline border-white/20 text-slate-200 font-bold">🏪 Mercato</button>
+                <button onclick="AppRouter.navigate('shop')" class="btn btn-xs sm:btn-sm btn-outline border-white/20 text-slate-200 font-bold">🏪 Shop</button>
               </div>
             </div>
 
@@ -185,11 +185,11 @@
                   <div id="home-radio-artist" class="text-[9.5px] text-slate-400 truncate">Kevin MacLeod • Noir Darsena</div>
                 </div>
               </div>
-              <div class="flex items-center space-x-1 flex-shrink-0 ml-2" onclick="event.stopPropagation()">
-                <button onclick="AppModules.toggleRadioPlay(event)" id="home-radio-play-btn" class="btn btn-xs btn-circle btn-primary font-bold w-7 h-7 min-h-0 text-[11px]" title="Play/Pausa">
+              <div class="flex items-center gap-2 flex-shrink-0 ml-2" onclick="event.stopPropagation()">
+                <button onclick="AppModules.toggleRadioPlay(event)" id="home-radio-play-btn" class="w-8 h-8 rounded-full bg-sky-500 hover:bg-sky-400 text-slate-950 flex items-center justify-center font-bold text-xs shadow-md transition" title="Play/Pausa">
                   ⏸
                 </button>
-                <button onclick="AppModules.toggleRadioMute(event)" id="home-radio-mute-btn" class="btn btn-xs btn-circle btn-ghost text-slate-300 w-7 h-7 min-h-0 text-[11px]" title="Muto">
+                <button onclick="AppModules.toggleRadioMute(event)" id="home-radio-mute-btn" class="w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center text-xs border border-white/10 transition" title="Muto">
                   🔊
                 </button>
               </div>
@@ -281,7 +281,7 @@
             </div>
           </section>
 
-          <!-- DETTAGLIO SAGA (NAVIGAZIONE AFFIDATA AL TASTO NATIVO TELEGRAM) -->
+          <!-- DETTAGLIO SAGA -->
           <section id="subview-game-detail" class="space-y-3 hidden app-screen max-w-3xl mx-auto">
             <div class="flex items-center justify-between pb-1 border-b border-white/10">
               <span class="text-[10px] font-mono text-sky-400 uppercase font-bold tracking-wider">Fascicolo Saga</span>
@@ -564,7 +564,6 @@
           <!-- VISTA 4: COCKPIT GAMEPLAY (MICRO-HUD A 36px)                     -->
           <!-- =============================================================== -->
           <section id="view-gameplay" class="gameplay-container hidden app-screen max-w-3xl mx-auto">
-            <!-- MICRO-HUD DELL'EROE (36px RIGIDI SU RIGA SINGOLA) -->
             <div class="hud-cockpit-36px">
               <div class="flex items-center gap-2 min-w-0">
                 <div class="hud-avatar-30px">
@@ -613,11 +612,11 @@
           </section>
 
           <!-- =============================================================== -->
-          <!-- VISTA 5: SHOP REALE (MERCATO SYNDICATE)                         -->
+          <!-- VISTA 5: SHOP REALE (SHOP SYNDICATE)                            -->
           <!-- =============================================================== -->
           <section id="view-shop" class="space-y-2.5 hidden app-screen">
             <div class="subheader-3col">
-              <div class="subheader-left">MERCATO</div>
+              <div class="subheader-left">SHOP</div>
               <div class="subheader-center">Forniture</div>
               <div class="subheader-right" id="shop-total-counter">Articoli</div>
             </div>
@@ -626,7 +625,7 @@
             <div id="shop-products-grid" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
           </section>
 
-          <!-- DETTAGLIO SHOP (NAVIGAZIONE AFFIDATA AL TASTO NATIVO TELEGRAM) -->
+          <!-- DETTAGLIO SHOP -->
           <section id="subview-shop-detail" class="space-y-3 hidden app-screen max-w-2xl mx-auto">
             <div class="flex items-center justify-between pb-1 border-b border-white/10">
               <span id="detail-shop-cat" class="text-[10px] font-mono text-sky-400 font-bold uppercase">Reparto</span>
@@ -670,7 +669,7 @@
             <div id="recipes-grid" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
           </section>
 
-          <!-- DETTAGLIO RICETTA (NAVIGAZIONE AFFIDATA AL TASTO NATIVO TELEGRAM) -->
+          <!-- DETTAGLIO RICETTA -->
           <section id="subview-recipe-detail" class="space-y-3 hidden app-screen max-w-2xl mx-auto">
             <div class="flex items-center justify-between pb-1 border-b border-white/10">
               <span id="detail-recipe-cat" class="text-[10px] font-mono text-emerald-400 font-bold uppercase">Categoria</span>
@@ -760,11 +759,11 @@
                   <div id="profile-radio-artist" class="text-[9.5px] text-slate-400 truncate">Kevin MacLeod • Noir Darsena</div>
                 </div>
               </div>
-              <div class="flex items-center space-x-1 flex-shrink-0 ml-2" onclick="event.stopPropagation()">
-                <button onclick="AppModules.toggleRadioPlay(event)" id="profile-radio-play-btn" class="btn btn-xs btn-circle btn-primary font-bold w-7 h-7 min-h-0 text-[11px]" title="Play/Pausa">
+              <div class="flex items-center gap-2 flex-shrink-0 ml-2" onclick="event.stopPropagation()">
+                <button onclick="AppModules.toggleRadioPlay(event)" id="profile-radio-play-btn" class="w-8 h-8 rounded-full bg-sky-500 hover:bg-sky-400 text-slate-950 flex items-center justify-center font-bold text-xs shadow-md transition" title="Play/Pausa">
                   ⏸
                 </button>
-                <button onclick="AppModules.toggleRadioMute(event)" id="profile-radio-mute-btn" class="btn btn-xs btn-circle btn-ghost text-slate-300 w-7 h-7 min-h-0 text-[11px]" title="Muto">
+                <button onclick="AppModules.toggleRadioMute(event)" id="profile-radio-mute-btn" class="w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center text-xs border border-white/10 transition" title="Muto">
                   🔊
                 </button>
               </div>
@@ -817,35 +816,35 @@
       <!-- =================================================================== -->
       <!-- 4. FOOTER MENU STICKY (44px + SAFE AREA iOS - ICONE & TESTI CENTRATI)-->
       <!-- =================================================================== -->
-      <footer id="main-app-footer" class="main-app-footer md:hidden grid grid-cols-5 items-center bg-[#070A12]/95 backdrop-blur-lg border-t border-white/10 relative z-40 h-[44px] min-h-[44px] pb-[env(safe-area-inset-bottom,0px)]">
-        <button id="mob-nav-home" onclick="AppRouter.navigate('home')" class="nav-tab active flex flex-col items-center justify-center h-full w-full py-0 leading-none text-slate-400 transition" data-tab="home">
-          <i data-lucide="home" class="w-[18px] h-[18px]"></i>
-          <span class="nav-tab-label text-[10px] font-bold mt-1">Home</span>
+      <footer id="main-app-footer" class="main-app-footer md:hidden grid grid-cols-5 items-center bg-[#070A12]/95 backdrop-blur-lg border-t border-white/10 relative z-40">
+        <button id="mob-nav-home" onclick="AppRouter.navigate('home')" class="nav-tab active flex flex-col items-center justify-center text-slate-400 transition" data-tab="home">
+          <i data-lucide="home"></i>
+          <span class="nav-tab-label">Home</span>
         </button>
 
-        <button id="mob-nav-games" data-module="games" onclick="AppRouter.navigate('games')" class="nav-tab flex flex-col items-center justify-center h-full w-full py-0 leading-none text-slate-400 transition" data-tab="games">
-          <i data-lucide="gamepad-2" class="w-[18px] h-[18px]"></i>
-          <span class="nav-tab-label text-[10px] font-bold mt-1">Giochi</span>
+        <button id="mob-nav-games" data-module="games" onclick="AppRouter.navigate('games')" class="nav-tab flex flex-col items-center justify-center text-slate-400 transition" data-tab="games">
+          <i data-lucide="gamepad-2"></i>
+          <span class="nav-tab-label">Giochi</span>
         </button>
 
-        <button id="mob-nav-shop" data-module="shop" onclick="AppRouter.navigate('shop')" class="nav-tab flex flex-col items-center justify-center h-full w-full py-0 leading-none text-slate-400 transition" data-tab="shop">
-          <i data-lucide="shopping-bag" class="w-[18px] h-[18px]"></i>
-          <span class="nav-tab-label text-[10px] font-bold mt-1">Mercato</span>
+        <button id="mob-nav-shop" data-module="shop" onclick="AppRouter.navigate('shop')" class="nav-tab flex flex-col items-center justify-center text-slate-400 transition" data-tab="shop">
+          <i data-lucide="shopping-bag"></i>
+          <span class="nav-tab-label">Shop</span>
         </button>
 
-        <button id="mob-nav-recipes" data-module="recipes" onclick="AppRouter.navigate('recipes')" class="nav-tab flex flex-col items-center justify-center h-full w-full py-0 leading-none text-slate-400 transition" data-tab="recipes">
-          <i data-lucide="chef-hat" class="w-[18px] h-[18px]"></i>
-          <span class="nav-tab-label text-[10px] font-bold mt-1">Ricette</span>
+        <button id="mob-nav-recipes" data-module="recipes" onclick="AppRouter.navigate('recipes')" class="nav-tab flex flex-col items-center justify-center text-slate-400 transition" data-tab="recipes">
+          <i data-lucide="chef-hat"></i>
+          <span class="nav-tab-label">Ricette</span>
         </button>
 
-        <button id="mob-nav-profile" onclick="AppRouter.navigate('profile')" class="nav-tab flex flex-col items-center justify-center h-full w-full py-0 leading-none text-slate-400 transition" data-tab="profile">
-          <i data-lucide="user" class="w-[18px] h-[18px]"></i>
-          <span class="nav-tab-label text-[10px] font-bold mt-1">Profilo</span>
+        <button id="mob-nav-profile" onclick="AppRouter.navigate('profile')" class="nav-tab flex flex-col items-center justify-center text-slate-400 transition" data-tab="profile">
+          <i data-lucide="user"></i>
+          <span class="nav-tab-label">Profilo</span>
         </button>
       </footer>
 
-      <!-- 4.B FOOTER WIZARD STICKY (44px) -->
-      <footer id="main-wizard-footer" class="wizard-sticky-footer hidden flex items-center px-3 bg-[#070A12]/95 border-t border-white/10 z-40 h-[44px] min-h-[44px] pb-[env(safe-area-inset-bottom,0px)]">
+      <!-- 4.B FOOTER WIZARD STICKY -->
+      <footer id="main-wizard-footer" class="wizard-sticky-footer hidden flex items-center px-3 bg-[#070A12]/95 border-t border-white/10 z-40">
         <div id="wiz-footer-step-1" class="wizard-footer-step-controls w-full flex">
           <button id="wizard-step1-confirm-btn" onclick="GameEngine.wizardConfirmStep1()" class="btn btn-xs sm:btn-sm btn-wizard-cta w-full font-black uppercase text-xs h-[36px] min-h-[36px]">
             Scegli Classe ›
@@ -875,8 +874,8 @@
         </div>
       </footer>
 
-      <!-- 4.C FOOTER GAME COCKPIT RULES 2 (44px) -->
-      <footer id="main-game-cockpit-footer" class="cockpit-footer hidden grid grid-cols-4 gap-2 items-center px-3 bg-[#070A12]/95 border-t border-white/10 z-40 h-[44px] min-h-[44px] pb-[env(safe-area-inset-bottom,0px)]">
+      <!-- 4.C FOOTER GAME COCKPIT RULES 2 -->
+      <footer id="main-game-cockpit-footer" class="cockpit-footer hidden grid grid-cols-4 gap-2 items-center px-3 bg-[#070A12]/95 border-t border-white/10 z-40">
         <button onclick="Rules2Engine.openHeroModal('scheda')" class="cockpit-btn flex items-center justify-center gap-1 p-1.5 rounded-lg bg-white/5 text-slate-300 text-[11px] font-bold h-[34px]">
           <i data-lucide="user" class="w-3.5 h-3.5"></i>
           <span>Eroe</span>
@@ -917,7 +916,7 @@
         </div>
       </div>
 
-      <!-- MIXER A 3 CANALI: MASTER, BGM & SFX -->
+      <!-- MIXER A 3 CANALI -->
       <div class="p-2.5 rounded-xl bg-black/60 border border-white/5 space-y-2">
         <div class="audio-slider-row">
           <span class="audio-slider-label">Generale</span>
@@ -967,7 +966,7 @@
             <span class="text-[9px] font-mono text-sky-400">03:40</span>
           </div>
           <div onclick="SoundEngine.playBgm('backbay_lounge')" class="audio-track-item">
-            <span class="text-xs font-bold text-white truncate">Backbay Lounge (Mercato)</span>
+            <span class="text-xs font-bold text-white truncate">Backbay Lounge (Shop)</span>
             <span class="text-[9px] font-mono text-sky-400">04:12</span>
           </div>
           <div onclick="SoundEngine.playBgm('opportunity_walks')" class="audio-track-item">
@@ -1281,10 +1280,10 @@
   </dialog>
 
   <!-- SCRIPT DI SISTEMA VERSIONATI -->
-  <script src="audio.js?v=23.0"></script>
-  <script src="js/app-core.js?v=23.0"></script>
-  <script src="js/app-modules.js?v=23.0"></script>
-  <script src="js/rules2wizard.js?v=23.0"></script>
-  <script src="js/rules2engine.js?v=23.0"></script>
+  <script src="audio.js?v=23.2"></script>
+  <script src="js/app-core.js?v=23.2"></script>
+  <script src="js/app-modules.js?v=23.2"></script>
+  <script src="js/rules2wizard.js?v=23.2"></script>
+  <script src="js/rules2engine.js?v=23.2"></script>
 </body>
 </html>
