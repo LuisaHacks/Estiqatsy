@@ -1,12 +1,12 @@
 /* ============================================================================
    PROJECT: ESTIQATSY SYNDICATE & RPG PLATFORM
-   FILE: css/rules2.css (VERSIONE 24.7 - FULL MOVERINA 545px, ZERO FONDINO & OVERLAY ARROWS)
-   LAYER: ENGINE RULES 2, WIZARD STAGE 545px, FULL HUD 48px, D20 COMBAT & SHEETS
-   NOTE: 100% SPECIFICO PER IL GIOCO - TESTATA SOVRIMPRESSA, ZERO PALLINI, ZERO VUOTI
+   FILE: css/rules2.css (VERSIONE 25.0 - MOVERINA 545px, 1-2-3-4 ACTION MATRIX & LUNAR GLOW)
+   LAYER: ENGINE RULES 2, WIZARD 545px STAGE, FULL HUD 48px, ADAPTIVE ACTION DRAWER
+   NOTE: 100% SPECIFICO PER IL GIOCO - NESSUNA DUPLICAZIONE CON CSS/CORE.CSS
    ============================================================================ */
 
 /* ----------------------------------------------------------------------------
-   1. PROTEZIONE DI VISIBILITÀ CONTESTUALE (MAI PIÙ FOOTER SOVRAPPOSTI)
+   1. PROTEZIONE DI VISIBILITÀ CONTESTUALE (MAI PIÙ ELEMENTI SOVRAPPOSTI)
    ---------------------------------------------------------------------------- */
 .wizard-sticky-footer.hidden,
 .cockpit-footer.hidden,
@@ -124,8 +124,8 @@
 }
 
 .tcg-card-img {
-  width: 100% !important;
-  height: 100% !important;
+  width: 100%;
+  height: 100%;
   object-fit: cover !important;
   object-position: center 20% !important;
   display: block;
@@ -466,31 +466,67 @@
 }
 
 /* ----------------------------------------------------------------------------
-   9. PULSANTI DEI BIVI NARRATIVI & AZIONI D20
+   9. MATRICE DINAMICA ADATTIVA DEI BIVI NARRATIVI (1, 2, 3 E 4 PULSANTI)
    ---------------------------------------------------------------------------- */
 .scene-actions-area {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  margin-top: 8px;
-  padding: 0 4px;
+  width: 100%;
+  max-width: 320px;
+  margin: 6px auto 0 auto;
+  box-sizing: border-box;
 }
 
+/* 1 Bottone: Tutta larghezza (42px) */
+.actions-grid-1 {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 6px;
+}
+
+/* 2 Bottoni: Bivio a 2 Colonne (50% / 50% - 42px) */
+.actions-grid-2 {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px;
+}
+
+/* 3 Bottoni: RIGA SINGOLA A 3 COLONNE (33% ciascuno - 42px) */
+.actions-grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+
+/* 4 Bottoni: Griglia Quiz 2x2 Compatta (~80px con micro-elevazione) */
+.actions-grid-4,
+.actions-grid-quiz {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  grid-template-rows: repeat(2, auto);
+  gap: 6px;
+}
+
+/* Stile Base Pulsante Azione / Bivio */
 .scene-action-btn {
+  height: 42px;
+  min-height: 42px;
+  padding: 0 8px;
   background: rgba(22, 36, 66, 0.85);
   border: 1px solid rgba(56, 189, 248, 0.25);
   border-radius: 0.75rem;
-  padding: 0.65rem 0.85rem;
   color: #F8FAFC;
-  font-size: 12.5px;
-  font-weight: 700;
+  font-size: 11.5px;
+  font-weight: 800;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
+  gap: 4px;
   cursor: pointer;
-  min-height: 42px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   transition: all 0.15s ease;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+  box-sizing: border-box;
 }
 
 .scene-action-btn:hover {
@@ -507,6 +543,20 @@
 .scene-action-btn.action-danger:hover {
   background: rgba(244, 63, 94, 0.25);
   border-color: #F43F5E;
+}
+
+/* Adattamento font per 3 bottoni su riga singola */
+.actions-grid-3 .scene-action-btn {
+  font-size: 10.5px;
+  padding: 0 4px;
+}
+
+/* Adattamento altezza per la griglia quiz 2x2 */
+.actions-grid-4 .scene-action-btn,
+.actions-grid-quiz .scene-action-btn {
+  height: 38px;
+  min-height: 38px;
+  font-size: 11px;
 }
 
 /* ----------------------------------------------------------------------------
