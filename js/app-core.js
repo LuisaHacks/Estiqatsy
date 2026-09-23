@@ -1,6 +1,6 @@
 // ============================================================================
 // PROJECT: ESTIQATSY SYNDICATE & RPG PLATFORM
-// FILE: js/app-core.js (VERSIONE 14.0 - FULL REAL GAS DATA & TELEGRAM 8.0)
+// FILE: js/app-core.js (VERSIONE 15.0 - UNBLOCK NAVIGATION & CRASH-PROOF ROUTER)
 // LAYER 1: SPA ROUTER, STATO REALE, MEGOIN WALLET, TOAST SYSTEM & DEEP LINK
 // ============================================================================
 
@@ -10,7 +10,7 @@
 const AppConfig = {
   GAS_URL: "https://script.google.com/macros/s/AKfycbyeCWHM9X4ycwWT7IOMwg24pySL78bJT5BRyiIR5eb0UJALWuaORzfJ2lkqLrjLv0xN/exec",
   CACHE_KEYS: {
-    APP_STATE: "est_app_state_v14",
+    APP_STATE: "est_app_state_v15",
     VAULT: "est_cache_vault",
     AUDIO_MUTED: "estiqatsy_audio_muted",
     AUDIO_VOLUME: "estiqatsy_audio_volume",
@@ -24,11 +24,20 @@ const AppConfig = {
   TIMEOUT_MS: 12000
 };
 
+// Helper audio sicuro: non manda MAI in crash il codice se il metodo manca
+function safePlayClick() {
+  try {
+    if (window.SoundEngine) {
+      if (typeof SoundEngine.playClick === "function") SoundEngine.playClick();
+      else if (typeof SoundEngine.playSfx === "function") SoundEngine.playSfx("click");
+    }
+  } catch(e) {}
+}
+
 // ----------------------------------------------------------------------------
 // 2. STATO CENTRALE UNIFICATO DELLA PIATTAFORMA (APPSTATE)
 // ----------------------------------------------------------------------------
 const AppState = {
-  // Profilo Utente Reale (Inizializzato a zero/neutro, popolato da Modulo_WebApp.gs)
   user: {
     chatId: "",
     id: "",
@@ -57,12 +66,13 @@ const AppState = {
     }
   },
 
-  // Moduli attivi e permessi calcolati dinamicamente dal foglio 👑 Plans
+  // 🔒 Tutti i moduli aperti di default: nessuna navigazione bloccata all'avvio
   allowedModules: {
     home: true,
-    games: false,
-    shop: false,
-    recipes: false,
+    games: true,
+    hub: true,
+    shop: true,
+    recipes: true,
     profile: true,
     multiplayer: true
   },
@@ -71,14 +81,12 @@ const AppState = {
   billingCycle: "monthly",
   activeTab: "home",
 
-  // Cataloghi popolati in tempo reale dalle API GAS
   shop: { items: [], categories: [], activeCategory: "tutti", searchQuery: "" },
   recipes: { items: [], categories: [], activeCategory: "tutti", searchQuery: "" },
   carousel: { timer: null, index: 0, count: 0, isPaused: false },
   digitalVault: [],
   transactions: [],
 
-  // Catalogo Saghe e Sessione Gioco Runtime
   games: {
     catalog: [],
     activeGameKey: null,
@@ -99,11 +107,8 @@ const AppState = {
     engineState: null
   },
   activeGameSession: null,
-
-  // Stanza Multiplayer Real-time
   multiplayerActiveRoom: null,
 
-  // Parametri di connessione
   config: {
     gasWebAppUrl: AppConfig.GAS_URL,
     botUsername: "EstiqatsyBot"
@@ -124,7 +129,6 @@ if (tg) {
     tg.setHeaderColor(AppConfig.THEME.HEADER_COLOR);
     tg.setBackgroundColor(AppConfig.THEME.BG_COLOR);
 
-    // Dati reali Telegram Utente
     if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
       const u = tg.initDataUnsafe.user;
       AppState.user.id = String(u.id);
@@ -136,7 +140,6 @@ if (tg) {
       if (u.photo_url) AppState.user.photo_url = u.photo_url;
     }
 
-    // Propagazione safe-area hardware per iPhone con isola dinamica / notch
     const updateSafeArea = () => {
       const topInset = tg.safeAreaInset?.top || tg.contentSafeAreaInset?.top || 0;
       const bottomInset = tg.safeAreaInset?.bottom || tg.contentSafeAreaInset?.bottom || 0;
@@ -155,7 +158,7 @@ if (tg) {
       tg.onEvent("contentSafeAreaChanged", updateSafeArea);
     }
   } catch (e) {
-    console.warn("[app-core] Inizializzazione Telegram WebApp parziale:", e);
+    console.warn("[app-core] Telegram SDK init parziale:", e);
   }
 }
 
@@ -183,7 +186,7 @@ function setupTelegramBackButton(targetScreenId) {
   if (isSubView || isGameplayView || isMultiplayerView) {
     tg.BackButton.show();
     telegramBackButtonHandler = () => {
-      if (window.SoundEngine) SoundEngine.playClick();
+      safePlayClick();
 
       if (targetScreenId === "subview-shop-detail") {
         AppRouter.navigate("shop");
@@ -213,7 +216,7 @@ function setupTelegramBackButton(targetScreenId) {
 }
 
 // ----------------------------------------------------------------------------
-// 4. REGISTRO MOTORI DI GIOCO (ENGINE REGISTRY)
+// 4. REGISTRO MOTORI DI GIOCO
 // ----------------------------------------------------------------------------
 const EngineRegistry = {
   _engines: {},
@@ -231,16 +234,16 @@ const EngineRegistry = {
 window.EngineRegistry = EngineRegistry;
 
 // ----------------------------------------------------------------------------
-// 5. ROUTER SPA (APPROUTER) CON GESTIONE A TRE FOOTER E HEADER ATOMICI
+// 5. ROUTER SPA (APPROUTER) ESENTE DA CRASH E LOOP
 // ----------------------------------------------------------------------------
 const AppRouter = {
   navigate: function(screenName, subScreenName = null) {
-    if (window.SoundEngine) SoundEngine.playClick();
+    safePlayClick();
     if (tg && tg.HapticFeedback) tg.HapticFeedback.selectionChanged();
 
     let targetId = subScreenName || screenName;
 
-    // Normalizzazione alias schermi
+    // Normalizzazione ID schermi
     if (targetId === "games" || targetId === "view-games") {
       targetId = "view-hub";
       if (window.AppModules && typeof AppModules.renderGamesCatalog === "function") {
@@ -262,20 +265,10 @@ const AppRouter = {
       targetId = "view-" + targetId;
     }
 
-    // Hard-Locking dei moduli SaaS (rispetta i permessi restituiti dal server GAS)
-    const baseModule = targetId.replace("view-", "").replace("subview-", "").split("-")[0];
-    if (AppState.allowedModules && AppState.allowedModules[baseModule] === false) {
-      this.navigate("home");
-      if (window.AppModules && typeof AppModules.openPlansCatalogModal === "function") {
-        AppModules.openPlansCatalogModal();
-      }
-      return;
-    }
-
     const scrollContainer = document.getElementById("app-main-scroll");
     if (scrollContainer) scrollContainer.scrollTop = 0;
 
-    // Switch di visibilità schermi
+    // Switch di visibilità con classe .hidden
     const allScreens = [
       "view-home", "view-hub", "subview-game-detail",
       "view-wizard", "view-gameplay", "view-multiplayer",
@@ -289,7 +282,7 @@ const AppRouter = {
       if (el) el.classList.toggle("hidden", id !== targetId);
     });
 
-    // Controllo Atomico Header & Switch a Tre Footer
+    // Controllo Header & Footer esclusivi
     const isGameplay = (targetId === "view-gameplay");
     const isWizard = (targetId === "view-wizard");
 
@@ -300,7 +293,7 @@ const AppRouter = {
     const wizardFooter = document.getElementById("main-wizard-footer");
     const gameFooter = document.getElementById("main-game-cockpit-footer");
 
-    // Gestione Header
+    // Header Switch
     if (isGameplay) {
       if (appHeader) appHeader.classList.add("hidden");
       if (gameHeader) gameHeader.classList.remove("hidden");
@@ -309,7 +302,7 @@ const AppRouter = {
       if (gameHeader) gameHeader.classList.add("hidden");
     }
 
-    // Gestione Esclusiva a Tre Footer (Mai sovrapposti)
+    // Footer Switch
     if (isGameplay) {
       if (appFooter) appFooter.classList.add("hidden");
       if (wizardFooter) wizardFooter.classList.add("hidden");
@@ -324,21 +317,20 @@ const AppRouter = {
       if (gameFooter) gameFooter.classList.add("hidden");
     }
 
-    // Calcolo Tab Attivo per desktop e mobile
+    // Calcolo Tab Attivo
     const activeTabKey = targetId.replace("view-", "").replace("subview-", "").split("-")[0];
     AppState.activeTab = (activeTabKey === "hub") ? "games" : activeTabKey;
 
     document.body.dataset.activeScreen = targetId;
     document.body.dataset.activeTab = AppState.activeTab;
 
+    // Aggiornamento classi attive sia su mobile che su desktop
     document.querySelectorAll(".nav-tab").forEach(btn => {
-      const isCurrent = (btn.dataset.tab === AppState.activeTab);
-      btn.classList.toggle("active", isCurrent);
+      btn.classList.toggle("active", btn.dataset.tab === AppState.activeTab);
     });
 
     document.querySelectorAll(".desk-nav-btn").forEach(btn => {
-      const isCurrent = (btn.dataset.tab === AppState.activeTab);
-      btn.classList.toggle("active", isCurrent);
+      btn.classList.toggle("active", btn.dataset.tab === AppState.activeTab);
     });
 
     setupTelegramBackButton(targetId);
@@ -347,7 +339,7 @@ const AppRouter = {
 };
 
 // ----------------------------------------------------------------------------
-// 6. APICALL POST VERSO GOOGLE APPS SCRIPT (CONFORME A MODULO_WEBAPP.GS)
+// 6. APICALL POST VERSO GOOGLE APPS SCRIPT
 // ----------------------------------------------------------------------------
 let _isApiInProgress = false;
 
@@ -361,7 +353,6 @@ async function apiCall(action, extraParams = {}) {
   const endpointUrl = AppState.config?.gasWebAppUrl || AppConfig.GAS_URL;
   const initData = (tg && tg.initData) ? tg.initData : "";
 
-  // Payload perfettamente allineato con handleWebAppPostRequest() di Modulo_WebApp.gs
   const payload = {
     action: action,
     initData: initData,
@@ -390,10 +381,7 @@ async function apiCall(action, extraParams = {}) {
     try {
       result = JSON.parse(rawText);
     } catch (e) {
-      if (rawText.includes("<!DOCTYPE") || rawText.includes("<html")) {
-        throw new Error("Il server Google Apps Script ha restituito un errore HTML.");
-      }
-      throw new Error("Formato risposta del server non valido.");
+      throw new Error("Formato risposta server non valido.");
     }
 
     if (!result.success && result.error) throw new Error(result.error);
@@ -410,7 +398,7 @@ async function apiCall(action, extraParams = {}) {
 }
 
 // ----------------------------------------------------------------------------
-// 7. GESTIONE CENTRALIZZATA MEGOIN (WALLET DI PIATTAFORMA)
+// 7. GESTIONE CENTRALIZZATA MEGOIN
 // ----------------------------------------------------------------------------
 const Wallet = {
   getMegoin: function() {
@@ -436,10 +424,9 @@ const Wallet = {
 };
 
 // ----------------------------------------------------------------------------
-// 8. APPCORE: BRIDGE PERSISTENZA, UI SYNC & NOTIFICHE TOAST NATIVE
+// 8. APPCORE: BRIDGE UI & NOTIFICHE
 // ----------------------------------------------------------------------------
 const AppCore = {
-  // Toast Non-Bloccante Glassmorphism
   toast: function(message, type = "info") {
     let container = document.getElementById("app-toast-container");
     if (!container) {
@@ -475,7 +462,6 @@ const AppCore = {
     if (tg && tg.HapticFeedback) {
       if (type === "success") tg.HapticFeedback.notificationOccurred("success");
       else if (type === "error") tg.HapticFeedback.notificationOccurred("error");
-      else if (type === "warning") tg.HapticFeedback.notificationOccurred("warning");
       else tg.HapticFeedback.impactOccurred("light");
     }
 
@@ -485,10 +471,9 @@ const AppCore = {
         toast.style.transform = "translateY(-8px)";
         setTimeout(() => toast.remove(), 250);
       }
-    }, 3200);
+    }, 3000);
   },
 
-  // Persistenza LocalStorage sicura (non memorizza dati fake o obsoleti)
   save: function() {
     try {
       const stateToSave = {
@@ -499,9 +484,7 @@ const AppCore = {
         config: AppState.config
       };
       localStorage.setItem(AppConfig.CACHE_KEYS.APP_STATE, JSON.stringify(stateToSave));
-    } catch (e) {
-      console.warn("[AppCore.save] Impossibile salvare in LocalStorage:", e);
-    }
+    } catch (e) {}
   },
 
   load: function() {
@@ -510,7 +493,6 @@ const AppCore = {
       if (raw) {
         const saved = JSON.parse(raw);
         if (saved.user) {
-          // Preserva solo chatId e preferenze, lasciando che il saldo reale arrivi da GAS
           AppState.user.chatId = saved.user.chatId || AppState.user.chatId;
           AppState.user.id = saved.user.id || AppState.user.id;
           AppState.user.nome = saved.user.nome || AppState.user.nome;
@@ -519,14 +501,10 @@ const AppCore = {
         if (saved.digitalVault) AppState.digitalVault = saved.digitalVault;
         if (saved.activeGameSession) AppState.activeGameSession = saved.activeGameSession;
         if (saved.multiplayerActiveRoom) AppState.multiplayerActiveRoom = saved.multiplayerActiveRoom;
-        if (saved.config) AppState.config = { ...AppState.config, ...saved.config };
       }
-    } catch (e) {
-      console.warn("[AppCore.load] Dati cache non validi:", e);
-    }
+    } catch (e) {}
   },
 
-  // Sincronizzazione Elementi Grafici con i campi REALI di Modulo_WebApp.gs
   syncUI: function() {
     const u = AppState.user;
     if (!u) return;
@@ -557,7 +535,6 @@ const AppCore = {
     s("profile-card-megoin", `${megoinVal} 🪙`);
     s("profile-card-points", `${puntiVal} Pt`);
 
-    // Avatar
     const renderAvatarBox = (boxId) => {
       const el = document.getElementById(boxId);
       if (!el) return;
@@ -572,9 +549,6 @@ const AppCore = {
   }
 };
 
-// ----------------------------------------------------------------------------
-// 9. ESPOSIZIONE GLOBALE SU WINDOW
-// ----------------------------------------------------------------------------
 window.AppConfig = AppConfig;
 window.AppState = AppState;
 window.AppRouter = AppRouter;
@@ -583,7 +557,7 @@ window.AppCore = AppCore;
 window.apiCall = apiCall;
 
 // ----------------------------------------------------------------------------
-// 10. BOOTSTRAP APPLICAZIONE ALL'AVVIO: CARICAMENTO DATI REALI DA GAS
+// 10. BOOTSTRAP APPLICAZIONE ALL'AVVIO
 // ----------------------------------------------------------------------------
 window.addEventListener("DOMContentLoaded", async () => {
   AppCore.load();
@@ -591,12 +565,18 @@ window.addEventListener("DOMContentLoaded", async () => {
 
   if (window.lucide) lucide.createIcons();
 
-  // Inizializzazione con FETCH REALE da Google Apps Script
   if (window.AppModules && typeof AppModules.init === "function") {
     await AppModules.init();
   }
 
-  // Rilevamento Invito Deep Link Telegram (es. ?startapp=ROOM_ABC123)
+  // Rimuove il loader con certezza assoluta all'avvio
+  const loader = document.getElementById("app-loading");
+  if (loader) {
+    loader.classList.add("fade-out");
+    setTimeout(() => loader.remove(), 250);
+  }
+
+  // Deep Link Telegram (?startapp=ROOM_ABC)
   if (tg && tg.initDataUnsafe && tg.initDataUnsafe.start_param) {
     const param = tg.initDataUnsafe.start_param;
     if (param.startsWith("ROOM_") && window.AppModules && typeof AppModules.handleIncomingInvite === "function") {
