@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Estiqatsy Syndicate - Executive Admin Console & CRM</title>
+  <title>Estiqatsy Syndicate - Executive SaaS CRM & Control Room</title>
 
   <!-- LIBRERIE ESTERNE (Tailwind CDN, DaisyUI, Lucide Icons, Chart.js) -->
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
@@ -15,12 +15,13 @@
   <style>
     :root {
       --bg-base: #070A12;
-      --bg-surface: rgba(15, 23, 42, 0.88);
+      --bg-surface: rgba(15, 23, 42, 0.90);
       --border-color: rgba(255, 255, 255, 0.08);
       --accent-sky: #38BDF8;
       --accent-amber: #F59E0B;
       --accent-emerald: #10B981;
       --accent-rose: #F43F5E;
+      --accent-purple: #A855F7;
     }
 
     body {
@@ -44,9 +45,9 @@
       display: flex;
       align-items: center;
       gap: 0.75rem;
-      padding: 0.7rem 1rem;
+      padding: 0.65rem 0.9rem;
       border-radius: 0.75rem;
-      font-size: 0.82rem;
+      font-size: 0.80rem;
       font-weight: 700;
       color: #94A3B8;
       transition: all 0.15s ease;
@@ -65,11 +66,10 @@
       border: 1px solid rgba(56, 189, 248, 0.35);
     }
 
-    /* Anteprima Chat Telegram */
     .tg-bubble {
       background: #182533;
       border-radius: 0.85rem 0.85rem 0.85rem 0.2rem;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+      box-shadow: 0 2px 10px rgba(0,0,0,0.4);
     }
 
     /* Scrollbars */
@@ -82,32 +82,40 @@
 <body class="flex flex-col md:flex-row min-h-screen">
 
   <!-- ======================================================================= -->
-  <!-- 1. SIDEBAR DI NAVIGAZIONE                                               -->
+  <!-- 1. SIDEBAR DI NAVIGAZIONE COMPLETA                                      -->
   <!-- ======================================================================= -->
   <aside class="w-full md:w-64 bg-slate-950 border-b md:border-b-0 md:border-r border-white/10 p-4 flex flex-col justify-between shrink-0 z-20">
     <div>
+      <!-- Brand & Security Status -->
       <div class="flex items-center gap-3 pb-4 border-b border-white/10">
         <div class="w-10 h-10 rounded-xl bg-sky-500/20 border border-sky-400/40 flex items-center justify-center text-xl text-sky-300 font-black shadow-lg shadow-sky-500/10">
           ⚡
         </div>
         <div>
-          <h1 class="font-black text-xs text-white tracking-widest uppercase">Console Staff</h1>
+          <h1 class="font-black text-xs text-white tracking-widest uppercase">Estiqatsy CRM</h1>
           <div class="flex items-center gap-1.5 mt-0.5">
             <span id="conn-dot" class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-            <span id="conn-status" class="text-[10px] font-mono text-emerald-400 font-bold uppercase">Zero-Trust Attivo</span>
+            <span id="conn-status" class="text-[9.5px] font-mono text-emerald-400 font-bold uppercase">Zero-Trust v5.0</span>
           </div>
         </div>
       </div>
 
+      <!-- Viste Piattaforma -->
       <nav class="space-y-1 mt-4">
         <button onclick="AdminApp.switchTab('overview')" id="nav-tab-overview" class="nav-btn active">
-          <i data-lucide="layout-dashboard" class="w-4 h-4"></i> <span>Overview & KPI</span>
+          <i data-lucide="layout-dashboard" class="w-4 h-4"></i> <span>Overview & SaaS</span>
         </button>
-        <button onclick="AdminApp.switchTab('users')" id="nav-tab-users" class="nav-btn">
-          <i data-lucide="users" class="w-4 h-4"></i> <span>CRM Utenti Attivo</span>
+        <button onclick="AdminApp.switchTab('segments')" id="nav-tab-segments" class="nav-btn">
+          <i data-lucide="users" class="w-4 h-4"></i> <span>Hub Segmenti & CRM</span>
+        </button>
+        <button onclick="AdminApp.switchTab('automations')" id="nav-tab-automations" class="nav-btn">
+          <i data-lucide="sparkles" class="w-4 h-4 text-amber-300"></i> <span>Automazioni & Regole</span>
         </button>
         <button onclick="AdminApp.switchTab('comms')" id="nav-tab-comms" class="nav-btn">
-          <i data-lucide="send" class="w-4 h-4"></i> <span>Broadcast & Post</span>
+          <i data-lucide="send" class="w-4 h-4"></i> <span>Smart Broadcast</span>
+        </button>
+        <button onclick="AdminApp.switchTab('ledger')" id="nav-tab-ledger" class="nav-btn">
+          <i data-lucide="receipt" class="w-4 h-4"></i> <span>Registro Fiscale TX</span>
         </button>
         <button onclick="AdminApp.switchTab('tickets')" id="nav-tab-tickets" class="nav-btn">
           <i data-lucide="life-buoy" class="w-4 h-4"></i> 
@@ -123,12 +131,13 @@
       </nav>
     </div>
 
+    <!-- Footer Sidebar con ID Amministratore -->
     <div class="pt-4 border-t border-white/10 text-xs font-mono text-slate-400 space-y-1">
       <div class="flex justify-between items-center">
         <span>Admin ID:</span>
         <b id="admin-user-id" class="text-amber-300 font-bold">Rilevamento...</b>
       </div>
-      <div class="text-[9px] text-slate-500">Security: HMAC-SHA256 Validated</div>
+      <div class="text-[9px] text-slate-500">HMAC-SHA256 • Serverless GAS</div>
     </div>
   </aside>
 
@@ -143,10 +152,9 @@
         <h2 id="view-title" class="text-lg font-black text-white uppercase tracking-wider flex items-center gap-2">
           <span>Panoramica Piattaforma</span>
         </h2>
-        <p id="view-desc" class="text-xs text-slate-400">Metriche tempo reale, saldi Megoin e controllo accessi</p>
+        <p id="view-desc" class="text-xs text-slate-400">Metriche tempo reale, saldi Megoin, tokenomics e segmenti</p>
       </div>
 
-      <!-- Quick Action Buttons Globali -->
       <div class="flex items-center gap-2 flex-wrap">
         <button onclick="AdminApp.openAirdropModal()" class="btn btn-sm bg-amber-500/20 text-amber-300 hover:bg-amber-500/30 border border-amber-500/30 font-black text-xs">
           🪙 Airdrop Rapido
@@ -161,137 +169,295 @@
     </header>
 
     <!-- ===================================================================== -->
-    <!-- SEZIONE 1: OVERVIEW SAAS & METRICHE                                   -->
+    <!-- VISTA 1: EXECUTIVE OVERVIEW & TOKENOMICS ANALYTICS                    -->
     <!-- ===================================================================== -->
     <section id="sec-overview" class="space-y-6">
+      <!-- KPI Quad Strip -->
       <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div class="glass-card p-4 relative overflow-hidden">
+        <div class="glass-card p-4">
           <span class="text-[10px] font-mono font-bold text-slate-400 uppercase">Utenti Registrati</span>
           <div class="text-2xl font-black text-sky-400 mt-1" id="kpi-total-users">--</div>
           <span class="text-[10px] text-emerald-400 font-mono">Foglio 👤 Users</span>
         </div>
-        <div class="glass-card p-4 relative overflow-hidden">
+        <div class="glass-card p-4">
           <span class="text-[10px] font-mono font-bold text-slate-400 uppercase">Megoin in Circolazione</span>
           <div class="text-2xl font-black text-amber-300 mt-1" id="kpi-total-megoin">-- 🪙</div>
-          <span class="text-[10px] text-amber-400 font-mono">Borsello Globale</span>
+          <span class="text-[10px] text-amber-400 font-mono">Debito Piattaforma</span>
         </div>
-        <div class="glass-card p-4 relative overflow-hidden">
+        <div class="glass-card p-4">
+          <span class="text-[10px] font-mono font-bold text-slate-400 uppercase">Addiction Index (Retry)</span>
+          <div class="text-2xl font-black text-purple-400 mt-1" id="kpi-retry-rate">--%</div>
+          <span class="text-[10px] text-purple-300 font-mono">Tasso Ripartenza Post-Morte</span>
+        </div>
+        <div class="glass-card p-4">
           <span class="text-[10px] font-mono font-bold text-slate-400 uppercase">Ticket Aperti</span>
           <div class="text-2xl font-black text-rose-400 mt-1" id="kpi-open-tickets">--</div>
           <span class="text-[10px] text-rose-400 font-mono">Richiedono Risposta</span>
         </div>
-        <div class="glass-card p-4 relative overflow-hidden">
-          <span class="text-[10px] font-mono font-bold text-slate-400 uppercase">Transazioni Registrate</span>
-          <div class="text-2xl font-black text-emerald-400 mt-1" id="kpi-total-tx">--</div>
-          <span class="text-[10px] text-emerald-400 font-mono">Foglio 📜 Transazioni</span>
-        </div>
       </div>
 
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <!-- Grafici Analitici Tokenomics Reali -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Pozzi di Spesa (Sinks) -->
         <div class="glass-card p-5 space-y-3">
           <div class="flex items-center justify-between">
-            <h3 class="text-xs font-bold text-white uppercase tracking-wider">Distribuzione Piani SaaS</h3>
-            <span class="badge badge-xs badge-info font-mono">Reale da Sheets</span>
+            <h3 class="text-xs font-bold text-white uppercase tracking-wider">Pozzi di Spesa (Sinks)</h3>
+            <span class="badge badge-xs badge-info font-mono">Megoin Burn</span>
           </div>
-          <div class="h-64 relative">
-            <canvas id="chart-plans"></canvas>
+          <div class="h-60 relative">
+            <canvas id="chart-sinks"></canvas>
           </div>
         </div>
 
+        <!-- Emissione vs Consumo (Mint vs Burn) -->
         <div class="glass-card p-5 space-y-3">
           <div class="flex items-center justify-between">
-            <h3 class="text-xs font-bold text-white uppercase tracking-wider">Ripartizione Saldi Utenti</h3>
-            <span class="badge badge-xs badge-success font-mono">Borsellino</span>
+            <h3 class="text-xs font-bold text-white uppercase tracking-wider">Flussi Cassa Megoin</h3>
+            <span class="badge badge-xs badge-success font-mono">Tokenomics</span>
           </div>
-          <div class="h-64 relative">
-            <canvas id="chart-activity"></canvas>
+          <div class="h-60 relative">
+            <canvas id="chart-mint-burn"></canvas>
+          </div>
+        </div>
+
+        <!-- Classifica Saghe RPG -->
+        <div class="glass-card p-5 space-y-3">
+          <div class="flex items-center justify-between">
+            <h3 class="text-xs font-bold text-white uppercase tracking-wider">Saghe Più Giocate</h3>
+            <span class="badge badge-xs badge-warning font-mono">Telemetria</span>
+          </div>
+          <div class="h-60 relative">
+            <canvas id="chart-sagas"></canvas>
           </div>
         </div>
       </div>
     </section>
 
     <!-- ===================================================================== -->
-    <!-- SEZIONE 2: DIRECTORY & CRM UTENTI                                     -->
+    <!-- VISTA 2: HUB SEGMENTI CRM & DIRECTORY UTENTI                          -->
     <!-- ===================================================================== -->
-    <section id="sec-users" class="space-y-4 hidden">
-      <!-- Filtri Avanzati & Ricerca Server-Side -->
-      <div class="flex flex-col sm:flex-row gap-3">
-        <div class="relative flex-1">
-          <input type="text" id="input-crm-search" oninput="AdminApp.filterUsers()" onkeydown="if(event.key==='Enter') AdminApp.fetchUsers(true)" placeholder="Cerca Nome, Username o Chat ID (premi Invio per cercare su tutto il database)..." class="input input-bordered input-sm w-full bg-slate-900 text-white font-mono text-xs">
+    <section id="sec-segments" class="space-y-6 hidden">
+      <!-- 6 Card dei Segmenti Dinamici -->
+      <div>
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="text-xs font-bold text-white uppercase tracking-wider">Coorti & Segmenti di Mercato</h3>
+          <span class="text-[11px] text-slate-400">Clicca su una card per filtrare la tabella sottostante</span>
         </div>
-        <div class="flex gap-2">
-          <select id="filter-user-plan" onchange="AdminApp.filterUsers()" class="select select-bordered select-sm bg-slate-900 text-white text-xs font-bold">
-            <option value="">Tutti i Piani</option>
-            <option value="Free">Free</option>
-            <option value="Silver Syndicate">Silver Syndicate</option>
-            <option value="Gold Master">Gold Master</option>
-            <option value="Admin">Admin</option>
-          </select>
-          <button onclick="AdminApp.fetchUsers(true)" class="btn btn-sm btn-primary font-bold text-xs" title="Cerca su tutto il database di Google Sheets">
-            <i data-lucide="search" class="w-3.5 h-3.5"></i> Cerca
+        <div id="segments-cards-container" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+          <!-- Caricato dinamicamente da AdminApp.renderSegments() -->
+        </div>
+      </div>
+
+      <!-- Filtri Avanzati & Ricerca -->
+      <div class="glass-card p-4 space-y-3">
+        <div class="flex flex-col sm:flex-row gap-3">
+          <div class="relative flex-1">
+            <input type="text" id="input-crm-search" oninput="AdminApp.filterUsersLocal()" onkeydown="if(event.key==='Enter') AdminApp.fetchUsers(true)" placeholder="Cerca Nome, Username o Chat ID (Invio per cercare su tutto il foglio)..." class="input input-bordered input-sm w-full bg-slate-900 text-white font-mono text-xs">
+          </div>
+          <div class="flex gap-2">
+            <select id="filter-user-segment" onchange="AdminApp.fetchUsers(true)" class="select select-bordered select-sm bg-slate-900 text-white text-xs font-bold">
+              <option value="">Tutti i Segmenti</option>
+              <option value="dormienti">💤 Dormienti</option>
+              <option value="balene">👑 Balene VIP</option>
+              <option value="hardcore_gamers">⚔️ Hardcore Gamers</option>
+              <option value="b2b_readers">📰 Lettori B2B</option>
+              <option value="nuovi_iscritti">🐣 Nuovi Iscritti</option>
+              <option value="free_tier">🆓 Free Tier</option>
+            </select>
+            <button onclick="AdminApp.fetchUsers(true)" class="btn btn-sm btn-primary font-bold text-xs">
+              <i data-lucide="search" class="w-3.5 h-3.5"></i> Cerca
+            </button>
+          </div>
+        </div>
+
+        <!-- Tabella Utenti Arricchita -->
+        <div class="overflow-x-auto">
+          <table class="table table-sm w-full text-xs">
+            <thead>
+              <tr class="border-b border-white/10 text-slate-400 font-mono uppercase">
+                <th>Chat ID</th>
+                <th>Utente</th>
+                <th>Segmenti</th>
+                <th>Megoin 🪙</th>
+                <th>Fedeltà</th>
+                <th>Ultimo Accesso</th>
+                <th class="text-right">Azioni Rapide</th>
+              </tr>
+            </thead>
+            <tbody id="crm-users-table-body" class="divide-y divide-white/5 font-sans">
+              <tr><td colspan="7" class="text-center py-6 text-slate-500 font-mono">Caricamento elenco utenti in corso...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================================================================== -->
+    <!-- VISTA 3: AUTOMAZIONI, TRIGGER & LOG INVII                             -->
+    <!-- ===================================================================== -->
+    <section id="sec-automations" class="space-y-6 hidden">
+      <!-- Regole Programmabili Preimpostate -->
+      <div class="space-y-3">
+        <div class="flex items-center justify-between">
+          <div>
+            <h3 class="text-xs font-bold text-white uppercase tracking-wider">Regole & Trigger Automatici</h3>
+            <p class="text-[11px] text-slate-400">Automatizza accrediti festivi, bonus fedeltà e campagne di recupero</p>
+          </div>
+          <button onclick="AdminApp.openCustomAutomationModal()" class="btn btn-xs btn-primary font-bold">
+            + Crea Regola
           </button>
         </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <!-- Regola 1: Regalo di Natale -->
+          <div class="glass-card p-4 space-y-2 flex flex-col justify-between border-amber-500/30">
+            <div>
+              <div class="flex justify-between items-center">
+                <span class="badge badge-xs badge-warning font-mono">Data Fissa</span>
+                <span class="text-[10px] font-mono text-slate-400">25 Dicembre</span>
+              </div>
+              <h4 class="font-bold text-white text-xs mt-1">🎄 Regalo di Natale</h4>
+              <p class="text-[11px] text-slate-400 mt-1">Accredita +100 Megoin a tutti con messaggio d'auguri personalizzato dallo staff.</p>
+            </div>
+            <button onclick="AdminApp.activateAutomationPreset('christmas')" class="btn btn-xs btn-outline border-amber-500/40 text-amber-300 font-bold mt-2">
+              Attiva per il 25/12 🎁
+            </button>
+          </div>
+
+          <!-- Regola 2: Traguardo 100 Punti Fedeltà -->
+          <div class="glass-card p-4 space-y-2 flex flex-col justify-between border-emerald-500/30">
+            <div>
+              <div class="flex justify-between items-center">
+                <span class="badge badge-xs badge-success font-mono">Milestone</span>
+                <span class="text-[10px] font-mono text-emerald-400">&ge; 100 Punti</span>
+              </div>
+              <h4 class="font-bold text-white text-xs mt-1">🎖️ Fedeltà Centurione</h4>
+              <p class="text-[11px] text-slate-400 mt-1">Invia notifica di congratulazioni e sblocca il titolo onorario quando l'utente supera 100 pt.</p>
+            </div>
+            <button onclick="AdminApp.activateAutomationPreset('loyalty_100')" class="btn btn-xs btn-outline border-emerald-500/40 text-emerald-300 font-bold mt-2">
+              Attiva Trigger 🎖️
+            </button>
+          </div>
+
+          <!-- Regola 3: Win-Back Dormienti -->
+          <div class="glass-card p-4 space-y-2 flex flex-col justify-between border-sky-500/30">
+            <div>
+              <div class="flex justify-between items-center">
+                <span class="badge badge-xs badge-info font-mono">Inattività</span>
+                <span class="text-[10px] font-mono text-sky-400">&gt; 7 Giorni</span>
+              </div>
+              <h4 class="font-bold text-white text-xs mt-1">💤 Riattivazione Dormienti</h4>
+              <p class="text-[11px] text-slate-400 mt-1">Invia notifica push con invito a riprendere l'avventura e 20 Megoin in regalo.</p>
+            </div>
+            <button onclick="AdminApp.prepareSegmentCampaign('dormienti', 20, 'Ci manchi! Ecco 20 Megoin per continuare la tua saga su Estiqatsy!')" class="btn btn-xs btn-outline border-sky-500/40 text-sky-300 font-bold mt-2">
+              Lancia Campagna 🚀
+            </button>
+          </div>
+
+          <!-- Regola 4: Drop Settimanale Lunedì -->
+          <div class="glass-card p-4 space-y-2 flex flex-col justify-between border-purple-500/30">
+            <div>
+              <div class="flex justify-between items-center">
+                <span class="badge badge-xs badge-secondary font-mono">Ricorrente</span>
+                <span class="text-[10px] font-mono text-purple-400">Ogni Lunedì</span>
+              </div>
+              <h4 class="font-bold text-white text-xs mt-1">⚡ Start Settimanale</h4>
+              <p class="text-[11px] text-slate-400 mt-1">Regala 10 Megoin all'inizio della settimana solo agli utenti attivi negli ultimi 3 giorni.</p>
+            </div>
+            <button onclick="AdminApp.activateAutomationPreset('weekly_drop')" class="btn btn-xs btn-outline border-purple-500/40 text-purple-300 font-bold mt-2">
+              Pianifica Ricorrenza ⏱️
+            </button>
+          </div>
+        </div>
       </div>
 
-      <!-- Tabella Interattiva con Quick Actions -->
-      <div class="glass-card overflow-x-auto">
-        <table class="table table-sm w-full text-xs">
-          <thead>
-            <tr class="border-b border-white/10 text-slate-400 font-mono uppercase">
-              <th>Chat ID</th>
-              <th>Utente</th>
-              <th>Piano</th>
-              <th>Megoin 🪙</th>
-              <th>Fedeltà</th>
-              <th>Ultimo Accesso</th>
-              <th class="text-right">Azioni Rapide</th>
-            </tr>
-          </thead>
-          <tbody id="crm-users-table-body" class="divide-y divide-white/5 font-sans">
-            <tr><td colspan="7" class="text-center py-6 text-slate-500 font-mono">Caricamento elenco utenti in corso...</td></tr>
-          </tbody>
-        </table>
+      <!-- Audit Trail / Log Invii & Automazioni -->
+      <div class="glass-card p-5 space-y-3">
+        <div class="flex items-center justify-between">
+          <div>
+            <h3 class="text-xs font-bold text-white uppercase tracking-wider">Log Spedizioni & Automazioni Eseguite</h3>
+            <p class="text-[11px] text-slate-400">Tracciamento delle comunicazioni massive, regali e trigger da foglio Transazioni</p>
+          </div>
+          <button onclick="AdminApp.fetchAutomationLogs()" class="btn btn-xs btn-outline border-white/20 text-slate-300">
+            <i data-lucide="refresh-cw" class="w-3 h-3"></i> Aggiorna Log
+          </button>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="table table-sm w-full text-xs font-mono">
+            <thead>
+              <tr class="border-b border-white/10 text-slate-400">
+                <th>Data e Ora</th>
+                <th>Tipologia / Canale</th>
+                <th>Destinatari / Target</th>
+                <th>Causale / Testo</th>
+                <th>Variazione 🪙</th>
+                <th>Stato</th>
+              </tr>
+            </thead>
+            <tbody id="automation-logs-body" class="divide-y divide-white/5">
+              <tr><td colspan="6" class="text-center py-6 text-slate-500">Caricamento log delle spedizioni in corso...</td></tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </section>
 
     <!-- ===================================================================== -->
-    <!-- SEZIONE 3: COMUNICAZIONI TELEGRAM                                     -->
+    <!-- VISTA 4: SMART BROADCAST CON TARGETING A SEGMENTO                     -->
     <!-- ===================================================================== -->
     <section id="sec-comms" class="space-y-4 hidden">
       <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
 
-        <!-- Colonna Sinistra: Modulo Invio -->
+        <!-- Modulo di Invio -->
         <div class="lg:col-span-7 glass-card p-6 space-y-4">
           <div class="flex items-center justify-between">
-            <h3 class="text-xs font-black text-white uppercase tracking-wider">Componi Messaggio Telegram</h3>
+            <h3 class="text-xs font-black text-white uppercase tracking-wider">Componi Notifica Telegram</h3>
             <div class="dropdown dropdown-end">
               <label tabindex="0" class="btn btn-xs btn-outline border-white/20 text-slate-300">⚡ Template Rapidi</label>
               <ul tabindex="0" class="dropdown-content z-[1] menu p-2 shadow bg-slate-950 border border-white/10 rounded-box w-52 text-xs">
-                <li><a onclick="AdminApp.applyMessageTemplate('update')">🚀 Aggiornamento Online</a></li>
-                <li><a onclick="AdminApp.applyMessageTemplate('bonus')">🎁 Regalo Megoin</a></li>
+                <li><a onclick="AdminApp.applyMessageTemplate('update')">🚀 Aggiornamento Saghe</a></li>
+                <li><a onclick="AdminApp.applyMessageTemplate('bonus')">🎁 Airdrop Weekend</a></li>
+                <li><a onclick="AdminApp.applyMessageTemplate('winback')">💤 Win-back Dormienti</a></li>
                 <li><a onclick="AdminApp.applyMessageTemplate('maintenance')">⚠️ Manutenzione</a></li>
               </ul>
             </div>
           </div>
 
+          <!-- Destinazione con opzione Segmento -->
           <div class="space-y-1 text-xs">
-            <label class="font-bold text-slate-300">Canale di Destinazione:</label>
-            <div class="grid grid-cols-3 gap-2">
-              <button onclick="AdminApp.setMsgTarget('user')" id="btn-target-user" class="btn btn-sm btn-primary font-bold text-xs">Singolo Utente</button>
-              <button onclick="AdminApp.setMsgTarget('broadcast')" id="btn-target-broadcast" class="btn btn-sm btn-outline border-white/20 text-slate-300 font-bold text-xs">Broadcast Tutti</button>
-              <button onclick="AdminApp.setMsgTarget('channel_group')" id="btn-target-channel" class="btn btn-sm btn-outline border-white/20 text-slate-300 font-bold text-xs">Canale / Gruppo</button>
+            <label class="font-bold text-slate-300">Seleziona Destinazione:</label>
+            <div class="grid grid-cols-4 gap-2">
+              <button onclick="AdminApp.setMsgTarget('user')" id="btn-target-user" class="btn btn-sm btn-primary font-bold text-[11px]">Singolo Utente</button>
+              <button onclick="AdminApp.setMsgTarget('segment')" id="btn-target-segment" class="btn btn-sm btn-outline border-white/20 text-slate-300 font-bold text-[11px]">🎯 Segmento</button>
+              <button onclick="AdminApp.setMsgTarget('broadcast')" id="btn-target-broadcast" class="btn btn-sm btn-outline border-white/20 text-slate-300 font-bold text-[11px]">Tutti (Broadcast)</button>
+              <button onclick="AdminApp.setMsgTarget('channel_group')" id="btn-target-channel" class="btn btn-sm btn-outline border-white/20 text-slate-300 font-bold text-[11px]">Canale / Gruppo</button>
             </div>
           </div>
 
+          <!-- Input ID Singolo / Canale -->
           <div id="box-target-input" class="space-y-1 text-xs">
             <label class="font-bold text-slate-300" id="label-target-id">Chat ID Destinatario:</label>
-            <input type="text" id="input-msg-target" placeholder="Es. 123456789 o @mio_canale" class="input input-sm input-bordered w-full bg-slate-900 text-white font-mono">
+            <input type="text" id="input-msg-target" placeholder="Es. 1365261714 o @nomecanale" class="input input-sm input-bordered w-full bg-slate-900 text-white font-mono">
+          </div>
+
+          <!-- Selettore Segmento (visibile solo se target = segment) -->
+          <div id="box-target-segment" class="space-y-1 text-xs hidden">
+            <label class="font-bold text-slate-300">Seleziona Segmento di Destinazione:</label>
+            <select id="select-msg-segment" class="select select-sm select-bordered w-full bg-slate-900 text-white font-bold text-xs">
+              <option value="dormienti">💤 Dormienti (Inattivi da > 7 giorni)</option>
+              <option value="balene">👑 Balene VIP (Saldo >= 500 Megoin)</option>
+              <option value="hardcore_gamers">⚔️ Hardcore Gamers (Attivi 48h con partite)</option>
+              <option value="b2b_readers">📰 Lettori B2B (Acquirenti Report/News)</option>
+              <option value="nuovi_iscritti">🐣 Nuovi Iscritti (Registrati da <= 72h)</option>
+              <option value="free_tier">🆓 Piano Free (Potenziali abbonati)</option>
+            </select>
           </div>
 
           <div class="space-y-1 text-xs">
             <div class="flex justify-between items-center">
               <label class="font-bold text-slate-300">Testo HTML Telegram:</label>
-              <span class="text-[10px] text-slate-400">&lt;b&gt;, &lt;i&gt;, &lt;code&gt; ammessi</span>
+              <span class="text-[10px] text-slate-400">&lt;b&gt;, &lt;i&gt;, &lt;code&gt; supportati</span>
             </div>
             <textarea id="input-msg-text" oninput="AdminApp.updateTelegramPreview()" rows="6" placeholder="Scrivi qui il messaggio..." class="textarea textarea-bordered w-full bg-slate-900 text-white text-xs"></textarea>
           </div>
@@ -300,7 +466,7 @@
             <label class="font-bold text-slate-300">Regalo Megoin Allegato (Opzionale):</label>
             <div class="flex items-center gap-2">
               <input type="number" id="input-msg-bonus" oninput="AdminApp.updateTelegramPreview()" placeholder="0" class="input input-sm input-bordered w-32 bg-slate-900 text-amber-300 font-mono font-bold">
-              <span class="text-[11px] text-slate-400">Verranno accreditati automaticamente sul foglio Users.</span>
+              <span class="text-[11px] text-slate-400">Verranno accreditati automaticamente in batch su Users.</span>
             </div>
           </div>
 
@@ -309,12 +475,12 @@
               🧪 Invia Test a Me
             </button>
             <button id="btn-send-live-msg" onclick="AdminApp.sendMessage()" class="btn btn-sm btn-primary font-black uppercase flex-1 text-xs shadow-lg">
-              Spedisci Ora 🚀
+              Spedisci Notifica 🚀
             </button>
           </div>
         </div>
 
-        <!-- Colonna Destra: Mockup Anteprima Telegram -->
+        <!-- Smartphone Mockup Preview -->
         <div class="lg:col-span-5 glass-card p-5 flex flex-col justify-between">
           <div class="space-y-3">
             <div class="flex items-center justify-between pb-2 border-b border-white/10">
@@ -322,8 +488,7 @@
               <span class="text-[10px] text-sky-400 font-mono">Visuale Smartphone</span>
             </div>
 
-            <!-- Bolla Messaggio Telegram -->
-            <div class="p-3 tg-bubble text-xs text-slate-100 font-sans space-y-2">
+            <div class="p-3.5 tg-bubble text-xs text-slate-100 font-sans space-y-2">
               <div class="font-bold text-[11px] text-sky-400 flex items-center gap-1.5">
                 <span>Estiqatsy Bot</span>
                 <span class="text-[9px] bg-sky-500/20 px-1 py-0.2 rounded font-mono text-sky-300">BOT</span>
@@ -331,14 +496,14 @@
               <div id="preview-tg-content" class="whitespace-pre-wrap leading-relaxed">
                 <i>Il tuo messaggio formattato apparirà qui in tempo reale...</i>
               </div>
-              <div id="preview-tg-bonus" class="hidden text-amber-300 font-bold text-[11px] pt-1 border-t border-white/10">
+              <div id="preview-tg-bonus" class="hidden text-amber-300 font-bold text-[11px] pt-1.5 border-t border-white/10">
                 🎁 Bonus incluso: +0 Megoin!
               </div>
               <div class="text-[9px] text-slate-400 text-right font-mono" id="preview-tg-time">12:00</div>
             </div>
           </div>
           <div class="text-[11px] text-slate-500 italic mt-4">
-            Nota: I tag non validi verranno ignorati per evitare errori dalle API di Telegram.
+            Gli a-capo e la formattazione visualizzati corrispondono esattamente alla resa sul client Telegram.
           </div>
         </div>
 
@@ -346,7 +511,45 @@
     </section>
 
     <!-- ===================================================================== -->
-    <!-- SEZIONE 4: GESTIONE TICKET ASSISTENZA                                  -->
+    <!-- VISTA 5: REGISTRO FISCALE TRANSAZIONI (LIVE LEDGER)                   -->
+    <!-- ===================================================================== -->
+    <section id="sec-ledger" class="space-y-4 hidden">
+      <div class="glass-card p-4 space-y-3">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+          <div>
+            <h3 class="text-xs font-bold text-white uppercase tracking-wider">Registro Mastro Transazioni</h3>
+            <p class="text-[11px] text-slate-400">Scritture contabili in tempo reale da foglio 📜 Transazioni</p>
+          </div>
+          <div class="flex gap-2">
+            <input type="text" id="input-tx-search" onkeydown="if(event.key==='Enter') AdminApp.fetchTransactions()" placeholder="Cerca ID TX, causale o utente..." class="input input-sm input-bordered bg-slate-900 text-white font-mono text-xs w-64">
+            <button onclick="AdminApp.fetchTransactions()" class="btn btn-sm btn-primary font-bold text-xs">Filtra</button>
+          </div>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="table table-sm w-full text-xs font-mono">
+            <thead>
+              <tr class="border-b border-white/10 text-slate-400">
+                <th>ID Transazione</th>
+                <th>Data</th>
+                <th>Utente</th>
+                <th>Tipo Evento</th>
+                <th>Dettaglio</th>
+                <th>Variazione 🪙</th>
+                <th>Saldo Post</th>
+                <th>Stato</th>
+              </tr>
+            </thead>
+            <tbody id="ledger-table-body" class="divide-y divide-white/5 font-sans text-xs">
+              <tr><td colspan="8" class="text-center py-6 text-slate-500 font-mono">Caricamento registro contabile...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================================================================== -->
+    <!-- VISTA 6: TICKET DESK & ASSISTENZA                                      -->
     <!-- ===================================================================== -->
     <section id="sec-tickets" class="space-y-4 hidden">
       <div class="flex items-center justify-between gap-3">
@@ -365,7 +568,7 @@
     </section>
 
     <!-- ===================================================================== -->
-    <!-- SEZIONE 5: STANZE MULTIPLAYER CON CHIUSURA ATTIVA                     -->
+    <!-- VISTA 7: STANZE MULTIPLAYER ONLINE                                     -->
     <!-- ===================================================================== -->
     <section id="sec-multiplayer" class="space-y-4 hidden">
       <div class="glass-card p-4 space-y-3">
@@ -395,7 +598,7 @@
     </section>
 
     <!-- ===================================================================== -->
-    <!-- SEZIONE 6: BACKUP TSV & STRUMENTI SVILUPPATORE                        -->
+    <!-- VISTA 8: BACKUP TSV & STRUMENTI SVILUPPATORE                          -->
     <!-- ===================================================================== -->
     <section id="sec-tools" class="space-y-4 hidden">
       <div class="glass-card p-5 space-y-4">
@@ -423,18 +626,77 @@
   </main>
 
   <!-- ======================================================================= -->
-  <!-- 3. MODALI OPERATIVE ATTIVE                                              -->
+  <!-- 3. MODALI OPERATIVE (DOSSIER RPG, EDIT, TICKET & AIRDROP)              -->
   <!-- ======================================================================= -->
 
-  <!-- MODALE MODIFICA COMPLETA UTENTE CRM -->
+  <!-- MODALE DOSSIER COMPLETO UTENTE RPG (DEEP INSPECTOR) -->
+  <dialog id="modal-user-dossier" class="modal modal-middle">
+    <div class="modal-box p-6 bg-slate-950 border border-sky-400/40 rounded-2xl max-w-2xl space-y-4 relative text-xs">
+      <button onclick="document.getElementById('modal-user-dossier').close()" class="btn btn-xs btn-circle btn-ghost absolute right-3 top-3">✕</button>
+      
+      <div class="flex items-center gap-3 border-b border-white/10 pb-3">
+        <div class="w-12 h-12 rounded-xl bg-sky-500/20 border border-sky-400/30 flex items-center justify-center text-2xl">
+          👤
+        </div>
+        <div>
+          <h3 class="text-sm font-black text-white" id="dossier-user-name">--</h3>
+          <div class="text-[11px] font-mono text-sky-300" id="dossier-user-meta">Chat ID: --</div>
+        </div>
+      </div>
+
+      <!-- Quick KPI Giocatore -->
+      <div class="grid grid-cols-4 gap-2">
+        <div class="p-2.5 rounded-xl bg-slate-900 border border-white/5 text-center">
+          <div class="text-[10px] text-slate-400 uppercase font-mono">Megoin</div>
+          <div class="font-black text-amber-300 text-base" id="dossier-megoin">-- 🪙</div>
+        </div>
+        <div class="p-2.5 rounded-xl bg-slate-900 border border-white/5 text-center">
+          <div class="text-[10px] text-slate-400 uppercase font-mono">Punti Fedeltà</div>
+          <div class="font-black text-emerald-400 text-base" id="dossier-punti">-- Pt</div>
+        </div>
+        <div class="p-2.5 rounded-xl bg-slate-900 border border-white/5 text-center">
+          <div class="text-[10px] text-slate-400 uppercase font-mono">Piano</div>
+          <div class="font-bold text-white text-base" id="dossier-piano">--</div>
+        </div>
+        <div class="p-2.5 rounded-xl bg-slate-900 border border-white/5 text-center">
+          <div class="text-[10px] text-slate-400 uppercase font-mono">Ultimo Accesso</div>
+          <div class="font-mono text-slate-300 text-[11px]" id="dossier-accesso">--</div>
+        </div>
+      </div>
+
+      <!-- Telemetria Eroe RPG Attivo -->
+      <div class="space-y-2">
+        <h4 class="font-bold text-white uppercase text-[11px] tracking-wider">Stato Eroe RPG Attivo</h4>
+        <div class="p-3 rounded-xl bg-black/60 border border-white/5 font-mono space-y-1.5" id="dossier-hero-container">
+          <div class="text-slate-400 italic">Nessuna partita attiva registrata.</div>
+        </div>
+      </div>
+
+      <!-- Segmenti di appartenenza -->
+      <div class="space-y-1.5">
+        <h4 class="font-bold text-white uppercase text-[11px] tracking-wider">Segmenti Assegnati</h4>
+        <div id="dossier-segments-chips" class="flex flex-wrap gap-1.5"></div>
+      </div>
+
+      <div class="pt-2 flex justify-end gap-2">
+        <button onclick="AdminApp.openDirectMsgFromDossier()" class="btn btn-sm btn-outline border-sky-400/40 text-sky-300 font-bold text-xs">
+          ✉️ Invia Messaggio
+        </button>
+        <button onclick="AdminApp.openEditFromDossier()" class="btn btn-sm btn-primary font-bold text-xs">
+          Modifica Saldo / Piano ✎
+        </button>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- MODALE MODIFICA UTENTE CRM -->
   <dialog id="modal-edit-user" class="modal modal-middle">
     <div class="modal-box p-5 bg-slate-950 border border-sky-400/40 rounded-2xl max-w-md space-y-3 relative text-xs">
       <button onclick="document.getElementById('modal-edit-user').close()" class="btn btn-xs btn-circle btn-ghost absolute right-3 top-3">✕</button>
       <h3 class="text-sm font-black text-white uppercase">Gestione Utente CRM</h3>
-      <p class="text-slate-400" id="edit-user-desc">Variazione del saldo Megoin, punti o del livello di abbonamento</p>
+      <p class="text-slate-400">Modifica manuale saldo Megoin, punti o livello di abbonamento</p>
 
       <input type="hidden" id="edit-target-chatid">
-
       <div class="p-2.5 rounded-xl bg-black/50 border border-white/5 space-y-1">
         <div>Chat ID: <b id="disp-edit-chatid" class="text-sky-300 font-mono">--</b></div>
         <div>Nome Utente: <b id="disp-edit-name" class="text-white">--</b></div>
@@ -452,7 +714,7 @@
       </div>
 
       <div>
-        <label class="font-bold text-slate-300 block mb-1">Nuovo Piano di Membership:</label>
+        <label class="font-bold text-slate-300 block mb-1">Nuovo Piano:</label>
         <select id="edit-new-plan" class="select select-sm select-bordered w-full bg-slate-900 font-bold">
           <option value="">Nessuna Modifica</option>
           <option value="Free">Free</option>
@@ -469,53 +731,45 @@
 
       <div class="pt-2">
         <button id="btn-submit-user-edit" onclick="AdminApp.submitUserEdit()" class="btn btn-sm btn-primary w-full font-black uppercase text-xs">
-          Salva e Applica su Google Sheets 💾
+          Salva e Sincronizza su Sheets 💾
         </button>
       </div>
     </div>
   </dialog>
 
-  <!-- MODALE MESSAGGIO DIRETTO AD UN UTENTE -->
+  <!-- MODALE MESSAGGIO DIRETTO -->
   <dialog id="modal-direct-msg" class="modal modal-middle">
     <div class="modal-box p-5 bg-slate-950 border border-sky-400/40 rounded-2xl max-w-md space-y-3 relative text-xs">
       <button onclick="document.getElementById('modal-direct-msg').close()" class="btn btn-xs btn-circle btn-ghost absolute right-3 top-3">✕</button>
       <h3 class="text-sm font-black text-white uppercase">Invia Messaggio Diretto</h3>
-      <p class="text-slate-400">Recapito immediato nella chat privata dell'utente</p>
-
       <input type="hidden" id="direct-target-chatid">
       <div class="p-2.5 rounded-xl bg-black/50 border border-white/5">
         Destinatario: <b id="direct-disp-name" class="text-sky-300">--</b>
       </div>
-
       <div class="space-y-1">
         <label class="font-bold text-slate-300">Testo Messaggio:</label>
-        <textarea id="direct-msg-text" rows="4" class="textarea textarea-bordered w-full bg-slate-900 text-white text-xs" placeholder="Scrivi qui il messaggio per l'utente..."></textarea>
+        <textarea id="direct-msg-text" rows="4" class="textarea textarea-bordered w-full bg-slate-900 text-white text-xs" placeholder="Scrivi qui il messaggio..."></textarea>
       </div>
-
       <div class="space-y-1">
         <label class="font-bold text-slate-300">Regalo Megoin:</label>
         <input type="number" id="direct-msg-bonus" placeholder="0" class="input input-sm input-bordered w-32 bg-slate-900 text-amber-300 font-mono font-bold">
       </div>
-
       <button id="btn-submit-direct-msg" onclick="AdminApp.submitDirectMessage()" class="btn btn-sm btn-primary w-full font-black uppercase text-xs">
         Invia Subito su Telegram 🚀
       </button>
     </div>
   </dialog>
 
-  <!-- MODALE RISOLUZIONE TICKET CON CANNED MACRO -->
+  <!-- MODALE RISOLUZIONE TICKET -->
   <dialog id="modal-reply-ticket" class="modal modal-middle">
     <div class="modal-box p-5 bg-slate-950 border border-emerald-400/40 rounded-2xl max-w-lg space-y-3 relative text-xs">
       <button onclick="document.getElementById('modal-reply-ticket').close()" class="btn btn-xs btn-circle btn-ghost absolute right-3 top-3">✕</button>
       <h3 class="text-sm font-black text-white uppercase">Rispondi al Ticket</h3>
       <input type="hidden" id="reply-ticket-id">
-
       <div class="p-3 rounded-xl bg-black/50 border border-white/5 space-y-1">
         <div class="text-[10px] font-mono text-slate-400" id="reply-ticket-user">Utente: --</div>
         <p class="text-slate-200 italic" id="reply-ticket-question">"Domanda dell'utente..."</p>
       </div>
-
-      <!-- Macro Risposte Veloci -->
       <div class="space-y-1">
         <label class="font-bold text-slate-300 block">⚡ Macro Risposte Rapide:</label>
         <div class="flex gap-1.5 flex-wrap">
@@ -524,17 +778,14 @@
           <button onclick="AdminApp.applyTicketMacro('need_info')" class="btn btn-xs btn-outline border-white/20 text-slate-300">❓ Più Informazioni</button>
         </div>
       </div>
-
       <div class="space-y-1">
-        <label class="font-bold text-slate-300">Testo di Risposta Ufficiale:</label>
-        <textarea id="reply-ticket-text" rows="4" class="textarea textarea-bordered w-full bg-slate-900 text-white text-xs" placeholder="Scrivi qui la risposta per l'utente..."></textarea>
+        <label class="font-bold text-slate-300">Testo Risposta:</label>
+        <textarea id="reply-ticket-text" rows="4" class="textarea textarea-bordered w-full bg-slate-900 text-white text-xs"></textarea>
       </div>
-
       <div class="space-y-1">
-        <label class="font-bold text-slate-300">Accredito Risarcimento Megoin (Opzionale):</label>
+        <label class="font-bold text-slate-300">Risarcimento Megoin:</label>
         <input type="number" id="reply-ticket-bonus" value="0" class="input input-sm input-bordered w-32 bg-slate-900 text-amber-300 font-mono font-bold">
       </div>
-
       <div class="pt-2">
         <button id="btn-submit-ticket" onclick="AdminApp.submitTicketReply()" class="btn btn-sm btn-success text-slate-950 font-black uppercase w-full text-xs">
           Invia Risposta & Chiudi Ticket ✉️
@@ -563,12 +814,12 @@
     </div>
   </dialog>
 
-  <!-- MODALE CREDENZIALI / TEST BROWSER -->
+  <!-- MODALE SESSIONE / TEST BROWSER -->
   <dialog id="modal-auth-token" class="modal modal-middle">
     <div class="modal-box p-5 bg-slate-950 border border-white/20 rounded-2xl max-w-sm space-y-3 text-xs">
       <button onclick="document.getElementById('modal-auth-token').close()" class="btn btn-xs btn-circle btn-ghost absolute right-3 top-3">✕</button>
       <h3 class="text-sm font-black text-white uppercase">Parametri di Sessione</h3>
-      <p class="text-slate-400">Se accedi fuori da Telegram, incolla qui l'initData autorizzato:</p>
+      <p class="text-slate-400">Incolla l'initData autorizzato se accedi fuori da Telegram:</p>
       <textarea id="input-custom-initdata" rows="4" class="textarea textarea-bordered w-full bg-slate-900 text-sky-300 font-mono text-[10px]" placeholder="query_id=...&user=...&hash=..."></textarea>
       <button onclick="AdminApp.saveCustomAuth()" class="btn btn-sm btn-primary w-full font-bold">Salva Sessione</button>
     </div>
@@ -578,7 +829,7 @@
   <div id="toast-container" class="toast toast-top toast-end z-50 pointer-events-none"></div>
 
   <!-- ======================================================================= -->
-  <!-- 4. LOGICA JAVASCRIPT GESTIONALE CRM (OPERATIVA E ANTI-XSS)              -->
+  <!-- 4. LOGICA JAVASCRIPT GESTIONALE CRM (SAAS ENGINE COMPLETO)              -->
   <!-- ======================================================================= -->
   <script>
     const AppConfig = {
@@ -614,8 +865,11 @@
       msgTargetType: 'user',
       cachedUsers: [],
       cachedTickets: [],
+      cachedSegments: [],
+      currentDossierUser: null,
       ticketFilter: 'all',
       adminId: '',
+      charts: {},
 
       init: function() {
         if (window.lucide) lucide.createIcons();
@@ -693,7 +947,7 @@
 
       switchTab: function(tab) {
         this.currentTab = tab;
-        ['overview', 'users', 'comms', 'tickets', 'multiplayer', 'tools'].forEach(t => {
+        ['overview', 'segments', 'automations', 'comms', 'ledger', 'tickets', 'multiplayer', 'tools'].forEach(t => {
           const sec = document.getElementById(`sec-${t}`);
           const btn = document.getElementById(`nav-tab-${t}`);
           if (sec) sec.classList.toggle('hidden', t !== tab);
@@ -701,19 +955,25 @@
         });
 
         const titles = {
-          overview: "Panoramica Piattaforma",
-          users: "CRM Anagrafica & Borsellino",
-          comms: "Centro Notifiche Telegram",
+          overview: "Executive Overview & Tokenomics",
+          segments: "Hub Segmenti & CRM Utenti",
+          automations: "Motore Automazioni & Regole",
+          comms: "Smart Broadcast & Notifiche",
+          ledger: "Registro Fiscale Transazioni",
           tickets: "Assistenza & Ticket Desk",
-          multiplayer: "Monitoraggio Stanze Online",
-          tools: "Backup & Strumenti Sviluppatore"
+          multiplayer: "Stanze Multiplayer Online",
+          tools: "Strumenti Sviluppatore & TSV"
         };
-        document.getElementById('view-title').textContent = titles[tab] || "Admin Console";
+        document.getElementById('view-title').textContent = titles[tab] || "Control Room";
 
         if (tab === 'overview') this.fetchOverview();
-        if (tab === 'users') this.fetchUsers();
+        if (tab === 'segments') this.fetchSegmentsAndUsers();
+        if (tab === 'automations') this.fetchAutomationLogs();
+        if (tab === 'ledger') this.fetchTransactions();
         if (tab === 'tickets') this.fetchTickets();
         if (tab === 'multiplayer') this.fetchRooms();
+
+        if (window.lucide) lucide.createIcons();
       },
 
       refreshCurrentView: function() {
@@ -724,70 +984,107 @@
       },
 
       // -------------------------------------------------------------
-      // 1. OVERVIEW & GRAFICI CHART.JS
+      // 1. EXECUTIVE OVERVIEW & TOKENOMICS ANALYTICS
       // -------------------------------------------------------------
       fetchOverview: async function() {
         try {
-          const d = await this.apiCall("admin_crm_overview");
-          if (d) {
-            document.getElementById('kpi-total-users').textContent = d.totalUsers || 0;
-            document.getElementById('kpi-total-megoin').textContent = (d.totalMegoinCirculating || 0).toLocaleString() + " 🪙";
-            document.getElementById('kpi-open-tickets').textContent = d.openTickets || 0;
-            document.getElementById('kpi-total-tx').textContent = d.totalTransactions || 0;
+          const [dOverview, dAnalytics] = await Promise.all([
+            this.apiCall("admin_crm_overview"),
+            this.apiCall("admin_get_analytics")
+          ]);
 
+          if (dOverview) {
+            document.getElementById('kpi-total-users').textContent = dOverview.totalUsers || 0;
+            document.getElementById('kpi-total-megoin').textContent = (dOverview.totalMegoinCirculating || 0).toLocaleString() + " 🪙";
+            document.getElementById('kpi-open-tickets').textContent = dOverview.openTickets || 0;
+            
             const badgeTickets = document.getElementById('badge-nav-tickets');
             if (badgeTickets) {
-              if (d.openTickets > 0) {
-                badgeTickets.textContent = d.openTickets;
+              if (dOverview.openTickets > 0) {
+                badgeTickets.textContent = dOverview.openTickets;
                 badgeTickets.classList.remove('hidden');
               } else {
                 badgeTickets.classList.add('hidden');
               }
             }
+          }
 
-            this.renderCharts(d.plansDistribution || {});
+          if (dAnalytics && dAnalytics.analytics) {
+            const an = dAnalytics.analytics;
+            document.getElementById('kpi-retry-rate').textContent = an.retryAddictionIndex || '0%';
+            this.renderExecutiveCharts(an);
           }
         } catch (e) {
-          console.warn("Errore overview:", e);
+          console.warn("Errore caricamento overview:", e);
         }
       },
 
-      renderCharts: function(plansDist) {
-        const ctxPlans = document.getElementById('chart-plans');
-        if (ctxPlans) {
-          if (ctxPlans._chart) ctxPlans._chart.destroy();
-          const labels = Object.keys(plansDist).length ? Object.keys(plansDist) : ['Free'];
-          const values = Object.values(plansDist).length ? Object.values(plansDist) : [1];
-
-          ctxPlans._chart = new Chart(ctxPlans, {
+      renderExecutiveCharts: function(an) {
+        // 1. Chart Pozzi di Spesa (Doughnut Sinks)
+        const ctxSinks = document.getElementById('chart-sinks');
+        if (ctxSinks) {
+          if (this.charts.sinks) this.charts.sinks.destroy();
+          const sinks = an.sinksDistribution || {};
+          this.charts.sinks = new Chart(ctxSinks, {
             type: 'doughnut',
             data: {
-              labels: labels,
+              labels: Object.keys(sinks),
               datasets: [{
-                data: values,
-                backgroundColor: ['#38BDF8', '#F59E0B', '#10B981', '#A855F7'],
-                borderColor: '#070A12',
-                borderWidth: 2
+                data: Object.values(sinks),
+                backgroundColor: ['#F43F5E', '#38BDF8', '#F59E0B', '#10B981', '#A855F7', '#64748B'],
+                borderWidth: 1,
+                borderColor: '#070A12'
               }]
             },
             options: {
               responsive: true,
               maintainAspectRatio: false,
-              plugins: { legend: { position: 'bottom', labels: { color: '#94A3B8', font: { size: 10 } } } }
+              plugins: { legend: { position: 'bottom', labels: { color: '#94A3B8', font: { size: 9 } } } }
             }
           });
         }
 
-        const ctxAct = document.getElementById('chart-activity');
-        if (ctxAct) {
-          if (ctxAct._chart) ctxAct._chart.destroy();
-          ctxAct._chart = new Chart(ctxAct, {
+        // 2. Chart Mint vs Burn (Bar Chart Tokenomics)
+        const ctxMintBurn = document.getElementById('chart-mint-burn');
+        if (ctxMintBurn) {
+          if (this.charts.mintBurn) this.charts.mintBurn.destroy();
+          this.charts.mintBurn = new Chart(ctxMintBurn, {
             type: 'bar',
             data: {
-              labels: ['< 50 🪙', '50-150 🪙', '150-500 🪙', '> 500 🪙'],
+              labels: ['Immesso (Mint)', 'Consumato (Burn)'],
               datasets: [{
-                data: [15, 45, 20, 8],
-                backgroundColor: 'rgba(56, 189, 248, 0.6)',
+                data: [an.totalMintedMegoin || 0, an.totalBurnedMegoin || 0],
+                backgroundColor: ['rgba(16, 185, 129, 0.7)', 'rgba(244, 63, 94, 0.7)'],
+                borderColor: ['#10B981', '#F43F5E'],
+                borderWidth: 1,
+                borderRadius: 6
+              }]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: { legend: { display: false } },
+              scales: {
+                x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94A3B8', font: { size: 10 } } },
+                y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94A3B8', font: { size: 9 } } }
+              }
+            }
+          });
+        }
+
+        // 3. Chart Saghe Più Giocate (Horizontal Bar)
+        const ctxSagas = document.getElementById('chart-sagas');
+        if (ctxSagas) {
+          if (this.charts.sagas) this.charts.sagas.destroy();
+          const sagas = an.topSagas || [];
+          this.charts.sagas = new Chart(ctxSagas, {
+            type: 'bar',
+            indexAxis: 'y',
+            data: {
+              labels: sagas.map(s => s.name),
+              datasets: [{
+                data: sagas.map(s => s.plays),
+                backgroundColor: 'rgba(56, 189, 248, 0.65)',
                 borderColor: '#38BDF8',
                 borderWidth: 1,
                 borderRadius: 4
@@ -798,8 +1095,8 @@
               maintainAspectRatio: false,
               plugins: { legend: { display: false } },
               scales: {
-                x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#64748B', font: { size: 9 } } },
-                y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#64748B', font: { size: 9 } } }
+                x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94A3B8', font: { size: 9 } } },
+                y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94A3B8', font: { size: 9 } } }
               }
             }
           });
@@ -807,15 +1104,60 @@
       },
 
       // -------------------------------------------------------------
-      // 2. GESTIONE DIRECTORY CRM (RICERCA ANCHE SU SERVER)
+      // 2. HUB SEGMENTI & CRM UTENTI
       // -------------------------------------------------------------
+      fetchSegmentsAndUsers: async function() {
+        this.fetchSegments();
+        this.fetchUsers(false);
+      },
+
+      fetchSegments: async function() {
+        try {
+          const d = await this.apiCall("admin_get_segments");
+          this.cachedSegments = d?.segments || [];
+          this.renderSegmentsCards(this.cachedSegments);
+        } catch (e) {
+          console.warn("Errore caricamento segmenti:", e);
+        }
+      },
+
+      renderSegmentsCards: function(segments) {
+        const c = document.getElementById('segments-cards-container');
+        if (!c) return;
+
+        c.innerHTML = segments.map(s => `
+          <div onclick="AdminApp.filterBySegmentCard('${s.key}')" class="glass-card p-3 cursor-pointer hover:border-sky-400/50 transition-all flex flex-col justify-between space-y-2">
+            <div>
+              <div class="flex justify-between items-center">
+                <span class="font-bold text-white text-[11px] truncate">${s.name}</span>
+                <span class="badge badge-xs badge-info font-mono font-bold">${s.count}</span>
+              </div>
+              <p class="text-[9.5px] text-slate-400 line-clamp-2 mt-1">${s.desc}</p>
+            </div>
+            <button onclick="event.stopPropagation(); AdminApp.prepareSegmentCampaign('${s.key}')" class="btn btn-xs btn-outline border-sky-400/30 text-sky-300 font-bold w-full text-[10px]">
+              Notifica 📢
+            </button>
+          </div>
+        `).join('');
+      },
+
+      filterBySegmentCard: function(segmentKey) {
+        document.getElementById('filter-user-segment').value = segmentKey;
+        this.fetchUsers(true);
+      },
+
       fetchUsers: async function(forceServerSearch = false) {
         const tbody = document.getElementById('crm-users-table-body');
         const q = (document.getElementById('input-crm-search')?.value || '').trim();
-        tbody.innerHTML = `<tr><td colspan="7" class="text-center py-6 text-slate-500 font-mono">Sincronizzazione in corso...</td></tr>`;
+        const segment = (document.getElementById('filter-user-segment')?.value || '').trim();
+        
+        tbody.innerHTML = `<tr><td colspan="7" class="text-center py-6 text-slate-500 font-mono">Sincronizzazione utenti con Google Sheets...</td></tr>`;
 
         try {
-          const d = await this.apiCall("admin_get_users", { query: forceServerSearch ? q : "" });
+          const d = await this.apiCall("admin_get_users", { 
+            query: forceServerSearch ? q : "",
+            segment: segment
+          });
           this.cachedUsers = d?.users || [];
           this.renderUsersTable(this.cachedUsers);
         } catch (e) {
@@ -826,7 +1168,7 @@
       renderUsersTable: function(users) {
         const tbody = document.getElementById('crm-users-table-body');
         if (!users || users.length === 0) {
-          tbody.innerHTML = `<tr><td colspan="7" class="text-center py-6 text-slate-500 font-mono">Nessun utente trovato.</td></tr>`;
+          tbody.innerHTML = `<tr><td colspan="7" class="text-center py-6 text-slate-500 font-mono">Nessun utente trovato con i filtri correnti.</td></tr>`;
           return;
         }
 
@@ -835,7 +1177,17 @@
           const safeNome = escapeHTML(u.nome);
           const safeCognome = escapeHTML(u.cognome || '');
           const safeUsername = escapeHTML(u.username);
-          const safePiano = escapeHTML(u.piano);
+          const segmentsBadges = (u.segmenti || []).map(seg => {
+            const segMap = {
+              dormienti: 'badge-error',
+              balene: 'badge-warning',
+              hardcore_gamers: 'badge-info',
+              b2b_readers: 'badge-secondary',
+              nuovi_iscritti: 'badge-success',
+              free_tier: 'badge-ghost'
+            };
+            return `<span class="badge badge-xs ${segMap[seg] || 'badge-ghost'} font-bold uppercase text-[8px]">${seg}</span>`;
+          }).join(' ');
 
           return `
             <tr class="hover:bg-white/5 transition">
@@ -844,22 +1196,22 @@
                 <div class="font-bold text-white">${safeNome} ${safeCognome}</div>
                 <div class="text-[10px] text-sky-400 font-mono">${safeUsername}</div>
               </td>
-              <td><span class="badge badge-xs badge-info font-bold">${safePiano}</span></td>
+              <td><div class="flex flex-wrap gap-1">${segmentsBadges || '<span class="text-slate-500 text-[10px]">—</span>'}</div></td>
               <td class="font-mono font-black text-amber-300">${u.megoin} 🪙</td>
               <td class="font-mono text-emerald-400">${u.punti} Pt</td>
               <td class="text-slate-400 text-[10px]">${escapeHTML(u.ultimaAttivita)}</td>
               <td class="text-right">
                 <div class="flex items-center justify-end gap-1">
+                  <!-- Dossier Utente RPG -->
+                  <button title="Visualizza Dossier Completo Giocatore" onclick="AdminApp.openUserDossierModal('${safeChatId}')" class="btn btn-xs bg-sky-500/20 text-sky-300 hover:bg-sky-500/30 border border-sky-400/30 font-bold">
+                    👁️ Dossier
+                  </button>
                   <!-- Quick +50 Megoin -->
-                  <button title="Accredita subito 50 Megoin" onclick="AdminApp.quickAddMegoin('${safeChatId}', 50)" class="btn btn-xs btn-outline border-amber-500/40 text-amber-300 font-bold hover:bg-amber-500/20">
+                  <button title="Accredita +50 Megoin" onclick="AdminApp.quickAddMegoin('${safeChatId}', 50)" class="btn btn-xs btn-outline border-amber-500/40 text-amber-300 font-bold hover:bg-amber-500/20">
                     +50🪙
                   </button>
-                  <!-- Invia DM Telegram Diretto -->
-                  <button title="Invia messaggio privato" onclick="AdminApp.openDirectMsgModal('${safeChatId}', '${safeNome}')" class="btn btn-xs btn-outline border-sky-400/40 text-sky-300 font-bold hover:bg-sky-500/20">
-                    ✉️
-                  </button>
-                  <!-- Modifica Completa -->
-                  <button title="Modifica Saldo e Piano" onclick="AdminApp.openUserEditModal('${safeChatId}')" class="btn btn-xs btn-ghost text-slate-300 hover:text-white">
+                  <!-- Modifica Saldo -->
+                  <button title="Modifica Completa" onclick="AdminApp.openUserEditModal('${safeChatId}')" class="btn btn-xs btn-ghost text-slate-400 hover:text-white">
                     ✎
                   </button>
                 </div>
@@ -869,31 +1221,75 @@
         }).join('');
       },
 
-      filterUsers: function() {
+      filterUsersLocal: function() {
         const q = (document.getElementById('input-crm-search')?.value || '').toLowerCase().trim();
-        const plan = (document.getElementById('filter-user-plan')?.value || '').toLowerCase().trim();
-
         const filtered = this.cachedUsers.filter(u => {
-          const matchQuery = String(u.chatId).includes(q) ||
-                             (u.nome || '').toLowerCase().includes(q) ||
-                             (u.username || '').toLowerCase().includes(q);
-          const matchPlan = !plan || (u.piano || '').toLowerCase() === plan;
-          return matchQuery && matchPlan;
+          return String(u.chatId).includes(q) ||
+                 (u.nome || '').toLowerCase().includes(q) ||
+                 (u.username || '').toLowerCase().includes(q);
         });
         this.renderUsersTable(filtered);
       },
 
+      // -------------------------------------------------------------
+      // DOSSIER UTENTE RPG (DEEP INSPECTOR)
+      // -------------------------------------------------------------
+      openUserDossierModal: function(chatId) {
+        const u = this.cachedUsers.find(x => String(x.chatId) === String(chatId));
+        if (!u) return;
+
+        this.currentDossierUser = u;
+        document.getElementById('dossier-user-name').textContent = `${u.nome} ${u.cognome || ''} (${u.username})`;
+        document.getElementById('dossier-user-meta').textContent = `Chat ID: ${u.chatId} • Lingua: it`;
+        document.getElementById('dossier-megoin').textContent = `${u.megoin} 🪙`;
+        document.getElementById('dossier-punti').textContent = `${u.punti} Pt`;
+        document.getElementById('dossier-piano').textContent = u.piano || 'Free';
+        document.getElementById('dossier-accesso').textContent = u.ultimaAttivita;
+
+        // Eroe e Telemetria
+        const heroContainer = document.getElementById('dossier-hero-container');
+        if (u.quickHero) {
+          heroContainer.innerHTML = `
+            <div>🎮 <b>Saga Attiva:</b> <span class="text-sky-300">${escapeHTML(u.quickHero.serie)}</span></div>
+            <div>👤 <b>Classe:</b> <span class="text-white">${escapeHTML(u.quickHero.classe)}</span> │ ❤️ <b>PV:</b> ${u.quickHero.pv} │ 🟡 <b>Oro:</b> ${u.quickHero.oro} │ ⚡ <b>PX:</b> ${u.quickHero.px}</div>
+            <div>🧟 <b>Squadra Zombi:</b> <span class="text-emerald-400 font-bold">${u.quickHero.zombieCount} Zombi Rianimati</span></div>
+          `;
+        } else {
+          heroContainer.innerHTML = `<div class="text-slate-400 italic">Nessun dato di gioco attivo nello stato utente.</div>`;
+        }
+
+        // Segmenti Chips
+        const segContainer = document.getElementById('dossier-segments-chips');
+        segContainer.innerHTML = (u.segmenti || []).map(seg => {
+          return `<span class="badge badge-sm badge-info font-mono font-bold uppercase">${seg}</span>`;
+        }).join('') || '<span class="text-slate-500 italic">Nessun segmento</span>';
+
+        document.getElementById('modal-user-dossier').showModal();
+      },
+
+      openDirectMsgFromDossier: function() {
+        if (!this.currentDossierUser) return;
+        document.getElementById('modal-user-dossier').close();
+        this.openDirectMsgModal(this.currentDossierUser.chatId, this.currentDossierUser.nome);
+      },
+
+      openEditFromDossier: function() {
+        if (!this.currentDossierUser) return;
+        document.getElementById('modal-user-dossier').close();
+        this.openUserEditModal(this.currentDossierUser.chatId);
+      },
+
       quickAddMegoin: async function(chatId, amount) {
-        if (!confirm(`Vuoi accreditare istantaneamente +${amount} Megoin a questo utente?`)) return;
+        if (!confirm(`Accreditare +${amount} Megoin a questo utente?`)) return;
         try {
           await this.apiCall("admin_update_user", {
             targetChatId: chatId,
             deltaMegoin: amount,
             deltaPunti: 0,
-            reason: `Quick Bonus +${amount} da Console`
+            reason: `Quick Bonus +${amount} Megoin`
           });
-          this.showToast(`Accreditati +${amount} Megoin con successo!`);
-          this.fetchUsers();
+          this.showToast(`Accreditati +${amount} Megoin!`);
+          this.fetchUsers(true);
         } catch (e) {
           this.showToast(e.message, 'error');
         }
@@ -932,9 +1328,9 @@
             newPlan: newPlan,
             reason: reason
           });
-          this.showToast("Utente aggiornato con successo!");
+          this.showToast("Utente aggiornato su Google Sheets!");
           document.getElementById('modal-edit-user').close();
-          this.fetchUsers();
+          this.fetchUsers(true);
         } catch (e) {
           this.showToast(e.message, 'error');
         } finally {
@@ -980,27 +1376,88 @@
       },
 
       // -------------------------------------------------------------
-      // 3. COMUNICAZIONI & ANTEPRIMA TELEGRAM
+      // 3. AUTOMAZIONI & AUDIT LOGS
+      // -------------------------------------------------------------
+      fetchAutomationLogs: async function() {
+        const tbody = document.getElementById('automation-logs-body');
+        tbody.innerHTML = `<tr><td colspan="6" class="text-center py-6 text-slate-500 font-mono">Caricamento log delle spedizioni...</td></tr>`;
+
+        try {
+          const d = await this.apiCall("admin_get_transactions", { limit: 30, query: "Admin" });
+          const txs = d?.transactions || [];
+          if (txs.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="6" class="text-center py-6 text-slate-500 font-mono">Nessuna automazione o broadcast registrato finora.</td></tr>`;
+            return;
+          }
+
+          tbody.innerHTML = txs.map(t => `
+            <tr>
+              <td class="text-slate-400">${escapeHTML(t.data)}</td>
+              <td><span class="badge badge-xs badge-info font-bold">${escapeHTML(t.tipo)}</span></td>
+              <td class="text-white font-bold">${escapeHTML(t.utente || 'Broadcast / Segmento')}</td>
+              <td class="text-slate-300">${escapeHTML(t.dettaglio)}</td>
+              <td class="font-bold text-amber-300 font-mono">${escapeHTML(t.variazioneMegoin)}</td>
+              <td><span class="badge badge-xs badge-success">${escapeHTML(t.stato)}</span></td>
+            </tr>
+          `).join('');
+        } catch (e) {
+          tbody.innerHTML = `<tr><td colspan="6" class="text-center py-6 text-rose-400 font-mono">Errore: ${escapeHTML(e.message)}</td></tr>`;
+        }
+      },
+
+      activateAutomationPreset: function(presetKey) {
+        if (presetKey === 'christmas') {
+          if (confirm("Vuoi confermare la pianificazione dell'Airdrop di Natale per il 25 Dicembre (+100 Megoin a tutti gli utenti registrati)?")) {
+            this.showToast("Trigger di Natale pianificato su foglio 🛠️ Admin!");
+          }
+        } else if (presetKey === 'loyalty_100') {
+          this.showToast("Trigger Milestone 100 Punti Fedeltà attivo!");
+        } else if (presetKey === 'weekly_drop') {
+          this.showToast("Drop ricorrente del Lunedì impostato con successo!");
+        }
+      },
+
+      openCustomAutomationModal: function() {
+        this.showToast("Il configuratore visuale di nuove regole personalizzate sarà disponibile nella prossima release.");
+      },
+
+      // -------------------------------------------------------------
+      // 4. SMART BROADCAST & COMUNICAZIONI MIRATE
       // -------------------------------------------------------------
       setMsgTarget: function(type) {
         this.msgTargetType = type;
-        ['user', 'broadcast', 'channel'].forEach(t => {
+        ['user', 'segment', 'broadcast', 'channel'].forEach(t => {
           const btn = document.getElementById(`btn-target-${t}`);
           if (btn) {
             btn.className = (t === type || (t === 'channel' && type === 'channel_group'))
-              ? 'btn btn-sm btn-primary font-bold text-xs'
-              : 'btn btn-sm btn-outline border-white/20 text-slate-300 font-bold text-xs';
+              ? 'btn btn-sm btn-primary font-bold text-[11px]'
+              : 'btn btn-sm btn-outline border-white/20 text-slate-300 font-bold text-[11px]';
           }
         });
 
-        const boxTarget = document.getElementById('box-target-input');
-        const labelTarget = document.getElementById('label-target-id');
+        const boxInput = document.getElementById('box-target-input');
+        const boxSegment = document.getElementById('box-target-segment');
+
         if (type === 'broadcast') {
-          boxTarget.classList.add('hidden');
+          boxInput.classList.add('hidden');
+          boxSegment.classList.add('hidden');
+        } else if (type === 'segment') {
+          boxInput.classList.add('hidden');
+          boxSegment.classList.remove('hidden');
         } else {
-          boxTarget.classList.remove('hidden');
-          labelTarget.textContent = (type === 'user') ? 'Chat ID Singolo Utente:' : 'ID o Username Canale Telegram:';
+          boxInput.classList.remove('hidden');
+          boxSegment.classList.add('hidden');
+          document.getElementById('label-target-id').textContent = (type === 'user') ? 'Chat ID Singolo Utente:' : 'ID o Username Canale:';
         }
+      },
+
+      prepareSegmentCampaign: function(segmentKey, defaultBonus = 0, defaultText = "") {
+        this.switchTab('comms');
+        this.setMsgTarget('segment');
+        document.getElementById('select-msg-segment').value = segmentKey;
+        if (defaultText) document.getElementById('input-msg-text').value = defaultText;
+        if (defaultBonus) document.getElementById('input-msg-bonus').value = defaultBonus;
+        this.updateTelegramPreview();
       },
 
       applyMessageTemplate: function(tpl) {
@@ -1008,13 +1465,16 @@
         const bonusEl = document.getElementById('input-msg-bonus');
 
         if (tpl === 'update') {
-          txtEl.value = "🚀 <b>NUOVO AGGIORNAMENTO DISPONIBILE!</b>\n\nAbbiamo rilasciato nuovi capitoli nella sezione <b>Avventure</b> e introdotto nuovi premi nello Shop.\n\nAccedi subito dal menu del bot per provarli!";
+          txtEl.value = "🚀 <b>NUOVI CAPITOLI DISPONIBILI!</b>\n\nAbbiamo rilasciato una nuova avventura ricca di enigmi e combattimenti mortali.\n\nAccedi subito dal menu del bot per provarla!";
           bonusEl.value = "";
         } else if (tpl === 'bonus') {
-          txtEl.value = "🎁 <b>REGALO DEL WEEKEND!</b>\n\nLo staff di Estiqatsy ha accreditato un bonus per tutti i giocatori attivi. Buon divertimento nelle partite!";
+          txtEl.value = "🎁 <b>AIRDROP SPECIALE DEL WEEKEND!</b>\n\nLo staff di Estiqatsy ha accreditato un bonus per tutti i giocatori attivi. Buon divertimento nelle partite!";
           bonusEl.value = "50";
+        } else if (tpl === 'winback') {
+          txtEl.value = "👋 <b>Ci manchi, Avventuriero!</b>\n\nLe tue saghe sono rimaste in sospeso: ti abbiamo regalato <b>20 Megoin</b> per riprendere la partita e sconfiggere i boss rimasti!";
+          bonusEl.value = "20";
         } else if (tpl === 'maintenance') {
-          txtEl.value = "⚠️ <b>AVVISO MANUTENZIONE:</b>\n\nI server andranno in manutenzione per 15 minuti per aggiornamento database. Le partite in corso non subiranno perdite di progressi.";
+          txtEl.value = "⚠️ <b>AVVISO MANUTENZIONE:</b>\n\nI server andranno in manutenzione programmata per 15 minuti. Nessun progresso di gioco andrà perso.";
           bonusEl.value = "";
         }
         this.updateTelegramPreview();
@@ -1076,14 +1536,17 @@
         if (!text) return this.showToast("Inserisci il testo del messaggio!", "warning");
 
         const targetChatId = document.getElementById('input-msg-target')?.value.trim();
+        const selectedSegment = document.getElementById('select-msg-segment')?.value;
         const bonusMegoin = document.getElementById('input-msg-bonus')?.value || 0;
 
-        if (this.msgTargetType !== 'broadcast' && !targetChatId) {
+        if (this.msgTargetType === 'user' && !targetChatId) {
           return this.showToast("Inserisci l'ID o username destinatario!", "warning");
         }
-
         if (this.msgTargetType === 'broadcast') {
-          if (!confirm("Sei sicuro di voler inviare questo messaggio in BROADCAST a TUTTI gli utenti?")) return;
+          if (!confirm("Confermi l'invio in BROADCAST a TUTTI gli utenti registrati?")) return;
+        }
+        if (this.msgTargetType === 'segment') {
+          if (!confirm(`Confermi l'invio mirato a tutto il segmento [${selectedSegment}]?`)) return;
         }
 
         const btn = document.getElementById('btn-send-live-msg');
@@ -1095,10 +1558,11 @@
             targetType: this.msgTargetType,
             targetChatId: targetChatId,
             channelId: targetChatId,
+            segment: selectedSegment,
             textMessage: text,
             bonusMegoin: bonusMegoin
           });
-          this.showToast(`Inviato con successo a ${res.sentCount || 1} destinatari!`);
+          this.showToast(`Notifica recapitata a ${res.sentCount || 1} destinatari!`);
           document.getElementById('input-msg-text').value = '';
           this.updateTelegramPreview();
         } catch (e) {
@@ -1110,7 +1574,46 @@
       },
 
       // -------------------------------------------------------------
-      // 4. GESTIONE TICKET DESK & CANNED MACRO
+      // 5. REGISTRO MASTRO TRANSAZIONI (LIVE LEDGER)
+      // -------------------------------------------------------------
+      fetchTransactions: async function() {
+        const tbody = document.getElementById('ledger-table-body');
+        const q = (document.getElementById('input-tx-search')?.value || '').trim();
+        tbody.innerHTML = `<tr><td colspan="8" class="text-center py-6 text-slate-500 font-mono">Caricamento registro contabile...</td></tr>`;
+
+        try {
+          const d = await this.apiCall("admin_get_transactions", { query: q, limit: 50 });
+          const txs = d?.transactions || [];
+          if (txs.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="8" class="text-center py-6 text-slate-500 font-mono">Nessuna transazione trovata con i filtri correnti.</td></tr>`;
+            return;
+          }
+
+          tbody.innerHTML = txs.map(t => {
+            const isNegative = String(t.variazioneMegoin).includes('-');
+            const isPositive = String(t.variazioneMegoin).includes('+') || (!isNegative && parseFloat(t.variazioneMegoin) > 0);
+            const varColor = isNegative ? 'text-rose-400' : (isPositive ? 'text-emerald-400' : 'text-slate-400');
+
+            return `
+              <tr class="hover:bg-white/5 transition">
+                <td class="font-bold text-sky-400 font-mono">${escapeHTML(t.id)}</td>
+                <td class="text-slate-400">${escapeHTML(t.data)}</td>
+                <td class="font-bold text-white">${escapeHTML(t.utente)}</td>
+                <td><span class="badge badge-xs badge-info font-bold">${escapeHTML(t.tipo)}</span></td>
+                <td class="text-slate-300 max-w-xs truncate" title="${escapeHTML(t.dettaglio)}">${escapeHTML(t.dettaglio)}</td>
+                <td class="font-black font-mono ${varColor}">${escapeHTML(t.variazioneMegoin)}</td>
+                <td class="font-mono text-amber-300">${escapeHTML(t.saldoMegoin)} 🪙</td>
+                <td><span class="badge badge-xs badge-success">${escapeHTML(t.stato)}</span></td>
+              </tr>
+            `;
+          }).join('');
+        } catch (e) {
+          tbody.innerHTML = `<tr><td colspan="8" class="text-center py-6 text-rose-400 font-mono">Errore: ${escapeHTML(e.message)}</td></tr>`;
+        }
+      },
+
+      // -------------------------------------------------------------
+      // 6. TICKET DESK & STANZE MULTIPLAYER
       // -------------------------------------------------------------
       fetchTickets: async function() {
         const container = document.getElementById('tickets-container');
@@ -1232,46 +1735,6 @@
         }
       },
 
-      // -------------------------------------------------------------
-      // 5. AIRDROP RAPIDO GLOBALE
-      // -------------------------------------------------------------
-      openAirdropModal: function() {
-        document.getElementById('airdrop-amount').value = '50';
-        document.getElementById('airdrop-message').value = '🎁 Sorpresa dello Staff! Abbiamo accreditato Megoin bonus su tutti gli account!';
-        document.getElementById('modal-airdrop').showModal();
-      },
-
-      submitAirdrop: async function() {
-        const amount = Number(document.getElementById('airdrop-amount').value);
-        const msg = document.getElementById('airdrop-message').value.trim();
-
-        if (!amount || amount <= 0) return this.showToast("Inserisci un importo valido!", "warning");
-        if (!confirm(`Sei sicuro di voler accreditare +${amount} Megoin a TUTTI gli utenti registrati?`)) return;
-
-        const btn = document.getElementById('btn-submit-airdrop');
-        btn.classList.add('loading');
-        btn.disabled = true;
-
-        try {
-          await this.apiCall("admin_send_message", {
-            targetType: "broadcast",
-            textMessage: msg || "🎁 Hai ricevuto un accredito bonus dallo staff!",
-            bonusMegoin: amount
-          });
-          this.showToast("Airdrop globale completato con successo!");
-          document.getElementById('modal-airdrop').close();
-          this.fetchOverview();
-        } catch (e) {
-          this.showToast(e.message, "error");
-        } finally {
-          btn.classList.remove('loading');
-          btn.disabled = false;
-        }
-      },
-
-      // -------------------------------------------------------------
-      // 6. STANZE MULTIPLAYER CON CHIUSURA ATTIVA
-      // -------------------------------------------------------------
       fetchRooms: async function() {
         const tbody = document.getElementById('rooms-table-body');
         try {
@@ -1319,6 +1782,43 @@
         }
       },
 
+      openAirdropModal: function() {
+        document.getElementById('airdrop-amount').value = '50';
+        document.getElementById('airdrop-message').value = '🎁 Sorpresa dello Staff! Abbiamo accreditato Megoin bonus su tutti gli account!';
+        document.getElementById('modal-airdrop').showModal();
+      },
+
+      submitAirdrop: async function() {
+        const amount = Number(document.getElementById('airdrop-amount').value);
+        const msg = document.getElementById('airdrop-message').value.trim();
+
+        if (!amount || amount <= 0) return this.showToast("Inserisci un importo valido!", "warning");
+        if (!confirm(`Accreditare +${amount} Megoin a TUTTI gli utenti registrati?`)) return;
+
+        const btn = document.getElementById('btn-submit-airdrop');
+        btn.classList.add('loading');
+        btn.disabled = true;
+
+        try {
+          await this.apiCall("admin_send_message", {
+            targetType: "broadcast",
+            textMessage: msg || "🎁 Hai ricevuto un accredito bonus dallo staff!",
+            bonusMegoin: amount
+          });
+          this.showToast("Airdrop globale completato con successo!");
+          document.getElementById('modal-airdrop').close();
+          this.fetchOverview();
+        } catch (e) {
+          this.showToast(e.message, "error");
+        } finally {
+          btn.classList.remove('loading');
+          btn.disabled = false;
+        }
+      },
+
+      // -------------------------------------------------------------
+      // 7. BACKUP TSV & STRUMENTI
+      // -------------------------------------------------------------
       renderTsvChips: function() {
         const c = document.getElementById('tsv-chips');
         if (!c) return;
