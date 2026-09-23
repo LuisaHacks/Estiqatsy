@@ -1,12 +1,12 @@
 /* ============================================================================
    PROJECT: ESTIQATSY SYNDICATE & RPG PLATFORM
-   FILE: css/rules2.css (VERSIONE 24.0 - RULES 2 TCG, MOVERINA CARD & 48px HUD)
-   LAYER: ENGINE RULES 2, WIZARD STAGES, HUD 48px, COMBAT & TACTICAL DRAWERS
-   NOTE: 100% SPECIFICO PER IL GIOCO - NESSUNA DUPLICAZIONE CON CSS/CORE.CSS
+   FILE: css/rules2.css (VERSIONE 24.5 - TCG MOVERINA 510px, LUNAR GLOW & 48px HUD)
+   LAYER: ENGINE RULES 2, WIZARD 510px STAGE, 48px HUD, COMBAT D20 & TACTICAL SHEETS
+   NOTE: 100% SPECIFICO PER IL GIOCO - GABBIA AUREA RIGIDA SENZA VUOTI MORTI
    ============================================================================ */
 
 /* ----------------------------------------------------------------------------
-   1. PROTEZIONE DI VISIBILITÀ CONTESTUALE
+   1. PROTEZIONE DI VISIBILITÀ CONTESTUALE (MAI PIÙ FOOTER SOVRAPPOSTI)
    ---------------------------------------------------------------------------- */
 .wizard-sticky-footer.hidden,
 .cockpit-footer.hidden,
@@ -16,7 +16,7 @@
 }
 
 /* ----------------------------------------------------------------------------
-   2. HUD UNIVERSALE A 2 RIGHE (48px - IDENTICO IN WIZARD E GAMEPLAY)
+   2. HUD UNIVERSALE A 2 RIGHE (48px RIGIDI - IDENTICO IN WIZARD E GAMEPLAY)
    ---------------------------------------------------------------------------- */
 .hud-cockpit-48px {
   height: 48px !important;
@@ -35,12 +35,12 @@
 }
 
 /* ----------------------------------------------------------------------------
-   3. PALCO DELLA CARTA UNIVERSALE TCG (MODELLO MOVERINA 300x424px)
+   3. PALCO CAROSELLO CARTA (RECUPERO DEL VUOTO - ALTEZZA 510px)
    ---------------------------------------------------------------------------- */
 .coverflow-stage-outer {
   position: relative;
   width: 100%;
-  padding: 6px 0 12px 0;
+  padding: 4px 0 6px 0;
   overflow: hidden;
 }
 
@@ -50,20 +50,20 @@
   gap: 16px;
   overflow-x: auto;
   scroll-snap-type: x mandatory;
-  padding: 8px 24px 16px 24px;
+  padding: 6px 24px 10px 24px;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior-x: contain;
 }
 
-/* 🔒 Sagoma Rigida Moverina: 300x424px (Proporzione Aurea 1:1.41) */
+/* 🔒 SAGOMA AUREA MOVERINA: 300x510px (Recuperati i 100px di vuoto inferiore) */
 .coverflow-card,
 .tcg-card {
   flex: 0 0 300px;
   width: 300px;
   max-width: 300px;
-  height: 424px;
-  min-height: 424px;
-  max-height: 424px;
+  height: 510px !important;
+  min-height: 510px !important;
+  max-height: 510px !important;
   scroll-snap-align: center;
   background: #0B1222;
   border: 1px solid rgba(255, 255, 255, 0.12);
@@ -73,13 +73,13 @@
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  margin: 6px auto;
+  margin: 4px auto;
   transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), 
               box-shadow 0.25s ease, 
               border-color 0.25s ease,
               opacity 0.25s ease;
   user-select: none;
-  opacity: 0.60;
+  opacity: 0.55;
   transform: scale(0.95);
   box-sizing: border-box;
 }
@@ -99,12 +99,12 @@
   opacity: 1 !important;
   transform: scale(1) translateY(-3px) !important;
   border-color: rgba(255, 255, 255, 0.85) !important;
-  box-shadow: 0 0 16px 2px rgba(255, 255, 255, 0.40),
-              0 14px 32px rgba(0, 0, 0, 0.85) !important;
+  box-shadow: 0 0 16px 2px rgba(255, 255, 255, 0.35),
+              0 16px 36px rgba(0, 0, 0, 0.85) !important;
 }
 
 /* ----------------------------------------------------------------------------
-   4. LE 5 FASCE INTERNE DELLA CARTA MOVERINA (TOTALE: 424px)
+   4. LE 5 FASCE INTERNE DELLA CARTA MOVERINA (SOMMA TOTALE: 510px)
    ---------------------------------------------------------------------------- */
 
 /* FASCIA 1: Testata Anagrafica (38px) */
@@ -152,13 +152,13 @@
   border: 1px solid rgba(245, 158, 11, 0.4);
 }
 
-/* FASCIA 2: Media Illustrazione & Citazione Sfumata (160px) */
+/* FASCIA 2: Media Illustrazione & Citazione Sfumata Morbida (180px) */
 .tcg-card-media {
   position: relative;
   width: 100%;
-  height: 160px;
-  min-height: 160px;
-  max-height: 160px;
+  height: 180px;
+  min-height: 180px;
+  max-height: 180px;
   background: #000000;
   overflow: hidden;
   box-sizing: border-box;
@@ -177,8 +177,8 @@
   bottom: 0;
   left: 0;
   right: 0;
-  background: linear-gradient(180deg, transparent 0%, rgba(7, 10, 18, 0.75) 40%, #070A12 100%);
-  padding: 6px 12px 6px 12px;
+  background: linear-gradient(180deg, transparent 0%, rgba(7, 10, 18, 0.70) 35%, #070A12 100%);
+  padding: 8px 12px 6px 12px;
   display: flex;
   flex-direction: column;
   text-align: right;
@@ -207,7 +207,7 @@
   margin-top: 1px;
 }
 
-/* FASCIA 3: Piastra Metrica Incastonata (34px) */
+/* FASCIA 3: Piastra Metrica Incastonata a 3 Slot (34px) */
 .tcg-stats-plate {
   height: 34px;
   min-height: 34px;
@@ -244,25 +244,25 @@
   color: #FFFFFF;
 }
 
-/* FASCIA 4: Corpo Narrativo & Regole (144px) */
+/* FASCIA 4: Corpo Narrativo & Regole (210px - CAPIENZA REALE 8–9 RIGHE SENZA TAGLI) */
 .tcg-card-desc {
-  height: 144px;
-  min-height: 144px;
-  max-height: 144px;
-  padding: 4px 14px;
+  height: 210px;
+  min-height: 210px;
+  max-height: 210px;
+  padding: 6px 14px;
   font-size: 12px;
   line-height: 1.45;
   color: #CBD5E1;
   text-align: left;
   margin: 0;
   display: -webkit-box;
-  -webkit-line-clamp: 5;
+  -webkit-line-clamp: 9;
   -webkit-box-orient: vertical;
   overflow: hidden;
   box-sizing: border-box;
 }
 
-/* FASCIA 5: Piede Scheda (48px) */
+/* FASCIA 5: Piede Scheda con Dotazione e Vitali (48px) */
 .tcg-card-footer {
   height: 48px;
   min-height: 48px;
@@ -305,12 +305,13 @@
   color: #FDE047;
 }
 
-/* PALLINI CAROSELLO (DOTS) */
+/* PALLINI CAROSELLO COMPATTI */
 .coverflow-dots {
   display: flex;
   justify-content: center;
   gap: 6px;
-  margin-top: 4px;
+  margin-top: 6px;
+  margin-bottom: 6px;
 }
 
 .coverflow-dot {
@@ -357,7 +358,7 @@
 }
 
 /* ----------------------------------------------------------------------------
-   6. FOOTER WIZARD STICKY (PULSANTE CTA A TUTTA LARGHEZZA - 44px)
+   6. FOOTER DEDICATO WIZARD (CTA A TUTTA LARGHEZZA SENZA VUOTI MORTI - 44px)
    ---------------------------------------------------------------------------- */
 .wizard-sticky-footer {
   flex: none;
@@ -398,7 +399,7 @@
 }
 
 /* ----------------------------------------------------------------------------
-   7. FOOTER COCKPIT RULES 2 GAMEPLAY (4 COMANDI TATTICI - 44px)
+   7. FOOTER COCKPIT DI GIOCO RULES 2 (4 COMANDI TATTICI - 44px)
    ---------------------------------------------------------------------------- */
 .cockpit-footer {
   flex: none;
@@ -487,7 +488,7 @@
 }
 
 /* ----------------------------------------------------------------------------
-   9. NUMERI FLUTTUANTI (SORGONO DALLA CARTA E SFUMANO SOTTO L'HEADER)
+   9. NUMERI FLUTTUANTI (SORGONO DAL BORDO SUPERIORE CARTA E SFUMANO SOTTO L'HEADER)
    ---------------------------------------------------------------------------- */
 .floating-damage-layer {
   position: absolute;
@@ -511,11 +512,12 @@
   animation: floatTowardHeader 1.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
+/* 🔒 Traiettoria d'arco: dal bordo superiore della carta (Y: 175px) a ridosso dell'header */
 @keyframes floatTowardHeader {
   0% { opacity: 0; transform: translate(-50%, 0) scale(0.85); }
-  15% { opacity: 1; transform: translate(-50%, -20px) scale(1.1); }
-  75% { opacity: 0.9; transform: translate(-50%, -65px) scale(1); }
-  100% { opacity: 0; transform: translate(-50%, -95px) scale(0.9); }
+  15% { opacity: 1; transform: translate(-50%, -25px) scale(1.1); }
+  75% { opacity: 0.9; transform: translate(-50%, -85px) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -120px) scale(0.85); }
 }
 
 /* ----------------------------------------------------------------------------
