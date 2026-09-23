@@ -19,8 +19,8 @@
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
 
   <!-- FOGLI DI STILE VERSIONATI -->
-  <link rel="stylesheet" href="css/core.css?v=17.0">
-  <link rel="stylesheet" href="css/rules2.css?v=17.0">
+  <link rel="stylesheet" href="css/core.css?v=18.0">
+  <link rel="stylesheet" href="css/rules2.css?v=18.0">
 </head>
 
 <body class="rpg-app-body bg-[#070A12] text-slate-100 flex flex-col h-screen overflow-hidden select-none" data-context="app" data-active-screen="view-home">
@@ -141,7 +141,7 @@
           <i data-lucide="volume-2" class="w-4 h-4 text-sky-400"></i>
           <span>Audio Radio</span>
         </button>
-        <span class="font-mono text-[10px]">v17.0</span>
+        <span class="font-mono text-[10px]">v18.0</span>
       </div>
     </aside>
 
@@ -157,7 +157,8 @@
             <div class="home-hero-banner p-4 md:p-6 rounded-2xl bg-gradient-to-br from-slate-900 via-slate-900 to-indigo-950 border border-white/10 shadow-xl space-y-3">
               <div class="flex items-center space-x-2.5 flex-wrap gap-y-2">
                 <span class="badge badge-sm badge-info font-mono font-bold uppercase text-[9px]">Piattaforma Ufficiale</span>
-                <span class="text-xs font-bold text-emerald-400 font-mono">⭐ <span id="home-rank-points">0</span> Punti Fedeltà</span>
+                <!-- Rimosso il testo duplicato dei punti dal greeting per valorizzare i KPI sotto -->
+                <span id="home-rank-points" class="hidden">0</span>
                 <button onclick="AppModules.openPlansCatalogModal()" class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-sky-500/10 border border-sky-400/40 text-[9px] font-bold text-sky-300 uppercase">
                   <span>👑</span> <span id="home-plan-badge">PIANO BASE</span> <span>›</span>
                 </button>
@@ -200,7 +201,7 @@
               </div>
             </div>
 
-            <!-- KPI QUAD GRID -->
+            <!-- KPI QUAD GRID (AUTORITÀ UNICA DELLE METRICHE IN HOME) -->
             <div class="kpi-quad-grid grid grid-cols-2 md:grid-cols-4 gap-2.5 w-full">
               <div onclick="AppRouter.navigate('profile')" class="kpi-card p-3.5 rounded-xl bg-slate-900/90 border border-white/10 flex items-center justify-between cursor-pointer hover:border-amber-400/40 transition">
                 <div>
@@ -226,7 +227,7 @@
                 <i data-lucide="play" class="kpi-card-icon w-4 h-4 text-sky-400 shrink-0"></i>
               </div>
 
-              <div onclick="AppRouter.navigate('profile')" class="kpi-card p-3.5 rounded-xl bg-slate-900/90 border border-white/10 flex items-center justify-between cursor-pointer hover:border-purple-400/40 transition">
+              <div onclick="AppModules.openVaultSection()" class="kpi-card p-3.5 rounded-xl bg-slate-900/90 border border-white/10 flex items-center justify-between cursor-pointer hover:border-purple-400/40 transition">
                 <div>
                   <div class="kpi-card-label text-[9px] font-mono font-bold text-slate-400 uppercase">Download Caveau</div>
                   <div class="kpi-card-value text-sm md:text-base font-black text-purple-400 font-mono mt-0.5" id="home-purchases-count">0</div>
@@ -235,7 +236,7 @@
               </div>
             </div>
 
-            <!-- CAROSELLO HOME DINAMICO -->
+            <!-- CAROSELLO HOME DINAMICO (16:9 CENTRATO) -->
             <div class="space-y-2">
               <div class="flex items-center justify-between">
                 <span class="section-kicker text-xs font-bold text-slate-400 uppercase">In Evidenza nel Syndicate</span>
@@ -259,18 +260,18 @@
               <span class="text-xs text-slate-400 font-mono" id="games-total-counter">Caricamento...</span>
             </div>
 
-            <!-- BANNER MULTIPLAYER INTEGRATO -->
+            <!-- BANNER MULTIPLAYER INTEGRATO (LAYOUT ANTI-SOVRAPPOSIZIONE) -->
             <div onclick="AppModules.openMultiplayerLobby()" class="p-4 rounded-2xl bg-gradient-to-r from-purple-950/70 via-slate-900 to-slate-900 border border-purple-500/40 flex items-center justify-between cursor-pointer hover:border-purple-400 transition shadow-xl">
-              <div class="flex items-center gap-3.5">
+              <div class="flex items-center gap-3.5 min-w-0 flex-1">
                 <div class="w-11 h-11 rounded-xl bg-purple-500/20 border border-purple-400/40 flex items-center justify-center text-2xl text-purple-300 shrink-0">
                   👥
                 </div>
-                <div>
-                  <div class="flex items-center gap-2">
-                    <h3 class="font-black text-sm text-white">Stanze Multiplayer Clandestine</h3>
-                    <span class="badge badge-xs badge-secondary font-mono font-bold">1VS1 & CO-OP</span>
+                <div class="min-w-0 pr-2">
+                  <div class="flex items-center gap-2 flex-wrap">
+                    <h3 class="font-black text-sm text-white truncate">Stanze Multiplayer Clandestine</h3>
+                    <span class="badge badge-xs badge-secondary font-mono font-bold shrink-0">1VS1 & CO-OP</span>
                   </div>
-                  <p class="text-[11px] text-slate-300 mt-0.5">Sfida un compagno a colpi di D20 o assalta i boss del porto in cooperativa.</p>
+                  <p class="text-[11px] text-slate-300 mt-0.5 line-clamp-1">Sfida un compagno a colpi di D20 o assalta i boss del porto in cooperativa.</p>
                 </div>
               </div>
               <button class="btn btn-xs btn-secondary font-black px-3 shrink-0">Entra ›</button>
@@ -280,10 +281,18 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="games-catalog-container"></div>
           </section>
 
-          <!-- DETTAGLIO SAGA (CAPITOLI, REGOLE, SCHEDA) -->
+          <!-- DETTAGLIO SAGA (16:9 + TASTO TORNA AI GIOCHI) -->
           <section id="subview-game-detail" class="space-y-4 hidden app-screen max-w-3xl mx-auto">
+            <!-- Barra di Ritorno Subview -->
+            <div class="subview-header-bar flex items-center justify-between pb-2 border-b border-white/10 mb-1">
+              <button onclick="AppRouter.navigate('games')" class="btn-back-subview flex items-center gap-1.5 text-xs font-bold text-slate-300 hover:text-white">
+                <i data-lucide="chevron-left" class="w-4 h-4"></i> <span>Torna alle Saghe</span>
+              </button>
+              <span class="text-[10px] font-mono text-sky-400 uppercase font-bold">Fascicolo Saga</span>
+            </div>
+
             <div class="cinema-frame-rigid shadow-xl rounded-2xl overflow-hidden relative">
-              <img id="hub-image" src="" class="w-full h-48 object-cover" alt="Copertina Gioco">
+              <img id="hub-image" src="" alt="Copertina Gioco">
               <div class="watermark-cover-banner">
                 <div class="quote-text" id="hub-quote"></div>
                 <div class="quote-author" id="hub-author"></div>
@@ -664,8 +673,9 @@
               </div>
             </div>
 
+            <!-- Cinema Frame con Rapporto 16:9 Rigoroso -->
             <div class="cinema-frame-rigid shadow-xl relative rounded-2xl overflow-hidden mt-3">
-              <img id="scene-image" src="" class="w-full h-44 object-cover" alt="Scena di Gioco">
+              <img id="scene-image" src="" alt="Scena di Gioco">
               <span id="scene-type-badge" class="badge badge-xs badge-info scene-badge absolute top-2 left-2">SNODO</span>
               <div id="floating-damage-box" class="floating-damage-layer"></div>
 
@@ -692,27 +702,42 @@
               <input type="text" id="shop-search-input" oninput="AppModules.filterShop()" placeholder="Cerca nello Shop..." class="input input-sm input-bordered w-full pl-9 bg-slate-900 text-white">
             </div>
             <div class="chips-scroll-bar flex gap-1.5 overflow-x-auto pb-1" id="shop-category-chips"></div>
+            <!-- Griglia Prodotti a 2 Colonne con Schede Interamente Cliccabili -->
             <div id="shop-products-grid" class="grid grid-cols-2 md:grid-cols-4 gap-3"></div>
           </section>
 
-          <!-- DETTAGLIO SHOP -->
+          <!-- DETTAGLIO SHOP (CON TASTO TORNA INDIETRO + IMMAGINE 16:9 CENTRATA) -->
           <section id="subview-shop-detail" class="space-y-4 hidden app-screen max-w-2xl mx-auto">
-            <div class="detail-header-border pb-2 border-b border-white/10">
+            <!-- Barra di Ritorno allo Shop -->
+            <div class="subview-header-bar flex items-center justify-between pb-2 border-b border-white/10 mb-1">
+              <button onclick="AppRouter.navigate('shop')" class="btn-back-subview flex items-center gap-1.5 text-xs font-bold text-slate-300 hover:text-white">
+                <i data-lucide="chevron-left" class="w-4 h-4"></i> <span>Torna allo Shop</span>
+              </button>
               <span id="detail-shop-cat" class="text-[10px] font-mono text-sky-400 font-bold uppercase">Reparto</span>
-              <h2 class="text-base font-black text-white mt-0.5" id="detail-shop-title">Nome Articolo</h2>
             </div>
-            <div class="detail-media-box h-48 rounded-xl overflow-hidden relative bg-slate-900">
-              <img id="detail-shop-img" src="" class="w-full h-full object-cover" alt="">
+
+            <div class="space-y-1">
+              <h2 class="text-base md:text-lg font-black text-white" id="detail-shop-title">Nome Articolo</h2>
+            </div>
+
+            <!-- Involucro 16:9 con Ritaglio Centrato -->
+            <div class="detail-media-box rounded-xl overflow-hidden relative bg-slate-900">
+              <img id="detail-shop-img" src="" alt="Foto Articolo">
               <span id="detail-shop-stock" class="badge badge-sm badge-success stock-badge absolute top-2 right-2">Disponibile</span>
             </div>
+
             <div class="space-y-4">
               <p id="detail-shop-desc" class="text-xs text-slate-300 leading-relaxed"></p>
-              <div class="p-3 rounded-xl bg-slate-900 border border-white/10 flex items-center justify-between">
+              
+              <!-- Barra Acquisto Fissa / Box Azione -->
+              <div class="p-3.5 rounded-xl bg-slate-900 border border-white/10 flex items-center justify-between gap-3">
                 <div>
-                  <div class="text-[9px] font-mono text-slate-400 uppercase">Prezzo</div>
-                  <div class="text-sm font-black text-amber-400 font-mono" id="detail-shop-price">0 🪙</div>
+                  <div class="text-[9px] font-mono text-slate-400 uppercase">Prezzo Piattaforma</div>
+                  <div class="text-sm md:text-base font-black text-amber-400 font-mono" id="detail-shop-price">0 🪙</div>
                 </div>
-                <button id="detail-shop-action-btn" class="btn btn-primary btn-sm px-6 font-bold">Acquista</button>
+                <button id="detail-shop-action-btn" class="btn btn-primary btn-sm px-6 font-black uppercase text-xs shadow-md">
+                  Acquista
+                </button>
               </div>
             </div>
           </section>
@@ -726,28 +751,42 @@
               <input type="text" id="recipes-search-input" oninput="AppModules.filterRecipes()" placeholder="Cerca cocktail o piatti..." class="input input-sm input-bordered w-full pl-9 bg-slate-900 text-white">
             </div>
             <div class="chips-scroll-bar flex gap-1.5 overflow-x-auto pb-1" id="recipes-category-chips"></div>
+            <!-- Griglia Ricette con Schede Cliccabili -->
             <div id="recipes-grid" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
           </section>
 
-          <!-- DETTAGLIO RICETTA -->
+          <!-- DETTAGLIO RICETTA (CON TASTO TORNA INDIETRO + IMMAGINE 16:9 CENTRATA) -->
           <section id="subview-recipe-detail" class="space-y-4 hidden app-screen max-w-2xl mx-auto">
-            <div class="detail-header-border pb-2 border-b border-white/10">
+            <!-- Barra di Ritorno alle Ricette -->
+            <div class="subview-header-bar flex items-center justify-between pb-2 border-b border-white/10 mb-1">
+              <button onclick="AppRouter.navigate('recipes')" class="btn-back-subview flex items-center gap-1.5 text-xs font-bold text-slate-300 hover:text-white">
+                <i data-lucide="chevron-left" class="w-4 h-4"></i> <span>Torna alle Ricette</span>
+              </button>
               <span id="detail-recipe-cat" class="text-[10px] font-mono text-emerald-400 font-bold uppercase">Categoria</span>
-              <h2 class="detail-title text-base font-black text-white mt-0.5" id="detail-recipe-title">Piatto</h2>
             </div>
-            <div class="detail-media-box h-48 rounded-xl overflow-hidden bg-slate-900">
-              <img id="detail-recipe-img" src="" class="w-full h-full object-cover" alt="">
+
+            <div class="space-y-1">
+              <h2 class="detail-title text-base md:text-lg font-black text-white" id="detail-recipe-title">Piatto</h2>
             </div>
+
+            <!-- Involucro 16:9 con Ritaglio Centrato -->
+            <div class="detail-media-box rounded-xl overflow-hidden bg-slate-900">
+              <img id="detail-recipe-img" src="" alt="Foto Piatto">
+            </div>
+
             <div class="space-y-3">
-              <div id="detail-recipe-meta" class="flex gap-2"></div>
+              <div id="detail-recipe-meta" class="flex gap-2 flex-wrap"></div>
+              
               <div class="p-3 rounded-xl bg-slate-900 border border-white/10">
                 <div class="text-[10px] font-mono text-slate-400 uppercase font-bold mb-2">Parametri RPG & Gusto</div>
                 <div class="grid grid-cols-3 gap-2 text-center" id="detail-recipe-rpg"></div>
               </div>
+
               <div class="space-y-1">
                 <div class="text-xs font-bold text-slate-400 uppercase">Ingredienti</div>
                 <p id="detail-recipe-ingredients" class="p-3 rounded-xl bg-slate-900 border border-white/10 text-xs text-slate-300 leading-relaxed whitespace-pre-line"></p>
               </div>
+
               <div class="space-y-1">
                 <div class="text-xs font-bold text-slate-400 uppercase">Preparazione</div>
                 <p id="detail-recipe-prep" class="p-3 rounded-xl bg-slate-900 border border-white/10 text-xs text-slate-300 leading-relaxed whitespace-pre-line"></p>
@@ -756,43 +795,52 @@
           </section>
 
           <!-- =============================================================== -->
-          <!-- VISTA 7: PROFILO UTENTE, ARENA & CAVEAU                         -->
+          <!-- VISTA 7: PROFILO UTENTE (STANDARDIZZATO SECONDO PATTERN NATIVI) -->
           <!-- =============================================================== -->
           <section id="view-profile" class="space-y-4 hidden app-screen">
+            <!-- 1. Scheda Identità Utente Pulita (Senza numeri ammassati) -->
             <div class="profile-header-card p-4 rounded-2xl bg-gradient-to-br from-slate-900 to-indigo-950/60 border border-white/10 flex items-center justify-between">
-              <div class="flex items-center space-x-3.5">
+              <div class="flex items-center space-x-3.5 min-w-0">
                 <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-sky-600 to-indigo-900 border border-sky-400/40 flex items-center justify-center text-xl font-black text-white shrink-0 overflow-hidden" id="profile-card-avatar">
                   U
                 </div>
-                <div>
-                  <h3 class="text-sm font-black text-white" id="profile-card-name">Nome Utente</h3>
-                  <span class="text-[11px] font-mono text-sky-400" id="profile-card-username">@username</span>
-                  <div class="mt-1 flex items-center gap-2">
+                <div class="min-w-0">
+                  <div class="flex items-center gap-2">
+                    <h3 class="text-sm font-black text-white truncate" id="profile-card-name">Nome Utente</h3>
                     <span class="badge badge-xs badge-info font-bold uppercase text-[8px]" id="profile-card-plan">PIANO BASE</span>
-                    <span class="text-[9px] font-mono text-slate-500" id="profile-card-id">ID: ---</span>
                   </div>
-                </div>
-              </div>
-
-              <div class="text-right space-y-1 font-mono">
-                <div>
-                  <div class="text-[9px] text-slate-400 uppercase">Saldo Megoin</div>
-                  <div class="text-sm md:text-base font-black text-amber-300" id="profile-card-megoin">0 🪙</div>
-                </div>
-                <div>
-                  <div class="text-[9px] text-slate-400 uppercase">Fedeltà</div>
-                  <div class="text-sm md:text-base font-black text-emerald-400" id="profile-card-points">0 Pt</div>
+                  <span class="text-[11px] font-mono text-sky-400 truncate block mt-0.5" id="profile-card-username">@username</span>
+                  <div class="text-[9px] font-mono text-slate-500 mt-0.5" id="profile-card-id">ID: ---</div>
                 </div>
               </div>
             </div>
 
-            <!-- Azioni Rapide Piano & Download -->
+            <!-- 2. Dock KPI Orizzontale a 2 Colonne (Consistente con la Home) -->
+            <div class="grid grid-cols-2 gap-2.5 w-full">
+              <div class="kpi-card p-3 rounded-xl bg-slate-900 border border-white/10 flex items-center justify-between">
+                <div>
+                  <div class="kpi-card-label text-[9px] font-mono font-bold text-slate-400 uppercase">Saldo Megoin</div>
+                  <div class="kpi-card-value text-base font-black text-amber-300 font-mono mt-0.5" id="profile-card-megoin">0 🪙</div>
+                </div>
+                <span class="text-xl">🪙</span>
+              </div>
+
+              <div class="kpi-card p-3 rounded-xl bg-slate-900 border border-white/10 flex items-center justify-between">
+                <div>
+                  <div class="kpi-card-label text-[9px] font-mono font-bold text-slate-400 uppercase">Punti Fedeltà</div>
+                  <div class="kpi-card-value text-base font-black text-emerald-400 font-mono mt-0.5" id="profile-card-points">0 Pt</div>
+                </div>
+                <span class="text-xl">⭐</span>
+              </div>
+            </div>
+
+            <!-- 3. Azioni Rapide Piano & Download -->
             <div class="grid grid-cols-2 gap-3">
               <button onclick="AppModules.openPlansCatalogModal()" class="p-3 rounded-xl bg-slate-900 border border-sky-400/30 flex items-center justify-between text-left hover:border-sky-400/60 transition">
                 <div class="flex items-center gap-2.5">
                   <span class="text-lg">👑</span>
                   <div>
-                    <div class="font-bold text-xs text-white" id="profile-action-plan-name">Piano: BASE</div>
+                    <div class="font-bold text-xs text-white" id="profile-action-plan-name">Piano & Livello</div>
                     <div class="text-[9px] text-sky-400 font-mono">Vedi Piani & Upgrade ›</div>
                   </div>
                 </div>
@@ -843,7 +891,7 @@
       <!-- 4. FOOTER MENU STICKY (MOBILE: 5 TAB THUMB-FRIENDLY COMPLETI)       -->
       <!-- =================================================================== -->
       <footer id="main-app-footer" class="main-app-footer md:hidden flex justify-around items-center bg-[#070A12]/95 backdrop-blur-lg border-t border-white/10 relative z-40" style="height: calc(52px + var(--safe-bottom, 0px)); padding-bottom: var(--safe-bottom, 0px);">
-        <!-- TAB 1: HOME (CORRETTO E COMPLETO) -->
+        <!-- TAB 1: HOME -->
         <button id="mob-nav-home" onclick="AppRouter.navigate('home')" class="nav-tab active flex flex-col items-center justify-center h-12 w-16 text-slate-400" data-tab="home">
           <i data-lucide="home" class="w-4 h-4"></i>
           <span class="nav-tab-label text-[9px] font-bold mt-1">Home</span>
@@ -1262,10 +1310,10 @@
   </dialog>
 
   <!-- SCRIPT DI SISTEMA VERSIONATI -->
-  <script src="audio.js?v=17.0"></script>
-  <script src="js/app-core.js?v=17.0"></script>
-  <script src="js/app-modules.js?v=17.0"></script>
-  <script src="js/rules2wizard.js?v=17.0"></script>
-  <script src="js/rules2engine.js?v=17.0"></script>
+  <script src="audio.js?v=18.0"></script>
+  <script src="js/app-core.js?v=18.0"></script>
+  <script src="js/app-modules.js?v=18.0"></script>
+  <script src="js/rules2wizard.js?v=18.0"></script>
+  <script src="js/rules2engine.js?v=18.0"></script>
 </body>
 </html>
