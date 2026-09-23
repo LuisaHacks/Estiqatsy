@@ -1,17 +1,18 @@
 // ============================================================================
 // PROJECT: ESTIQATSY SYNDICATE & RPG PLATFORM
-// FILE: js/app-modules.js (VERSIONE 18.0 - SINGLE BOOTSTRAP, 16:9 & LOCAL CACHE)
-// LAYER 2: CATALOGHI, SHOP, SAGHE RPG, ARENA, MODULI SPECIALISTICI & ADMIN
+// FILE: js/app-modules.js (VERSIONE 19.0 - UNIFIED STEAM SYSTEM & ZERO-FLICKER)
+// LAYER 2: SINGLE BOOTSTRAP, UNIFIED CATALOGS, CLICKABLE CARDS & DIGITAL VAULT
 // ============================================================================
 
 (function() {
   'use strict';
 
   // --------------------------------------------------------------------------
-  // 1. STATO LOCALE DEI MODULI
+  // 1. STATO LOCALE DEI MODULI & FILTRI CATEGORIA
   // --------------------------------------------------------------------------
   let currentShopCategory = 'tutti';
   let currentRecipeCategory = 'tutti';
+  let currentGameGenre = 'tutti';
   let selectedMultiplayerMode = '1vs1';
   let currentSelectedSheet = '⚙️ Config';
   let currentSelectedGasFile = 'Logic.gs';
@@ -45,34 +46,29 @@
   const AppModules = {
 
     // ------------------------------------------------------------------------
-    // INIZIALIZZAZIONE ATOMICA (SINGLE BOOTSTRAP A CHIAMATA UNICA)
+    // INIZIALIZZAZIONE ATOMICA (TUTTI I DATI CARICATI PRIMA DI MOSTRARE L'APP)
     // ------------------------------------------------------------------------
     init: async function() {
       this.loadVault();
       
-      // 1. Carica prima la cache locale per mostrare i contenuti a zero millisecondi
+      // 1. Mostra istantaneamente l'app leggendo la memoria locale
       this.loadLocalCache();
 
       try {
-        // 2. CHIAMATA ATOMICA SINGOLA: Un solo colpo per Profilo, Giochi, Shop, Ricette e Transazioni
+        // 2. UNICA CHIAMATA DI RETE ATOMICA: Scarica tutto in blocco
         const bootData = await apiCall("bootstrap");
         
         if (bootData) {
           this.applyBootstrapData(bootData);
         }
       } catch (err) {
-        console.warn("[AppModules.init] Fallback su cache o mancata connessione GAS:", err);
-        const errBox = document.getElementById("loading-error-box");
-        if (errBox && (!AppState.games.catalog || AppState.games.catalog.length === 0)) {
-          errBox.textContent = err.message || "Errore sincronizzazione con Google Apps Script.";
-          errBox.classList.remove("hidden");
-        }
+        console.warn("[AppModules.init] Connessione di rete non disponibile, uso cache:", err);
       } finally {
-        // Setup componenti multimediali
+        // 3. Setup componenti grafici e sonori
         this.initCarousel();
         this.initRadio();
 
-        // Sincronizza l'interfaccia con i dati memorizzati
+        // 4. Solo adesso che l'app è completamente popolata, togliamo la rotellina
         if (window.AppCore) {
           AppCore.syncUI();
           AppCore.dismissLoader();
@@ -81,7 +77,7 @@
     },
 
     // ------------------------------------------------------------------------
-    // GESTIONE DELLA CACHE LOCALE (STALE-WHILE-REVALIDATE)
+    // GESTIONE DELLA CACHE CLIENT (ZERO ATTESE SUI TAB)
     // ------------------------------------------------------------------------
     loadLocalCache: function() {
       try {
@@ -89,6 +85,7 @@
         if (raw) {
           const cached = JSON.parse(raw);
           if (cached.games && cached.games.length > 0) AppState.games.catalog = cached.games;
+          if (cached.genres && cached.genres.length > 0) AppState.games.genres = cached.genres;
           if (cached.shop && cached.shop.length > 0) {
             AppState.shop.items = cached.shop;
             AppState.shop.categories = cached.shopCategories || [];
@@ -101,7 +98,7 @@
             AppState.transactions = cached.transactions;
           }
 
-          // Pre-render istantaneo da memoria locale
+          // Render immediato da memoria locale
           this.renderGamesCatalog();
           this.renderShop();
           this.renderRecipes();
@@ -114,6 +111,7 @@
       try {
         localStorage.setItem("est_bootstrap_cache", JSON.stringify({
           games: data.games || [],
+          genres: data.genres || [],
           shop: data.shop || [],
           shopCategories: data.shopCategories || [],
           recipes: data.recipes || [],
@@ -124,7 +122,7 @@
     },
 
     applyBootstrapData: function(data) {
-      // 1. Profilo Utente e Piani
+      // 1. Profilo Utente & Permessi
       if (data.user) {
         AppState.user = {
           ...AppState.user,
@@ -157,6 +155,7 @@
       // 2. Catalogo Giochi
       if (data.games) {
         AppState.games.catalog = data.games;
+        AppState.games.genres = data.genres || [];
         const gc = document.getElementById("home-games-count");
         if (gc) gc.textContent = data.games.length;
       }
@@ -167,21 +166,22 @@
         AppState.shop.categories = data.shopCategories || [];
       }
 
-      // 4. Ricettario
+      // 4. Catalogo Ricettario
       if (data.recipes) {
         AppState.recipes.items = data.recipes;
         AppState.recipes.categories = data.recipeCategories || [];
       }
 
-      // 5. Transazioni
+      // 5. Transazioni & Idratazione Caveau Download
       if (data.transactions) {
         AppState.transactions = data.transactions;
+        this.hydrateVaultFromTransactions(data.transactions);
       }
 
-      // Salva nella cache locale per i prossimi avvii
+      // Salva nella memoria locale per i successivi accessi
       this.saveLocalCache(data);
 
-      // Render di tutte le viste aggiornate dal server
+      // Render completo nel DOM
       this.renderGamesCatalog();
       this.renderShop();
       this.renderRecipes();
@@ -199,7 +199,7 @@
     },
 
     // ------------------------------------------------------------------------
-    // GESTIONE PROFILO UTENTE
+    // GESTIONE PROFILO UTENTE & CAVEAU DOWNLOADS
     // ------------------------------------------------------------------------
     renderProfile: function() {
       if (window.AppCore) AppCore.syncUI();
@@ -223,21 +223,56 @@
       if (window.AppCore) AppCore.syncUI();
     },
 
+    hydrateVaultFromTransactions: function(transactions) {
+      if (!AppState.digitalVault) AppState.digitalVault = [];
+      if (transactions && transactions.length > 0) {
+        transactions.forEach(tx => {
+          const detail = String(tx.dettaglio || "");
+          const isDownload = detail.toLowerCase().includes("ebook") || detail.toLowerCase().includes("corso") || detail.toLowerCase().includes("digital");
+          if (isDownload) {
+            const exists = AppState.digitalVault.some(v => v.nome === detail);
+            if (!exists) {
+              AppState.digitalVault.push({
+                nome: detail,
+                url: "#",
+                data: tx.data || "Acquistato"
+              });
+            }
+          }
+        });
+        localStorage.setItem(AppConfig.CACHE_KEYS.VAULT, JSON.stringify(AppState.digitalVault));
+      }
+      this.renderVault();
+    },
+
+    openVaultModal: function() {
+      this.renderVault();
+      const modal = document.getElementById("modal-vault-downloads");
+      if (modal) modal.showModal();
+    },
+
     renderVault: function() {
       const c = document.getElementById("profile-vault-container");
       if (!c) return;
       const vault = AppState.digitalVault || [];
       if (vault.length === 0) {
-        c.innerHTML = `<div class="text-xs text-slate-500 font-mono py-2">Nessun file scaricato o riscattato finora.</div>`;
+        c.innerHTML = `
+          <div class="p-4 text-center text-xs text-slate-400 font-mono space-y-2">
+            <div>Nessun file scaricato o riscattato al momento.</div>
+            <button onclick="document.getElementById('modal-vault-downloads').close(); AppRouter.navigate('shop');" class="btn btn-xs btn-primary font-bold">
+              Esplora Mercato Digitale ›
+            </button>
+          </div>
+        `;
         return;
       }
       c.innerHTML = vault.map(v => `
-        <div class="p-2.5 rounded-xl bg-slate-900/90 border border-white/5 flex items-center justify-between text-xs">
+        <div class="p-3 rounded-xl bg-slate-900 border border-white/10 flex items-center justify-between text-xs gap-2">
           <div class="min-w-0 pr-2">
             <div class="font-bold text-white truncate">${v.nome}</div>
-            <div class="text-[10px] font-mono text-slate-400">${v.data || 'Oggi'}</div>
+            <div class="text-[10px] font-mono text-slate-400 mt-0.5">${v.data || 'Disponibile'}</div>
           </div>
-          <a href="${v.url}" target="_blank" class="btn btn-xs btn-outline border-emerald-500/40 text-emerald-300 font-bold shrink-0">
+          <a href="${v.url}" target="_blank" class="btn btn-xs btn-success font-black text-slate-950 shrink-0">
             Scarica 📥
           </a>
         </div>
@@ -302,7 +337,7 @@
       if (AppState.shop.items && AppState.shop.items.length > 0) {
         const topProduct = AppState.shop.items[0];
         slides.push({
-          badge: "SHOP",
+          badge: "MERCATO",
           titolo: topProduct.nome,
           sottotitolo: topProduct.descrizione || "Scopri gli articoli disponibili nel Syndicate",
           action: () => AppRouter.navigate("shop"),
@@ -315,7 +350,7 @@
         slides.push({
           badge: (topRecipe.categoria || "RICETTA").toUpperCase(),
           titolo: topRecipe.piatto,
-          sottotitolo: `Preparazione: ${topRecipe.tempo || 'rapida'} • Costo: ${topRecipe.costo || 'conveniente'}`,
+          sottotitolo: `Preparazione rapida • ${topRecipe.costo || 'Conveniente'}`,
           action: () => AppRouter.navigate("recipes"),
           img: topRecipe.mediaUrl
         });
@@ -354,18 +389,16 @@
     },
 
     // ------------------------------------------------------------------------
-    // CATALOGO GIOCHI (SCHEDE TOTALMENTE CLICCABILI)
+    // CATALOGO GIOCHI (CARD STEAM UNIFORME, FILTRI CHIP & SUBVIEW 16:9)
     // ------------------------------------------------------------------------
-    loadGamesCatalog: async function() {
-      try {
-        const gamesData = await apiCall("games");
-        if (gamesData && gamesData.series) {
-          AppState.games.catalog = gamesData.series;
-          const gc = document.getElementById("home-games-count");
-          if (gc) gc.textContent = gamesData.series.length;
-        }
-      } catch (e) {
-        console.warn("[AppModules] Errore caricamento catalogo giochi:", e);
+    setGameGenre: function(genre) {
+      currentGameGenre = genre;
+      const chips = document.getElementById("games-category-chips");
+      if (chips) {
+        chips.querySelectorAll(".rpg-category-chip").forEach(btn => {
+          const isAct = btn.textContent.trim().toLowerCase() === genre.toLowerCase();
+          btn.classList.toggle("active", isAct);
+        });
       }
       this.renderGamesCatalog();
     },
@@ -375,39 +408,49 @@
       const counter = document.getElementById("games-total-counter");
       if (!container) return;
 
-      const list = AppState.games.catalog || [];
+      let list = AppState.games.catalog || [];
       if (counter) counter.textContent = `${list.length} Saghe Attive`;
 
+      if (currentGameGenre !== 'tutti') {
+        list = list.filter(g => (g.tipologia || '').toLowerCase() === currentGameGenre.toLowerCase());
+      }
+
       if (list.length === 0) {
-        container.innerHTML = `<div class="col-span-full text-center py-8 text-slate-500 font-mono text-xs">Nessun gioco registrato nel database.</div>`;
+        container.innerHTML = `<div class="col-span-full text-center py-8 text-slate-500 font-mono text-xs">Nessuna saga trovata in questa categoria.</div>`;
         return;
       }
 
-      // Rimosso h-40 fisso: ora l'involucro .item-card-media adotta l'aspect-ratio 16:9 centrato
-      container.innerHTML = list.map(saga => `
-        <div class="item-card group" onclick="AppModules.openGameDetail('${saga.gameKey}')">
-          <div class="item-card-media">
-            <img src="${saga.mediaUrl}" class="item-card-img" alt="${saga.serie}">
-            <span class="item-card-badge">${saga.regole || 'Rules 2'}</span>
-            <div class="absolute bottom-2 right-2 bg-black/80 px-2 py-0.5 rounded text-[10px] font-mono text-amber-300 font-bold">
-              ${(saga.episodes || []).filter(e => e.episodio > 0).length} Capitoli
+      // Card Capsule Standard Steam (16:9 centrato, tag, corpo su 2 righe, footer con CTA uniforme)
+      container.innerHTML = list.map(saga => {
+        const epCount = (saga.episodes || []).filter(e => e.episodio > 0).length;
+
+        return `
+          <div class="item-card group" onclick="AppModules.openGameDetail('${saga.gameKey}')">
+            <div class="item-card-media">
+              <img src="${saga.mediaUrl}" class="item-card-img" alt="${saga.serie}">
+              <span class="item-card-badge">${saga.regole || 'Rules 2'}</span>
+              <div class="absolute bottom-2 right-2 bg-black/80 px-2 py-0.5 rounded text-[10px] font-mono text-amber-300 font-bold">
+                ${epCount} Capitoli
+              </div>
+            </div>
+            <div class="item-card-body">
+              <div>
+                <span class="text-[9.5px] font-bold text-sky-400 uppercase tracking-wider">${saga.tipologia || 'INVESTIGATIVO'}</span>
+                <h3 class="item-card-title text-sm mt-0.5 line-clamp-1">${saga.emoji || '🎮'} ${saga.serie}</h3>
+                <p class="item-card-desc text-xs mt-1 line-clamp-2">${saga.descrizione || ''}</p>
+              </div>
+              <div class="item-card-footer mt-2">
+                <span class="text-[10px] font-mono ${saga.hasActiveGame ? 'text-amber-400 font-bold' : 'text-slate-400'}">
+                  ${saga.hasActiveGame ? '⚔️ In corso' : 'Pronto'}
+                </span>
+                <button onclick="event.stopPropagation(); AppModules.openGameDetail('${saga.gameKey}')" class="btn btn-xs btn-primary font-bold px-3">
+                  Vedi Scheda ›
+                </button>
+              </div>
             </div>
           </div>
-          <div class="item-card-body">
-            <div>
-              <span class="text-[9.5px] font-bold text-sky-400 uppercase tracking-wider">${saga.tipologia || 'INVESTIGATIVO'}</span>
-              <h3 class="item-card-title text-sm mt-0.5">${saga.emoji || '🎮'} ${saga.serie}</h3>
-              <p class="item-card-desc text-xs mt-1 line-clamp-2">${saga.descrizione || ''}</p>
-            </div>
-            <div class="item-card-footer mt-2">
-              <span class="text-[10px] font-mono ${saga.hasActiveGame ? 'text-amber-400 font-bold' : 'text-slate-400'}">
-                ${saga.hasActiveGame ? '⚔️ In corso' : 'Pronto'}
-              </span>
-              <button onclick="event.stopPropagation(); AppModules.openGameDetail('${saga.gameKey}')" class="btn btn-xs btn-primary font-bold px-3">Apri Scheda ›</button>
-            </div>
-          </div>
-        </div>
-      `).join("");
+        `;
+      }).join("");
     },
 
     openGameDetail: function(gameKey) {
@@ -450,7 +493,7 @@
         `;
       }
 
-      // Capitoli giocabili
+      // Elenco Episodi
       const epContainer = document.getElementById("hub-episodes-container");
       if (epContainer) {
         const playableEpisodes = (saga.episodes || []).filter(ep => ep.episodio > 0);
@@ -468,18 +511,18 @@
           }
 
           return `
-            <div class="p-3.5 rounded-xl bg-slate-900/90 border ${isCurrentActive ? 'border-amber-400/50 bg-amber-950/20' : 'border-white/10'} flex items-center justify-between gap-3">
+            <div class="p-3 rounded-xl bg-slate-900 border ${isCurrentActive ? 'border-amber-400/50 bg-amber-950/20' : 'border-white/10'} flex items-center justify-between gap-3">
               <div class="min-w-0 flex-1">
                 <div class="flex items-center gap-2">
                   <span class="text-sky-400 font-mono font-extrabold text-xs">EP. ${ep.episodio}</span>
                   <span class="text-slate-600">·</span>
                   <h4 class="text-xs font-bold text-white truncate">${ep.titolo}</h4>
                 </div>
-                <div class="text-[10px] font-mono text-slate-400 mt-1">
+                <div class="text-[10px] font-mono text-slate-400 mt-0.5">
                   ${isCurrentActive ? '⚔️ Partita in corso' : (ep.canContinueFree ? '🎖️ Eroe Veterano (Gratis)' : (ep.costoMegoin === 0 ? 'Gratuito' : `${ep.costoMegoin} Megoin 🪙`))}
                 </div>
               </div>
-              <button onclick="AppModules.startEpisode('${saga.gameKey}', ${ep.episodio}, ${!!ep.canContinueFree})" class="btn btn-sm ${btnClass} font-black text-xs shrink-0 shadow-md min-h-[44px]">
+              <button onclick="AppModules.startEpisode('${saga.gameKey}', ${ep.episodio}, ${!!ep.canContinueFree})" class="btn btn-sm ${btnClass} font-black text-xs shrink-0 shadow-md min-h-[38px]">
                 ${btnText}
               </button>
             </div>
@@ -584,29 +627,17 @@
     },
 
     // ------------------------------------------------------------------------
-    // SHOP (SCHEDE TOTALMENTE CLICCABILI & 16:9 CENTRATO)
+    // SHOP (CARD STEAM UNIFORME, FILTRI CHIP & ZERO RE-FETCH DI RETE)
     // ------------------------------------------------------------------------
-    fetchShop: async function() {
-      try {
-        const data = await apiCall("shop");
-        if (data && data.items) {
-          AppState.shop.items = data.items;
-          AppState.shop.categories = data.categories || [];
-        }
-      } catch (e) {
-        console.warn("[AppModules] Errore caricamento shop:", e);
-      }
-      this.renderShop();
-    },
-
     setShopCategory: function(cat) {
       currentShopCategory = cat;
-      this.renderShop();
-    },
-
-    filterShop: function() {
-      const input = document.getElementById("shop-search-input");
-      AppState.shop.searchQuery = input ? input.value.trim().toLowerCase() : "";
+      const chips = document.getElementById("shop-category-chips");
+      if (chips) {
+        chips.querySelectorAll(".rpg-category-chip").forEach(btn => {
+          const isAct = btn.textContent.trim().toLowerCase() === cat.toLowerCase();
+          btn.classList.toggle("active", isAct);
+        });
+      }
       this.renderShopProducts();
     },
 
@@ -625,36 +656,39 @@
 
     renderShopProducts: function() {
       const grid = document.getElementById("shop-products-grid");
+      const counter = document.getElementById("shop-total-counter");
       if (!grid) return;
 
       let list = AppState.shop.items || [];
+      if (counter) counter.textContent = `${list.length} Articoli`;
+
       if (currentShopCategory !== "tutti") {
         list = list.filter(p => (p.categoria || "").toLowerCase() === currentShopCategory.toLowerCase());
       }
-      if (AppState.shop.searchQuery) {
-        list = list.filter(p => (p.nome || "").toLowerCase().includes(AppState.shop.searchQuery));
-      }
 
       if (list.length === 0) {
-        grid.innerHTML = `<div class="col-span-full text-center py-8 text-slate-500 font-mono text-xs">Nessun articolo trovato nello Shop.</div>`;
+        grid.innerHTML = `<div class="col-span-full text-center py-8 text-slate-500 font-mono text-xs">Nessun articolo trovato in questa categoria.</div>`;
         return;
       }
 
+      // Card Capsule Standard Steam
       grid.innerHTML = list.map(p => `
-        <div onclick="AppModules.openShopDetail('${p.id}')" class="item-card">
+        <div onclick="AppModules.openShopDetail('${p.id}')" class="item-card group">
           <div class="item-card-media">
             <img src="${p.mediaUrl}" class="item-card-img" alt="${p.nome}">
             <span class="item-card-badge">${p.isDigitale ? 'Digitale' : (p.tipo || 'Articolo')}</span>
           </div>
           <div class="item-card-body">
             <div>
-              <span class="text-[9.5px] font-mono text-sky-400 font-bold uppercase">${p.categoria}</span>
-              <h3 class="item-card-title mt-0.5">${p.nome}</h3>
-              <p class="item-card-desc mt-1 line-clamp-2">${p.descrizione || ''}</p>
+              <span class="text-[9.5px] font-mono text-sky-400 font-bold uppercase tracking-wider">${p.categoria}</span>
+              <h3 class="item-card-title text-sm mt-0.5 line-clamp-1">${p.nome}</h3>
+              <p class="item-card-desc text-xs mt-1 line-clamp-2">${p.descrizione || ''}</p>
             </div>
             <div class="item-card-footer mt-2">
               <span class="font-mono font-black text-amber-300 text-xs">${p.prezzoMegoin} 🪙</span>
-              <button onclick="event.stopPropagation(); AppModules.openShopDetail('${p.id}')" class="btn btn-xs btn-primary font-bold px-3">Vedi Scheda ›</button>
+              <button onclick="event.stopPropagation(); AppModules.openShopDetail('${p.id}')" class="btn btn-xs btn-primary font-bold px-3">
+                Vedi Scheda ›
+              </button>
             </div>
           </div>
         </div>
@@ -682,7 +716,7 @@
           btn.onclick = () => AppModules.openPlansCatalogModal();
         } else {
           btn.textContent = `Acquista (${item.prezzoMegoin} 🪙)`;
-          btn.className = "btn btn-sm btn-primary w-full font-bold";
+          btn.className = "btn btn-sm btn-primary w-full font-black uppercase text-xs";
           btn.onclick = () => AppModules.buyProduct(item.id);
         }
       }
@@ -719,7 +753,7 @@
     },
 
     // ------------------------------------------------------------------------
-    // PIANI SAAS
+    // PIANI SAAS REALI
     // ------------------------------------------------------------------------
     openPlansCatalogModal: function() {
       this.renderPlansCatalog();
@@ -787,29 +821,17 @@
     },
 
     // ------------------------------------------------------------------------
-    // RICETTARIO (BONIFICA DATI TEMPO/DIFFICOLTÀ & 16:9 CENTRATO)
+    // RICETTARIO (CARD STEAM UNIFORME, FILTRI CHIP & BONIFICA DATI)
     // ------------------------------------------------------------------------
-    fetchRecipes: async function() {
-      try {
-        const data = await apiCall("recipes");
-        if (data && data.recipes) {
-          AppState.recipes.items = data.recipes;
-          AppState.recipes.categories = data.categories || [];
-        }
-      } catch (e) {
-        console.warn("[AppModules] Errore caricamento ricette:", e);
-      }
-      this.renderRecipes();
-    },
-
     setRecipeCategory: function(cat) {
       currentRecipeCategory = cat;
-      this.renderRecipes();
-    },
-
-    filterRecipes: function() {
-      const input = document.getElementById("recipes-search-input");
-      AppState.recipes.searchQuery = input ? input.value.trim().toLowerCase() : "";
+      const chips = document.getElementById("recipes-category-chips");
+      if (chips) {
+        chips.querySelectorAll(".rpg-category-chip").forEach(btn => {
+          const isAct = btn.textContent.trim().toLowerCase() === cat.toLowerCase();
+          btn.classList.toggle("active", isAct);
+        });
+      }
       this.renderRecipesCards();
     },
 
@@ -828,40 +850,43 @@
 
     renderRecipesCards: function() {
       const grid = document.getElementById("recipes-grid");
+      const counter = document.getElementById("recipes-total-counter");
       if (!grid) return;
 
       let list = AppState.recipes.items || [];
+      if (counter) counter.textContent = `${list.length} Ricette`;
+
       if (currentRecipeCategory !== "tutti") {
         list = list.filter(r => (r.categoria || "").toLowerCase() === currentRecipeCategory.toLowerCase());
       }
-      if (AppState.recipes.searchQuery) {
-        list = list.filter(r => (r.piatto || "").toLowerCase().includes(AppState.recipes.searchQuery));
-      }
 
       if (list.length === 0) {
-        grid.innerHTML = `<div class="col-span-full text-center py-8 text-slate-500 font-mono text-xs">Nessuna ricetta trovata.</div>`;
+        grid.innerHTML = `<div class="col-span-full text-center py-8 text-slate-500 font-mono text-xs">Nessuna ricetta trovata in questa categoria.</div>`;
         return;
       }
 
+      // Card Capsule Standard Steam (16:9 centrato, tag, corpo su 2 righe, footer con CTA uniforme)
       grid.innerHTML = list.map(r => {
-        // Bonifica contro colonne invertite nel foglio con percentuali
         const tempoClean = (r.tempo && !String(r.tempo).includes("%")) ? r.tempo : "15 min";
         const diffClean = (r.difficolta && !String(r.difficolta).includes("%")) ? r.difficolta : "Media";
 
         return `
-          <div onclick="AppModules.openRecipeDetail(${r.rowIndex})" class="item-card">
+          <div onclick="AppModules.openRecipeDetail(${r.rowIndex})" class="item-card group">
             <div class="item-card-media">
               <img src="${r.mediaUrl}" class="item-card-img" alt="${r.piatto}">
               <span class="item-card-badge">${r.categoria}</span>
             </div>
             <div class="item-card-body">
               <div>
-                <h3 class="item-card-title">${r.piatto}</h3>
-                <p class="item-card-desc mt-1">Tempo: ${tempoClean} • Costo: ${r.costo || 'Conveniente'}</p>
+                <span class="text-[9.5px] font-mono text-emerald-400 font-bold uppercase tracking-wider">${r.categoria}</span>
+                <h3 class="item-card-title text-sm mt-0.5 line-clamp-1">${r.piatto}</h3>
+                <p class="item-card-desc text-xs mt-1 line-clamp-2">Tempo: ${tempoClean} • Difficoltà: ${diffClean}</p>
               </div>
               <div class="item-card-footer mt-2">
-                <span class="text-[10px] font-mono text-slate-400">Difficoltà: ${diffClean}</span>
-                <button onclick="event.stopPropagation(); AppModules.openRecipeDetail(${r.rowIndex})" class="btn btn-xs btn-primary font-bold px-3">Vedi Scheda ›</button>
+                <span class="text-xs font-mono font-bold text-slate-300">💰 ${r.costo || 'Conveniente'}</span>
+                <button onclick="event.stopPropagation(); AppModules.openRecipeDetail(${r.rowIndex})" class="btn btn-xs btn-primary font-bold px-3">
+                  Vedi Scheda ›
+                </button>
               </div>
             </div>
           </div>
@@ -977,7 +1002,7 @@
                   </div>
                   <div class="flex items-center gap-2">
                     <span class="text-[10px] font-mono text-amber-300 font-bold">+${opp.rewardMegoin} 🪙</span>
-                    <button onclick="AppModules.challengeOpponent('${opp.id}')" class="btn btn-sm btn-error font-bold px-3 text-xs min-h-[44px]">
+                    <button onclick="AppModules.challengeOpponent('${opp.id}')" class="btn btn-sm btn-error font-bold px-3 text-xs min-h-[38px]">
                       Sfida ⚔️
                     </button>
                   </div>
@@ -1102,7 +1127,7 @@
       AppState.multiplayerActiveRoom = room;
       if (window.AppCore) {
         AppCore.save();
-        AppCore.toast(`Stanza creata! Invia il link di invito Telegram al tuo amico.`, 'success');
+        AppCore.toast(`Stanza creata! Invia il link di invito Telegram al tuo compagno.`, 'success');
       }
 
       this.broadcastRoomUpdate(room, `Nuova stanza ${roomId} aperta`);
