@@ -10,7 +10,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
-  <!-- FRAMEWORK & LIBRERIE ESTERNE (Telegram SDK, Tailwind CDN, DaisyUI, Lucide, Howler, Confetti) -->
+  <!-- FRAMEWORK & LIBRERIE ESTERNE -->
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css" rel="stylesheet" type="text/css" />
   <script src="https://cdn.tailwindcss.com"></script>
@@ -18,50 +18,50 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.4/howler.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
 
-  <!-- FOGLI DI STILE VERSIONATI CON BRIDGE VARIABILI E SCROLL-SNAP NATIVO -->
-  <link rel="stylesheet" href="css/core.css?v=14.0">
-  <link rel="stylesheet" href="css/rules2.css?v=14.0">
+  <!-- FOGLI DI STILE VERSIONATI -->
+  <link rel="stylesheet" href="css/core.css?v=15.0">
+  <link rel="stylesheet" href="css/rules2.css?v=15.0">
 </head>
 
-<body class="rpg-app-body">
+<body class="rpg-app-body bg-[#070A12] text-slate-100 flex flex-col h-screen overflow-hidden select-none">
 
   <!-- 1. LOADER D'AVVIO -->
-  <div id="app-loading" class="app-loader-screen">
-    <div class="loader-spinner-box">
-      <div class="loader-spinner"></div>
-      <div class="loader-icon">⚓</div>
+  <div id="app-loading" class="app-loader-screen fixed inset-0 z-[999] flex flex-col items-center justify-center bg-[#070A12] p-6 text-center transition-opacity duration-300">
+    <div class="loader-spinner-box relative mb-4">
+      <div class="loader-spinner w-14 h-14 border-4 border-sky-400/20 border-t-sky-400 rounded-full animate-spin"></div>
+      <div class="loader-icon absolute inset-0 flex items-center justify-center text-xl">⚓</div>
     </div>
-    <h2 class="loader-title">Estiqatsy Syndicate</h2>
-    <p class="loader-status" id="loading-status">Sincronizzazione frequenze con Google Sheets...</p>
-    <div id="loading-error-box" class="loader-error-box hidden"></div>
+    <h2 class="loader-title text-sm font-black tracking-widest text-white uppercase mb-1">Estiqatsy Syndicate</h2>
+    <p class="loader-status text-xs text-slate-400 animate-pulse" id="loading-status">Sincronizzazione frequenze con Google Sheets...</p>
+    <div id="loading-error-box" class="loader-error-box hidden mt-4 p-3 bg-rose-950/80 border border-rose-500 rounded-xl text-xs text-rose-200 font-mono text-left max-w-sm"></div>
     <button id="loading-retry-btn" onclick="location.reload()" class="btn btn-sm btn-primary hidden mt-4">Riprova</button>
   </div>
 
-  <!-- 2.A TOP BAR PIATTAFORMA (CENTRAGGIO ASSOLUTO ANTI-CAPSULA TELEGRAM) -->
-  <header id="main-app-header" class="universal-top-bar">
-    <div class="top-bar-placeholder"></div>
-    <!-- Blocco centrato a livello matematico rispetto alla larghezza dello schermo -->
-    <div class="top-bar-title-box" id="top-bar-title-box">
-      <span class="top-bar-brand">⚓ ESTIQATSY</span>
+  <!-- 2.A TOP BAR PIATTAFORMA (CENTRAGGIO ASSOLUTO TRA I PULSANTI TELEGRAM) -->
+  <header id="main-app-header" class="universal-top-bar relative w-full z-50 flex items-center px-3 bg-[#070A12]/95 backdrop-blur-md border-b border-white/10" style="height: calc(var(--safe-top, 0px) + 48px); padding-top: var(--safe-top, 0px);">
+    <div class="w-8 h-12 flex items-center z-10"></div>
+    <!-- Titolo matematicamente centrato nella viewport -->
+    <div class="absolute inset-x-0 bottom-0 h-12 flex items-center justify-center pointer-events-none z-0" id="top-bar-title-box">
+      <span class="text-sm font-black tracking-widest text-white uppercase">⚓ ESTIQATSY</span>
     </div>
-    <div class="top-bar-actions ml-auto z-10 flex items-center">
-      <button id="audio-toggle-btn-mob" onclick="AppModules.toggleRadioMute()" class="btn btn-xs btn-circle btn-ghost text-sky-400 md:hidden" title="Audio">
+    <div class="ml-auto z-10 flex items-center">
+      <button id="audio-toggle-btn-mob" onclick="AppModules.toggleRadioMute()" class="btn btn-xs btn-circle btn-ghost text-sky-400" title="Audio">
         <i data-lucide="volume-2" class="w-4 h-4"></i>
       </button>
     </div>
   </header>
 
   <!-- 2.B TOP BAR COCKPIT DI GIOCO RULES 2 -->
-  <header id="main-game-header" class="universal-top-bar hidden">
+  <header id="main-game-header" class="universal-top-bar hidden relative w-full z-50 flex items-center px-3 bg-[#070A12]/95 backdrop-blur-md border-b border-white/10" style="height: calc(var(--safe-top, 0px) + 48px); padding-top: var(--safe-top, 0px);">
     <button onclick="GameEngine.leaveGameToHub()" class="btn btn-xs btn-ghost text-slate-300 z-10 flex items-center gap-1">
       <i data-lucide="chevron-left" class="w-4 h-4"></i>
       <span class="text-xs font-bold">Hub</span>
     </button>
-    <div class="game-header-titles">
-      <div class="game-header-tag" id="game-header-series">GIOCO</div>
-      <div class="game-header-sub" id="game-header-episode">Episodio 1</div>
+    <div class="absolute inset-x-0 bottom-0 h-12 flex flex-col items-center justify-center pointer-events-none z-0">
+      <div class="text-[9px] font-black tracking-wider text-amber-400 uppercase" id="game-header-series">GIOCO</div>
+      <div class="text-xs font-bold text-white truncate max-w-[180px]" id="game-header-episode">Episodio 1</div>
     </div>
-    <div class="game-header-actions ml-auto z-10">
+    <div class="ml-auto z-10 flex items-center">
       <button onclick="AppModules.toggleRadioMute()" class="btn btn-xs btn-circle btn-ghost text-slate-400" title="Audio">
         <i data-lucide="volume-2" class="w-3.5 h-3.5"></i>
       </button>
@@ -69,104 +69,97 @@
   </header>
 
   <!-- 3. STRUTTURA PRINCIPALE VIEWPORT -->
-  <div class="app-layout-container">
+  <div class="app-layout-container flex-1 flex flex-col md:flex-row overflow-hidden relative w-full">
 
     <!-- SIDEBAR DESKTOP WIDESCREEN (>= 768px) -->
-    <aside id="desktop-sidebar" class="desktop-sidebar">
-      <div class="user-card-desk">
-        <div class="flex items-center space-x-3">
-          <div id="user-avatar-desk" class="user-avatar-box">U</div>
-          <div class="min-w-0 flex-1">
-            <div class="badge-role">AGENTE SYNDICATE</div>
-            <div id="user-name-desk" class="user-name-label">Avventuriero</div>
-            <div class="mt-1">
-              <button onclick="AppModules.openPlansCatalogModal()" class="plan-pill-btn">
-                <span>👑</span> <span id="user-plan-desk">PIANO BASE</span> <span class="arrow">›</span>
-              </button>
+    <aside id="desktop-sidebar" class="desktop-sidebar hidden md:flex md:w-72 bg-slate-950 border-r border-white/10 p-4 flex-col justify-between shrink-0">
+      <div>
+        <div class="user-card-desk p-3.5 rounded-2xl bg-slate-900 border border-white/10 space-y-3">
+          <div class="flex items-center space-x-3">
+            <div id="user-avatar-desk" class="w-12 h-12 min-w-[48px] min-h-[48px] rounded-xl bg-gradient-to-br from-sky-600 to-indigo-900 border border-sky-400/40 flex items-center justify-center text-xl font-black text-white shrink-0 overflow-hidden">
+              U
+            </div>
+            <div class="min-w-0 flex-1">
+              <div class="text-[9px] font-mono font-bold text-slate-400 uppercase">AGENTE SYNDICATE</div>
+              <div id="user-name-desk" class="text-xs font-bold text-white truncate">Avventuriero</div>
+              <div class="mt-1">
+                <button onclick="AppModules.openPlansCatalogModal()" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-sky-500/10 border border-sky-500/30 text-[9px] font-bold text-sky-300 uppercase">
+                  <span>👑</span> <span id="user-plan-desk">PIANO BASE</span> <span class="opacity-60">›</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2 pt-2 border-t border-white/10 text-center font-mono">
+            <div class="p-2 rounded-lg bg-black/40 border border-white/5">
+              <div class="text-[9px] text-slate-400 uppercase">Megoin</div>
+              <div class="text-xs font-bold text-amber-300" id="user-megoin-desk">0 🪙</div>
+            </div>
+            <div class="p-2 rounded-lg bg-black/40 border border-white/5">
+              <div class="text-[9px] text-slate-400 uppercase">Fedeltà</div>
+              <div class="text-xs font-bold text-emerald-400" id="user-points-desk">0 Pt</div>
             </div>
           </div>
         </div>
 
-        <div class="wallet-desk-grid">
-          <div class="wallet-desk-item">
-            <div class="wallet-label">Megoin</div>
-            <div class="wallet-value text-amber-400 font-mono" id="user-megoin-desk">0 🪙</div>
-          </div>
-          <div class="wallet-desk-item">
-            <div class="wallet-label">Fedeltà</div>
-            <div class="wallet-value text-emerald-400 font-mono" id="user-points-desk">0 Pt</div>
-          </div>
-        </div>
+        <nav class="space-y-1.5 mt-5" id="desktop-nav-menu">
+          <button id="desk-nav-home" onclick="AppRouter.navigate('home')" class="desk-nav-btn active flex items-center gap-3 w-full p-2.5 rounded-xl text-xs font-bold text-slate-300 hover:text-white transition" data-tab="home">
+            <i data-lucide="home" class="w-4 h-4 text-sky-400"></i> <span>Dashboard Home</span>
+          </button>
+          <button id="desk-nav-games" data-module="games" onclick="AppRouter.navigate('games')" class="desk-nav-btn flex items-center justify-between w-full p-2.5 rounded-xl text-xs font-bold text-slate-300 hover:text-white transition" data-tab="games">
+            <div class="flex items-center gap-3">
+              <i data-lucide="gamepad-2" class="w-4 h-4 text-sky-400"></i>
+              <span>Giochi Noir & Stanze</span>
+            </div>
+            <span class="badge badge-xs badge-primary font-bold text-[8px]">PLAY</span>
+          </button>
+          <button id="desk-nav-shop" data-module="shop" onclick="AppRouter.navigate('shop')" class="desk-nav-btn flex items-center gap-3 w-full p-2.5 rounded-xl text-xs font-bold text-slate-300 hover:text-white transition" data-tab="shop">
+            <i data-lucide="shopping-bag" class="w-4 h-4 text-amber-400"></i> <span>Shop Syndicate</span>
+          </button>
+          <button id="desk-nav-recipes" data-module="recipes" onclick="AppRouter.navigate('recipes')" class="desk-nav-btn flex items-center gap-3 w-full p-2.5 rounded-xl text-xs font-bold text-slate-300 hover:text-white transition" data-tab="recipes">
+            <i data-lucide="utensils" class="w-4 h-4 text-emerald-400"></i> <span>Barlady & Ricette</span>
+          </button>
+          <button id="desk-nav-profile" onclick="AppRouter.navigate('profile')" class="desk-nav-btn flex items-center gap-3 w-full p-2.5 rounded-xl text-xs font-bold text-slate-300 hover:text-white transition" data-tab="profile">
+            <i data-lucide="user" class="w-4 h-4 text-purple-400"></i> <span>Profilo & Arena</span>
+          </button>
+        </nav>
       </div>
 
-      <nav class="desktop-nav-menu" id="desktop-nav-menu">
-        <button id="desk-nav-home" onclick="AppRouter.navigate('home')" class="desk-nav-btn active" data-tab="home">
-          <i data-lucide="home" class="w-4 h-4"></i> <span>Dashboard Home</span>
+      <div class="pt-4 border-t border-white/10 flex items-center justify-between text-xs text-slate-500">
+        <button onclick="AppModules.toggleRadioMute()" class="flex items-center gap-1.5 hover:text-white transition">
+          <i data-lucide="volume-2" class="w-4 h-4 text-sky-400"></i>
+          <span>Audio Radio</span>
         </button>
-        <button id="desk-nav-games" data-module="games" onclick="AppRouter.navigate('games')" class="desk-nav-btn" data-tab="games">
-          <div class="flex items-center space-x-3">
-            <i data-lucide="gamepad-2" class="w-4 h-4 text-sky-400"></i>
-            <span>Giochi Noir RPG</span>
-          </div>
-          <span class="badge badge-xs badge-primary font-bold text-[8px]">PLAY</span>
-        </button>
-        <button id="desk-nav-multiplayer" data-module="multiplayer" onclick="AppModules.openMultiplayerLobby()" class="desk-nav-btn" data-tab="multiplayer">
-          <div class="flex items-center space-x-3">
-            <i data-lucide="users" class="w-4 h-4 text-purple-400"></i>
-            <span>Stanze Multiplayer</span>
-          </div>
-          <span class="badge badge-xs badge-secondary font-bold text-[8px]">ONLINE</span>
-        </button>
-        <button id="desk-nav-shop" data-module="shop" onclick="AppRouter.navigate('shop')" class="desk-nav-btn" data-tab="shop">
-          <i data-lucide="shopping-bag" class="w-4 h-4"></i> <span>Shop Syndicate</span>
-        </button>
-        <button id="desk-nav-recipes" data-module="recipes" onclick="AppRouter.navigate('recipes')" class="desk-nav-btn" data-tab="recipes">
-          <i data-lucide="utensils" class="w-4 h-4"></i> <span>Barlady & Ricette</span>
-        </button>
-        <button id="desk-nav-profile" onclick="AppRouter.navigate('profile')" class="desk-nav-btn" data-tab="profile">
-          <i data-lucide="user" class="w-4 h-4"></i> <span>Profilo & Arena</span>
-        </button>
-        <a id="desk-nav-admin" href="admin.html" target="_blank" class="desk-nav-btn text-amber-300 border border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/20">
-          <i data-lucide="shield-alert" class="w-4 h-4"></i> <span>Console Admin</span>
-        </a>
-      </nav>
-
-      <div class="desktop-footer-status">
-        <button onclick="AppModules.toggleRadioMute()" class="btn btn-ghost btn-xs text-slate-400">
-          <i data-lucide="volume-2" class="w-4 h-4"></i>
-          <span class="badge badge-xs badge-success">AUDIO</span>
-        </button>
-        <span class="version-label">v14.0 Full Gas</span>
+        <span class="font-mono text-[10px]">v15.0</span>
       </div>
     </aside>
 
     <!-- AREA CENTRALE FLUIDA -->
-    <div class="app-main-viewport">
-      <main class="app-scroll-area" id="app-main-scroll">
-        <div class="app-content-wrapper">
+    <div class="app-main-viewport flex-1 flex flex-col h-full overflow-hidden relative">
+      <main class="app-scroll-area flex-1 overflow-y-auto overflow-x-hidden relative" id="app-main-scroll">
+        <div class="app-content-wrapper p-3 md:p-6 max-w-5xl mx-auto space-y-4">
 
           <!-- =============================================================== -->
           <!-- VISTA 1: DASHBOARD HOME                                        -->
           <!-- =============================================================== -->
           <section id="view-home" class="space-y-4 app-screen">
-            <div class="home-hero-banner">
+            <div class="home-hero-banner p-4 md:p-6 rounded-2xl bg-gradient-to-br from-slate-900 via-slate-900 to-indigo-950 border border-white/10 shadow-xl space-y-3">
               <div class="flex items-center space-x-2.5 flex-wrap gap-y-2">
-                <span class="badge-tag">Piattaforma Ufficiale</span>
-                <span class="text-xs md:text-sm font-bold text-emerald-400">⭐ <span id="home-rank-points">0</span> Punti Fedeltà</span>
-                <button onclick="AppModules.openPlansCatalogModal()" class="badge-plan-hero">
-                  <span>👑</span> <span id="home-plan-badge">PIANO BASE</span> <span class="arrow">›</span>
+                <span class="badge badge-sm badge-info font-mono font-bold uppercase text-[9px]">Piattaforma Ufficiale</span>
+                <span class="text-xs font-bold text-emerald-400 font-mono">⭐ <span id="home-rank-points">0</span> Punti Fedeltà</span>
+                <button onclick="AppModules.openPlansCatalogModal()" class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-sky-500/10 border border-sky-400/40 text-[9px] font-bold text-sky-300 uppercase">
+                  <span>👑</span> <span id="home-plan-badge">PIANO BASE</span> <span>›</span>
                 </button>
               </div>
 
               <div>
-                <h2 class="hero-headline">Darsena Noir, <span id="home-username" class="text-sky-400">Avventuriero</span>.</h2>
-                <p class="hero-lead">Esplora le saghe investigative Rules 2 a colpi di D20, costruisci l'Organigramma del Potere e sfida altri agenti sul Syndicate.</p>
+                <h2 class="text-lg md:text-2xl font-black text-white leading-tight">Darsena Noir, <span id="home-username" class="text-sky-400">Avventuriero</span>.</h2>
+                <p class="text-xs md:text-sm text-slate-300 leading-relaxed mt-1">Esplora le saghe investigative Rules 2 a colpi di D20, costruisci l'Organigramma del Potere e sfida altri agenti sul Syndicate.</p>
               </div>
 
-              <div class="pt-1 flex gap-3">
-                <button onclick="AppRouter.navigate('games')" class="btn btn-sm btn-primary font-bold">🎮 Saghe RPG</button>
-                <button onclick="AppModules.openMultiplayerLobby()" class="btn btn-sm btn-secondary font-bold">👥 Multiplayer</button>
-                <button onclick="AppRouter.navigate('shop')" class="btn btn-sm btn-outline border-white/20 font-bold">🏪 Shop</button>
+              <div class="pt-1 flex gap-2.5">
+                <button onclick="AppRouter.navigate('games')" class="btn btn-sm btn-primary font-bold">🎮 Saghe RPG & Stanze</button>
+                <button onclick="AppRouter.navigate('shop')" class="btn btn-sm btn-outline border-white/20 text-slate-200 font-bold">🏪 Shop</button>
               </div>
             </div>
 
@@ -196,71 +189,90 @@
               </div>
             </div>
 
-            <!-- KPI QUAD GRID -->
-            <div class="kpi-quad-grid">
-              <div onclick="AppRouter.navigate('profile')" class="kpi-card group">
+            <!-- KPI QUAD GRID (BLINDATA CON CLASSI TAILWIND ANTI-COLLASSO) -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-2.5">
+              <div onclick="AppRouter.navigate('profile')" class="p-3.5 rounded-xl bg-slate-900/90 border border-white/10 flex items-center justify-between cursor-pointer hover:border-amber-400/40 transition">
                 <div>
-                  <div class="kpi-card-label">Megoin</div>
-                  <div class="kpi-card-value text-amber-300 text-glow-amber font-mono" id="home-megoin-card">0 🪙</div>
+                  <div class="text-[9px] font-mono font-bold text-slate-400 uppercase">Megoin</div>
+                  <div class="text-sm md:text-base font-black text-amber-300 font-mono mt-0.5" id="home-megoin-card">0 🪙</div>
                 </div>
-                <i data-lucide="chevron-right" class="kpi-card-icon"></i>
+                <i data-lucide="chevron-right" class="w-4 h-4 text-slate-500"></i>
               </div>
 
-              <div onclick="AppRouter.navigate('profile')" class="kpi-card group">
+              <div onclick="AppRouter.navigate('profile')" class="p-3.5 rounded-xl bg-slate-900/90 border border-white/10 flex items-center justify-between cursor-pointer hover:border-emerald-400/40 transition">
                 <div>
-                  <div class="kpi-card-label">Punti Fedeltà</div>
-                  <div class="kpi-card-value text-emerald-400 font-mono" id="home-punti-card">0 Pt</div>
+                  <div class="text-[9px] font-mono font-bold text-slate-400 uppercase">Punti Fedeltà</div>
+                  <div class="text-sm md:text-base font-black text-emerald-400 font-mono mt-0.5" id="home-punti-card">0 Pt</div>
                 </div>
-                <i data-lucide="chevron-right" class="kpi-card-icon"></i>
+                <i data-lucide="chevron-right" class="w-4 h-4 text-slate-500"></i>
               </div>
 
-              <div onclick="AppRouter.navigate('games')" class="kpi-card group">
+              <div onclick="AppRouter.navigate('games')" class="p-3.5 rounded-xl bg-slate-900/90 border border-white/10 flex items-center justify-between cursor-pointer hover:border-sky-400/40 transition">
                 <div>
-                  <div class="kpi-card-label">Saghe RPG</div>
-                  <div class="kpi-card-value text-sky-400 font-mono" id="home-games-count">0</div>
+                  <div class="text-[9px] font-mono font-bold text-slate-400 uppercase">Saghe RPG</div>
+                  <div class="text-sm md:text-base font-black text-sky-400 font-mono mt-0.5" id="home-games-count">0</div>
                 </div>
-                <i data-lucide="play" class="kpi-card-icon"></i>
+                <i data-lucide="play" class="w-4 h-4 text-sky-400"></i>
               </div>
 
-              <div onclick="AppModules.openVaultSection()" class="kpi-card group">
+              <div onclick="AppModules.openVaultSection()" class="p-3.5 rounded-xl bg-slate-900/90 border border-white/10 flex items-center justify-between cursor-pointer hover:border-purple-400/40 transition">
                 <div>
-                  <div class="kpi-card-label">Download Caveau</div>
-                  <div class="kpi-card-value text-purple-400 font-mono" id="home-purchases-count">0</div>
+                  <div class="text-[9px] font-mono font-bold text-slate-400 uppercase">Download Caveau</div>
+                  <div class="text-sm md:text-base font-black text-purple-400 font-mono mt-0.5" id="home-purchases-count">0</div>
                 </div>
-                <i data-lucide="chevron-right" class="kpi-card-icon"></i>
+                <i data-lucide="chevron-right" class="w-4 h-4 text-slate-500"></i>
               </div>
             </div>
 
             <!-- CAROSELLO HOME DINAMICO -->
             <div class="space-y-2">
               <div class="flex items-center justify-between">
-                <span class="section-kicker">In Evidenza nel Syndicate</span>
+                <span class="section-kicker text-xs font-bold text-slate-400 uppercase">In Evidenza nel Syndicate</span>
                 <div class="flex space-x-1.5" id="carousel-dots-container"></div>
               </div>
-              <div class="carousel-outer-wrapper" id="carousel-outer-wrapper">
-                <div class="carousel-track" id="carousel-track"></div>
+              <div class="carousel-outer-wrapper overflow-hidden rounded-2xl border border-white/10 bg-slate-900" id="carousel-outer-wrapper">
+                <div class="carousel-track flex transition-transform duration-300" id="carousel-track"></div>
               </div>
             </div>
           </section>
 
           <!-- =============================================================== -->
-          <!-- VISTA 2: CATALOGO SAGHE GIOCHI REALI                           -->
+          <!-- VISTA 2: GIOCHI (SAGHE NARRATIVE & BANNER STANZE MULTIPLAYER)   -->
           <!-- =============================================================== -->
-          <section id="view-hub" class="space-y-4 hidden app-screen max-w-5xl mx-auto">
-            <div class="page-title-row">
+          <section id="view-hub" class="space-y-4 hidden app-screen max-w-4xl mx-auto">
+            <div class="page-title-row flex items-center justify-between pb-2 border-b border-white/10">
               <div>
-                <span class="sub-header-tag">DATABASE GIOCHI</span>
-                <h2 class="page-headline">Saghe Noir RPG</h2>
+                <span class="sub-header-tag text-[10px] font-mono text-sky-400 font-bold uppercase">DATABASE GIOCHI</span>
+                <h2 class="page-headline text-lg font-black text-white">Saghe & Stanze Clandestine</h2>
               </div>
               <span class="text-xs text-slate-400 font-mono" id="games-total-counter">Caricamento...</span>
             </div>
+
+            <!-- 👥 BANNER ACCESSO RAPIDO MULTIPLAYER INTEGRATO IN GIOCHI -->
+            <div onclick="AppModules.openMultiplayerLobby()" class="p-4 rounded-2xl bg-gradient-to-r from-purple-950/70 via-slate-900 to-slate-900 border border-purple-500/40 flex items-center justify-between cursor-pointer hover:border-purple-400 transition shadow-xl">
+              <div class="flex items-center gap-3.5">
+                <div class="w-11 h-11 rounded-xl bg-purple-500/20 border border-purple-400/40 flex items-center justify-center text-2xl text-purple-300 shrink-0">
+                  👥
+                </div>
+                <div>
+                  <div class="flex items-center gap-2">
+                    <h3 class="font-black text-sm text-white">Stanze Multiplayer Clandestine</h3>
+                    <span class="badge badge-xs badge-secondary font-mono font-bold">1VS1 & CO-OP</span>
+                  </div>
+                  <p class="text-[11px] text-slate-300 mt-0.5">Sfida un compagno a colpi di D20 o assalta i boss in modalità cooperativa.</p>
+                </div>
+              </div>
+              <button class="btn btn-xs btn-secondary font-black px-3 shrink-0">Entra ›</button>
+            </div>
+
+            <!-- GRIGLIA SAGHE RPG -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="games-catalog-container"></div>
           </section>
 
           <!-- DETTAGLIO SAGA CON CLUSTER A 3 AZIONI (CAPITOLI, REGOLE, SCHEDA) -->
           <section id="subview-game-detail" class="space-y-4 hidden app-screen max-w-3xl mx-auto">
-            <div class="cinema-frame-rigid shadow-xl">
-              <img id="hub-image" src="" alt="Copertina Gioco">
+            <div class="cinema-frame-rigid shadow-xl rounded-2xl overflow-hidden relative">
+              <img id="hub-image" src="" class="w-full h-48 object-cover" alt="Copertina Gioco">
               <div class="watermark-cover-banner">
                 <div class="quote-text" id="hub-quote"></div>
                 <div class="quote-author" id="hub-author"></div>
@@ -286,7 +298,7 @@
             </div>
 
             <div class="space-y-2 pt-2">
-              <div class="section-kicker">Capitoli Ufficiali</div>
+              <div class="section-kicker text-xs font-bold text-slate-400 uppercase">Capitoli Ufficiali</div>
               <div id="hub-episodes-container" class="space-y-2"></div>
             </div>
           </section>
@@ -297,17 +309,17 @@
           <section id="view-multiplayer" class="space-y-4 hidden app-screen max-w-3xl mx-auto">
             <!-- 1. PANNELLO LOBBY -->
             <div id="multiplayer-lobby-panel" class="space-y-4">
-              <div class="page-title-row">
+              <div class="page-title-row flex items-center justify-between pb-2 border-b border-white/10">
                 <div>
-                  <span class="sub-header-tag">RETE TELEGRAM REAL-TIME</span>
-                  <h2 class="page-headline">Stanze Clandestine</h2>
+                  <span class="sub-header-tag text-[10px] font-mono text-purple-400 font-bold uppercase">RETE TELEGRAM REAL-TIME</span>
+                  <h2 class="page-headline text-lg font-black text-white">Stanze Clandestine</h2>
                 </div>
-                <span class="badge badge-sm badge-secondary font-mono font-bold">ONLINE</span>
+                <button onclick="AppRouter.navigate('games')" class="btn btn-xs btn-ghost text-slate-400">Torna ai Giochi</button>
               </div>
 
               <!-- Selezione Modalità -->
               <div class="space-y-2">
-                <div class="section-kicker">1. Seleziona Modalità di Scontro</div>
+                <div class="text-xs font-bold text-slate-400 uppercase">1. Seleziona Modalità di Scontro</div>
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
                   <button id="btn-mode-1vs1" onclick="AppModules.selectMultiplayerMode('1vs1')" class="mode-select-btn p-3 rounded-xl border border-sky-400 bg-sky-950/40 text-left transition">
                     <div class="flex items-center justify-between">
@@ -339,7 +351,7 @@
               <div class="p-4 rounded-2xl bg-gradient-to-br from-slate-900 to-sky-950/30 border border-sky-400/30 space-y-3">
                 <div>
                   <h3 class="font-black text-sm text-white">Crea una Nuova Stanza</h3>
-                  <p class="text-[11px] text-slate-400 mt-0.5">Genera un codice univoco e condividi il link diretto per far entrare il tuo amico via Telegram.</p>
+                  <p class="text-[11px] text-slate-400 mt-0.5">Genera un codice univoco e condividi il link diretto per far entrare il tuo compagno via Telegram.</p>
                 </div>
                 <button onclick="AppModules.createAndLaunchRoom()" class="btn btn-sm btn-primary w-full font-black uppercase text-xs shadow-lg">
                   Crea Stanza & Invita Amico 🚀
@@ -363,7 +375,6 @@
 
             <!-- 2. PANNELLO COCKPIT STANZA ATTIVA -->
             <div id="multiplayer-cockpit-panel" class="space-y-4 hidden">
-              <!-- Header Stanza -->
               <div class="p-3.5 rounded-xl bg-slate-900 border border-white/10 flex items-center justify-between">
                 <div>
                   <div class="flex items-center gap-2">
@@ -390,7 +401,6 @@
 
               <!-- Tavolo Giocatori: Host vs Guest -->
               <div class="grid grid-cols-2 gap-3">
-                <!-- Host Card -->
                 <div class="p-3 rounded-xl bg-slate-900 border border-sky-500/40 space-y-2">
                   <div class="flex items-center justify-between">
                     <span class="badge badge-xs badge-info font-bold">TU (HOST)</span>
@@ -408,7 +418,6 @@
                   </div>
                 </div>
 
-                <!-- Guest Card -->
                 <div class="p-3 rounded-xl bg-slate-900 border border-white/10 space-y-2">
                   <div class="flex items-center justify-between">
                     <span class="badge badge-xs badge-ghost text-slate-400 font-bold" id="cockpit-guest-ready">IN ATTESA</span>
@@ -461,7 +470,6 @@
                 <div id="cockpit-combat-log" class="font-mono text-xs text-slate-300 max-h-32 overflow-y-auto space-y-1 divide-y divide-white/5"></div>
               </div>
 
-              <!-- Abbandona Stanza -->
               <button onclick="AppModules.leaveMultiplayerRoom()" class="btn btn-xs btn-ghost text-slate-400 w-full uppercase font-bold">
                 Esci dalla Stanza 🚪
               </button>
@@ -474,32 +482,32 @@
           <section id="view-wizard" class="wizard-stage-container hidden app-screen max-w-4xl mx-auto">
 
             <!-- Stepper Progress Tracker in Cima -->
-            <div class="wizard-stepper-tracker">
-              <div id="wiz-step-ind-1" onclick="Rules2Wizard.goToStep(1)" class="wizard-stepper-step active">
-                <div class="wizard-stepper-circle">1</div>
-                <span class="wizard-stepper-label">Classe</span>
+            <div class="wizard-stepper-tracker flex items-center justify-between gap-1 p-2 rounded-xl bg-slate-900 border border-white/10 mb-3">
+              <div id="wiz-step-ind-1" onclick="Rules2Wizard.goToStep(1)" class="wizard-stepper-step active flex items-center gap-1.5 cursor-pointer">
+                <div class="wizard-stepper-circle w-6 h-6 rounded-full flex items-center justify-center font-mono text-xs font-bold bg-sky-500 text-slate-950">1</div>
+                <span class="wizard-stepper-label text-xs font-bold text-white">Classe</span>
               </div>
-              <div id="wiz-step-ind-2" onclick="Rules2Wizard.goToStep(2)" class="wizard-stepper-step">
-                <div class="wizard-stepper-circle">2</div>
-                <span class="wizard-stepper-label">Talenti</span>
+              <div id="wiz-step-ind-2" onclick="Rules2Wizard.goToStep(2)" class="wizard-stepper-step flex items-center gap-1.5 cursor-pointer opacity-50">
+                <div class="wizard-stepper-circle w-6 h-6 rounded-full flex items-center justify-center font-mono text-xs font-bold bg-slate-800 text-slate-400">2</div>
+                <span class="wizard-stepper-label text-xs font-bold text-slate-400">Talenti</span>
               </div>
-              <div id="wiz-step-ind-3" onclick="Rules2Wizard.goToStep(3)" class="wizard-stepper-step">
-                <div class="wizard-stepper-circle">3</div>
-                <span class="wizard-stepper-label">Emporio</span>
+              <div id="wiz-step-ind-3" onclick="Rules2Wizard.goToStep(3)" class="wizard-stepper-step flex items-center gap-1.5 cursor-pointer opacity-50">
+                <div class="wizard-stepper-circle w-6 h-6 rounded-full flex items-center justify-center font-mono text-xs font-bold bg-slate-800 text-slate-400">3</div>
+                <span class="wizard-stepper-label text-xs font-bold text-slate-400">Emporio</span>
               </div>
-              <div id="wiz-step-ind-4" onclick="Rules2Wizard.goToStep(4)" class="wizard-stepper-step">
-                <div class="wizard-stepper-circle">4</div>
-                <span class="wizard-stepper-label">Battesimo</span>
+              <div id="wiz-step-ind-4" onclick="Rules2Wizard.goToStep(4)" class="wizard-stepper-step flex items-center gap-1.5 cursor-pointer opacity-50">
+                <div class="wizard-stepper-circle w-6 h-6 rounded-full flex items-center justify-center font-mono text-xs font-bold bg-slate-800 text-slate-400">4</div>
+                <span class="wizard-stepper-label text-xs font-bold text-slate-400">Battesimo</span>
               </div>
             </div>
 
             <!-- Live HUD Dock Dinamico -->
-            <div class="wizard-live-hud" id="wizard-live-hud">
-              <div class="wizard-live-hero-chip">
-                <span id="wiz-live-avatar" class="wizard-live-avatar">🥋</span>
+            <div class="wizard-live-hud p-2.5 rounded-xl bg-slate-900 border border-sky-400/30 flex items-center justify-between mb-3" id="wizard-live-hud">
+              <div class="wizard-live-hero-chip flex items-center gap-2">
+                <span id="wiz-live-avatar" class="text-xl">🥋</span>
                 <div class="wizard-live-details">
-                  <span id="wiz-live-name" class="wizard-live-name">Avventuriero</span>
-                  <span id="wiz-live-stats" class="wizard-live-stats">❤️ 25 PV • FOR 10 · DES 10 · INT 10</span>
+                  <span id="wiz-live-name" class="text-xs font-black text-white">Avventuriero</span>
+                  <span id="wiz-live-stats" class="text-[10px] font-mono text-sky-300 block">❤️ 25 PV • FOR 10 · DES 10 · INT 10</span>
                 </div>
               </div>
               <div class="flex items-center gap-2">
@@ -510,48 +518,46 @@
 
             <!-- PASSO 1: SCELTA CLASSE COSTIERA -->
             <div id="wizard-step-class" class="wizard-step-panel">
-              <div class="wizard-single-header">
+              <div class="wizard-single-header flex items-center justify-between pb-2 border-b border-white/10 mb-2">
                 <div>
-                  <span class="wizard-step-badge">1/4</span>
-                  <h3 class="wizard-step-title">Classe Costiera</h3>
+                  <span class="wizard-step-badge badge badge-xs badge-warning font-mono font-bold">1/4</span>
+                  <h3 class="wizard-step-title text-sm font-black text-white inline ml-1">Classe Costiera</h3>
                 </div>
-                <div class="wizard-view-toggle-pill">
-                  <button id="toggle-view-btn-class-3d" onclick="GameEngine.setWizardViewMode('class', '3d')" class="toggle-pill-btn active">
-                    🎡 Scorrimento
+                <div class="wizard-view-toggle-pill flex bg-black/50 p-0.5 rounded-lg border border-white/10 text-xs">
+                  <button id="toggle-view-btn-class-3d" onclick="GameEngine.setWizardViewMode('class', '3d')" class="toggle-pill-btn active px-2 py-0.5 rounded font-bold">
+                    🎡 Touch
                   </button>
-                  <button id="toggle-view-btn-class-list" onclick="GameEngine.setWizardViewMode('class', 'list')" class="toggle-pill-btn">
+                  <button id="toggle-view-btn-class-list" onclick="GameEngine.setWizardViewMode('class', 'list')" class="toggle-pill-btn px-2 py-0.5 rounded font-bold">
                     📋 Lista
                   </button>
                 </div>
               </div>
 
-              <!-- Vista Touch Scroll-Snap -->
               <div id="wizard-class-view-3d" class="wizard-content-fill">
                 <div class="coverflow-stage-outer">
-                  <div class="coverflow-stage-wrapper" id="wizard-classes-stage"></div>
-                  <div class="coverflow-dots" id="wizard-coverflow-dots"></div>
+                  <div class="coverflow-stage-wrapper flex gap-3 overflow-x-auto py-2" id="wizard-classes-stage"></div>
+                  <div class="coverflow-dots flex justify-center gap-1.5 mt-2" id="wizard-coverflow-dots"></div>
                 </div>
               </div>
 
-              <!-- Vista Lista -->
               <div id="wizard-class-view-list" class="wizard-content-fill hidden">
                 <div class="space-y-2" id="wizard-classes-list-container"></div>
               </div>
             </div>
 
-            <!-- PASSO 2: TALENTI CLANDESTINI (BUDGET 100 PX) -->
+            <!-- PASSO 2: TALENTI CLANDESTINI -->
             <div id="wizard-step-abilities" class="wizard-step-panel hidden">
-              <div class="wizard-single-header">
+              <div class="wizard-single-header flex items-center justify-between pb-2 border-b border-white/10 mb-2">
                 <div>
-                  <span class="wizard-step-badge">2/4</span>
-                  <h3 class="wizard-step-title">Abilità & Talenti</h3>
+                  <span class="wizard-step-badge badge badge-xs badge-warning font-mono font-bold">2/4</span>
+                  <h3 class="wizard-step-title text-sm font-black text-white inline ml-1">Abilità & Talenti</h3>
                   <span class="badge badge-xs badge-info font-mono ml-1 font-bold" id="wizard-px-budget">✨ 100 PX</span>
                 </div>
-                <div class="wizard-view-toggle-pill">
-                  <button id="toggle-view-btn-abilities-3d" onclick="GameEngine.setWizardViewMode('abilities', '3d')" class="toggle-pill-btn active">
-                    🎡 Scorrimento
+                <div class="wizard-view-toggle-pill flex bg-black/50 p-0.5 rounded-lg border border-white/10 text-xs">
+                  <button id="toggle-view-btn-abilities-3d" onclick="GameEngine.setWizardViewMode('abilities', '3d')" class="toggle-pill-btn active px-2 py-0.5 rounded font-bold">
+                    🎡 Touch
                   </button>
-                  <button id="toggle-view-btn-abilities-list" onclick="GameEngine.setWizardViewMode('abilities', 'list')" class="toggle-pill-btn">
+                  <button id="toggle-view-btn-abilities-list" onclick="GameEngine.setWizardViewMode('abilities', 'list')" class="toggle-pill-btn px-2 py-0.5 rounded font-bold">
                     📋 Griglia
                   </button>
                 </div>
@@ -559,8 +565,8 @@
 
               <div id="wizard-abilities-view-3d" class="wizard-content-fill">
                 <div class="coverflow-stage-outer">
-                  <div class="coverflow-stage-wrapper" id="wizard-abilities-stage"></div>
-                  <div class="coverflow-dots" id="wizard-abilities-dots"></div>
+                  <div class="coverflow-stage-wrapper flex gap-3 overflow-x-auto py-2" id="wizard-abilities-stage"></div>
+                  <div class="coverflow-dots flex justify-center gap-1.5 mt-2" id="wizard-abilities-dots"></div>
                 </div>
               </div>
 
@@ -571,25 +577,25 @@
 
             <!-- PASSO 3: MERCATO NERO DI CICCIO -->
             <div id="wizard-step-shop" class="wizard-step-panel hidden">
-              <div class="wizard-single-header">
+              <div class="wizard-single-header flex items-center justify-between pb-2 border-b border-white/10 mb-2">
                 <div>
-                  <span class="wizard-step-badge">3/4</span>
-                  <h3 class="wizard-step-title">Mercato Nero</h3>
+                  <span class="wizard-step-badge badge badge-xs badge-warning font-mono font-bold">3/4</span>
+                  <h3 class="wizard-step-title text-sm font-black text-white inline ml-1">Mercato Nero</h3>
                   <span id="wizard-shop-gold-display" class="font-mono text-amber-300 font-bold text-xs ml-1">💰 40 🟡</span>
                   <button onclick="GameEngine.openCambioModal()" class="btn btn-xs btn-warning font-black text-[9px] h-6 min-h-0 px-2 ml-1">💱 Cambio</button>
                 </div>
-                <div class="wizard-view-toggle-pill">
-                  <button id="toggle-view-btn-shop-3d" onclick="GameEngine.setWizardViewMode('shop', '3d')" class="toggle-pill-btn active">
-                    🎡 Scorrimento
+                <div class="wizard-view-toggle-pill flex bg-black/50 p-0.5 rounded-lg border border-white/10 text-xs">
+                  <button id="toggle-view-btn-shop-3d" onclick="GameEngine.setWizardViewMode('shop', '3d')" class="toggle-pill-btn active px-2 py-0.5 rounded font-bold">
+                    🎡 Touch
                   </button>
-                  <button id="toggle-view-btn-shop-list" onclick="GameEngine.setWizardViewMode('shop', 'list')" class="toggle-pill-btn">
+                  <button id="toggle-view-btn-shop-list" onclick="GameEngine.setWizardViewMode('shop', 'list')" class="toggle-pill-btn px-2 py-0.5 rounded font-bold">
                     📋 Griglia
                   </button>
                 </div>
               </div>
 
               <!-- Chips Reparti Orizzontali -->
-              <div class="chips-scroll-bar px-1 my-1.5" id="wizard-shop-category-chips">
+              <div class="chips-scroll-bar flex gap-1.5 overflow-x-auto py-1.5" id="wizard-shop-category-chips">
                 <button onclick="GameEngine.filterWizardShop('ARMI')" class="rpg-category-chip active">🗡️ Armi</button>
                 <button onclick="GameEngine.filterWizardShop('VEICOLI')" class="rpg-category-chip">🛴 Veicoli</button>
                 <button onclick="GameEngine.filterWizardShop('STRUMENTI')" class="rpg-category-chip">🔧 Strumenti</button>
@@ -600,8 +606,8 @@
 
               <div id="wizard-shop-view-3d" class="wizard-content-fill">
                 <div class="coverflow-stage-outer">
-                  <div class="coverflow-stage-wrapper" id="wizard-shop-stage"></div>
-                  <div class="coverflow-dots" id="wizard-shop-dots"></div>
+                  <div class="coverflow-stage-wrapper flex gap-3 overflow-x-auto py-2" id="wizard-shop-stage"></div>
+                  <div class="coverflow-dots flex justify-center gap-1.5 mt-2" id="wizard-shop-dots"></div>
                 </div>
               </div>
 
@@ -614,93 +620,92 @@
             <div id="wizard-step-name" class="wizard-step-panel hidden">
               <!-- Renderizzato dinamicamente da Rules2Wizard.renderStep4() -->
             </div>
-
           </section>
 
           <!-- =============================================================== -->
           <!-- VISTA 4: COCKPIT GAMEPLAY NARRATIVO D20                         -->
           <!-- =============================================================== -->
           <section id="view-gameplay" class="gameplay-container hidden app-screen max-w-3xl mx-auto">
-            <div class="hud-cockpit">
-              <div class="hud-row-identity">
+            <div class="hud-cockpit p-3 rounded-xl bg-slate-900 border border-white/10 space-y-2">
+              <div class="hud-row-identity flex items-center justify-between">
                 <div class="flex items-center space-x-2.5 min-w-0">
-                  <div class="hud-avatar-box">
-                    <img id="kpi-hero-avatar-img" src="" class="hud-avatar-img hidden" alt="Avatar">
-                    <span id="kpi-hero-avatar-fallback" class="hud-avatar-fallback">🥋</span>
+                  <div class="hud-avatar-box w-9 h-9 rounded-lg bg-black border border-sky-400/40 flex items-center justify-center overflow-hidden shrink-0">
+                    <img id="kpi-hero-avatar-img" src="" class="hud-avatar-img hidden w-full h-full object-cover" alt="Avatar">
+                    <span id="kpi-hero-avatar-fallback" class="hud-avatar-fallback text-lg">🥋</span>
                   </div>
                   <div class="min-w-0">
-                    <div class="hud-hero-name" id="kpi-hero-name">Eroe</div>
+                    <div class="hud-hero-name font-black text-xs text-white truncate" id="kpi-hero-name">Eroe</div>
                   </div>
                 </div>
-                <div class="hud-gold-display">
-                  <span>🟡</span> <span id="kpi-hero-gold">40</span> <span class="gold-suffix">Oro</span>
+                <div class="hud-gold-display font-mono text-xs font-bold text-amber-300">
+                  <span>🟡</span> <span id="kpi-hero-gold">40</span> <span class="gold-suffix text-slate-400">Oro</span>
                 </div>
               </div>
 
-              <div class="hud-row-vitals">
-                <div class="hud-vitals-box">
-                  <span class="heart-icon">❤️</span>
-                  <div class="progress-bar-container">
-                    <progress id="kpi-hero-pv-bar" class="progress progress-error w-full h-2.5 rounded-full" value="25" max="25"></progress>
+              <div class="hud-row-vitals flex items-center justify-between gap-3">
+                <div class="hud-vitals-box flex items-center gap-2 flex-1">
+                  <span class="heart-icon text-xs">❤️</span>
+                  <div class="progress-bar-container flex-1">
+                    <progress id="kpi-hero-pv-bar" class="progress progress-error w-full h-2 rounded-full" value="25" max="25"></progress>
                   </div>
-                  <span id="kpi-hero-pv-text" class="hud-pv-number">25/25</span>
+                  <span id="kpi-hero-pv-text" class="hud-pv-number font-mono text-xs font-bold text-rose-400 shrink-0">25/25</span>
                 </div>
 
-                <div class="hud-d20-trio">
-                  <span class="d20-chip" title="Forza">🥊 <b id="kpi-mod-for">+0</b></span>
-                  <span class="d20-chip" title="Destrezza">🤸 <b id="kpi-mod-des">+0</b></span>
-                  <span class="d20-chip" title="Intelligenza">🧠 <b id="kpi-mod-int">+0</b></span>
+                <div class="hud-d20-trio flex gap-1 font-mono text-[10px]">
+                  <span class="p-1 rounded bg-black/40 border border-white/5" title="Forza">🥊 <b id="kpi-mod-for" class="text-sky-300">+0</b></span>
+                  <span class="p-1 rounded bg-black/40 border border-white/5" title="Destrezza">🤸 <b id="kpi-mod-des" class="text-sky-300">+0</b></span>
+                  <span class="p-1 rounded bg-black/40 border border-white/5" title="Intelligenza">🧠 <b id="kpi-mod-int" class="text-sky-300">+0</b></span>
                 </div>
               </div>
             </div>
 
-            <div class="cinema-frame-rigid shadow-xl relative">
-              <img id="scene-image" src="" alt="Scena di Gioco">
-              <span id="scene-type-badge" class="badge badge-xs badge-info scene-badge">SNODO</span>
+            <div class="cinema-frame-rigid shadow-xl relative rounded-2xl overflow-hidden mt-3">
+              <img id="scene-image" src="" class="w-full h-44 object-cover" alt="Scena di Gioco">
+              <span id="scene-type-badge" class="badge badge-xs badge-info scene-badge absolute top-2 left-2">SNODO</span>
               <div id="floating-damage-box" class="floating-damage-layer"></div>
 
-              <div class="watermark-cover-banner" id="scene-watermark-banner">
+              <div class="watermark-cover-banner">
                 <div class="quote-text" id="scene-quote"></div>
                 <div class="quote-author" id="scene-author"></div>
               </div>
             </div>
 
-            <div class="narrative-box-flexible no-scrollbar shadow-inner">
-              <div class="narrative-title" id="scene-title">Titolo Snodo</div>
-              <p class="narrative-prose" id="scene-text">Caricamento narrazione...</p>
+            <div class="narrative-box-flexible p-3.5 rounded-xl bg-slate-900 border border-white/10 mt-3 shadow-inner">
+              <div class="narrative-title text-sm font-black text-white" id="scene-title">Titolo Snodo</div>
+              <p class="narrative-prose text-xs text-slate-300 leading-relaxed mt-1" id="scene-text">Caricamento narrazione...</p>
             </div>
 
-            <div id="scene-actions-container" class="scene-actions-area"></div>
+            <div id="scene-actions-container" class="scene-actions-area space-y-2 mt-3"></div>
           </section>
 
           <!-- =============================================================== -->
           <!-- VISTA 5: SHOP REALE PIATTAFORMA                                -->
           <!-- =============================================================== -->
           <section id="view-shop" class="space-y-4 hidden app-screen">
-            <div class="search-bar-box">
-              <i data-lucide="search" class="search-icon"></i>
-              <input type="text" id="shop-search-input" oninput="AppModules.filterShop()" placeholder="Cerca nello Shop..." class="search-input">
+            <div class="search-bar-box relative">
+              <i data-lucide="search" class="w-4 h-4 absolute left-3 top-2.5 text-slate-400"></i>
+              <input type="text" id="shop-search-input" oninput="AppModules.filterShop()" placeholder="Cerca nello Shop..." class="input input-sm input-bordered w-full pl-9 bg-slate-900 text-white">
             </div>
-            <div class="chips-scroll-bar" id="shop-category-chips"></div>
-            <div id="shop-products-grid" class="shop-grid"></div>
+            <div class="chips-scroll-bar flex gap-1.5 overflow-x-auto pb-1" id="shop-category-chips"></div>
+            <div id="shop-products-grid" class="grid grid-cols-2 md:grid-cols-4 gap-3"></div>
           </section>
 
           <!-- DETTAGLIO SHOP -->
           <section id="subview-shop-detail" class="space-y-4 hidden app-screen max-w-2xl mx-auto">
-            <div class="detail-header-border">
-              <span id="detail-shop-cat" class="detail-cat-tag">Reparto</span>
-              <h2 class="detail-title" id="detail-shop-title">Nome Articolo</h2>
+            <div class="detail-header-border pb-2 border-b border-white/10">
+              <span id="detail-shop-cat" class="text-[10px] font-mono text-sky-400 font-bold uppercase">Reparto</span>
+              <h2 class="text-base font-black text-white mt-0.5" id="detail-shop-title">Nome Articolo</h2>
             </div>
-            <div class="detail-media-box">
+            <div class="detail-media-box h-48 rounded-xl overflow-hidden relative bg-slate-900">
               <img id="detail-shop-img" src="" class="w-full h-full object-cover" alt="">
-              <span id="detail-shop-stock" class="badge badge-sm badge-success stock-badge">Disponibile</span>
+              <span id="detail-shop-stock" class="badge badge-sm badge-success stock-badge absolute top-2 right-2">Disponibile</span>
             </div>
             <div class="space-y-4">
-              <p id="detail-shop-desc" class="detail-prose"></p>
-              <div class="detail-price-box">
+              <p id="detail-shop-desc" class="text-xs text-slate-300 leading-relaxed"></p>
+              <div class="p-3 rounded-xl bg-slate-900 border border-white/10 flex items-center justify-between">
                 <div>
-                  <div class="price-label">Prezzo</div>
-                  <div class="price-value text-amber-400 font-mono font-bold" id="detail-shop-price">0 🪙</div>
+                  <div class="text-[9px] font-mono text-slate-400 uppercase">Prezzo</div>
+                  <div class="text-sm font-black text-amber-400 font-mono" id="detail-shop-price">0 🪙</div>
                 </div>
                 <button id="detail-shop-action-btn" class="btn btn-primary btn-sm px-6 font-bold">Acquista</button>
               </div>
@@ -711,36 +716,36 @@
           <!-- VISTA 6: RICETTARIO REALE                                      -->
           <!-- =============================================================== -->
           <section id="view-recipes" class="space-y-4 hidden app-screen">
-            <div class="search-bar-box">
-              <i data-lucide="search" class="search-icon"></i>
-              <input type="text" id="recipes-search-input" oninput="AppModules.filterRecipes()" placeholder="Cerca cocktail o piatti..." class="search-input">
+            <div class="search-bar-box relative">
+              <i data-lucide="search" class="w-4 h-4 absolute left-3 top-2.5 text-slate-400"></i>
+              <input type="text" id="recipes-search-input" oninput="AppModules.filterRecipes()" placeholder="Cerca cocktail o piatti..." class="input input-sm input-bordered w-full pl-9 bg-slate-900 text-white">
             </div>
-            <div class="chips-scroll-bar" id="recipes-category-chips"></div>
-            <div id="recipes-grid" class="recipes-grid"></div>
+            <div class="chips-scroll-bar flex gap-1.5 overflow-x-auto pb-1" id="recipes-category-chips"></div>
+            <div id="recipes-grid" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
           </section>
 
           <!-- DETTAGLIO RICETTA -->
           <section id="subview-recipe-detail" class="space-y-4 hidden app-screen max-w-2xl mx-auto">
-            <div class="detail-header-border">
-              <span id="detail-recipe-cat" class="detail-cat-tag">Categoria</span>
-              <h2 class="detail-title" id="detail-recipe-title">Piatto</h2>
+            <div class="detail-header-border pb-2 border-b border-white/10">
+              <span id="detail-recipe-cat" class="text-[10px] font-mono text-emerald-400 font-bold uppercase">Categoria</span>
+              <h2 class="text-base font-black text-white mt-0.5" id="detail-recipe-title">Piatto</h2>
             </div>
-            <div class="detail-media-box">
+            <div class="detail-media-box h-48 rounded-xl overflow-hidden bg-slate-900">
               <img id="detail-recipe-img" src="" class="w-full h-full object-cover" alt="">
             </div>
             <div class="space-y-3">
-              <div id="detail-recipe-meta" class="recipe-meta-text"></div>
-              <div class="recipe-rpg-card">
-                <div class="rpg-kicker">Parametri RPG & Gusto</div>
-                <div class="grid grid-cols-3 gap-2" id="detail-recipe-rpg"></div>
+              <div id="detail-recipe-meta" class="flex gap-2"></div>
+              <div class="p-3 rounded-xl bg-slate-900 border border-white/10">
+                <div class="text-[10px] font-mono text-slate-400 uppercase font-bold mb-2">Parametri RPG & Gusto</div>
+                <div class="grid grid-cols-3 gap-2 text-center" id="detail-recipe-rpg"></div>
               </div>
               <div class="space-y-1">
-                <div class="section-kicker">Ingredienti</div>
-                <p id="detail-recipe-ingredients" class="recipe-content-box whitespace-pre-line"></p>
+                <div class="text-xs font-bold text-slate-400 uppercase">Ingredienti</div>
+                <p id="detail-recipe-ingredients" class="p-3 rounded-xl bg-slate-900 border border-white/10 text-xs text-slate-300 leading-relaxed whitespace-pre-line"></p>
               </div>
               <div class="space-y-1">
-                <div class="section-kicker">Preparazione</div>
-                <p id="detail-recipe-prep" class="recipe-content-box whitespace-pre-line"></p>
+                <div class="text-xs font-bold text-slate-400 uppercase">Preparazione</div>
+                <p id="detail-recipe-prep" class="p-3 rounded-xl bg-slate-900 border border-white/10 text-xs text-slate-300 leading-relaxed whitespace-pre-line"></p>
               </div>
             </div>
           </section>
@@ -749,53 +754,55 @@
           <!-- VISTA 7: PROFILO UTENTE, ARENA & CAVEAU                         -->
           <!-- =============================================================== -->
           <section id="view-profile" class="space-y-4 hidden app-screen">
-            <div class="profile-header-card">
-              <div class="flex items-center space-x-4">
-                <div class="profile-avatar-box" id="profile-card-avatar">U</div>
+            <div class="profile-header-card p-4 rounded-2xl bg-gradient-to-br from-slate-900 to-indigo-950/60 border border-white/10 flex items-center justify-between">
+              <div class="flex items-center space-x-3.5">
+                <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-sky-600 to-indigo-900 border border-sky-400/40 flex items-center justify-center text-xl font-black text-white shrink-0 overflow-hidden" id="profile-card-avatar">
+                  U
+                </div>
                 <div>
-                  <h3 class="profile-name" id="profile-card-name">Nome Utente</h3>
-                  <span class="profile-handle" id="profile-card-username">@username</span>
-                  <div class="mt-1 flex space-x-2">
-                    <span class="badge badge-sm badge-info font-bold text-[9px] uppercase" id="profile-card-plan">PIANO BASE</span>
-                    <span class="profile-id-text" id="profile-card-id">ID: ---</span>
+                  <h3 class="text-sm font-black text-white" id="profile-card-name">Nome Utente</h3>
+                  <span class="text-[11px] font-mono text-sky-400" id="profile-card-username">@username</span>
+                  <div class="mt-1 flex items-center gap-2">
+                    <span class="badge badge-xs badge-info font-bold uppercase text-[8px]" id="profile-card-plan">PIANO BASE</span>
+                    <span class="text-[9px] font-mono text-slate-500" id="profile-card-id">ID: ---</span>
                   </div>
                 </div>
               </div>
 
-              <div class="text-right space-y-1">
+              <div class="text-right space-y-1 font-mono">
                 <div>
-                  <div class="kpi-card-label">Saldo Megoin</div>
-                  <div class="text-base md:text-lg font-black text-amber-300 font-mono tabular-nums" id="profile-card-megoin">0 🪙</div>
+                  <div class="text-[9px] text-slate-400 uppercase">Saldo Megoin</div>
+                  <div class="text-sm md:text-base font-black text-amber-300" id="profile-card-megoin">0 🪙</div>
                 </div>
                 <div>
-                  <div class="kpi-card-label">Punti Fedeltà</div>
-                  <div class="text-base md:text-lg font-black text-emerald-400 font-mono tabular-nums" id="profile-card-points">0 Pt</div>
+                  <div class="text-[9px] text-slate-400 uppercase">Fedeltà</div>
+                  <div class="text-sm md:text-base font-black text-emerald-400" id="profile-card-points">0 Pt</div>
                 </div>
               </div>
             </div>
 
             <!-- Azioni Rapide Piano & Download -->
             <div class="grid grid-cols-2 gap-3">
-              <button onclick="AppModules.openPlansCatalogModal()" class="action-card-plan group">
-                <div class="flex items-center space-x-2.5">
-                  <span class="text-xl">👑</span>
-                  <div class="text-left">
-                    <div class="action-card-title group-hover:text-sky-400" id="profile-action-plan-name">Piano: BASE</div>
-                    <div class="action-card-sub">Upgrade Piani ›</div>
+              <button onclick="AppModules.openPlansCatalogModal()" class="p-3 rounded-xl bg-slate-900 border border-sky-400/30 flex items-center justify-between text-left hover:border-sky-400/60 transition">
+                <div class="flex items-center gap-2.5">
+                  <span class="text-lg">👑</span>
+                  <div>
+                    <div class="font-bold text-xs text-white" id="profile-action-plan-name">Piano: BASE</div>
+                    <div class="text-[9px] text-sky-400 font-mono">Vedi Piani & Upgrade ›</div>
                   </div>
                 </div>
-                <span class="badge badge-xs badge-info font-black text-[8px]">INFO</span>
+                <span class="badge badge-xs badge-info font-mono">INFO</span>
               </button>
 
-              <button onclick="AppModules.openVaultSection()" class="action-card-vault group">
-                <div class="flex items-center space-x-2.5">
-                  <span class="text-xl">📥</span>
-                  <div class="text-left">
-                    <div class="action-card-title group-hover:text-purple-400">I Miei Download</div>
-                    <div class="action-card-sub">Caveau Digitale ›</div>
+              <button onclick="AppModules.openVaultSection()" class="p-3 rounded-xl bg-slate-900 border border-purple-500/30 flex items-center justify-between text-left hover:border-purple-400/60 transition">
+                <div class="flex items-center gap-2.5">
+                  <span class="text-lg">📥</span>
+                  <div>
+                    <div class="font-bold text-xs text-white">I Miei Download</div>
+                    <div class="text-[9px] text-purple-400 font-mono">Caveau Digitale ›</div>
                   </div>
                 </div>
-                <span class="badge badge-xs badge-secondary font-black text-[8px]" id="profile-action-vault-count">0</span>
+                <span class="badge badge-xs badge-secondary font-mono" id="profile-action-vault-count">0</span>
               </button>
             </div>
 
@@ -803,21 +810,21 @@
             <div id="profile-arena-section" class="space-y-3 pt-1"></div>
 
             <!-- Caveau File Scaricati -->
-            <div id="profile-vault-container-card" class="vault-container-card">
-              <h3 class="section-headline-flex">
+            <div id="profile-vault-container-card" class="p-4 rounded-2xl bg-slate-900 border border-white/10 space-y-3">
+              <div class="flex items-center gap-2 text-xs font-bold text-slate-300 uppercase">
                 <i data-lucide="download" class="w-4 h-4 text-emerald-400"></i>
                 <span>File & Prodotti Digitali Riscattati</span>
-              </h3>
+              </div>
               <div id="profile-vault-container" class="space-y-2"></div>
             </div>
 
             <!-- Ultime Transazioni Reali da GAS -->
-            <div class="transactions-container-card">
-              <div class="flex justify-between items-center">
-                <h3 class="section-headline-flex">
+            <div class="p-4 rounded-2xl bg-slate-900 border border-white/10 space-y-3">
+              <div class="flex justify-between items-center text-xs">
+                <div class="flex items-center gap-2 font-bold text-slate-300 uppercase">
                   <i data-lucide="receipt" class="w-4 h-4 text-sky-400"></i>
                   <span>Ultime Transazioni</span>
-                </h3>
+                </div>
                 <button onclick="AppModules.syncTransactions(true)" class="btn btn-ghost btn-xs text-sky-400">Aggiorna</button>
               </div>
               <div id="profile-transactions-container" class="space-y-2"></div>
@@ -831,91 +838,87 @@
       <!-- 4. FOOTER MENU STICKY (TRE STATI MUTUAMENTE ESCLUSIVI)              -->
       <!-- =================================================================== -->
 
-      <!-- 4.A FOOTER PIATTAFORMA PRINCIPALE (MOBILE) -->
-      <footer id="main-app-footer" class="main-app-footer md:hidden">
-        <button id="mob-nav-home" onclick="AppRouter.navigate('home')" class="nav-tab active" data-tab="home">
+      <!-- 4.A FOOTER PIATTAFORMA PRINCIPALE (MOBILE: 5 TAB CLASSICI THUMB-FRIENDLY) -->
+      <footer id="main-app-footer" class="main-app-footer md:hidden flex justify-around items-center bg-[#070A12]/95 backdrop-blur-lg border-t border-white/10" style="height: calc(52px + var(--safe-bottom, 0px)); padding-bottom: var(--safe-bottom, 0px);">
+        <button id="mob-nav-home" onclick="AppRouter.navigate('home')" class="nav-tab active flex flex-col items-center justify-center h-12 w-16 text-slate-400" data-tab="home">
           <i data-lucide="home" class="w-4 h-4"></i>
-          <span class="nav-tab-label">Home</span>
+          <span class="nav-tab-label text-[9px] font-bold mt-1">Home</span>
         </button>
-        <button id="mob-nav-games" data-module="games" onclick="AppRouter.navigate('games')" class="nav-tab" data-tab="games">
-          <i data-lucide="gamepad-2" class="w-4 h-4 text-sky-400"></i>
-          <span class="nav-tab-label text-sky-400">Giochi</span>
+        <button id="mob-nav-games" data-module="games" onclick="AppRouter.navigate('games')" class="nav-tab flex flex-col items-center justify-center h-12 w-16 text-slate-400 relative" data-tab="games">
+          <i data-lucide="gamepad-2" class="w-4 h-4"></i>
+          <span class="nav-tab-label text-[9px] font-bold mt-1">Giochi</span>
+          <span class="w-1.5 h-1.5 rounded-full bg-purple-400 absolute top-2 right-4"></span>
         </button>
-        <button id="mob-nav-multiplayer" data-module="multiplayer" onclick="AppModules.openMultiplayerLobby()" class="nav-tab relative" data-tab="multiplayer">
-          <i data-lucide="users" class="w-4 h-4 text-purple-400"></i>
-          <span class="nav-tab-label text-purple-400">Stanze</span>
-          <span class="nav-tab-dot"></span>
-        </button>
-        <button id="mob-nav-shop" data-module="shop" onclick="AppRouter.navigate('shop')" class="nav-tab" data-tab="shop">
+        <button id="mob-nav-shop" data-module="shop" onclick="AppRouter.navigate('shop')" class="nav-tab flex flex-col items-center justify-center h-12 w-16 text-slate-400" data-tab="shop">
           <i data-lucide="shopping-bag" class="w-4 h-4"></i>
-          <span class="nav-tab-label">Shop</span>
+          <span class="nav-tab-label text-[9px] font-bold mt-1">Shop</span>
         </button>
-        <button id="mob-nav-recipes" data-module="recipes" onclick="AppRouter.navigate('recipes')" class="nav-tab" data-tab="recipes">
+        <button id="mob-nav-recipes" data-module="recipes" onclick="AppRouter.navigate('recipes')" class="nav-tab flex flex-col items-center justify-center h-12 w-16 text-slate-400" data-tab="recipes">
           <i data-lucide="utensils" class="w-4 h-4"></i>
-          <span class="nav-tab-label">Ricette</span>
+          <span class="nav-tab-label text-[9px] font-bold mt-1">Ricette</span>
         </button>
-        <button id="mob-nav-profile" onclick="AppRouter.navigate('profile')" class="nav-tab" data-tab="profile">
+        <button id="mob-nav-profile" onclick="AppRouter.navigate('profile')" class="nav-tab flex flex-col items-center justify-center h-12 w-16 text-slate-400" data-tab="profile">
           <i data-lucide="user" class="w-4 h-4"></i>
-          <span class="nav-tab-label">Profilo</span>
+          <span class="nav-tab-label text-[9px] font-bold mt-1">Profilo</span>
         </button>
       </footer>
 
       <!-- 4.B FOOTER WIZARD STICKY -->
-      <footer id="main-wizard-footer" class="wizard-sticky-footer hidden">
+      <footer id="main-wizard-footer" class="wizard-sticky-footer hidden flex items-center px-3 bg-[#070A12]/95 border-t border-white/10" style="height: calc(48px + var(--safe-bottom, 0px)); padding-bottom: var(--safe-bottom, 0px);">
         <div id="wiz-footer-step-1" class="wizard-footer-step-controls w-full flex">
-          <button id="wizard-step1-confirm-btn" onclick="GameEngine.wizardConfirmStep1()" class="btn btn-sm btn-wizard-cta w-full font-black uppercase">
+          <button id="wizard-step1-confirm-btn" onclick="GameEngine.wizardConfirmStep1()" class="btn btn-sm btn-wizard-cta w-full font-black uppercase text-xs">
             Scegli Classe ›
           </button>
         </div>
 
         <div id="wiz-footer-step-2" class="wizard-footer-step-controls w-full flex space-x-2 hidden">
-          <button onclick="GameEngine.wizardPrevStep(1)" class="btn btn-xs sm:btn-sm btn-outline border-white/20 text-slate-300 font-bold px-3">
+          <button onclick="GameEngine.wizardPrevStep(1)" class="btn btn-xs btn-outline border-white/20 text-slate-300 font-bold px-3">
             ‹ Classi
           </button>
-          <button onclick="GameEngine.wizardConfirmStep2()" class="btn btn-sm btn-wizard-cta flex-1 font-black uppercase">
+          <button onclick="GameEngine.wizardConfirmStep2()" class="btn btn-sm btn-wizard-cta flex-1 font-black uppercase text-xs">
             All'Emporio ›
           </button>
         </div>
 
         <div id="wiz-footer-step-3" class="wizard-footer-step-controls w-full flex items-center space-x-2 hidden">
-          <button onclick="GameEngine.wizardPrevStep(2)" class="btn btn-xs sm:btn-sm btn-outline border-white/20 text-slate-300 font-bold px-3">
+          <button onclick="GameEngine.wizardPrevStep(2)" class="btn btn-xs btn-outline border-white/20 text-slate-300 font-bold px-3">
             ‹ Talenti
           </button>
           <div class="flex-1 flex items-center justify-between px-3 py-1 bg-black/40 rounded-lg border border-white/10 text-[11px]">
             <span class="text-slate-300">🎒 Zaino: <b id="wizard-shop-backpack-count" class="text-amber-300">0</b></span>
             <button onclick="GameEngine.resetWizardShop()" class="text-rose-400 font-bold text-[10px] hover:underline px-1">Azzera</button>
           </div>
-          <button id="wizard-step3-next-btn" onclick="GameEngine.wizardNextStep(4)" class="btn btn-sm btn-wizard-cta font-black uppercase px-4">
+          <button id="wizard-step3-next-btn" onclick="GameEngine.wizardNextStep(4)" class="btn btn-sm btn-wizard-cta font-black uppercase text-xs px-4">
             Riepilogo ›
           </button>
         </div>
 
         <div id="wiz-footer-step-4" class="wizard-footer-step-controls w-full flex space-x-2 hidden">
-          <button onclick="GameEngine.wizardPrevStep(3)" class="btn btn-xs sm:btn-sm btn-outline border-white/20 text-slate-300 font-bold px-3">
+          <button onclick="GameEngine.wizardPrevStep(3)" class="btn btn-xs btn-outline border-white/20 text-slate-300 font-bold px-3">
             ‹ Emporio
           </button>
-          <button id="wizard-finalize-btn" onclick="GameEngine.wizardFinalizeHero()" class="btn btn-sm btn-wizard-cta flex-1 font-black uppercase">
+          <button id="wizard-finalize-btn" onclick="GameEngine.wizardFinalizeHero()" class="btn btn-sm btn-wizard-cta flex-1 font-black uppercase text-xs">
             Lancia Eroe 🚀
           </button>
         </div>
       </footer>
 
       <!-- 4.C FOOTER GAME COCKPIT RULES 2 -->
-      <footer id="main-game-cockpit-footer" class="cockpit-footer hidden">
-        <button onclick="Rules2Engine.openHeroModal('scheda')" class="cockpit-btn">
-          <i data-lucide="user" class="w-4 h-4"></i>
+      <footer id="main-game-cockpit-footer" class="cockpit-footer hidden grid grid-cols-4 gap-2 items-center px-3 bg-[#070A12]/95 border-t border-white/10" style="height: calc(48px + var(--safe-bottom, 0px)); padding-bottom: var(--safe-bottom, 0px);">
+        <button onclick="Rules2Engine.openHeroModal('scheda')" class="cockpit-btn flex items-center justify-center gap-1 p-2 rounded-lg bg-white/5 text-slate-300 text-xs font-bold">
+          <i data-lucide="user" class="w-3.5 h-3.5"></i>
           <span>Eroe</span>
         </button>
-        <button onclick="Rules2Engine.openAssettoModal()" class="cockpit-btn">
-          <i data-lucide="shield" class="w-4 h-4"></i>
+        <button onclick="Rules2Engine.openAssettoModal()" class="cockpit-btn flex items-center justify-center gap-1 p-2 rounded-lg bg-white/5 text-slate-300 text-xs font-bold">
+          <i data-lucide="shield" class="w-3.5 h-3.5"></i>
           <span>Assetto</span>
         </button>
-        <button onclick="Rules2Engine.openEmporioDrawer()" class="cockpit-btn">
-          <i data-lucide="shopping-bag" class="w-4 h-4"></i>
+        <button onclick="Rules2Engine.openEmporioDrawer()" class="cockpit-btn flex items-center justify-center gap-1 p-2 rounded-lg bg-white/5 text-slate-300 text-xs font-bold">
+          <i data-lucide="shopping-bag" class="w-3.5 h-3.5"></i>
           <span>Emporio</span>
         </button>
-        <button onclick="Rules2Engine.openAbandonModal()" class="cockpit-btn text-rose-400">
-          <i data-lucide="log-out" class="w-4 h-4"></i>
+        <button onclick="Rules2Engine.openAbandonModal()" class="cockpit-btn flex items-center justify-center gap-1 p-2 rounded-lg bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs font-bold">
+          <i data-lucide="log-out" class="w-3.5 h-3.5"></i>
           <span>Esci</span>
         </button>
       </footer>
@@ -924,13 +927,13 @@
   </div>
 
   <!-- ======================================================================= -->
-  <!-- 5. MODALI GLASSMORPHISM                                                -->
+  <!-- 5. MODALI GLASSMORPHISM (TUTTE LE FINESTRE OPERATIVE DI GIOCO)         -->
   <!-- ======================================================================= -->
 
   <!-- MODALE CABINATO MEGOIN -->
   <dialog id="modal-insert-megoin" class="modal modal-middle">
     <div class="modal-box p-5 bg-slate-950 border border-sky-400/40 rounded-2xl max-w-sm text-center relative space-y-3">
-      <button onclick="document.getElementById('modal-insert-megoin').close()" class="modal-close-btn">✕</button>
+      <button onclick="document.getElementById('modal-insert-megoin').close()" class="btn btn-xs btn-circle btn-ghost absolute right-3 top-3">✕</button>
 
       <div class="w-14 h-14 mx-auto rounded-full bg-amber-500/20 border border-amber-400/40 flex items-center justify-center text-3xl">
         🪙
@@ -971,7 +974,7 @@
   <!-- FASCICOLO APPROFONDITO UNIVERSALE -->
   <dialog id="modal-universal-detail" class="modal modal-middle">
     <div class="modal-box p-5 bg-slate-950 border border-sky-400/40 rounded-2xl max-w-md space-y-3 relative">
-      <button onclick="document.getElementById('modal-universal-detail').close()" class="modal-close-btn">✕</button>
+      <button onclick="document.getElementById('modal-universal-detail').close()" class="btn btn-xs btn-circle btn-ghost absolute right-3 top-3">✕</button>
 
       <div class="flex items-center gap-3">
         <span class="text-2xl" id="uni-detail-icon">📦</span>
@@ -998,14 +1001,14 @@
 
   <!-- DADO D20 SUSPENSE -->
   <dialog id="modal-dice-suspense" class="modal modal-middle">
-    <div class="modal-box dice-modal-box">
-      <div class="dice-wrapper">
-        <div id="dice-visual-cube" class="dice-cube dice-rolling">🎲</div>
+    <div class="modal-box dice-modal-box p-5 bg-slate-950 border border-sky-400/40 rounded-2xl max-w-xs text-center space-y-2">
+      <div class="dice-wrapper my-3 flex items-center justify-center">
+        <div id="dice-visual-cube" class="dice-cube text-5xl animate-bounce">🎲</div>
       </div>
       <div>
-        <h4 class="dice-title" id="dice-roll-title">Lancio D20 in corso...</h4>
-        <div class="dice-result" id="dice-roll-result">--</div>
-        <p class="dice-desc" id="dice-roll-desc">Il fato decide il tuo destino...</p>
+        <h4 class="dice-title text-xs font-mono font-bold text-sky-400 uppercase" id="dice-roll-title">Lancio D20 in corso...</h4>
+        <div class="dice-result text-3xl font-black font-mono text-amber-300 my-1" id="dice-roll-result">--</div>
+        <p class="dice-desc text-[11px] text-slate-400" id="dice-roll-desc">Il fato decide il tuo destino...</p>
       </div>
     </div>
   </dialog>
@@ -1018,10 +1021,9 @@
           <span class="text-lg">👤</span>
           <h3 class="text-sm font-black text-white">Fascicolo Agente & Risorse</h3>
         </div>
-        <button onclick="document.getElementById('drawer-hero-sheet').close()" class="modal-close-btn">✕</button>
+        <button onclick="document.getElementById('drawer-hero-sheet').close()" class="btn btn-xs btn-circle btn-ghost absolute right-3 top-3">✕</button>
       </div>
 
-      <!-- Tab Switcher Orizzontale a 4 Posizioni -->
       <div class="flex space-x-1 border-b border-white/10 pb-2">
         <button onclick="Rules2Engine.setHeroModalTab('scheda')" id="hero-tab-btn-scheda" class="btn btn-xs btn-primary flex-1 font-bold">Scheda</button>
         <button onclick="Rules2Engine.setHeroModalTab('zaino')" id="hero-tab-btn-zaino" class="btn btn-xs btn-ghost text-slate-400 flex-1 font-bold">Zaino</button>
@@ -1029,7 +1031,6 @@
         <button onclick="Rules2Engine.setHeroModalTab('dossier')" id="hero-tab-btn-dossier" class="btn btn-xs btn-ghost text-slate-400 flex-1 font-bold">Dossier</button>
       </div>
 
-      <!-- SOTTO-TAB 1: SCHEDA EROE -->
       <div id="hero-tab-content-scheda" class="space-y-3">
         <div class="p-3 bg-slate-900 rounded-xl border border-white/10 flex items-center justify-between">
           <div>
@@ -1042,24 +1043,24 @@
           </div>
         </div>
 
-        <div class="hero-sheet-stats-grid">
-          <div class="sheet-stat-card">
-            <div class="stat-icon">🥊</div>
-            <div class="stat-label">Forza</div>
-            <div class="stat-val" id="sheet-mod-for">+0</div>
-            <div class="stat-pure" id="sheet-pure-for">10</div>
+        <div class="grid grid-cols-3 gap-2 text-center font-mono">
+          <div class="p-2 rounded-lg bg-black/40 border border-white/5">
+            <div class="text-xs">🥊</div>
+            <div class="text-[9px] text-slate-400 uppercase">Forza</div>
+            <div class="text-sm font-black text-sky-400" id="sheet-mod-for">+0</div>
+            <div class="text-[9px] text-slate-500" id="sheet-pure-for">10</div>
           </div>
-          <div class="sheet-stat-card">
-            <div class="stat-icon">🤸</div>
-            <div class="stat-label">Destrezza</div>
-            <div class="stat-val" id="sheet-mod-des">+0</div>
-            <div class="stat-pure" id="sheet-pure-des">10</div>
+          <div class="p-2 rounded-lg bg-black/40 border border-white/5">
+            <div class="text-xs">🤸</div>
+            <div class="text-[9px] text-slate-400 uppercase">Destrezza</div>
+            <div class="text-sm font-black text-sky-400" id="sheet-mod-des">+0</div>
+            <div class="text-[9px] text-slate-500" id="sheet-pure-des">10</div>
           </div>
-          <div class="sheet-stat-card">
-            <div class="stat-icon">🧠</div>
-            <div class="stat-label">Intelligenza</div>
-            <div class="stat-val" id="sheet-mod-int">+0</div>
-            <div class="stat-pure" id="sheet-pure-int">10</div>
+          <div class="p-2 rounded-lg bg-black/40 border border-white/5">
+            <div class="text-xs">🧠</div>
+            <div class="text-[9px] text-slate-400 uppercase">Intelligenza</div>
+            <div class="text-sm font-black text-sky-400" id="sheet-mod-int">+0</div>
+            <div class="text-[9px] text-slate-500" id="sheet-pure-int">10</div>
           </div>
         </div>
 
@@ -1075,9 +1076,8 @@
         </div>
       </div>
 
-      <!-- SOTTO-TAB 2: ZAINO -->
       <div id="hero-tab-content-zaino" class="space-y-2 hidden">
-        <div class="chips-scroll-bar" id="backpack-tabs">
+        <div class="chips-scroll-bar flex gap-1 overflow-x-auto pb-1" id="backpack-tabs">
           <button onclick="Rules2Engine.filterBackpack('ALL')" class="rpg-category-chip active">Tutti</button>
           <button onclick="Rules2Engine.filterBackpack('ARMI')" class="rpg-category-chip">Armi</button>
           <button onclick="Rules2Engine.filterBackpack('VEICOLI')" class="rpg-category-chip">Veicoli</button>
@@ -1088,13 +1088,11 @@
         <div class="space-y-2 max-h-56 overflow-y-auto" id="backpack-slots-container"></div>
       </div>
 
-      <!-- SOTTO-TAB 3: SQUADRA -->
       <div id="hero-tab-content-squadra" class="space-y-2 hidden">
         <div class="text-[11px] text-slate-400">Compagni vivi e zombi assorbono una quota del danno inflitto al gruppo.</div>
         <div id="squad-list-container" class="space-y-2 text-xs"></div>
       </div>
 
-      <!-- SOTTO-TAB 4: DOSSIER -->
       <div id="hero-tab-content-dossier" class="space-y-2 hidden">
         <div class="text-[11px] text-slate-400">Le <b>Prove</b> assegnano +1 INT permanente; gli <b>Indizi</b> conferiscono +1 INT situazionale.</div>
         <div id="dossier-list-container" class="space-y-2 text-xs"></div>
@@ -1106,10 +1104,10 @@
     </div>
   </dialog>
 
-  <!-- MODALE PILASTRO 2: ASSETTO TATTICO -->
+  <!-- MODALE ASSETTO TATTICO -->
   <dialog id="modal-cockpit-assetto" class="modal modal-middle"></dialog>
 
-  <!-- MODALE PILASTRO 3: EMPORIO DI CICCIO -->
+  <!-- MODALE EMPORIO DI CICCIO -->
   <dialog id="drawer-emporio" class="modal modal-middle">
     <div class="modal-box p-5 bg-slate-950 border border-amber-400/40 rounded-2xl max-w-md space-y-3 relative">
       <div class="flex items-center justify-between pb-2 border-b border-white/10 pr-8">
@@ -1117,7 +1115,7 @@
           <span class="text-lg">🏪</span>
           <h3 class="text-sm font-black text-white">Emporio di Ciccio & CO.</h3>
         </div>
-        <button onclick="document.getElementById('drawer-emporio').close()" class="modal-close-btn">✕</button>
+        <button onclick="document.getElementById('drawer-emporio').close()" class="btn btn-xs btn-circle btn-ghost absolute right-3 top-3">✕</button>
       </div>
       <div class="p-2.5 rounded-xl bg-slate-900 border border-white/10 flex items-center justify-between text-xs font-mono">
         <span>💰 Borsello: <b class="text-amber-400" id="emporio-gold-display">0 🟡</b></span>
@@ -1137,7 +1135,7 @@
   <!-- MODALE BANCO DI CAMBIO (MEGOIN -> ORO) -->
   <dialog id="modal-banco-cambio" class="modal modal-middle">
     <div class="modal-box p-5 bg-slate-950 border border-amber-400/40 rounded-2xl max-w-sm text-center relative space-y-3">
-      <button onclick="document.getElementById('modal-banco-cambio').close()" class="modal-close-btn">✕</button>
+      <button onclick="document.getElementById('modal-banco-cambio').close()" class="btn btn-xs btn-circle btn-ghost absolute right-3 top-3">✕</button>
       <span class="text-3xl">💱</span>
       <h3 class="text-sm font-black text-white">Banco di Cambio del Molo</h3>
       <p class="text-[11px] text-slate-300">Converti gettoni Megoin in monete d'oro sonanti direttamente sul server:</p>
@@ -1158,7 +1156,7 @@
   <!-- MODALE ABBANDONO / SOSPENSIONE -->
   <dialog id="modal-abandon" class="modal modal-middle">
     <div class="modal-box p-5 bg-slate-950 border border-white/20 rounded-2xl max-w-sm text-center relative space-y-3">
-      <button onclick="document.getElementById('modal-abandon').close()" class="modal-close-btn">✕</button>
+      <button onclick="document.getElementById('modal-abandon').close()" class="btn btn-xs btn-circle btn-ghost absolute right-3 top-3">✕</button>
       <span class="text-3xl">🚪</span>
       <h3 class="text-sm font-black text-white uppercase">Gestione Sessione</h3>
       <p class="text-[11px] text-slate-300 leading-relaxed">
@@ -1189,34 +1187,30 @@
 
   <!-- MODALE JUKEBOX RADIO NOIR -->
   <dialog id="modal-audio-jukebox" class="modal modal-middle">
-    <div class="modal-box jukebox-modal-box">
-      <button onclick="document.getElementById('modal-audio-jukebox').close()" class="modal-close-btn">✕</button>
-      <div class="jukebox-header">
-        <div class="flex items-center space-x-2">
-          <span class="text-xl">📻</span>
-          <div>
-            <h3 class="jukebox-brand">Radio Darsena Syndicate</h3>
-            <span class="jukebox-tag">Frequenze Salmastre • Incompetech Noir</span>
-          </div>
+    <div class="modal-box p-5 bg-slate-950 border border-sky-400/40 rounded-2xl max-w-sm space-y-3 relative">
+      <button onclick="document.getElementById('modal-audio-jukebox').close()" class="btn btn-xs btn-circle btn-ghost absolute right-3 top-3">✕</button>
+      <div class="flex items-center space-x-2">
+        <span class="text-xl">📻</span>
+        <div>
+          <h3 class="font-black text-sm text-white">Radio Darsena Syndicate</h3>
+          <span class="text-[10px] text-slate-400">Frequenze Salmastre • Incompetech Noir</span>
         </div>
       </div>
 
-      <div class="jukebox-display-screen">
-        <div class="flex items-center justify-between">
-          <span class="badge badge-xs badge-info font-black" id="jukebox-current-tag">NOIR DARSENA</span>
+      <div class="p-3 rounded-xl bg-black/60 border border-white/5">
+        <div class="flex items-center justify-between mb-1">
+          <span class="badge badge-xs badge-info font-mono font-bold" id="jukebox-current-tag">NOIR DARSENA</span>
           <div class="jukebox-eq-bars" id="jukebox-eq-bars">
             <span></span><span></span><span></span><span></span><span></span>
           </div>
         </div>
-        <div class="mt-2">
-          <h4 class="jukebox-track-title" id="jukebox-current-title">Hard Boiled</h4>
-          <div class="jukebox-track-sub">
-            <span id="jukebox-current-artist">Kevin MacLeod</span> • <span id="jukebox-current-mood" class="text-amber-300">Tromba Noir & Pioggia</span>
-          </div>
+        <h4 class="text-sm font-black text-white truncate" id="jukebox-current-title">Hard Boiled</h4>
+        <div class="text-[11px] text-slate-400 mt-0.5">
+          <span id="jukebox-current-artist">Kevin MacLeod</span> • <span id="jukebox-current-mood" class="text-amber-300">Tromba Noir & Pioggia</span>
         </div>
       </div>
 
-      <div class="jukebox-controls-row">
+      <div class="flex gap-2">
         <button id="jukebox-btn-play" onclick="AppModules.toggleRadioPlay(event)" class="btn btn-sm btn-primary font-bold flex-1">⏸ Pausa</button>
         <button onclick="AppModules.toggleRadioMute(event)" class="btn btn-sm btn-ghost text-slate-300">🔊 Muto</button>
       </div>
@@ -1225,26 +1219,32 @@
 
   <!-- MODALE PIANI SAAS REALI DA GAS -->
   <dialog id="modal-plans-catalog" class="modal modal-middle">
-    <div class="modal-box plans-catalog-box">
-      <button onclick="document.getElementById('modal-plans-catalog').close()" class="modal-close-btn">✕</button>
+    <div class="modal-box p-5 bg-slate-950 border border-sky-400/40 rounded-2xl max-w-md space-y-3 relative">
+      <button onclick="document.getElementById('modal-plans-catalog').close()" class="btn btn-xs btn-circle btn-ghost absolute right-3 top-3">✕</button>
       <div>
-        <span class="sub-header-tag">AFFILIAZIONE SYNDICATE</span>
-        <h3 class="page-headline">Scegli il Tuo Piano</h3>
+        <span class="text-[10px] font-mono text-sky-400 uppercase font-bold tracking-wider">AFFILIAZIONE SYNDICATE</span>
+        <h3 class="text-base font-black text-white">Scegli il Tuo Piano</h3>
       </div>
-      <div class="billing-toggle-box">
-        <button id="billing-toggle-monthly" onclick="AppModules.setBillingCycle('monthly')" class="billing-btn active">Mensile</button>
-        <button id="billing-toggle-yearly" onclick="AppModules.setBillingCycle('yearly')" class="billing-btn idle">
+      <div class="billing-toggle-box flex bg-black/50 p-1 rounded-xl border border-white/10 text-xs">
+        <button id="billing-toggle-monthly" onclick="AppModules.setBillingCycle('monthly')" class="billing-btn flex-1 py-1 rounded font-bold bg-sky-500 text-slate-950">Mensile</button>
+        <button id="billing-toggle-yearly" onclick="AppModules.setBillingCycle('yearly')" class="billing-btn flex-1 py-1 rounded font-bold text-slate-400">
           <span>Annuale</span> <span class="badge badge-xs badge-warning font-black text-[8px]">-20%</span>
         </button>
       </div>
-      <div id="plans-catalog-cards-container" class="space-y-3"></div>
+      <div id="plans-catalog-cards-container" class="space-y-2.5 max-h-64 overflow-y-auto"></div>
     </div>
   </dialog>
 
+  <!-- MODALE REGOLE SAGA -->
+  <dialog id="modal-saga-rules" class="modal modal-middle"></dialog>
+
+  <!-- MODALE SCHEDA TECNICA SAGA -->
+  <dialog id="modal-saga-features" class="modal modal-middle"></dialog>
+
   <!-- MODALE CONFERMA ACQUISTO SHOP -->
   <dialog id="modal-fulfillment" class="modal modal-middle">
-    <div class="modal-box fulfillment-modal-box">
-      <button onclick="document.getElementById('modal-fulfillment').close()" class="modal-close-btn">✕</button>
+    <div class="modal-box p-5 bg-slate-950 border border-emerald-500/40 rounded-2xl max-w-sm text-center relative space-y-3">
+      <button onclick="document.getElementById('modal-fulfillment').close()" class="btn btn-xs btn-circle btn-ghost absolute right-3 top-3">✕</button>
       <div class="text-3xl">🎉</div>
       <h3 class="text-base font-black text-white">Acquisto Confermato!</h3>
       <p class="text-xs text-slate-300" id="fulfillment-summary"></p>
@@ -1253,10 +1253,10 @@
   </dialog>
 
   <!-- SCRIPT DI SISTEMA VERSIONATI -->
-  <script src="audio.js?v=14.0"></script>
-  <script src="js/app-core.js?v=14.0"></script>
-  <script src="js/app-modules.js?v=14.0"></script>
-  <script src="js/rules2wizard.js?v=14.0"></script>
-  <script src="js/rules2engine.js?v=14.0"></script>
+  <script src="audio.js?v=15.0"></script>
+  <script src="js/app-core.js?v=15.0"></script>
+  <script src="js/app-modules.js?v=15.0"></script>
+  <script src="js/rules2wizard.js?v=15.0"></script>
+  <script src="js/rules2engine.js?v=15.0"></script>
 </body>
 </html>
