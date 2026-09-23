@@ -1,22 +1,217 @@
 /* ============================================================================
-   ESTIQATSY RULES 2 RPG - NARRATIVE COCKPIT, TOUCH SCROLL-SNAP & MULTIPLAYER
+   PROJECT: ESTIQATSY SYNDICATE & RPG PLATFORM
+   FILE: css/rules2.css (VERSIONE 18.0 - COMPLETE GAMING HUD, TOUCH SNAP & MULTIPLAYER)
+   LAYER: ENGINE RULES 2, NARRATIVE COCKPIT, TOUCH SCROLL-SNAP, DRAWERS & MULTIPLAYER
    ============================================================================ */
 
-/* 1. SCENA CINEMA & COCKPIT NARRATIVO */
+/* ----------------------------------------------------------------------------
+   1. TOP BAR & HUD DI GIOCO (ZERO DEFORMAZIONI AVATAR)
+   ---------------------------------------------------------------------------- */
+
+/* Header Cockpit di Gioco */
+#main-game-header.universal-top-bar {
+  background: rgba(7, 10, 18, 0.98);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.game-header-titles {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.game-header-tag {
+  font-size: 9.5px;
+  font-weight: 900;
+  color: var(--color-gold);
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  line-height: 1;
+}
+.game-header-sub {
+  font-size: 0.82rem;
+  font-weight: 900;
+  color: #FFFFFF;
+  line-height: 1.25;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 170px;
+  margin-top: 0.1rem;
+}
+@media (min-width: 640px) {
+  .game-header-sub {
+    max-width: 320px;
+    font-size: 0.95rem;
+  }
+}
+
+/* HUD Cockpit Unificato (Sopra la Scena) */
+.hud-cockpit {
+  flex: none;
+  background: var(--tg-sec-bg);
+  border: 1px solid var(--border-subtle);
+  border-radius: 1rem;
+  padding: 0.55rem 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  margin-bottom: 0.45rem;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+}
+
+.hud-row-identity {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+/* 🔒 FIX AVATAR HUD: Dimensioni rigide, inquadratura centrata sul volto */
+.hud-avatar-box {
+  width: 36px !important;
+  height: 36px !important;
+  min-width: 36px !important;
+  min-height: 36px !important;
+  max-width: 36px !important;
+  max-height: 36px !important;
+  border-radius: 0.65rem;
+  background: #000000;
+  border: 1.5px solid rgba(56, 189, 248, 0.4);
+  overflow: hidden !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex-shrink: 0 !important;
+}
+.hud-avatar-img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  object-position: center 15% !important;
+  display: block;
+}
+.hud-avatar-fallback {
+  font-size: 1.1rem;
+  line-height: 1;
+}
+.hud-hero-name {
+  font-size: 0.88rem;
+  font-weight: 900;
+  color: #FFFFFF;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 160px;
+}
+.hud-gold-display {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  font-weight: 900;
+  color: #FDE047;
+  background: rgba(0, 0, 0, 0.45);
+  padding: 0.2rem 0.55rem;
+  border-radius: 9999px;
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  flex-shrink: 0;
+}
+.gold-suffix {
+  color: var(--text-muted);
+  font-size: 9.5px;
+}
+
+/* Riga Vitals (Barra Salute & D20 Trio) */
+.hud-row-vitals {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem;
+}
+.hud-vitals-box {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.heart-icon {
+  font-size: 11px;
+  flex-shrink: 0;
+}
+.progress-bar-container {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.hud-pv-number {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 900;
+  color: var(--color-crimson);
+  flex-shrink: 0;
+}
+.hud-d20-trio {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  flex-shrink: 0;
+}
+.d20-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15rem;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 800;
+  color: #CBD5E1;
+  background: rgba(0, 0, 0, 0.45);
+  padding: 0.15rem 0.35rem;
+  border-radius: 0.45rem;
+  border: 1px solid var(--border-subtle);
+}
+.d20-chip b {
+  color: var(--color-accent);
+}
+
+/* ----------------------------------------------------------------------------
+   2. SCENA DI GIOCO, CINEMA FRAME & AZIONI NARRATIVE
+   ---------------------------------------------------------------------------- */
 .cinema-frame-rigid {
   position: relative;
   width: 100%;
-  height: clamp(160px, 24dvh, 230px);
-  background: #050810;
-  border-radius: 14px;
+  height: clamp(150px, 22dvh, 220px);
+  border-radius: 1rem;
   overflow: hidden;
+  background: #000000;
   border: 1px solid var(--border-subtle);
+  flex-shrink: 0;
+}
+@media (min-width: 768px) {
+  .cinema-frame-rigid {
+    height: 250px;
+  }
 }
 .cinema-frame-rigid img {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  object-position: center;
   display: block;
+}
+
+.scene-badge {
+  position: absolute;
+  top: 0.65rem;
+  left: 0.65rem;
+  font-size: 9px;
+  font-weight: 900;
+  text-transform: uppercase;
+  z-index: 15;
 }
 
 .watermark-cover-banner {
@@ -24,57 +219,75 @@
   bottom: 0;
   left: 0;
   right: 0;
-  background: linear-gradient(to top, rgba(7, 10, 18, 0.95) 20%, rgba(7, 10, 18, 0.5) 70%, transparent);
-  padding: 24px 14px 10px;
-  pointer-events: none;
+  background: linear-gradient(180deg, transparent 0%, rgba(7, 10, 18, 0.85) 40%, #070A12 100%);
+  padding: 0.45rem 0.85rem 0.4rem 0.85rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
   text-align: right;
+  z-index: 10;
+  pointer-events: none;
 }
 .quote-text {
-  font-size: 11.5px;
+  font-size: clamp(10.5px, 1.4dvh, 12px);
+  color: #F1F5F9;
   font-style: italic;
-  color: #e2e8f0;
   line-height: 1.35;
+  text-align: right;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.95);
 }
 .quote-author {
   font-family: var(--font-mono);
   font-size: 9.5px;
   font-weight: 800;
   color: var(--color-gold);
-  margin-top: 2px;
   text-transform: uppercase;
+  letter-spacing: 0.08em;
+  text-align: right;
+  margin-top: 0.15rem;
 }
 
+/* Scatola Narrativa Flessibile */
 .narrative-box-flexible {
-  background: rgba(17, 28, 52, 0.7);
+  background: var(--tg-surface);
   border: 1px solid var(--border-subtle);
-  border-radius: 14px;
-  padding: 14px 16px;
-  margin-top: 10px;
+  border-radius: 1rem;
+  padding: 0.75rem 0.85rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  max-height: 28dvh;
+  overflow-y: auto;
 }
 .narrative-title {
-  font-size: 15px;
-  font-weight: 800;
-  color: #fff;
-  margin-bottom: 6px;
+  font-size: 0.95rem;
+  font-weight: 900;
+  color: #FFFFFF;
 }
 .narrative-prose {
-  font-size: 13px;
-  color: #cbd5e1;
-  line-height: 1.6;
+  font-size: 0.82rem;
+  color: #CBD5E1;
+  line-height: 1.55;
+  margin: 0;
 }
 
+/* Pulsantiera Scelte con Animazione Hover */
 .scene-actions-area {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  margin-top: 12px;
+  gap: 0.45rem;
+  margin-top: 0.45rem;
 }
 .scene-action-btn {
   background: rgba(22, 36, 66, 0.75);
   border: 1px solid rgba(56, 189, 248, 0.25);
-  border-radius: 12px;
-  padding: 12px 14px;
-  color: #f8fafc;
+  border-radius: 0.75rem;
+  padding: 0.65rem 0.85rem;
+  color: #F8FAFC;
   font-size: 12.5px;
   font-weight: 700;
   text-align: left;
@@ -82,94 +295,80 @@
   align-items: center;
   justify-content: space-between;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
   min-height: 44px;
 }
 .scene-action-btn:hover {
   background: rgba(56, 189, 248, 0.15);
   border-color: var(--color-accent);
   transform: translateX(3px);
+  box-shadow: 0 4px 16px rgba(56, 189, 248, 0.2);
 }
-.scene-action-btn:active { transform: scale(0.99); }
+.scene-action-btn:active {
+  transform: scale(0.99);
+}
 .scene-action-btn.action-danger {
   border-color: rgba(244, 63, 94, 0.35);
   background: rgba(40, 16, 28, 0.6);
 }
+.scene-action-btn.action-danger:hover {
+  background: rgba(244, 63, 94, 0.2);
+  border-color: var(--color-crimson);
+  box-shadow: 0 4px 16px rgba(244, 63, 94, 0.2);
+}
 
-/* 2. HUD COCKPIT GIOCO */
-.hud-cockpit {
-  background: rgba(17, 28, 52, 0.85);
-  border: 1px solid var(--border-subtle);
-  border-radius: 12px;
-  padding: 10px 14px;
-  margin-bottom: 10px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
-}
-.hud-row-identity {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 8px;
-}
-.hud-avatar-box {
-  width: 34px;
-  height: 34px;
-  border-radius: 8px;
-  background: #000;
-  border: 1.5px solid rgba(56, 189, 248, 0.4);
+/* Danni Fluttuanti */
+.floating-damage-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 25;
   display: flex;
   align-items: center;
   justify-content: center;
-  overflow: hidden;
 }
-.hud-avatar-box img { width: 100%; height: 100%; object-fit: cover; }
-.hud-hero-name { font-size: 13px; font-weight: 800; color: #fff; }
-.hud-gold-display {
-  font-size: 11.5px;
-  font-weight: 800;
-  font-family: var(--font-mono);
-  color: var(--color-gold);
-  background: rgba(245, 158, 11, 0.12);
-  border: 1px solid rgba(245, 158, 11, 0.3);
-  padding: 2px 8px;
-  border-radius: 9999px;
+.floating-damage {
+  font-weight: 900;
+  font-size: 1.6rem;
+  color: var(--color-accent);
+  animation: floatDamage 1.2s ease-out forwards;
 }
-.hud-row-vitals {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-}
-.hud-vitals-box {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex: 1;
-}
-.hud-pv-number {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  font-weight: 800;
-  color: var(--color-crimson);
-}
-.hud-d20-trio { display: flex; gap: 4px; }
-.d20-chip {
-  background: rgba(7, 10, 18, 0.6);
-  border: 1px solid var(--border-subtle);
-  border-radius: 6px;
-  padding: 2px 6px;
-  font-size: 10px;
-  font-family: var(--font-mono);
-  color: #cbd5e1;
+@keyframes floatDamage {
+  0% { opacity: 0; transform: translateY(10px) scale(0.8); }
+  20% { opacity: 1; transform: translateY(-5px) scale(1.15); }
+  80% { opacity: 1; transform: translateY(-22px) scale(1); }
+  100% { opacity: 0; transform: translateY(-38px) scale(0.9); }
 }
 
-/* 3. WIZARD STEPPER TRACKER & LIVE HUD */
+/* ----------------------------------------------------------------------------
+   3. WIZARD STEPPER TRACKER & LIVE HUD DOCK
+   ---------------------------------------------------------------------------- */
+.wizard-stage-container {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  position: relative;
+  width: 100%;
+  min-height: 0;
+}
+
+.wizard-step-panel {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 0.25rem;
+  min-height: 0;
+}
+
+/* Stepper Tracker 1-4 */
 .wizard-stepper-tracker {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 6px;
-  margin-bottom: 12px;
+  margin-bottom: 10px;
   padding: 8px 12px;
   background: rgba(11, 18, 34, 0.85);
   border: 1px solid var(--border-subtle);
@@ -184,9 +383,12 @@
   opacity: 0.45;
   transition: all 0.2s ease;
 }
-.wizard-stepper-step.active { opacity: 1; }
-.wizard-stepper-step.completed { opacity: 0.9; }
-
+.wizard-stepper-step.active {
+  opacity: 1;
+}
+.wizard-stepper-step.completed {
+  opacity: 0.9;
+}
 .wizard-stepper-circle {
   width: 22px;
   height: 22px;
@@ -203,13 +405,13 @@
 }
 .wizard-stepper-step.active .wizard-stepper-circle {
   background: var(--color-accent);
-  color: #070a12;
+  color: #070A12;
   border-color: var(--color-accent);
   box-shadow: 0 0 10px rgba(56, 189, 248, 0.5);
 }
 .wizard-stepper-step.completed .wizard-stepper-circle {
   background: rgba(16, 185, 129, 0.2);
-  color: #34d399;
+  color: #34D399;
   border-color: var(--color-emerald);
 }
 .wizard-stepper-label {
@@ -217,25 +419,118 @@
   font-weight: 700;
   color: var(--text-muted);
 }
-.wizard-stepper-step.active .wizard-stepper-label { color: #fff; }
+.wizard-stepper-step.active .wizard-stepper-label {
+  color: #FFFFFF;
+}
 
+/* Live HUD Dock */
 .wizard-live-hud {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
   padding: 8px 12px;
-  background: linear-gradient(135deg, rgba(14, 23, 42, 0.85), rgba(7, 10, 18, 0.92));
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.90), rgba(7, 10, 18, 0.95));
   border: 1px solid rgba(56, 189, 248, 0.25);
   border-radius: 12px;
-  margin-bottom: 12px;
+  margin-bottom: 10px;
+}
+.wizard-live-hero-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.wizard-live-avatar {
+  font-size: 20px;
+  line-height: 1;
+}
+.wizard-live-details {
+  display: flex;
+  flex-direction: column;
+}
+.wizard-live-name {
+  font-size: 12px;
+  font-weight: 800;
+  color: #FFFFFF;
+  line-height: 1.2;
+}
+.wizard-live-stats {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--color-accent);
 }
 
-/* 4. TOUCH SCROLL-SNAP NATIVO (ADDIO 3D PESANTE) */
+.wizard-single-header {
+  flex: none;
+  min-height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.2rem 0.35rem;
+  border-bottom: 1px solid var(--border-subtle);
+  gap: 0.35rem;
+}
+.wizard-step-badge {
+  background: var(--color-gold);
+  color: #070A12;
+  font-size: 9.5px;
+  font-weight: 900;
+  padding: 0.2rem 0.45rem;
+  border-radius: 9999px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+.wizard-step-title {
+  font-size: 0.85rem;
+  font-weight: 900;
+  color: #FFFFFF;
+  margin: 0;
+  line-height: 1.15;
+}
+.wizard-view-toggle-pill {
+  display: inline-flex;
+  align-items: center;
+  background: rgba(0, 0, 0, 0.65);
+  border: 1px solid var(--border-light);
+  border-radius: 9999px;
+  padding: 2px;
+  gap: 2px;
+  flex-shrink: 0;
+}
+.toggle-pill-btn {
+  padding: 0.2rem 0.55rem;
+  border-radius: 9999px;
+  font-size: 9.5px;
+  font-weight: 800;
+  color: var(--text-muted);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  line-height: 1;
+}
+.toggle-pill-btn.active {
+  background: var(--color-accent);
+  color: #070A12;
+  font-weight: 900;
+}
+
+.wizard-content-fill {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  position: relative;
+}
+
+/* ----------------------------------------------------------------------------
+   4. TOUCH SCROLL-SNAP NATIVO (CARTE CREAZIONE EROE)
+   ---------------------------------------------------------------------------- */
 .coverflow-stage-outer {
   position: relative;
   width: 100%;
-  padding: 8px 0;
+  padding: 4px 0;
   overflow: hidden;
 }
 .coverflow-stage-wrapper {
@@ -246,13 +541,14 @@
   scroll-snap-type: x mandatory;
   padding: 6px 16px 12px;
   -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
 }
 .coverflow-card {
-  flex: 0 0 260px;
+  flex: 0 0 270px;
   scroll-snap-align: center;
-  background: rgba(17, 28, 52, 0.85);
+  background: var(--tg-surface);
   border: 1px solid var(--border-subtle);
-  border-radius: 14px;
+  border-radius: 1.15rem;
   overflow: hidden;
   cursor: pointer;
   display: flex;
@@ -260,16 +556,21 @@
   justify-content: space-between;
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
+@media (min-width: 768px) {
+  .coverflow-card {
+    flex: 0 0 300px;
+  }
+}
 .coverflow-card.selected {
   border-color: var(--color-accent);
-  box-shadow: 0 0 16px rgba(56, 189, 248, 0.3);
+  box-shadow: 0 0 18px rgba(56, 189, 248, 0.35);
   transform: translateY(-2px);
 }
 .coverflow-card-img {
   width: 100%;
   height: 140px;
   object-fit: cover;
-  background: #000;
+  background: #000000;
 }
 .coverflow-card-body {
   padding: 12px;
@@ -297,12 +598,16 @@
   box-shadow: 0 0 6px var(--color-accent);
 }
 
-/* 5. FOOTER STICKY COCKPIT & WIZARD */
+/* ----------------------------------------------------------------------------
+   5. FOOTER STICKY COCKPIT & WIZARD (SAFE-AREA INTEGRATA)
+   ---------------------------------------------------------------------------- */
 .cockpit-footer,
 .wizard-sticky-footer {
   flex: none;
   z-index: 50;
   width: 100%;
+  max-width: 600px;
+  margin: 0 auto;
   background: rgba(7, 10, 18, 0.98);
   border-top: 1px solid rgba(255, 255, 255, 0.12);
   padding-bottom: var(--safe-bottom, 0px);
@@ -346,15 +651,106 @@
   padding-right: 12px;
 }
 .btn-wizard-cta {
-  background: linear-gradient(135deg, #0284c7, #2563eb);
-  color: #fff;
-  border: none;
-  font-weight: 800;
+  background: linear-gradient(135deg, #0284C7, #2563EB) !important;
+  color: #FFFFFF !important;
+  border: none !important;
+  font-weight: 900 !important;
   border-radius: 10px;
   height: 38px;
 }
 
-/* 6. MULTIPLAYER LOBBY & COCKPIT */
+/* ----------------------------------------------------------------------------
+   6. MODALI TATTICHE, SCHEDA EROE A 4 TAB & ASSETTO
+   ---------------------------------------------------------------------------- */
+
+/* Scheda Eroe & Vitals */
+.hero-sheet-stats-grid {
+  display: grid !important;
+  grid-template-columns: repeat(3, 1fr) !important;
+  gap: 0.5rem !important;
+  width: 100%;
+}
+.sheet-stat-card {
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid var(--border-subtle);
+  border-radius: 0.75rem;
+  padding: 0.5rem 0.35rem;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+}
+.stat-icon {
+  font-size: 1.2rem;
+  line-height: 1;
+}
+.stat-label {
+  font-size: 9px;
+  color: var(--text-muted);
+  font-weight: 800;
+  text-transform: uppercase;
+}
+.stat-val {
+  font-size: 1.15rem;
+  font-weight: 900;
+  color: var(--color-accent);
+  font-family: var(--font-mono);
+  line-height: 1;
+}
+.stat-pure {
+  font-size: 10px;
+  color: var(--text-subtle);
+  font-family: var(--font-mono);
+}
+
+/* Assetto & Slot Operativi */
+.assetto-slot-card {
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--border-subtle);
+  border-radius: 0.75rem;
+  padding: 0.65rem 0.85rem;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 0.65rem;
+  width: 100%;
+}
+
+/* Dado D20 Suspense */
+.dice-modal-box {
+  text-align: center;
+  padding: 24px;
+  max-width: 300px;
+  background: var(--tg-sec-bg);
+}
+.dice-wrapper {
+  margin: 12px auto 16px;
+  width: 80px;
+  height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.dice-cube {
+  font-size: 52px;
+  line-height: 1;
+  filter: drop-shadow(0 0 14px rgba(56, 189, 248, 0.4));
+}
+.dice-rolling {
+  animation: diceWobble 0.5s infinite ease-in-out;
+}
+@keyframes diceWobble {
+  0% { transform: rotate(0deg) scale(1); }
+  25% { transform: rotate(-20deg) scale(1.1); }
+  50% { transform: rotate(20deg) scale(0.92); }
+  75% { transform: rotate(-12deg) scale(1.06); }
+  100% { transform: rotate(0deg) scale(1); }
+}
+
+/* ----------------------------------------------------------------------------
+   7. STANZE MULTIPLAYER (LOBBY & COCKPIT ONLINE)
+   ---------------------------------------------------------------------------- */
 .mode-select-btn {
   cursor: pointer;
   transition: all 0.15s ease;
