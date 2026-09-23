@@ -19,13 +19,13 @@
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
 
   <!-- FOGLI DI STILE VERSIONATI -->
-  <link rel="stylesheet" href="css/core.css?v=15.0">
-  <link rel="stylesheet" href="css/rules2.css?v=15.0">
+  <link rel="stylesheet" href="css/core.css?v=17.0">
+  <link rel="stylesheet" href="css/rules2.css?v=17.0">
 </head>
 
-<body class="rpg-app-body bg-[#070A12] text-slate-100 flex flex-col h-screen overflow-hidden select-none">
+<body class="rpg-app-body bg-[#070A12] text-slate-100 flex flex-col h-screen overflow-hidden select-none" data-context="app" data-active-screen="view-home">
 
-  <!-- 1. LOADER D'AVVIO CON DISTRUZIONE DI SICUREZZA -->
+  <!-- 1. LOADER D'AVVIO CON DISATTIVAZIONE TOCCHI IMMEDIATA -->
   <div id="app-loading" class="app-loader-screen fixed inset-0 z-[999] flex flex-col items-center justify-center bg-[#070A12] p-6 text-center transition-opacity duration-300">
     <div class="loader-spinner-box relative mb-4">
       <div class="loader-spinner w-14 h-14 border-4 border-sky-400/20 border-t-sky-400 rounded-full animate-spin"></div>
@@ -37,22 +37,21 @@
     <button id="loading-retry-btn" onclick="location.reload()" class="btn btn-sm btn-primary hidden mt-4">Riprova</button>
   </div>
 
-  <!-- SBLOCCO DI EMERGENZA DEI TOCCHI (Impedisce che il loader blocchi il footer) -->
+  <!-- SBLOCCO DI EMERGENZA (Fail-safe di sicurezza a tempo) -->
   <script>
     setTimeout(function() {
       var l = document.getElementById("app-loading");
       if (l) {
-        l.style.opacity = "0";
         l.style.pointerEvents = "none";
-        setTimeout(function() { if (l && l.parentNode) l.parentNode.removeChild(l); }, 300);
+        l.style.opacity = "0";
+        setTimeout(function() { if (l && l.parentNode) l.parentNode.removeChild(l); }, 250);
       }
-    }, 3500);
+    }, 4000);
   </script>
 
-  <!-- 2.A TOP BAR PIATTAFORMA (CENTRAGGIO ASSOLUTO TRA I TASTI TELEGRAM) -->
+  <!-- 2.A TOP BAR PIATTAFORMA (CENTRATA TRA I TASTI NATIVI TELEGRAM) -->
   <header id="main-app-header" class="universal-top-bar relative w-full z-40 flex items-center px-3 bg-[#070A12]/95 backdrop-blur-md border-b border-white/10" style="height: calc(var(--safe-top, 0px) + 48px); padding-top: var(--safe-top, 0px);">
     <div class="w-8 h-12 flex items-center z-10"></div>
-    <!-- Titolo matematicamente centrato nella viewport -->
     <div class="absolute inset-x-0 bottom-0 h-12 flex items-center justify-center pointer-events-none z-0" id="top-bar-title-box">
       <span class="text-sm font-black tracking-widest text-white uppercase">⚓ ESTIQATSY</span>
     </div>
@@ -83,12 +82,11 @@
   <!-- 3. STRUTTURA PRINCIPALE VIEWPORT -->
   <div class="app-layout-container flex-1 flex flex-col md:flex-row overflow-hidden relative w-full">
 
-    <!-- SIDEBAR DESKTOP WIDESCREEN (>= 768px - SENZA ADMIN E SENZA STANZE SEPARATE) -->
+    <!-- SIDEBAR DESKTOP WIDESCREEN (>= 768px) -->
     <aside id="desktop-sidebar" class="desktop-sidebar hidden md:flex md:w-72 bg-slate-950 border-r border-white/10 p-4 flex-col justify-between shrink-0">
       <div>
         <div class="user-card-desk p-3.5 rounded-2xl bg-slate-900 border border-white/10 space-y-3">
           <div class="flex items-center space-x-3">
-            <!-- Avatar bloccato anti-stiramento -->
             <div id="user-avatar-desk" class="w-12 h-12 min-w-[48px] min-h-[48px] max-w-[48px] max-h-[48px] rounded-xl bg-gradient-to-br from-sky-600 to-indigo-900 border border-sky-400/40 flex items-center justify-center text-xl font-black text-white shrink-0 overflow-hidden">
               U
             </div>
@@ -143,7 +141,7 @@
           <i data-lucide="volume-2" class="w-4 h-4 text-sky-400"></i>
           <span>Audio Radio</span>
         </button>
-        <span class="font-mono text-[10px]">v15.0</span>
+        <span class="font-mono text-[10px]">v17.0</span>
       </div>
     </aside>
 
@@ -202,7 +200,7 @@
               </div>
             </div>
 
-            <!-- KPI QUAD GRID (BLINDATA CON CLASSI TAILWIND E CSS ANTI-COLLASSO) -->
+            <!-- KPI QUAD GRID -->
             <div class="kpi-quad-grid grid grid-cols-2 md:grid-cols-4 gap-2.5 w-full">
               <div onclick="AppRouter.navigate('profile')" class="kpi-card p-3.5 rounded-xl bg-slate-900/90 border border-white/10 flex items-center justify-between cursor-pointer hover:border-amber-400/40 transition">
                 <div>
@@ -228,7 +226,7 @@
                 <i data-lucide="play" class="kpi-card-icon w-4 h-4 text-sky-400 shrink-0"></i>
               </div>
 
-              <div onclick="AppModules.openVaultSection()" class="kpi-card p-3.5 rounded-xl bg-slate-900/90 border border-white/10 flex items-center justify-between cursor-pointer hover:border-purple-400/40 transition">
+              <div onclick="AppRouter.navigate('profile')" class="kpi-card p-3.5 rounded-xl bg-slate-900/90 border border-white/10 flex items-center justify-between cursor-pointer hover:border-purple-400/40 transition">
                 <div>
                   <div class="kpi-card-label text-[9px] font-mono font-bold text-slate-400 uppercase">Download Caveau</div>
                   <div class="kpi-card-value text-sm md:text-base font-black text-purple-400 font-mono mt-0.5" id="home-purchases-count">0</div>
@@ -261,7 +259,7 @@
               <span class="text-xs text-slate-400 font-mono" id="games-total-counter">Caricamento...</span>
             </div>
 
-            <!-- 👥 BANNER ACCESSO RAPIDO MULTIPLAYER INTEGRATO IN GIOCHI -->
+            <!-- BANNER MULTIPLAYER INTEGRATO -->
             <div onclick="AppModules.openMultiplayerLobby()" class="p-4 rounded-2xl bg-gradient-to-r from-purple-950/70 via-slate-900 to-slate-900 border border-purple-500/40 flex items-center justify-between cursor-pointer hover:border-purple-400 transition shadow-xl">
               <div class="flex items-center gap-3.5">
                 <div class="w-11 h-11 rounded-xl bg-purple-500/20 border border-purple-400/40 flex items-center justify-center text-2xl text-purple-300 shrink-0">
@@ -282,7 +280,7 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="games-catalog-container"></div>
           </section>
 
-          <!-- DETTAGLIO SAGA CON CLUSTER A 3 AZIONI (CAPITOLI, REGOLE, SCHEDA) -->
+          <!-- DETTAGLIO SAGA (CAPITOLI, REGOLE, SCHEDA) -->
           <section id="subview-game-detail" class="space-y-4 hidden app-screen max-w-3xl mx-auto">
             <div class="cinema-frame-rigid shadow-xl rounded-2xl overflow-hidden relative">
               <img id="hub-image" src="" class="w-full h-48 object-cover" alt="Copertina Gioco">
@@ -296,7 +294,6 @@
               <h2 class="text-base md:text-xl font-black text-white" id="hub-title">Titolo Saga</h2>
               <p class="text-xs md:text-sm text-slate-300 leading-relaxed" id="hub-desc"></p>
               
-              <!-- Cluster a 3 Azioni Primarie -->
               <div class="grid grid-cols-3 gap-2 pt-1" id="hub-saga-actions-cluster">
                 <button onclick="AppModules.scrollToEpisodes()" class="btn btn-sm btn-primary font-black text-xs flex items-center justify-center gap-1 shadow-md">
                   <span>▶️</span> <span>Capitoli</span>
@@ -317,10 +314,9 @@
           </section>
 
           <!-- =============================================================== -->
-          <!-- VISTA MULTIPLAYER: LOBBY & COCKPIT DI SCONTRO ONLINE           -->
+          <!-- VISTA MULTIPLAYER: LOBBY & COCKPIT ONLINE                       -->
           <!-- =============================================================== -->
           <section id="view-multiplayer" class="space-y-4 hidden app-screen max-w-3xl mx-auto">
-            <!-- 1. PANNELLO LOBBY -->
             <div id="multiplayer-lobby-panel" class="space-y-4">
               <div class="page-title-row flex items-center justify-between pb-2 border-b border-white/10">
                 <div>
@@ -386,7 +382,7 @@
               </div>
             </div>
 
-            <!-- 2. PANNELLO COCKPIT STANZA ATTIVA -->
+            <!-- Cockpit Stanza Attiva -->
             <div id="multiplayer-cockpit-panel" class="space-y-4 hidden">
               <div class="p-3.5 rounded-xl bg-slate-900 border border-white/10 flex items-center justify-between">
                 <div>
@@ -406,7 +402,7 @@
                   <div class="flex gap-1.5">
                     <button onclick="AppModules.copyInviteLink()" class="btn btn-xs btn-outline border-sky-400/40 text-sky-300 font-bold">Copia 📋</button>
                     <button onclick="AppModules.shareInviteLink()" class="btn btn-xs btn-primary font-bold">Invia in Chat 📤</button>
-                    <button onclick="AppModules.simulateFriendJoin()" class="btn btn-xs btn-warning font-black" title="Testa subito senza secondo smartphone">Simula Amico 🧪</button>
+                    <button onclick="AppModules.simulateFriendJoin()" class="btn btn-xs btn-warning font-black" title="Testa senza secondo dispositivo">Simula Amico 🧪</button>
                   </div>
                 </div>
                 <div class="p-2 rounded bg-black/50 font-mono text-[10px] text-slate-400 break-all select-all" id="cockpit-invite-link-text"></div>
@@ -474,7 +470,7 @@
                 </button>
               </div>
 
-              <!-- Feed Mosse di Combattimento -->
+              <!-- Feed Mosse Real-Time -->
               <div class="p-3 rounded-xl bg-slate-900 border border-white/5 space-y-1.5">
                 <div class="flex items-center justify-between text-[10px] font-mono text-slate-400">
                   <span>LOG COMBATTIMENTO IN TEMPO REALE</span>
@@ -493,8 +489,7 @@
           <!-- VISTA 3: WIZARD FULL-STAGE (STEPPER 1..4 & LIVE HUD DOCK)       -->
           <!-- =============================================================== -->
           <section id="view-wizard" class="wizard-stage-container hidden app-screen max-w-4xl mx-auto">
-
-            <!-- Stepper Progress Tracker in Cima -->
+            <!-- Stepper Progress Tracker -->
             <div class="wizard-stepper-tracker flex items-center justify-between gap-1 p-2 rounded-xl bg-slate-900 border border-white/10 mb-3">
               <div id="wiz-step-ind-1" onclick="Rules2Wizard.goToStep(1)" class="wizard-stepper-step active flex items-center gap-1.5 cursor-pointer">
                 <div class="wizard-stepper-circle w-6 h-6 rounded-full flex items-center justify-center font-mono text-xs font-bold bg-sky-500 text-slate-950">1</div>
@@ -529,7 +524,7 @@
               </div>
             </div>
 
-            <!-- PASSO 1: SCELTA CLASSE COSTIERA -->
+            <!-- PASSO 1: SCELTA CLASSE -->
             <div id="wizard-step-class" class="wizard-step-panel">
               <div class="wizard-single-header flex items-center justify-between pb-2 border-b border-white/10 mb-2">
                 <div>
@@ -607,7 +602,6 @@
                 </div>
               </div>
 
-              <!-- Chips Reparti Orizzontali -->
               <div class="chips-scroll-bar flex gap-1.5 overflow-x-auto py-1.5" id="wizard-shop-category-chips">
                 <button onclick="GameEngine.filterWizardShop('ARMI')" class="rpg-category-chip active">🗡️ Armi</button>
                 <button onclick="GameEngine.filterWizardShop('VEICOLI')" class="rpg-category-chip">🛴 Veicoli</button>
@@ -630,9 +624,7 @@
             </div>
 
             <!-- PASSO 4: LANCIO EROE -->
-            <div id="wizard-step-name" class="wizard-step-panel hidden">
-              <!-- Renderizzato dinamicamente da Rules2Wizard.renderStep4() -->
-            </div>
+            <div id="wizard-step-name" class="wizard-step-panel hidden"></div>
           </section>
 
           <!-- =============================================================== -->
@@ -819,7 +811,7 @@
               </button>
             </div>
 
-            <!-- CONTENITORE ARENA DUELLI CLANDESTINI (POPOLATO DA APPMODULES) -->
+            <!-- CONTENITORE ARENA DUELLI CLANDESTINI -->
             <div id="profile-arena-section" class="space-y-3 pt-1"></div>
 
             <!-- Caveau File Scaricati -->
@@ -831,7 +823,7 @@
               <div id="profile-vault-container" class="space-y-2"></div>
             </div>
 
-            <!-- Ultime Transazioni Reali da GAS -->
+            <!-- Ultime Transazioni Reali -->
             <div class="p-4 rounded-2xl bg-slate-900 border border-white/10 space-y-3">
               <div class="flex justify-between items-center text-xs">
                 <div class="flex items-center gap-2 font-bold text-slate-300 uppercase">
@@ -848,24 +840,34 @@
       </main>
 
       <!-- =================================================================== -->
-      <!-- 4. FOOTER MENU STICKY (MOBILE: 5 TAB CLASSICI THUMB-FRIENDLY)        -->
+      <!-- 4. FOOTER MENU STICKY (MOBILE: 5 TAB THUMB-FRIENDLY COMPLETI)       -->
       <!-- =================================================================== -->
       <footer id="main-app-footer" class="main-app-footer md:hidden flex justify-around items-center bg-[#070A12]/95 backdrop-blur-lg border-t border-white/10 relative z-40" style="height: calc(52px + var(--safe-bottom, 0px)); padding-bottom: var(--safe-bottom, 0px);">
+        <!-- TAB 1: HOME (CORRETTO E COMPLETO) -->
+        <button id="mob-nav-home" onclick="AppRouter.navigate('home')" class="nav-tab active flex flex-col items-center justify-center h-12 w-16 text-slate-400" data-tab="home">
           <i data-lucide="home" class="w-4 h-4"></i>
           <span class="nav-tab-label text-[9px] font-bold mt-1">Home</span>
         </button>
+
+        <!-- TAB 2: GIOCHI -->
         <button id="mob-nav-games" data-module="games" onclick="AppRouter.navigate('games')" class="nav-tab flex flex-col items-center justify-center h-12 w-16 text-slate-400 relative" data-tab="games">
           <i data-lucide="gamepad-2" class="w-4 h-4"></i>
           <span class="nav-tab-label text-[9px] font-bold mt-1">Giochi</span>
         </button>
+
+        <!-- TAB 3: SHOP -->
         <button id="mob-nav-shop" data-module="shop" onclick="AppRouter.navigate('shop')" class="nav-tab flex flex-col items-center justify-center h-12 w-16 text-slate-400" data-tab="shop">
           <i data-lucide="shopping-bag" class="w-4 h-4"></i>
           <span class="nav-tab-label text-[9px] font-bold mt-1">Shop</span>
         </button>
+
+        <!-- TAB 4: RICETTE -->
         <button id="mob-nav-recipes" data-module="recipes" onclick="AppRouter.navigate('recipes')" class="nav-tab flex flex-col items-center justify-center h-12 w-16 text-slate-400" data-tab="recipes">
           <i data-lucide="utensils" class="w-4 h-4"></i>
           <span class="nav-tab-label text-[9px] font-bold mt-1">Ricette</span>
         </button>
+
+        <!-- TAB 5: PROFILO -->
         <button id="mob-nav-profile" onclick="AppRouter.navigate('profile')" class="nav-tab flex flex-col items-center justify-center h-12 w-16 text-slate-400" data-tab="profile">
           <i data-lucide="user" class="w-4 h-4"></i>
           <span class="nav-tab-label text-[9px] font-bold mt-1">Profilo</span>
@@ -936,7 +938,7 @@
   </div>
 
   <!-- ======================================================================= -->
-  <!-- 5. MODALI GLASSMORPHISM                                                -->
+  <!-- 5. MODALI GLASSMORPHISM & DRAWERS TATTICI                              -->
   <!-- ======================================================================= -->
 
   <!-- MODALE CABINATO MEGOIN -->
@@ -1141,7 +1143,7 @@
     </div>
   </dialog>
 
-  <!-- MODALE BANCO DI CAMBIO (MEGOIN -> ORO) -->
+  <!-- MODALE BANCO DI CAMBIO -->
   <dialog id="modal-banco-cambio" class="modal modal-middle">
     <div class="modal-box p-5 bg-slate-950 border border-amber-400/40 rounded-2xl max-w-sm text-center relative space-y-3">
       <button onclick="document.getElementById('modal-banco-cambio').close()" class="btn btn-xs btn-circle btn-ghost absolute right-3 top-3">✕</button>
@@ -1226,7 +1228,7 @@
     </div>
   </dialog>
 
-  <!-- MODALE PIANI SAAS REALI DA GAS -->
+  <!-- MODALE PIANI SAAS REALI -->
   <dialog id="modal-plans-catalog" class="modal modal-middle">
     <div class="modal-box plans-catalog-box p-5 bg-slate-950 border border-sky-400/40 rounded-2xl max-w-md space-y-3 relative">
       <button onclick="document.getElementById('modal-plans-catalog').close()" class="btn btn-xs btn-circle btn-ghost absolute right-3 top-3">✕</button>
@@ -1244,10 +1246,8 @@
     </div>
   </dialog>
 
-  <!-- MODALE REGOLE SAGA -->
+  <!-- MODALI REGOLE E SCHEDA TECNICA -->
   <dialog id="modal-saga-rules" class="modal modal-middle"></dialog>
-
-  <!-- MODALE SCHEDA TECNICA SAGA -->
   <dialog id="modal-saga-features" class="modal modal-middle"></dialog>
 
   <!-- MODALE CONFERMA ACQUISTO SHOP -->
@@ -1262,10 +1262,10 @@
   </dialog>
 
   <!-- SCRIPT DI SISTEMA VERSIONATI -->
-  <script src="audio.js?v=15.0"></script>
-  <script src="js/app-core.js?v=15.0"></script>
-  <script src="js/app-modules.js?v=15.0"></script>
-  <script src="js/rules2wizard.js?v=15.0"></script>
-  <script src="js/rules2engine.js?v=15.0"></script>
+  <script src="audio.js?v=17.0"></script>
+  <script src="js/app-core.js?v=17.0"></script>
+  <script src="js/app-modules.js?v=17.0"></script>
+  <script src="js/rules2wizard.js?v=17.0"></script>
+  <script src="js/rules2engine.js?v=17.0"></script>
 </body>
 </html>
