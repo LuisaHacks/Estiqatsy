@@ -128,14 +128,13 @@ const Rules2Engine = {
     const activeBox = document.getElementById("arcade-active-game-box");
     const insertBox = document.getElementById("arcade-insert-coin-box");
 
-    // Se c'è una sessione aperta su GAS: opzione Riprendi o Ricomincia
     if (saga && saga.hasActiveGame && saga.activePartitaId) {
       if (activeBox) activeBox.classList.remove("hidden");
       if (insertBox) insertBox.classList.add("hidden");
 
       activeBox.innerHTML = `
-        <h3 class="text-sm font-black text-white">${saga.serie || 'AVVENTURA'}</h3>
-        <p class="text-[11px] text-slate-400 mt-0.5">Sessione attiva sul server (ID: ${saga.activePartitaId})</p>
+        <h3 class="text-xs font-black text-white">${saga.serie || 'AVVENTURA'}</h3>
+        <p class="text-[10.5px] text-slate-400 mt-0.5">Sessione attiva sul server (ID: ${saga.activePartitaId})</p>
         <div class="grid grid-cols-2 gap-2 pt-2">
           <button id="btn-arcade-new" class="btn btn-outline border-amber-500/40 text-amber-300 font-bold text-xs">Ricomincia (1 🪙)</button>
           <button id="btn-arcade-resume" class="btn btn-success text-slate-950 font-black text-xs">Riprendi ▶️</button>
@@ -290,7 +289,7 @@ const Rules2Engine = {
   },
 
   // --------------------------------------------------------------------------
-  // ⭐ SINCRONIZZAZIONE MICRO-HUD DA 36px RIGIDI
+  // ⭐ SINCRONIZZAZIONE MICRO-HUD COMPATTO DA 36px RIGIDI
   // --------------------------------------------------------------------------
   syncHUD: function() {
     const hero = AppState.activeSession?.hero;
@@ -302,7 +301,7 @@ const Rules2Engine = {
     s("game-header-series", (saga ? saga.serie : "AVVENTURA NOIR").toUpperCase());
     s("game-header-episode", `Episodio ${AppState.activeSession.episodio}`);
 
-    // Avatar Circolare da 28px
+    // Micro-Avatar circolare da 28px
     const avatarImg = document.getElementById("kpi-hero-avatar-img");
     const avatarFallback = document.getElementById("kpi-hero-avatar-fallback");
     const media = hero.mediaUrl;
@@ -412,7 +411,7 @@ const Rules2Engine = {
       return;
     }
 
-    // 3. POPOLAMENTO DELLA CARTA TCG SNODO (SAGOMA "MOVERINA")
+    // 3. POPOLAMENTO DELLA CARTA TCG SNODO
     const s = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
 
     const img = document.getElementById("scene-image");
@@ -485,7 +484,7 @@ const Rules2Engine = {
 
       if (hasTool) {
         actBox.innerHTML = `
-          <div class="p-2.5 rounded-xl bg-emerald-950/40 border border-emerald-500/40 text-[11px] font-bold text-emerald-300 mb-1">
+          <div class="p-2 rounded-xl bg-emerald-950/40 border border-emerald-500/40 text-[11px] font-bold text-emerald-300 mb-1">
             🛡️ Vantaggio Tattico: possiedi ${bypassTool}!
           </div>
           <button onclick="Rules2Engine.executeEventRoll('${currentNode.id}', '${statReq}', ${cdVal})" class="scene-action-btn border-emerald-500 text-emerald-300 font-black">
@@ -525,7 +524,7 @@ const Rules2Engine = {
       return;
     }
 
-    // CASO 4: BIVIO NARRATIVO STANDARD ALLA BASE DELLA CARTA
+    // CASO 4: BIVIO NARRATIVO ALLA BASE DELLA CARTA
     const choices = (currentNode.choices || []).filter(c => c.target);
 
     if (choices.length > 0) {
