@@ -1,8 +1,8 @@
 // ============================================================================
 // PROJECT: ESTIQATSY SYNDICATE & RPG PLATFORM
-// FILE: js/rules2engine.js (VERSIONE 20.0 - TCG MOVERINA STAGE & 36px MICRO-HUD)
+// FILE: js/rules2engine.js (VERSIONE 24.0 - MOVERINA STAGE, 48px HUD & TOP FX)
 // LAYER: GAMEPLAY LOOP, D20 COMBAT, TCG CARD STAGE, CRAFTING & FORFEIT ENGINE
-// NOTE: 100% DISACCOPPIATO DAL WALLET PIATTAFORMA - GESTIONE AUTONOMA DELL'ORO 🟡
+// NOTE: 100% DISACCOPPIATO DAL WALLET PIATTAFORMA - GESTIONE AUTONOMA ORO 🟡
 // ============================================================================
 
 // ----------------------------------------------------------------------------
@@ -55,12 +55,32 @@ if (typeof tgHaptic === "undefined") {
 function rulesNotify(msg, type = "info") {
   if (window.AppCore && typeof AppCore.toast === "function") {
     AppCore.toast(msg, type);
-  } else if (window.Telegram?.WebApp?.showAlert) {
-    window.Telegram.WebApp.showAlert(msg);
   } else {
     alert(msg);
   }
 }
+
+function rulesFormatMod(val) {
+  const num = Number(val || 10);
+  const mod = Math.floor((num - 10) / 2);
+  return (mod >= 0 ? "+" : "") + mod;
+}
+
+// Iniezione dinamica dei keyframes per la traiettoria dei danni fluttuanti
+(function initFloatingDamageStyles() {
+  if (document.getElementById("rules2-floating-fx-keyframes")) return;
+  const style = document.createElement("style");
+  style.id = "rules2-floating-fx-keyframes";
+  style.textContent = `
+    @keyframes floatTowardHeader {
+      0% { opacity: 0; transform: translate(-50%, 0) scale(0.85); }
+      15% { opacity: 1; transform: translate(-50%, -20px) scale(1.1); }
+      75% { opacity: 0.9; transform: translate(-50%, -65px) scale(1); }
+      100% { opacity: 0; transform: translate(-50%, -95px) scale(0.9); }
+    }
+  `;
+  document.head.appendChild(style);
+})();
 
 // ----------------------------------------------------------------------------
 // 2. MOTORE RUNTIME RULES2
@@ -86,7 +106,7 @@ const Rules2Engine = {
   },
 
   // --------------------------------------------------------------------------
-  // GESTIONE AUTONOMA ORO DI GIOCO (DISACCOPPIATA DAL WALLET MEGOIN)
+  // GESTIONE AUTONOMA ORO DI GIOCO (DISACCOPPIATA DAI MEGOIN)
   // --------------------------------------------------------------------------
   getGold: function() {
     const h = AppState.activeSession?.hero;
@@ -98,14 +118,13 @@ const Rules2Engine = {
     if (AppState.activeSession?.hero) {
       AppState.activeSession.hero.oro = num;
     }
-    const kpi = document.getElementById("kpi-hero-gold");
-    if (kpi) kpi.textContent = num;
     const emp = document.getElementById("emporio-gold-display");
     if (emp) emp.textContent = `${num} 🟡`;
     const sheet = document.getElementById("sheet-hero-gold");
     if (sheet) sheet.textContent = `${num} 🟡`;
     const wiz = document.getElementById("wizard-shop-gold-display");
     if (wiz) wiz.innerHTML = `💰 <b>${num}</b> 🟡`;
+    this.syncHUD();
   },
 
   addGold: function(amount) {
@@ -113,7 +132,7 @@ const Rules2Engine = {
   },
 
   // --------------------------------------------------------------------------
-  // FLUSSO CABINATO: RILEVAMENTO SESSIONE ATTIVA vs NUOVA PARTITA
+  // CABINATO: INSERISCI GETTONE / RIPRESA PARTITA
   // --------------------------------------------------------------------------
   launchSession: function(gameKey, epNum, canContinueFree, savedHero) {
     const saga = (AppState.games.catalog || []).find(g => g.gameKey === gameKey);
@@ -146,8 +165,10 @@ const Rules2Engine = {
         const activeFase = String(saga.activeFase || "").toUpperCase();
 
         if (activeFase.indexOf("WIZARD_") !== -1) {
-          if (typeof Rules2Wizard !== "undefined") {
+          if (typeof Rules2Wizard !== "undefined" && typeof Rules2Wizard.resumeSession === "function") {
             Rules2Wizard.resumeSession(gameKey, saga.activeEpisodio || epNum, saga);
+          } else if (typeof Rules2Wizard !== "undefined") {
+            Rules2Wizard.open(gameKey, saga.activeEpisodio || epNum, false, null);
           }
           return;
         }
@@ -289,53 +310,69 @@ const Rules2Engine = {
   },
 
   // --------------------------------------------------------------------------
-  // ⭐ SINCRONIZZAZIONE MICRO-HUD COMPATTO DA 36px RIGIDI
+  // HUD A 2 RIGHE (48px - IDENTICO AL WIZARD PER DIMENSIONI E POSIZIONE)
   // --------------------------------------------------------------------------
   syncHUD: function() {
     const hero = AppState.activeSession?.hero;
     if (!hero) return;
 
-    const s = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
-    const saga = (AppState.games.catalog || []).find(g => g.gameKey === AppState.activeSession.gameKey);
+    const hudBox = document.querySelector("#view-gameplay .hud-cockpit-36px, #view-gameplay .hud-cockpit-48px");
+    if (!hudBox) return;
 
-    s("game-header-series", (saga ? saga.serie : "AVVENTURA NOIR").toUpperCase());
-    s("game-header-episode", `Episodio ${AppState.activeSession.episodio}`);
+    const heroName = hero.nomeEroe || "Avventuriero";
+    const avatar = (hero.mediaUrl && hero.mediaUrl.startsWith("http"))
+      ? `<img src="${hero.mediaUrl}" class="w-full h-full object-cover rounded-full" alt="Avatar">`
+      : `<span class="text-xs">🥋</span>`;
 
-    // Micro-Avatar circolare da 28px
-    const avatarImg = document.getElementById("kpi-hero-avatar-img");
-    const avatarFallback = document.getElementById("kpi-hero-avatar-fallback");
-    const media = hero.mediaUrl;
+    const pv = parseInt(hero.pv, 10) || 0;
+    const pvMax = parseInt(hero.pvMax, 10) || 25;
+    const pvPct = Math.max(0, Math.min(100, Math.round((pv / pvMax) * 100)));
+    const oro = parseInt(hero.oro, 10) || 0;
+    const px = parseInt(hero.px, 10) || 0;
 
-    if (avatarImg && avatarFallback) {
-      if (media && media !== "—" && media.startsWith("http")) {
-        avatarImg.src = media;
-        avatarImg.classList.remove("hidden");
-        avatarFallback.classList.add("hidden");
-      } else {
-        avatarImg.classList.add("hidden");
-        avatarFallback.classList.remove("hidden");
-      }
-    }
+    const stats = hero.stats || { FORZA: 10, DESTREZZA: 10, INTELLIGENZA: 10 };
+    const forVal = Number(stats.FORZA || 10);
+    const desVal = Number(stats.DESTREZZA || 10);
+    const intVal = Number(stats.INTELLIGENZA || 10);
 
-    s("kpi-hero-name", hero.nomeEroe || "Avventuriero");
-    s("kpi-hero-gold", hero.oro || 0);
-    s("kpi-hero-pv-text", `${hero.pv || 0}/${hero.pvMax || 25}`);
+    const forMod = rulesFormatMod(forVal);
+    const desMod = rulesFormatMod(desVal);
+    const intMod = rulesFormatMod(intVal);
 
-    const pvBar = document.getElementById("kpi-hero-pv-bar");
-    if (pvBar) {
-      pvBar.value = hero.pv || 0;
-      pvBar.max = hero.pvMax || 25;
-    }
+    hudBox.className = "hud-cockpit-48px w-full max-w-[340px] mx-auto p-2 rounded-xl bg-slate-900/90 border border-white/10 shadow-lg mb-2";
+    hudBox.innerHTML = `
+      <!-- RIGA 1: NOME LUNGO FLESSIBILE A SX & RISORSE A DX -->
+      <div class="flex items-center justify-between w-full min-w-0 leading-none">
+        <div class="flex items-center gap-1.5 min-w-0 flex-1 pr-2">
+          <div class="w-5 h-5 rounded-full bg-slate-800 border border-sky-400/40 flex items-center justify-center text-xs overflow-hidden shrink-0">
+            ${avatar}
+          </div>
+          <span class="text-xs font-black text-white truncate max-w-[170px]">${heroName}</span>
+        </div>
+        <div class="flex items-center gap-2 shrink-0 font-mono text-[10.5px]">
+          <span class="text-sky-300 font-bold">✨ ${px} PX</span>
+          <span class="text-amber-300 font-bold">💰 <b id="kpi-hero-gold">${oro}</b> 🟡</span>
+        </div>
+      </div>
 
-    if (hero.modificatori) {
-      s("kpi-mod-for", (hero.modificatori.FORZA >= 0 ? "+" : "") + hero.modificatori.FORZA);
-      s("kpi-mod-des", (hero.modificatori.DESTREZZA >= 0 ? "+" : "") + hero.modificatori.DESTREZZA);
-      s("kpi-mod-int", (hero.modificatori.INTELLIGENZA >= 0 ? "+" : "") + hero.modificatori.INTELLIGENZA);
-    }
+      <!-- RIGA 2: VITALI GRADIENTE & STATISTICHE D20 -->
+      <div class="flex items-center justify-between w-full pt-1.5 mt-1 border-t border-white/5 text-[10px] font-mono leading-none">
+        <div class="flex items-center gap-1.5 shrink-0">
+          <span class="text-rose-400">❤️</span>
+          <div class="w-12 h-1.5 rounded-full bg-slate-800 overflow-hidden">
+            <div class="h-full ${pvPct < 30 ? 'bg-rose-500' : 'bg-gradient-to-r from-emerald-500 to-sky-400'} transition-all duration-300" style="width: ${pvPct}%;"></div>
+          </div>
+          <span class="text-rose-300 font-bold">${pv}/${pvMax}</span>
+        </div>
+        <div class="text-slate-300 tracking-tight text-right shrink-0">
+          🥊 ${forVal} (${forMod}) · 🤸 ${desVal} (${desMod}) · 🧠 ${intVal} (${intMod})
+        </div>
+      </div>
+    `;
   },
 
   // --------------------------------------------------------------------------
-  // ⭐ RENDERING SNODO NARRATIVO SU CARTA TCG "MOVERINA" UNIVERSALE
+  // CARTA TAVOLO DI GIOCO "MOVERINA" (300x424px - ALONE BIANCO PLATINO NEUTRO)
   // --------------------------------------------------------------------------
   renderNode: function(node, hero) {
     this._setBusy(false);
@@ -411,33 +448,90 @@ const Rules2Engine = {
       return;
     }
 
-    // 3. POPOLAMENTO DELLA CARTA TCG SNODO
-    const s = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+    // 3. POPOLAMENTO DELLA CARTA TCG "MOVERINA" IN GAMEPLAY
+    const isCombat = (currentNode.tipo === "NEMICO" || (currentNode.id && currentNode.id.includes("NEM_")));
+    const isEvento = (currentNode.tipo === "EVENTO" || (currentNode.id && currentNode.id.includes("EVT_")));
 
-    const img = document.getElementById("scene-image");
-    if (img) {
-      img.src = currentNode.mediaUrl || "https://image.pollinations.ai/prompt/noir-docks-night-cinematic?width=800&height=500&nologo=true";
+    let statPlateHtml = "";
+    if (isCombat) {
+      statPlateHtml = `
+        <span>🥊 FOR <b>${currentNode.forza || 12}</b></span>
+        <span>🤸 DES <b>${currentNode.destrezza || 12}</b></span>
+        <span>🎯 CD <b>${currentNode.difficolta || 12}</b></span>
+      `;
+    } else if (isEvento) {
+      statPlateHtml = `
+        <span>🎲 CD <b>${currentNode.difficolta || 11}</b></span>
+        <span>🧠 Stat: <b>${(currentNode.statRichiesta || 'DES').substring(0, 3).toUpperCase()}</b></span>
+        <span>💔 Rischio <b>${currentNode.danno || 4} PV</b></span>
+      `;
+    } else {
+      statPlateHtml = `
+        <span>📍 <b>Snodo</b></span>
+        <span>💰 <b>${currentNode.oro || 0} 🟡</b></span>
+        <span>✨ <b>${currentNode.px || 0} PX</b></span>
+      `;
     }
 
-    s("scene-type-badge", currentNode.tipo || "SNODO");
-    s("scene-title", currentNode.nome || "Avventura");
-
     let cleanText = (currentNode.testo || "").replace(/\s*\([A-Z]{3,4}_\d{4}_S\d+_E\d+\)/gi, "");
-    s("scene-text", cleanText);
 
-    const wBanner = document.getElementById("scene-watermark-banner");
-    if (currentNode.citazione && currentNode.citazione !== "—" && currentNode.citazione !== "-") {
-      s("scene-quote", `“${currentNode.citazione.replace(/^["'“”]+|["'“”]+$/g, "")}”`);
-      s("scene-author", currentNode.autoreCitazione || "DARSENA NOIR");
-      if (wBanner) wBanner.classList.remove("hidden");
-    } else {
-      if (wBanner) wBanner.classList.add("hidden");
+    // Iniezione o aggiornamento della carta tavolo da gioco a 5 fasce
+    let cardWrapper = document.getElementById("gameplay-moverina-card");
+    if (!cardWrapper) {
+      const sceneImg = document.getElementById("scene-image");
+      const parentContainer = sceneImg ? sceneImg.closest(".cinema-frame-rigid")?.parentElement : null;
+      if (parentContainer) {
+        const oldCinema = parentContainer.querySelector(".cinema-frame-rigid");
+        const oldNarrative = parentContainer.querySelector(".narrative-box-flexible");
+        if (oldCinema) oldCinema.remove();
+        if (oldNarrative) oldNarrative.remove();
+
+        cardWrapper = document.createElement("div");
+        cardWrapper.id = "gameplay-moverina-card";
+        parentContainer.insertBefore(cardWrapper, actBox);
+      }
+    }
+
+    if (cardWrapper) {
+      cardWrapper.innerHTML = `
+        <div class="coverflow-card tcg-card selected max-w-[300px] mx-auto shadow-2xl relative my-2">
+          <!-- FASCIA 1: Testata -->
+          <div class="tcg-card-header">
+            <h4 class="tcg-card-title truncate">${currentNode.nome || "Avventura"}</h4>
+            <span class="tcg-card-faction-badge ${isCombat ? 'sinistra' : 'destra'}">${currentNode.tipo || "SNODO"}</span>
+          </div>
+
+          <!-- FASCIA 2: Immagine & Citazione Sfumata -->
+          <div class="tcg-card-media relative">
+            <img id="scene-image" src="${currentNode.mediaUrl || 'https://image.pollinations.ai/prompt/noir-docks-night-cinematic?width=800&height=500&nologo=true'}" class="tcg-card-img" alt="Scena">
+            ${(currentNode.citazione && currentNode.citazione !== "—" && currentNode.citazione !== "-") ? `
+              <div class="tcg-card-quote-overlay">
+                <div class="tcg-card-quote-text">“${currentNode.citazione.replace(/^["'“”]+|["'“”]+$/g, "")}”</div>
+                <div class="tcg-card-quote-author">${currentNode.autoreCitazione || 'DARSENA NOIR'}</div>
+              </div>
+            ` : ''}
+          </div>
+
+          <!-- FASCIA 3: Piastra Metrica Incastonata -->
+          <div class="tcg-stats-plate">
+            ${statPlateHtml}
+          </div>
+
+          <!-- FASCIA 4: Corpo Narrativo -->
+          <p class="tcg-card-desc">${cleanText}</p>
+
+          <!-- FASCIA 5: Piede Scheda -->
+          <div class="tcg-card-footer">
+            <div class="tcg-card-loot truncate">${currentNode.equipLoot || (isCombat ? '💀 Bottino' : '🧭 Inchiesta')}</div>
+            <div class="tcg-card-vitals">
+              ${isCombat ? `<span class="tcg-pv-badge">❤️ ${currentNode.pv || 20} PV</span>` : `<span class="tcg-gold-badge">🟡 ${currentNode.oro || 0} ORO</span>`}
+            </div>
+          </div>
+        </div>
+      `;
     }
 
     if (!actBox) return;
-
-    const isCombat = (currentNode.tipo === "NEMICO" || (currentNode.id && currentNode.id.includes("NEM_")));
-    const isEvento = (currentNode.tipo === "EVENTO" || (currentNode.id && currentNode.id.includes("EVT_")));
 
     // CASO 1: COMBATTIMENTO D20
     if (isCombat) {
@@ -524,7 +618,7 @@ const Rules2Engine = {
       return;
     }
 
-    // CASO 4: BIVIO NARRATIVO ALLA BASE DELLA CARTA
+    // CASO 4: BIVIO NARRATIVO
     const choices = (currentNode.choices || []).filter(c => c.target);
 
     if (choices.length > 0) {
@@ -537,7 +631,7 @@ const Rules2Engine = {
     } else {
       actBox.innerHTML = `
         <button onclick="Rules2Engine.leaveGameToHub()" class="scene-action-btn justify-center font-black">
-          Torna all'Hub 🏠
+          Torna alla Libreria 🏠
         </button>
       `;
     }
@@ -550,7 +644,7 @@ const Rules2Engine = {
     tgHaptic("selection");
     if (window.SoundEngine) SoundEngine.playClick();
 
-    // Progressione lavorazione sintesi chimica ad ogni snodo
+    // Progressione lavorazione sintesi chimica
     const h = AppState.activeSession.hero;
     if (h && h.sintesiInCorso && h.sintesiInCorso.length > 0) {
       const stillCrafting = [];
@@ -586,7 +680,6 @@ const Rules2Engine = {
     }
   },
 
-  // 🎯 RISOLUZIONE EVENTO D20 SERVER-AUTHORITATIVE
   executeEventRoll: async function(nodeId, statName, cdVal) {
     if (this._isBusy) return;
     this._setBusy(true);
@@ -622,7 +715,7 @@ const Rules2Engine = {
 
       if (isBypassed) {
         s("dice-roll-result", "⚡ BYPASS");
-        s("dice-roll-desc", `Superato grazie a ${r.itemId || r.allyId || 'equipaggiamento'}!`);
+        s("dice-roll-desc", `Superato grazie all'equipaggiamento!`);
       } else {
         s("dice-roll-result", `${r.tot || '--'} (CD ${r.cdD20 || cdVal})`);
         s("dice-roll-desc", isSuccess ? "PROVA SUPERATA!" : `FALLITO! (-${res.dmgTaken || 0} PV)`);
@@ -657,7 +750,6 @@ const Rules2Engine = {
     }
   },
 
-  // 🎯 RISOLUZIONE ENIGMA SERVER-AUTHORITATIVE
   submitQuizAnswer: async function(selectedOpz) {
     if (this._isBusy) return;
     const node = AppState.activeSession.currentNode;
@@ -697,7 +789,6 @@ const Rules2Engine = {
     }
   },
 
-  // 🎯 RISOLUZIONE COMBATTIMENTO ROUND D20
   combatAction: async function(subAction) {
     if (!AppState.activeSession.gameKey || this._isBusy) return;
     this._setBusy(true);
@@ -749,7 +840,7 @@ const Rules2Engine = {
             if (log.dmgTaken > 0) {
               setTimeout(() => {
                 tgHaptic("error");
-                this.showFloatingDamage(`💔 -${log.dmgTaken} PV Squadra`, false, true);
+                this.showFloatingDamage(`💔 -${log.dmgTaken} PV`, false, true);
                 if (window.SoundEngine) SoundEngine.playError();
               }, 250);
             }
@@ -876,18 +967,46 @@ const Rules2Engine = {
     }
   },
 
+  // --------------------------------------------------------------------------
+  // NUMERI FLUTTUANTI (SORGONO DALLA CARTA E SFUMANO SOTTO L'HEADER)
+  // --------------------------------------------------------------------------
   showFloatingDamage: function(text, isCrit, isHeroDmg) {
-    const box = document.getElementById("floating-damage-box");
+    let box = document.getElementById("floating-damage-box");
+    if (!box) {
+      box = document.createElement("div");
+      box.id = "floating-damage-box";
+      box.className = "floating-damage-layer";
+      const gameContainer = document.getElementById("view-gameplay");
+      if (gameContainer) gameContainer.appendChild(box);
+    }
     if (!box) return;
+
     const el = document.createElement("div");
-    el.className = `floating-damage ${isHeroDmg ? 'text-rose-400' : (isCrit ? 'text-amber-400' : 'text-sky-400')}`;
-    el.textContent = text;
+    const colorClass = isHeroDmg ? 'text-rose-400' : (isCrit ? 'text-amber-300' : 'text-sky-300');
+    el.className = `floating-fx-number ${colorClass}`;
+    el.innerHTML = text;
+
+    // 🔒 Nasce esattamente al bordo alto della carta (Y: 175px) e sale verso l'header
+    el.style.cssText = `
+      position: absolute;
+      left: 50%;
+      top: 175px;
+      transform: translateX(-50%);
+      font-family: monospace;
+      font-size: 15px;
+      font-weight: 900;
+      text-shadow: 0 2px 8px rgba(0,0,0,0.9);
+      pointer-events: none;
+      z-index: 100;
+      animation: floatTowardHeader 1.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    `;
+
     box.appendChild(el);
-    setTimeout(() => el.remove(), 1200);
+    setTimeout(() => el.remove(), 1450);
   },
 
   // --------------------------------------------------------------------------
-  // 3. FASCICOLO APPROFONDITO UNIVERSALE
+  // FASCICOLO APPROFONDITO UNIVERSALE
   // --------------------------------------------------------------------------
   inspectCurrentEnemyDetail: function() {
     const enemy = AppState.activeSession.currentNode;
@@ -965,10 +1084,8 @@ const Rules2Engine = {
   },
 
   // --------------------------------------------------------------------------
-  // 4. ⭐ MODALI TATTICHE GLASSMORPHIC ESTESE (90dvh A SCHERMO QUASI INTERO)
+  // MODALI TATTICHE DI GIOCO (SCHEDA, ASSETTO, EMPORIO)
   // --------------------------------------------------------------------------
-
-  // 1. SCHEDA EROE A 4 TAB
   openHeroModal: function(tabName = "scheda") {
     this._activeHeroTab = tabName;
     const h = AppState.activeSession?.hero;
@@ -1006,15 +1123,17 @@ const Rules2Engine = {
     s("sheet-hero-gold", `${h.oro || 0} 🟡`);
 
     const stats = h.stats || { FORZA: 10, DESTREZZA: 10, INTELLIGENZA: 10 };
-    const mods = h.modificatori || { FORZA: 0, DESTREZZA: 0, INTELLIGENZA: 0 };
+    const forVal = Number(stats.FORZA || 10);
+    const desVal = Number(stats.DESTREZZA || 10);
+    const intVal = Number(stats.INTELLIGENZA || 10);
 
-    s("sheet-pure-for", stats.FORZA || 10);
-    s("sheet-pure-des", stats.DESTREZZA || 10);
-    s("sheet-pure-int", stats.INTELLIGENZA || 10);
+    s("sheet-pure-for", forVal);
+    s("sheet-pure-des", desVal);
+    s("sheet-pure-int", intVal);
 
-    s("sheet-mod-for", (mods.FORZA >= 0 ? "+" : "") + mods.FORZA);
-    s("sheet-mod-des", (mods.DESTREZZA >= 0 ? "+" : "") + mods.DESTREZZA);
-    s("sheet-mod-int", (mods.INTELLIGENZA >= 0 ? "+" : "") + mods.INTELLIGENZA);
+    s("sheet-mod-for", rulesFormatMod(forVal));
+    s("sheet-mod-des", rulesFormatMod(desVal));
+    s("sheet-mod-int", rulesFormatMod(intVal));
 
     s("sheet-active-weapon", h.armaAttiva || "Pugni nudi");
     s("sheet-active-vehicle", h.veicoloAttivo || "A piedi");
@@ -1077,7 +1196,6 @@ const Rules2Engine = {
     }
   },
 
-  // 2. ASSETTO TATTICO & SINTESI
   openAssettoModal: function() {
     const h = AppState.activeSession?.hero;
     if (!h) return;
@@ -1101,8 +1219,8 @@ const Rules2Engine = {
 
     modal.innerHTML = `
       <div class="modal-box p-5 bg-slate-950 border border-purple-500/40 rounded-2xl max-w-md space-y-3 relative">
-        <button onclick="document.getElementById('modal-cockpit-assetto').close()" class="modal-close-btn">✕</button>
-        <div class="flex items-center gap-2">
+        <button onclick="document.getElementById('modal-cockpit-assetto').close()" class="modal-close-btn" title="Chiudi">✕</button>
+        <div class="flex items-center gap-2 pr-8">
           <span class="text-2xl">🔱</span>
           <h3 class="text-sm font-black text-white uppercase">Assetto Tattico & Sintesi</h3>
         </div>
@@ -1155,7 +1273,6 @@ const Rules2Engine = {
     }
   },
 
-  // 3. EMPORIO DI CICCIO (ACQUISTO, VENDITA, CAMBIO)
   openEmporioDrawer: function() {
     const goldDisp = document.getElementById("emporio-gold-display");
     if (goldDisp) goldDisp.textContent = `${this.getGold()} 🟡`;
@@ -1329,7 +1446,9 @@ const Rules2Engine = {
     }
   },
 
-  // 4. ESCI / GESTIONE ABBANDONO SESSIONE
+  // --------------------------------------------------------------------------
+  // ESCI / GESTIONE ABBANDONO SESSIONE
+  // --------------------------------------------------------------------------
   openAbandonModal: function() {
     tgHaptic("warning");
     const modal = document.getElementById("modal-abandon");
@@ -1487,7 +1606,7 @@ const Rules2Engine = {
 };
 
 // ----------------------------------------------------------------------------
-// 5. REGISTRAZIONE MOTORE & PROXY GLOBALI
+// 3. REGISTRAZIONE MOTORE & PROXY GLOBALI
 // ----------------------------------------------------------------------------
 window.Rules2Engine = Rules2Engine;
 
