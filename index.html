@@ -19,8 +19,8 @@
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
 
   <!-- FOGLI DI STILE VERSIONATI -->
-  <link rel="stylesheet" href="css/core.css?v=32.0">
-  <link rel="stylesheet" href="css/rules2.css?v=29.0">
+  <link rel="stylesheet" href="css/core.css?v=33.0">
+  <link rel="stylesheet" href="css/rules2.css?v=33.0">
 </head>
 
 <body class="rpg-app-body bg-[#070A12] text-slate-100 flex flex-col h-screen overflow-hidden select-none" data-context="app" data-active-screen="view-home">
@@ -472,51 +472,21 @@
           </section>
 
           <!-- =============================================================== -->
-          <!-- VISTA 3: WIZARD FULL-STAGE (ABOVE-THE-FOLD ZERO-SCROLL NATIVO)  -->
+          <!-- VISTA 3: WIZARD FULL-STAGE (COMPONENT-DRIVEN MOUNT POINT)      -->
           <!-- =============================================================== -->
           <section id="view-wizard" class="wizard-stage-container hidden app-screen max-w-4xl mx-auto h-full flex flex-col justify-between overflow-hidden relative">
             <!-- 1. HUD Live Universale (48px - Spazio Dedicato KPI) -->
             <div id="wizard-live-hud" class="w-full flex-shrink-0"></div>
 
-            <!-- 2. PASSO 1: SCELTA CLASSE (Carosello Centrale Flessibile) -->
-            <div id="wizard-step-class" class="wizard-step-panel w-full flex-1 flex flex-col justify-between min-h-0">
-              <div class="coverflow-stage-outer relative flex-1 min-h-0">
-                <div class="coverflow-stage-wrapper flex gap-3 overflow-x-auto py-1" id="wizard-classes-stage"></div>
-              </div>
-            </div>
-
-            <!-- 3. PASSO 2: TALENTI CLANDESTINI -->
-            <div id="wizard-step-abilities" class="wizard-step-panel hidden w-full flex-1 flex flex-col justify-between min-h-0">
-              <div class="coverflow-stage-outer relative flex-1 min-h-0">
-                <div class="coverflow-stage-wrapper flex gap-3 overflow-x-auto py-1" id="wizard-abilities-stage"></div>
-              </div>
-            </div>
-
-            <!-- 4. PASSO 3: EMPORIO DI CICCIO -->
-            <div id="wizard-step-shop" class="wizard-step-panel hidden w-full flex-1 flex flex-col justify-between min-h-0">
-              <div class="chips-scroll-bar flex gap-1 overflow-x-auto py-1 mb-1 justify-start flex-shrink-0" id="wizard-shop-category-chips">
-                <button onclick="GameEngine.filterWizardShop('ARMI')" class="rpg-category-chip active">🗡️ Armi</button>
-                <button onclick="GameEngine.filterWizardShop('VEICOLI')" class="rpg-category-chip">🛴 Veicoli</button>
-                <button onclick="GameEngine.filterWizardShop('STRUMENTI')" class="rpg-category-chip">🔧 Strumenti</button>
-                <button onclick="GameEngine.filterWizardShop('CURE')" class="rpg-category-chip">🍱 Cure</button>
-                <button onclick="GameEngine.filterWizardShop('DROGHE')" class="rpg-category-chip">💊 Droghe</button>
-                <button onclick="GameEngine.filterWizardShop('TALISMANI')" class="rpg-category-chip">📿 Talismani</button>
-              </div>
-
-              <div class="coverflow-stage-outer relative flex-1 min-h-0">
-                <div class="coverflow-stage-wrapper flex gap-3 overflow-x-auto py-1" id="wizard-shop-stage"></div>
-              </div>
-            </div>
-
-            <!-- 5. PASSO 4: CONSACRAZIONE EROE -->
-            <div id="wizard-step-name" class="wizard-step-panel hidden w-full flex-1 flex flex-col justify-center min-h-0"></div>
+            <!-- 2. Palco Dinamico del Passaggio Attivo (Mount Point Unico) -->
+            <!-- Rules2Wizard inietterà a runtime ESCLUSIVAMENTE lo step corrente (1, 2, 3 o 4) -->
+            <div id="wizard-stage-mount" class="wizard-stage-content w-full flex-1 flex flex-col justify-between items-center min-h-0 relative"></div>
           </section>
 
           <!-- =============================================================== -->
-          <!-- VISTA 4: COCKPIT GAMEPLAY (ABOVE-THE-FOLD ZERO-SCROLL NATIVO)   -->
+          <!-- VISTA 4: COCKPIT GAMEPLAY (COMPONENT-DRIVEN MOUNT POINT)        -->
           <!-- =============================================================== -->
           <section id="view-gameplay" class="gameplay-container hidden app-screen max-w-3xl mx-auto h-full flex flex-col justify-between overflow-hidden relative">
-            
             <!-- 1. HUD Live Universale (48px - Reattivo e Allineato) -->
             <div id="gameplay-live-hud" class="hud-cockpit-48px"></div>
 
@@ -526,9 +496,8 @@
             <!-- 3. Palco Centrale Carta Focale (Zoom 330px - Flessibile) -->
             <div id="gameplay-card-stage" class="w-full flex-1 flex items-center justify-center min-h-0 relative my-0.5"></div>
 
-            <!-- 4. Slot Decisionale Azioni Tattiche -->
+            <!-- 4. Slot Decisionale Azioni Tattiche (Combat / Bivi / Prove D20) -->
             <div id="scene-actions-container" class="scene-actions-area"></div>
-            
           </section>
 
           <!-- =============================================================== -->
@@ -765,7 +734,7 @@
 
       <!-- 4.B FOOTER 2: WIZARD STICKY STEPPER-DOCK (44px + SAFE AREA 24px)    -->
       <footer id="main-wizard-footer" class="wizard-sticky-footer hidden flex items-center px-3 bg-[#070A12]/95 border-t border-white/10 z-40">
-        <!-- Renderizzato e sincronizzato dinamicamente da Rules2Wizard.updateFooterDock() -->
+        <!-- Renderizzato dinamicamente in tempo reale da Rules2Wizard.updateFooterDock() -->
       </footer>
 
       <!-- 4.C FOOTER 3: COCKPIT RULES 2 GAMEPLAY (4 COMANDI CENTRATI A 44px)  -->
@@ -1174,10 +1143,10 @@
   </dialog>
 
   <!-- SCRIPT DI SISTEMA VERSIONATI -->
-  <script src="audio.js?v=32"></script>
-  <script src="js/app-core.js?v=32"></script>
-  <script src="js/app-modules.js?v=32"></script>
-  <script src="js/rules2wizard.js?v=32"></script>
-  <script src="js/rules2engine.js?v=32"></script>
+  <script src="audio.js?v=33.0"></script>
+  <script src="js/app-core.js?v=33.0"></script>
+  <script src="js/app-modules.js?v=33.0"></script>
+  <script src="js/rules2wizard.js?v=33.0"></script>
+  <script src="js/rules2engine.js?v=33.0"></script>
 </body>
 </html>
