@@ -1,8 +1,8 @@
 // ============================================================================
 // PROJECT: ESTIQATSY SYNDICATE & RPG PLATFORM
-// FILE: js/rules2engine.js (VERSIONE 26.0 - AGNOSTIC TCG STAGE, 48px HUD & ADAPTIVE MATRIX)
-// LAYER: GAMEPLAY LOOP, D20 COMBAT, 1-2-3-4 ACTION MATRIX, TOP-ARC FX & TACTICAL SHEETS
-// NOTE: 100% DINAMICO, ZERO HARDCODING, DISACCOPPIATO DAL WALLET PIATTAFORMA
+// FILE: js/rules2engine.js (VERSIONE 33.0 - PURE COMPONENT-DRIVEN GAMEPLAY ENGINE)
+// LAYER: GAMEPLAY LOOP, D20 COMBAT, 1-2-3-4 ACTION MATRIX & TACTICAL SHEETS
+// NOTE: 100% DINAMICO, ZERO DOM DESTRUCTION, DISACCOPPIATO DAL WALLET
 // ============================================================================
 
 // ----------------------------------------------------------------------------
@@ -90,7 +90,7 @@ const Rules2Engine = {
   },
 
   // --------------------------------------------------------------------------
-  // GESTIONE AUTONOMA ORO DI GIOCO (DISACCOPPIATA DAI MEGOIN)
+  // GESTIONE ORO DI GIOCO (DISACCOPPIATA DAI MEGOIN)
   // --------------------------------------------------------------------------
   getGold: function() {
     const h = AppState.activeSession?.hero;
@@ -106,8 +106,6 @@ const Rules2Engine = {
     if (emp) emp.textContent = `${num} 🟡`;
     const sheet = document.getElementById("sheet-hero-gold");
     if (sheet) sheet.textContent = `${num} 🟡`;
-    const wiz = document.getElementById("wizard-shop-gold-display");
-    if (wiz) wiz.innerHTML = `💰 <b>${num}</b> 🟡`;
     this.syncHUD();
   },
 
@@ -116,7 +114,7 @@ const Rules2Engine = {
   },
 
   // --------------------------------------------------------------------------
-  // FLUSSO CABINATO & RIPRESA SESSIONE
+  // CABINATO E GESTIONE SESSIONE
   // --------------------------------------------------------------------------
   launchSession: function(gameKey, epNum, canContinueFree, savedHero) {
     const saga = (AppState.games.catalog || []).find(g => g.gameKey === gameKey);
@@ -294,13 +292,13 @@ const Rules2Engine = {
   },
 
   // --------------------------------------------------------------------------
-  // HUD A 2 RIGHE (48px - 100% IDENTICO AL WIZARD PER DIMENSIONI E LAYOUT)
+  // HUD A 2 RIGHE (48px - KPI BLOCCATI E SINCRONIZZATI AL 100%)
   // --------------------------------------------------------------------------
   syncHUD: function() {
     const hero = AppState.activeSession?.hero;
     if (!hero) return;
 
-    const hudBox = document.querySelector("#view-gameplay .hud-cockpit-48px, #view-gameplay .hud-cockpit-36px");
+    const hudBox = document.getElementById("gameplay-live-hud") || document.querySelector("#view-gameplay .hud-cockpit-48px");
     if (!hudBox) return;
 
     const heroName = hero.nomeEroe || "Avventuriero";
@@ -323,24 +321,25 @@ const Rules2Engine = {
     const desMod = rulesFormatMod(desVal);
     const intMod = rulesFormatMod(intVal);
 
-    hudBox.className = "hud-cockpit-48px w-full p-2 rounded-xl bg-slate-900/90 border border-white/10 shadow-lg mb-1";
+    // 🔒 Senza p-2: l'altezza da 48px rimane integra e tutti i KPI sono visibili
+    hudBox.className = "hud-cockpit-48px";
     hudBox.innerHTML = `
-      <!-- RIGA 1: NOME LUNGO FLESSIBILE A SX & RISORSE A DX -->
+      <!-- RIGA 1: NOME A SX & ORO/PX A DX -->
       <div class="flex items-center justify-between w-full min-w-0 leading-none">
         <div class="flex items-center gap-1.5 min-w-0 flex-1 pr-2">
           <div class="w-5 h-5 rounded-full bg-slate-800 border border-sky-400/40 flex items-center justify-center text-xs overflow-hidden shrink-0">
             ${avatar}
           </div>
-          <span class="text-xs font-black text-white truncate max-w-[170px]">${heroName}</span>
+          <span class="text-xs font-black text-white truncate max-w-[130px]">${heroName}</span>
         </div>
         <div class="flex items-center gap-2 shrink-0 font-mono text-[10.5px]">
-          <span class="text-sky-300 font-bold">✨ ${px} PX</span>
-          <span class="text-amber-300 font-bold">🟡 <b id="kpi-hero-gold">${oro}</b> ORO</span>
+          <span class="text-sky-300 font-bold whitespace-nowrap">✨ ${px} PX</span>
+          <span class="text-amber-300 font-bold whitespace-nowrap">🟡 <b id="kpi-hero-gold">${oro}</b> ORO</span>
         </div>
       </div>
 
-      <!-- RIGA 2: VITALI GRADIENTE & STATISTICHE D20 -->
-      <div class="flex items-center justify-between w-full pt-1.5 mt-1 border-t border-white/5 text-[10px] font-mono leading-none">
+      <!-- RIGA 2: VITALI GRADIENTE A SX & MODIFICATORI D20 A DX -->
+      <div class="flex items-center justify-between w-full pt-1 mt-0.5 border-t border-white/5 text-[9.5px] font-mono leading-none">
         <div class="flex items-center gap-1.5 shrink-0">
           <span class="text-rose-400">❤️</span>
           <div class="w-12 h-1.5 rounded-full bg-slate-800 overflow-hidden">
@@ -356,7 +355,7 @@ const Rules2Engine = {
   },
 
   // --------------------------------------------------------------------------
-  // CARTA TAVOLO DI GIOCO FOCALE (ZOOMATA A 335px, ZERO FONDINO, ALONE PLATINO)
+  // CARTA TAVOLO DI GIOCO FOCALE (INIEZIONE DIRETTA NEL MOUNT POINT)
   // --------------------------------------------------------------------------
   renderNode: function(node, hero) {
     this._setBusy(false);
@@ -373,7 +372,7 @@ const Rules2Engine = {
 
     this.syncHUD();
 
-    // Allarme sonoro e battito cardiaco se PV <= 25%
+    // Allarme sonoro se PV <= 25%
     if (currentHero && currentHero.pvMax) {
       const pvRatio = (currentHero.pv || 0) / currentHero.pvMax;
       if (pvRatio <= 0.25 && currentHero.pv > 0) {
@@ -460,29 +459,12 @@ const Rules2Engine = {
 
     let cleanText = (currentNode.testo || "").replace(/\s*\([A-Z]{3,4}_\d{4}_S\d+_E\d+\)/gi, "");
 
-    // Struttura Carta Focale di Gioco (Senza fondino, immagine a Y=0, zoom a 335px)
-    let cardWrapper = document.getElementById("gameplay-card-stage");
-    if (!cardWrapper) {
-      const sceneImg = document.getElementById("scene-image");
-      const parentContainer = sceneImg ? sceneImg.closest(".cinema-frame-rigid")?.parentElement : null;
-      if (parentContainer) {
-        const oldCinema = parentContainer.querySelector(".cinema-frame-rigid");
-        const oldNarrative = parentContainer.querySelector(".narrative-box-flexible");
-        if (oldCinema) oldCinema.remove();
-        if (oldNarrative) oldNarrative.remove();
-
-        cardWrapper = document.createElement("div");
-        cardWrapper.id = "gameplay-card-stage";
-        parentContainer.insertBefore(cardWrapper, actBox);
-      }
-    }
-
+    // 🔒 Iniezione diretta nel palco di gioco pulito
+    const cardWrapper = document.getElementById("gameplay-card-stage");
     if (cardWrapper) {
       cardWrapper.innerHTML = `
         <div class="tcg-card gameplay-focal selected relative my-1">
-          <!-- FASCIA 2: Media a Schermo Pieno Alto con Angoli Tondi Superiori -->
           <div class="tcg-card-media">
-            <!-- FASCIA 1: Testata Fluttuante Trasparente in Sovraimpressione -->
             <div class="tcg-card-header">
               <h4 class="tcg-card-title truncate">${currentNode.nome || "Avventura"}</h4>
               <span class="tcg-card-faction-badge ${isCombat ? 'sinistra' : 'destra'}">${currentNode.tipo || "SNODO"}</span>
@@ -498,15 +480,12 @@ const Rules2Engine = {
             ` : ''}
           </div>
 
-          <!-- FASCIA 3: Piastra Metrica Tattica Incastonata -->
           <div class="tcg-stats-plate">
             ${statPlateHtml}
           </div>
 
-          <!-- FASCIA 4: Narrazione Ambientale -->
           <p class="tcg-card-desc">${cleanText}</p>
 
-          <!-- FASCIA 5: Piede Scheda con Vitali e Loot -->
           <div class="tcg-card-footer">
             <div class="tcg-card-loot truncate">${currentNode.equipLoot || (isCombat ? '💀 Bottino' : '🧭 Inchiesta')}</div>
             <div class="tcg-card-vitals">
@@ -521,7 +500,7 @@ const Rules2Engine = {
     actBox.className = "scene-actions-area";
 
     // ------------------------------------------------------------------------
-    // CASO 1: COMBATTIMENTO D20 (MATRICE 1, 2 O 3 COLONNE SU RIGA UNICA)
+    // CASO 1: COMBATTIMENTO D20
     // ------------------------------------------------------------------------
     if (isCombat) {
       if (AppState.activeSession.combatEnemyId !== currentNode.id) {
@@ -534,7 +513,6 @@ const Rules2Engine = {
       const bribeDrug = hasBribe ? currentNode.corruption.validDrugs[0] : null;
 
       if (hasBribe && bribeDrug) {
-        // 🔒 3 AZIONI: RIGA SINGOLA A 3 COLONNE (33% ciascuna a 42px)
         actBox.innerHTML = `
           <div class="actions-grid-3">
             <button onclick="Rules2Engine.combatAction('attack_round')" class="scene-action-btn action-danger font-black">
@@ -549,7 +527,6 @@ const Rules2Engine = {
           </div>
         `;
       } else {
-        // 🔒 2 AZIONI: BIVIO A 2 COLONNE (50% ciascuna a 42px)
         actBox.innerHTML = `
           <div class="actions-grid-2">
             <button onclick="Rules2Engine.combatAction('attack_round')" class="scene-action-btn action-danger font-black">
@@ -565,7 +542,7 @@ const Rules2Engine = {
     }
 
     // ------------------------------------------------------------------------
-    // CASO 2: EVENTO D20 (PROVA DI ABILITÀ)
+    // CASO 2: EVENTO D20
     // ------------------------------------------------------------------------
     if (isEvento) {
       const statReq = currentNode.statRichiesta || "DESTREZZA";
@@ -575,7 +552,6 @@ const Rules2Engine = {
       const hasTool = bypassTool && (currentHero?.inventario || []).some(it => it.toLowerCase().includes(bypassTool.toLowerCase()));
 
       if (hasTool) {
-        // 1 AZIONE: TUTTA LARGHEZZA (Bypass immediato)
         actBox.innerHTML = `
           <div class="actions-grid-1">
             <button onclick="Rules2Engine.executeEventRoll('${currentNode.id}', '${statReq}', ${cdVal})" class="scene-action-btn border-emerald-500 text-emerald-300 font-black justify-between">
@@ -585,7 +561,6 @@ const Rules2Engine = {
           </div>
         `;
       } else {
-        // 2 AZIONI: PROVA D20 VS SCHIVA
         actBox.innerHTML = `
           <div class="actions-grid-2">
             <button onclick="Rules2Engine.executeEventRoll('${currentNode.id}', '${statReq}', ${cdVal})" class="scene-action-btn border-sky-400 text-sky-300 font-black">
@@ -601,7 +576,7 @@ const Rules2Engine = {
     }
 
     // ------------------------------------------------------------------------
-    // CASO 3: ENIGMA / QUIZ (GRIGLIA 2x2 COMPATTA)
+    // CASO 3: ENIGMA / QUIZ
     // ------------------------------------------------------------------------
     if (currentNode.quiz && currentNode.quiz.opzioni && currentNode.quiz.opzioni.length > 0) {
       const opz = currentNode.quiz.opzioni;
@@ -620,7 +595,7 @@ const Rules2Engine = {
     }
 
     // ------------------------------------------------------------------------
-    // CASO 4: BIVI NARRATIVI ADATTIVI (1, 2 O 3 COLONNE SU RIGA UNICA)
+    // CASO 4: BIVI NARRATIVI
     // ------------------------------------------------------------------------
     const choices = (currentNode.choices || []).filter(c => c.target);
 
@@ -644,7 +619,6 @@ const Rules2Engine = {
         </div>
       `;
     } else if (choices.length === 3) {
-      // 🔒 3 SCELTE NARRATIVE SU RIGA SINGOLA
       actBox.innerHTML = `
         <div class="actions-grid-3">
           ${choices.map(c => `
@@ -682,7 +656,7 @@ const Rules2Engine = {
     tgHaptic("selection");
     if (window.SoundEngine) SoundEngine.playClick();
 
-    // Progressione lavorazione sintesi chimica ad ogni snodo
+    // Lavorazione sintesi chimica
     const h = AppState.activeSession.hero;
     if (h && h.sintesiInCorso && h.sintesiInCorso.length > 0) {
       const stillCrafting = [];
@@ -719,7 +693,7 @@ const Rules2Engine = {
   },
 
   // --------------------------------------------------------------------------
-  // RISOLUZIONE PROVE D20 ED ENIGMI
+  // PROVE D20 ED ENIGMI
   // --------------------------------------------------------------------------
   executeEventRoll: async function(nodeId, statName, cdVal) {
     if (this._isBusy) return;
@@ -1009,7 +983,7 @@ const Rules2Engine = {
   },
 
   // --------------------------------------------------------------------------
-  // NUMERI FLUTTUANTI AD ARCO (DAL BORDO SUPERIORE CARTA ALL'HEADER)
+  // NUMERI FLUTTUANTI AD ARCO
   // --------------------------------------------------------------------------
   showFloatingDamage: function(text, isCrit, isHeroDmg) {
     let box = document.getElementById("floating-damage-box");
