@@ -472,11 +472,11 @@
           </section>
 
           <!-- =============================================================== -->
-          <!-- VISTA 3: WIZARD FULL-STAGE                                      -->
+          <!-- VISTA 3: WIZARD FULL-STAGE (PALLINI ELIMINATI, ZERO VUOTI)      -->
           <!-- =============================================================== -->
-          <section id="view-wizard" class="wizard-stage-container hidden app-screen max-w-4xl mx-auto">
-            <!-- Stepper Progress Tracker -->
-            <div class="wizard-stepper-tracker flex items-center justify-between gap-1 p-2 rounded-xl bg-slate-900 border border-white/10 mb-2">
+          <section id="view-wizard" class="wizard-stage-container hidden app-screen max-w-4xl mx-auto flex flex-col justify-between">
+            <!-- 1. Stepper Progress Tracker a Tutta Larghezza -->
+            <div class="wizard-stepper-tracker flex items-center justify-between gap-1 p-2 rounded-xl bg-slate-900 border border-white/10 w-full mb-1">
               <div id="wiz-step-ind-1" onclick="Rules2Wizard.goToStep(1)" class="wizard-stepper-step active flex items-center gap-1.5 cursor-pointer">
                 <div class="wizard-stepper-circle w-5 h-5 rounded-full flex items-center justify-center font-mono text-[10px] font-bold bg-sky-500 text-slate-950">1</div>
                 <span class="wizard-stepper-label text-[11px] font-bold text-white">Classe</span>
@@ -495,40 +495,26 @@
               </div>
             </div>
 
-            <!-- Live HUD Dock Dinamico -->
-            <div class="wizard-live-hud p-2 rounded-xl bg-slate-900 border border-sky-400/30 flex items-center justify-between mb-2" id="wizard-live-hud">
-              <div class="wizard-live-hero-chip flex items-center gap-2">
-                <span id="wiz-live-avatar" class="text-lg">🥋</span>
-                <div class="wizard-live-details">
-                  <span id="wiz-live-name" class="text-xs font-black text-white">Avventuriero</span>
-                  <span id="wiz-live-stats" class="text-[9.5px] font-mono text-sky-300 block">❤️ 25 PV • FOR 10 · DES 10 · INT 10</span>
-                </div>
-              </div>
-              <div class="flex items-center gap-2">
-                <span id="wiz-live-budget" class="badge badge-xs badge-info font-mono font-bold text-[9px]">✨ 100 PX</span>
-                <span id="wiz-live-gold" class="font-mono text-amber-300 font-bold text-[11px]">💰 40 🟡</span>
+            <!-- 2. HUD Dock a Tutta Larghezza (Stesso perimetro dello Stepper) -->
+            <div id="wizard-live-hud" class="w-full mb-1"></div>
+
+            <!-- 3. PASSO 1: SCELTA CLASSE (Solo Palco Carte con Frecce in Sovraimpressione) -->
+            <div id="wizard-step-class" class="wizard-step-panel w-full">
+              <div class="coverflow-stage-outer relative">
+                <div class="coverflow-stage-wrapper flex gap-3 overflow-x-auto py-1" id="wizard-classes-stage"></div>
               </div>
             </div>
 
-            <!-- PASSO 1: SCELTA CLASSE -->
-            <div id="wizard-step-class" class="wizard-step-panel">
-              <div class="coverflow-stage-outer">
-                <div class="coverflow-stage-wrapper flex gap-3 overflow-x-auto py-2" id="wizard-classes-stage"></div>
-                <div class="coverflow-dots flex justify-center gap-1.5 mt-2" id="wizard-coverflow-dots"></div>
+            <!-- 4. PASSO 2: TALENTI CLANDESTINI -->
+            <div id="wizard-step-abilities" class="wizard-step-panel hidden w-full">
+              <div class="coverflow-stage-outer relative">
+                <div class="coverflow-stage-wrapper flex gap-3 overflow-x-auto py-1" id="wizard-abilities-stage"></div>
               </div>
             </div>
 
-            <!-- PASSO 2: TALENTI CLANDESTINI -->
-            <div id="wizard-step-abilities" class="wizard-step-panel hidden">
-              <div class="coverflow-stage-outer">
-                <div class="coverflow-stage-wrapper flex gap-3 overflow-x-auto py-2" id="wizard-abilities-stage"></div>
-                <div class="coverflow-dots flex justify-center gap-1.5 mt-2" id="wizard-abilities-dots"></div>
-              </div>
-            </div>
-
-            <!-- PASSO 3: MERCATO NERO DI CICCIO -->
-            <div id="wizard-step-shop" class="wizard-step-panel hidden">
-              <div class="chips-scroll-bar flex gap-1 overflow-x-auto py-1.5" id="wizard-shop-category-chips">
+            <!-- 5. PASSO 3: EMPORIO DI CICCIO -->
+            <div id="wizard-step-shop" class="wizard-step-panel hidden w-full">
+              <div class="chips-scroll-bar flex gap-1 overflow-x-auto py-1 mb-1" id="wizard-shop-category-chips">
                 <button onclick="GameEngine.filterWizardShop('ARMI')" class="rpg-category-chip active">🗡️ Armi</button>
                 <button onclick="GameEngine.filterWizardShop('VEICOLI')" class="rpg-category-chip">🛴 Veicoli</button>
                 <button onclick="GameEngine.filterWizardShop('STRUMENTI')" class="rpg-category-chip">🔧 Strumenti</button>
@@ -537,14 +523,13 @@
                 <button onclick="GameEngine.filterWizardShop('TALISMANI')" class="rpg-category-chip">📿 Talismani</button>
               </div>
 
-              <div class="coverflow-stage-outer">
-                <div class="coverflow-stage-wrapper flex gap-3 overflow-x-auto py-2" id="wizard-shop-stage"></div>
-                <div class="coverflow-dots flex justify-center gap-1.5 mt-2" id="wizard-shop-dots"></div>
+              <div class="coverflow-stage-outer relative">
+                <div class="coverflow-stage-wrapper flex gap-3 overflow-x-auto py-1" id="wizard-shop-stage"></div>
               </div>
             </div>
 
-            <!-- PASSO 4: LANCIO EROE -->
-            <div id="wizard-step-name" class="wizard-step-panel hidden"></div>
+            <!-- 6. PASSO 4: CONSACRAZIONE EROE -->
+            <div id="wizard-step-name" class="wizard-step-panel hidden w-full"></div>
           </section>
 
           <!-- =============================================================== -->
