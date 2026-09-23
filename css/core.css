@@ -1,7 +1,7 @@
 /* ============================================================================
    PROJECT: ESTIQATSY SYNDICATE & RPG PLATFORM
-   FILE: css/core.css (VERSIONE 17.0 - MACROSTATE CONTEXT & RESPONSIVE FOUNDATION)
-   LAYER: DESIGN SYSTEM, TELEGRAM VIEWPORT FIT, MACROSTATO, FOOTER & ROUTING
+   FILE: css/core.css (VERSIONE 18.0 - 16:9 RATIO, CENTERED CROP & SUBVIEW FLOW)
+   LAYER: DESIGN SYSTEM, 16:9 GEOMETRY, CARDS CLICKABLE & RESPONSIVE DOCK
    ============================================================================ */
 
 /* ----------------------------------------------------------------------------
@@ -148,7 +148,7 @@ html, body.rpg-app-body {
   height: calc(var(--safe-top, 0px) + var(--tg-header-height, 48px));
   padding-top: var(--safe-top, 0px);
   padding-left: calc(var(--safe-left, 0px) + 0.75rem);
-  padding-right: calc(var(--safe-right, 0px) + 85px); /* Spazio di sicurezza bottoni Telegram */
+  padding-right: calc(var(--safe-right, 0px) + 85px);
   background: rgba(7, 10, 18, 0.96);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
@@ -206,7 +206,6 @@ html, body.rpg-app-body {
   -webkit-overflow-scrolling: touch;
 }
 
-/* Padding inferiore dinamico per compensare i footer */
 .app-content-wrapper {
   padding: 0.75rem 0.75rem calc(var(--safe-bottom, 0px) + 5rem) 0.75rem !important;
   max-width: 960px;
@@ -225,29 +224,24 @@ html, body.rpg-app-body {
 /* ----------------------------------------------------------------------------
    6. DELEGA AL CSS DELLA VISIBILITÀ DEL MACROSTATO
    ---------------------------------------------------------------------------- */
-
-/* Modalità 1: APP STANDARD (Home, Giochi, Shop, Ricette, Profilo) */
 body[data-context="app"] #main-app-header { display: flex !important; }
 body[data-context="app"] #main-game-header { display: none !important; }
 body[data-context="app"] #main-wizard-footer { display: none !important; }
 body[data-context="app"] #main-game-cockpit-footer { display: none !important; }
 body[data-context="app"] .main-app-footer { display: flex !important; }
 
-/* Modalità 2: WIZARD FULL-STAGE */
 body[data-context="wizard"] #main-app-header { display: flex !important; }
 body[data-context="wizard"] #main-game-header { display: none !important; }
 body[data-context="wizard"] .main-app-footer { display: none !important; }
 body[data-context="wizard"] #main-game-cockpit-footer { display: none !important; }
 body[data-context="wizard"] #main-wizard-footer { display: flex !important; }
 
-/* Modalità 3: GAMEPLAY COCKPIT (Rules 2 Engine) */
 body[data-context="gameplay"] #main-app-header { display: none !important; }
 body[data-context="gameplay"] #main-game-header { display: flex !important; }
 body[data-context="gameplay"] .main-app-footer { display: none !important; }
 body[data-context="gameplay"] #main-wizard-footer { display: none !important; }
 body[data-context="gameplay"] #main-game-cockpit-footer { display: grid !important; }
 
-/* Su Desktop (>= 768px): La navigazione è delegata alla sidebar laterale */
 @media (min-width: 768px) {
   .main-app-footer {
     display: none !important;
@@ -458,7 +452,7 @@ body[data-context="gameplay"] #main-game-cockpit-footer { display: grid !importa
   50% { height: 14px; }
 }
 
-/* Carosello */
+/* Carosello 16:9 con Ritaglio Centrato */
 .carousel-outer-wrapper {
   position: relative;
   overflow: hidden;
@@ -473,21 +467,19 @@ body[data-context="gameplay"] #main-game-cockpit-footer { display: grid !importa
 .carousel-slide {
   min-width: 100%;
   position: relative;
-  height: 11rem;
-  background: #0F172A;
+  aspect-ratio: 16 / 9;
+  width: 100%;
+  height: auto;
+  background: #000000;
   cursor: pointer;
   overflow: hidden;
   flex: none;
 }
-@media (min-width: 768px) {
-  .carousel-slide {
-    height: 14rem;
-  }
-}
 .carousel-slide-img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: cover !important;
+  object-position: center center !important;
 }
 .carousel-slide-overlay {
   position: absolute;
@@ -550,7 +542,7 @@ body[data-context="gameplay"] #main-game-cockpit-footer { display: grid !importa
 }
 
 /* ----------------------------------------------------------------------------
-   10. CARD CATALOGHI (SHOP, GIOCHI, RICETTE)
+   10. CARD CATALOGHI (SHOP, GIOCHI, RICETTE) - 16:9 CENTRATO AL 100%
    ---------------------------------------------------------------------------- */
 .item-card {
   background: var(--tg-surface);
@@ -560,8 +552,9 @@ body[data-context="gameplay"] #main-game-cockpit-footer { display: grid !importa
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  cursor: pointer;
+  cursor: pointer !important;
   transition: transform 0.15s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+  user-select: none;
 }
 .item-card:hover {
   border-color: var(--border-medium);
@@ -571,22 +564,30 @@ body[data-context="gameplay"] #main-game-cockpit-footer { display: grid !importa
 .item-card:active {
   transform: scale(0.98);
 }
+
+/* Involucro Immagine Rigido a 16:9 */
 .item-card-media {
-  height: 8.5rem;
   width: 100%;
+  aspect-ratio: 16 / 9;
+  height: auto;
   position: relative;
   background: #000000;
   overflow: hidden;
 }
+
+/* 🔒 RITAGLIO CENTRATO AL 100% ORIZZONTALE E VERTICALE */
 .item-card-img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: cover !important;
+  object-position: center center !important;
+  display: block;
   transition: transform 0.35s ease;
 }
 .item-card:hover .item-card-img {
-  transform: scale(1.04);
+  transform: scale(1.05);
 }
+
 .item-card-badge {
   position: absolute;
   top: 8px;
@@ -600,12 +601,16 @@ body[data-context="gameplay"] #main-game-cockpit-footer { display: grid !importa
   padding: 2px 6px;
   border-radius: 6px;
   text-transform: uppercase;
+  z-index: 10;
 }
+
 .item-card-body {
   padding: 12px;
   display: flex;
   flex-direction: column;
   gap: 6px;
+  flex: 1 1 auto;
+  justify-content: space-between;
 }
 .item-card-title {
   font-size: 13px;
@@ -626,9 +631,10 @@ body[data-context="gameplay"] #main-game-cockpit-footer { display: grid !importa
   display: flex;
   align-items: center;
   justify-content: space-between;
+  margin-top: auto;
 }
 
-/* Category Chips */
+/* Chips Categorie */
 .rpg-category-chip, .category-chip {
   display: inline-flex;
   align-items: center;
@@ -653,7 +659,79 @@ body[data-context="gameplay"] #main-game-cockpit-footer { display: grid !importa
 }
 
 /* ----------------------------------------------------------------------------
-   11. MODALI GLASSMORPHISM & DIALOG
+   11. SOTTO-VISTE DETTAGLIO (SUBVIEWS SHOP, RICETTE, GIOCHI) & MEDIA 16:9
+   ---------------------------------------------------------------------------- */
+.subview-header-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border-subtle);
+  margin-bottom: 0.75rem;
+}
+
+.btn-back-subview {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.75rem;
+  border-radius: 0.55rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  font-size: 11.5px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.btn-back-subview:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #FFFFFF;
+  border-color: var(--border-light);
+}
+
+/* Box Immagine Scheda Dettaglio: Rigorosamente 16:9 Centrato */
+.detail-media-box {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  height: auto !important;
+  border-radius: 1rem;
+  overflow: hidden;
+  position: relative;
+  background: #000000;
+  border: 1px solid var(--border-subtle);
+}
+
+.detail-media-box img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover !important;
+  object-position: center center !important;
+  display: block;
+}
+
+/* Frame Cinema delle Saghe RPG: 16:9 Centrato */
+.cinema-frame-rigid {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  height: auto !important;
+  border-radius: 1rem;
+  overflow: hidden;
+  position: relative;
+  background: #000000;
+  border: 1px solid var(--border-subtle);
+}
+
+.cinema-frame-rigid img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover !important;
+  object-position: center center !important;
+  display: block;
+}
+
+/* ----------------------------------------------------------------------------
+   12. MODALI GLASSMORPHISM & DIALOG
    ---------------------------------------------------------------------------- */
 dialog.modal.modal-middle,
 dialog.modal:not(.modal-bottom) {
