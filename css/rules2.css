@@ -1,12 +1,12 @@
 /* ============================================================================
    PROJECT: ESTIQATSY SYNDICATE & RPG PLATFORM
-   FILE: css/rules2.css (VERSIONE 25.0 - MOVERINA 545px, 1-2-3-4 ACTION MATRIX & LUNAR GLOW)
-   LAYER: ENGINE RULES 2, WIZARD 545px STAGE, FULL HUD 48px, ADAPTIVE ACTION DRAWER
+   FILE: css/rules2.css (VERSIONE 25.5 - MOVERINA 480px, ACTION SLOT & LUNAR GLOW)
+   LAYER: ENGINE RULES 2, WIZARD 480px STAGE, FULL HUD 48px, ADAPTIVE ACTION DRAWER
    NOTE: 100% SPECIFICO PER IL GIOCO - NESSUNA DUPLICAZIONE CON CSS/CORE.CSS
    ============================================================================ */
 
 /* ----------------------------------------------------------------------------
-   1. PROTEZIONE DI VISIBILITÀ CONTESTUALE (MAI PIÙ ELEMENTI SOVRAPPOSTI)
+   1. PROTEZIONE DI VISIBILITÀ CONTESTUALE (MAI PIÙ FOOTER SOVRAPPOSTI)
    ---------------------------------------------------------------------------- */
 .wizard-sticky-footer.hidden,
 .cockpit-footer.hidden,
@@ -36,12 +36,12 @@
 }
 
 /* ----------------------------------------------------------------------------
-   3. PALCO CAROSELLO CARTA (545px - RECUPERATI I 100px DI VUOTO INFERIORE)
+   3. PALCO CAROSELLO CARTA (480px - 100% ABOVE THE FOLD, ZERO TAGLI)
    ---------------------------------------------------------------------------- */
 .coverflow-stage-outer {
   position: relative;
   width: 100%;
-  padding: 2px 0 4px 0;
+  padding: 2px 0;
   overflow: hidden;
 }
 
@@ -51,21 +51,21 @@
   gap: 16px;
   overflow-x: auto;
   scroll-snap-type: x mandatory;
-  padding: 4px 24px 8px 24px;
+  padding: 4px 24px 6px 24px;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior-x: contain;
 }
 
-/* 🔒 CARTA MOVERINA A BORDI CONTINUI (545px: ZERO SPAZIO SPRECATO IN BASSO) */
+/* 🔒 CARTA MOVERINA A BORDI CONTINUI (300x480px: 100% VISIBILE SENZA SCROLL) */
 .coverflow-card,
 .tcg-card {
   position: relative !important;
   flex: 0 0 300px;
   width: 300px;
   max-width: 300px;
-  height: 545px !important;
-  min-height: 545px !important;
-  max-height: 545px !important;
+  height: 480px !important;
+  min-height: 480px !important;
+  max-height: 480px !important;
   scroll-snap-align: center;
   background: #0B1222;
   border: 1px solid rgba(255, 255, 255, 0.12);
@@ -106,20 +106,19 @@
 }
 
 /* ----------------------------------------------------------------------------
-   4. ANATOMIA MOVERINA A LIVELLI SOVRAPPOSTI (NESSUN FONDINO OPACO IN CIMA)
+   4. ANATOMIA MOVERINA A LIVELLI SOVRAPPOSTI (SOMMA TOTALE: 480px)
    ---------------------------------------------------------------------------- */
 
-/* 🔒 FASCIA 2: Media a Schermo Pieno Alto (210px: parte dal bordo tondo superiore) */
+/* 🔒 FASCIA 2: Media a Schermo Pieno Alto (185px: parte dal bordo superiore tondo) */
 .tcg-card-media {
   position: relative !important;
   width: 100% !important;
-  height: 210px !important;
-  min-height: 210px !important;
-  max-height: 210px !important;
+  height: 185px !important;
+  min-height: 185px !important;
+  max-height: 185px !important;
   background: #000000;
   overflow: hidden !important;
   box-sizing: border-box;
-  /* Segue l'arrotondamento degli angoli superiori della carta */
   border-radius: 1.20rem 1.20rem 0 0;
 }
 
@@ -152,7 +151,7 @@
 }
 
 .tcg-card-title {
-  font-size: 13.5px;
+  font-size: 13px;
   font-weight: 900;
   color: #FFFFFF;
   display: flex;
@@ -166,7 +165,7 @@
 .tcg-card-faction-badge {
   padding: 2px 8px;
   border-radius: 9999px;
-  font-size: 8.5px;
+  font-size: 8px;
   font-weight: 900;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -192,7 +191,7 @@
   left: 0;
   right: 0;
   background: linear-gradient(180deg, transparent 0%, rgba(7, 10, 18, 0.75) 40%, #070A12 100%);
-  padding: 8px 12px 6px 12px;
+  padding: 6px 12px 6px 12px;
   display: flex;
   flex-direction: column;
   text-align: right;
@@ -201,10 +200,10 @@
 }
 
 .tcg-card-quote-text {
-  font-size: 10.5px;
+  font-size: 10px;
   color: #F1F5F9;
   font-style: italic;
-  line-height: 1.35;
+  line-height: 1.3;
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.95);
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -214,7 +213,7 @@
 
 .tcg-card-quote-author {
   font-family: monospace;
-  font-size: 8.5px;
+  font-size: 8px;
   font-weight: 900;
   color: #F59E0B;
   text-transform: uppercase;
@@ -266,7 +265,7 @@
   max-height: 215px !important;
   padding: 6px 14px;
   font-size: 12px;
-  line-height: 1.45;
+  line-height: 1.42;
   color: #CBD5E1;
   text-align: left;
   margin: 0;
@@ -277,18 +276,18 @@
   box-sizing: border-box;
 }
 
-/* FASCIA 5: Piede Scheda con Dotazione e Vitali (48px) */
+/* FASCIA 5: Piede Scheda di Sola Lettura / Vetrina (46px - ZERO BOTTONI COMPRESSI) */
 .tcg-card-footer {
-  height: 48px;
-  min-height: 48px;
-  max-height: 48px;
+  height: 46px;
+  min-height: 46px;
+  max-height: 46px;
   padding: 0 14px;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
   display: flex;
   align-items: center;
   justify-content: space-between;
   font-family: monospace;
-  font-size: 10.5px;
+  font-size: 10px;
   font-weight: 800;
   background: rgba(0, 0, 0, 0.40);
   margin-top: auto;
@@ -352,126 +351,12 @@
 }
 
 /* ----------------------------------------------------------------------------
-   6. WIZARD STEPPER TRACKER
-   ---------------------------------------------------------------------------- */
-.wizard-stepper-tracker {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 4px;
-}
-
-.wizard-stepper-step {
-  transition: opacity 0.2s ease;
-}
-
-.wizard-stepper-step.active {
-  opacity: 1 !important;
-}
-
-.wizard-stepper-step.active .wizard-stepper-circle {
-  background: #38BDF8 !important;
-  color: #070A12 !important;
-  box-shadow: 0 0 8px rgba(56, 189, 248, 0.5);
-}
-
-.wizard-stepper-step.active .wizard-stepper-label {
-  color: #FFFFFF !important;
-}
-
-/* ----------------------------------------------------------------------------
-   7. FOOTER DEDICATO WIZARD (CTA A TUTTA LARGHEZZA SENZA VUOTI MORTI - 44px)
-   ---------------------------------------------------------------------------- */
-.wizard-sticky-footer {
-  flex: none;
-  z-index: 40;
-  width: 100%;
-  max-width: 600px;
-  margin: 0 auto;
-  background: rgba(7, 10, 18, 0.98);
-  border-top: 1px solid rgba(255, 255, 255, 0.10);
-  padding-bottom: max(env(safe-area-inset-bottom, 0px), var(--tg-safe-area-inset-bottom, 0px), 12px);
-  box-sizing: content-box;
-  height: 44px;
-  min-height: 44px;
-  display: flex;
-  align-items: center;
-  padding-left: 12px;
-  padding-right: 12px;
-}
-
-.wizard-footer-step-controls {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.btn-wizard-cta {
-  background: #38BDF8 !important;
-  color: #070A12 !important;
-  border: none !important;
-  font-weight: 900 !important;
-  cursor: pointer;
-  transition: transform 0.15s ease;
-}
-
-.btn-wizard-cta:active {
-  transform: scale(0.98);
-}
-
-/* ----------------------------------------------------------------------------
-   8. FOOTER COCKPIT RULES 2 GAMEPLAY (4 COMANDI TATTICI - 44px)
-   ---------------------------------------------------------------------------- */
-.cockpit-footer {
-  flex: none;
-  z-index: 40;
-  width: 100%;
-  max-width: 600px;
-  margin: 0 auto;
-  background: rgba(7, 10, 18, 0.98);
-  border-top: 1px solid rgba(255, 255, 255, 0.10);
-  padding-bottom: max(env(safe-area-inset-bottom, 0px), var(--tg-safe-area-inset-bottom, 0px), 12px);
-  box-sizing: content-box;
-  height: 44px;
-  min-height: 44px;
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  align-items: center;
-  gap: 6px;
-  padding-left: 8px;
-  padding-right: 8px;
-}
-
-.cockpit-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  height: 34px;
-  background: rgba(255, 255, 255, 0.04);
-  border-radius: 8px;
-  border: 1px solid transparent;
-  color: #94A3B8;
-  font-size: 11px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.cockpit-btn:active {
-  background: rgba(56, 189, 248, 0.15);
-  border-color: #38BDF8;
-  color: #38BDF8;
-}
-
-/* ----------------------------------------------------------------------------
-   9. MATRICE DINAMICA ADATTIVA DEI BIVI NARRATIVI (1, 2, 3 E 4 PULSANTI)
+   6. SLOT DECISIONALE / SPESA SOTTO LA CARTA (MATRICE ADATTIVA 1-2-3-4)
    ---------------------------------------------------------------------------- */
 .scene-actions-area {
   width: 100%;
-  max-width: 320px;
-  margin: 6px auto 0 auto;
+  max-width: 300px;
+  margin: 4px auto 0 auto;
   box-sizing: border-box;
 }
 
@@ -496,7 +381,7 @@
   gap: 6px;
 }
 
-/* 4 Bottoni: Griglia Quiz 2x2 Compatta (~80px con micro-elevazione) */
+/* 4 Bottoni: Griglia Quiz 2x2 Compatta (~78px) */
 .actions-grid-4,
 .actions-grid-quiz {
   display: grid;
@@ -505,11 +390,11 @@
   gap: 6px;
 }
 
-/* Stile Base Pulsante Azione / Bivio */
+/* Stile Base Pulsante Azione / Bivio / Spesa */
 .scene-action-btn {
   height: 42px;
   min-height: 42px;
-  padding: 0 8px;
+  padding: 0 10px;
   background: rgba(22, 36, 66, 0.85);
   border: 1px solid rgba(56, 189, 248, 0.25);
   border-radius: 0.75rem;
@@ -545,13 +430,11 @@
   border-color: #F43F5E;
 }
 
-/* Adattamento font per 3 bottoni su riga singola */
 .actions-grid-3 .scene-action-btn {
   font-size: 10.5px;
   padding: 0 4px;
 }
 
-/* Adattamento altezza per la griglia quiz 2x2 */
 .actions-grid-4 .scene-action-btn,
 .actions-grid-quiz .scene-action-btn {
   height: 38px;
@@ -560,7 +443,59 @@
 }
 
 /* ----------------------------------------------------------------------------
-   10. NUMERI FLUTTUANTI (SORGONO DAL BORDO CARTA E SFUMANO SOTTO L'HEADER)
+   7. FOOTER CONSOLE INTEGRATO: STEPPER-DOCK (WIZARD & COCKPIT - 44px)
+   ---------------------------------------------------------------------------- */
+.wizard-sticky-footer,
+.cockpit-footer {
+  flex: none;
+  z-index: 40;
+  width: 100%;
+  max-width: 600px;
+  margin: 0 auto;
+  background: rgba(7, 10, 18, 0.98);
+  border-top: 1px solid rgba(255, 255, 255, 0.10);
+  padding-bottom: max(env(safe-area-inset-bottom, 0px), var(--tg-safe-area-inset-bottom, 0px), 12px);
+  box-sizing: content-box;
+  height: 44px;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  padding-left: 12px;
+  padding-right: 12px;
+}
+
+.cockpit-footer {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  padding-left: 8px;
+  padding-right: 8px;
+}
+
+.cockpit-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  height: 34px;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 8px;
+  border: 1px solid transparent;
+  color: #94A3B8;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.cockpit-btn:active {
+  background: rgba(56, 189, 248, 0.15);
+  border-color: #38BDF8;
+  color: #38BDF8;
+}
+
+/* ----------------------------------------------------------------------------
+   8. NUMERI FLUTTUANTI (SORGONO DAL BORDO SUPERIORE CARTA E SFUMANO SOTTO L'HEADER)
    ---------------------------------------------------------------------------- */
 .floating-damage-layer {
   position: absolute;
@@ -592,7 +527,7 @@
 }
 
 /* ----------------------------------------------------------------------------
-   11. ANIMAZIONE DADO D20 SUSPENSE
+   9. ANIMAZIONE DADO D20 SUSPENSE
    ---------------------------------------------------------------------------- */
 .dice-wrapper {
   perspective: 600px;
@@ -614,7 +549,7 @@
 }
 
 /* ----------------------------------------------------------------------------
-   12. CASSETTI TATTICI IN-GAME (SCHEDA EROE, ASSETTO, EMPORIO)
+   10. CASSETTI TATTICI IN-GAME (SCHEDA EROE, ASSETTO, EMPORIO)
    ---------------------------------------------------------------------------- */
 dialog.game-modal-sheet {
   position: fixed;
