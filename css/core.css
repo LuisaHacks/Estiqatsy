@@ -1,861 +1,521 @@
-/* ============================================================================
-   PROJECT: ESTIQATSY SYNDICATE & RPG PLATFORM
-   FILE: css/core.css (VERSIONE 20.0 - SLIM FOOTER, COMPACT HEADERS & 3-CH MIXER)
-   LAYER: DESIGN SYSTEM, NATIVE TELEGRAM DOCK, 16:9 RATIO & SPOTIFY DECK
-   ============================================================================ */
+// ============================================================================
+// PROJECT: ESTIQATSY SYNDICATE & RPG PLATFORM
+// FILE: js/app-core.js (VERSIONE 20.0 - AUDIO ROUTER & FULL PROFILE SYNC)
+// LAYER 1: ARCHITETTURA A MACROSTATO, ROUTER SPA DETERMINISTICO & AUDIO ENGINE
+// ============================================================================
 
-/* ----------------------------------------------------------------------------
-   1. DESIGN TOKENS, VARIABILI E PALETTE SYNDICATE NOIR
-   ---------------------------------------------------------------------------- */
-:root {
-  /* Canvas Palette */
-  --tg-bg: #070A12;                        /* Sfondo primario notte profonda */
-  --tg-sec-bg: #0B1222;                    /* Superficie contenitori */
-  --tg-surface: rgba(15, 23, 42, 0.88);    /* Card base glassmorphism */
-  --tg-surface-hover: rgba(26, 38, 66, 0.95);
+const AppConfig = {
+  GAS_URL: "https://script.google.com/macros/s/AKfycbyeCWHM9X4ycwWT7IOMwg24pySL78bJT5BRyiIR5eb0UJALWuaORzfJ2lkqLrjLv0xN/exec",
+  CACHE_KEYS: {
+    APP_STATE: "est_app_state_v20",
+    VAULT: "est_cache_vault",
+    CONFIG: "est_admin_config"
+  },
+  THEME: {
+    BG_COLOR: "#070A12",
+    HEADER_COLOR: "#070A12"
+  },
+  TIMEOUT_MS: 12000
+};
+
+// ----------------------------------------------------------------------------
+// 1. UTILITY AUDIO & FEEDBACK APTICO RESILIENTI
+// ----------------------------------------------------------------------------
+function safePlayClick() {
+  try {
+    if (window.SoundEngine) {
+      if (typeof SoundEngine.playSfx === "function") SoundEngine.playSfx("click");
+    }
+  } catch (e) {}
+}
+
+function safeHaptic(type = "selection") {
+  try {
+    const h = window.Telegram?.WebApp?.HapticFeedback;
+    if (!h) return;
+    if (type === "selection") h.selectionChanged();
+    else if (type === "success") h.notificationOccurred("success");
+    else if (type === "warning") h.notificationOccurred("warning");
+    else if (type === "error") h.notificationOccurred("error");
+    else h.impactOccurred(type);
+  } catch (e) {}
+}
+
+// ----------------------------------------------------------------------------
+// 2. STATO UNIFICATO DELLA PIATTAFORMA
+// ----------------------------------------------------------------------------
+const AppState = {
+  user: {
+    chatId: "",
+    id: "",
+    nome: "Avventuriero",
+    first_name: "Avventuriero",
+    cognome: "",
+    username: "@anonimo",
+    saldoMegoin: 0,
+    megoin: 0,
+    puntiFedelta: 0,
+    loyalty_points: 0,
+    piano: "Free",
+    plan: "Free",
+    isAdmin: false,
+    prodottiAcquistati: 0,
+    avatar: "⚓",
+    photo_url: null,
+    combatStats: { wins: 0, losses: 0, attack: 14, defense: 12, hacking: 10, readiness: 12, rank: "Agente Syndicate" }
+  },
+
+  allowedModules: { home: true, games: true, hub: true, shop: true, recipes: true, profile: true, multiplayer: true },
+  plans: [],
+  billingCycle: "monthly",
+  activeTab: "home",
+  currentContext: "app", // 'app' | 'wizard' | 'gameplay'
+
+  shop: { items: [], categories: [], activeCategory: "tutti", searchQuery: "" },
+  recipes: { items: [], categories: [], activeCategory: "tutti", searchQuery: "" },
+  carousel: { timer: null, index: 0, count: 0, isPaused: false },
+  digitalVault: [],
+  transactions: [],
+
+  games: { catalog: [], genres: [], activeGameKey: null, activeEpisode: 1 },
+  activeSeriesId: null,
+  activeEpisodeId: 1,
+  activeSession: { 
+    engineKey: "Rules2", 
+    gameKey: null, 
+    episodio: 1, 
+    partitaId: null, 
+    hero: null, 
+    combatRound: 1, 
+    combatEnemyId: null, 
+    currentNode: null, 
+    shopCatalog: [], 
+    engineState: null 
+  },
+  activeGameSession: null,
+  multiplayerActiveRoom: null,
+
+  config: { gasWebAppUrl: AppConfig.GAS_URL, botUsername: "EstiqatsyBot" }
+};
+
+// ----------------------------------------------------------------------------
+// 3. INTEGRAZIONE TELEGRAM WEBAPP SDK
+// ----------------------------------------------------------------------------
+const tg = (window.Telegram && window.Telegram.WebApp) ? window.Telegram.WebApp : null;
+if (tg) {
+  try {
+    tg.ready();
+    tg.expand();
+    if (typeof tg.requestFullscreen === "function") tg.requestFullscreen();
+    if (typeof tg.disableVerticalSwipes === "function") tg.disableVerticalSwipes();
+    tg.setHeaderColor(AppConfig.THEME.HEADER_COLOR);
+    tg.setBackgroundColor(AppConfig.THEME.BG_COLOR);
+
+    if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
+      const u = tg.initDataUnsafe.user;
+      AppState.user.id = String(u.id);
+      AppState.user.chatId = String(u.id);
+      AppState.user.first_name = u.first_name || "Avventuriero";
+      AppState.user.nome = u.first_name || "Avventuriero";
+      AppState.user.cognome = u.last_name || "";
+      AppState.user.username = u.username ? `@${u.username}` : "@anonimo";
+      if (u.photo_url) AppState.user.photo_url = u.photo_url;
+    }
+
+    const updateSafeArea = () => {
+      const topInset = tg.safeAreaInset?.top || tg.contentSafeAreaInset?.top || 0;
+      const bottomInset = tg.safeAreaInset?.bottom || tg.contentSafeAreaInset?.bottom || 0;
+      document.documentElement.style.setProperty("--tg-safe-area-inset-top", `${topInset}px`);
+      document.documentElement.style.setProperty("--tg-safe-area-inset-bottom", `${bottomInset}px`);
+    };
+    updateSafeArea();
+  } catch (e) {}
+}
+
+let telegramBackButtonHandler = null;
+function setupTelegramBackButton(targetScreenId) {
+  if (!tg || !tg.BackButton) return;
+  try {
+    if (telegramBackButtonHandler) {
+      tg.BackButton.offClick(telegramBackButtonHandler);
+      telegramBackButtonHandler = null;
+    }
+    const isSub = targetScreenId.startsWith("subview-") || 
+                  targetScreenId === "view-gameplay" || 
+                  targetScreenId === "view-wizard" || 
+                  targetScreenId === "view-multiplayer";
+
+    if (isSub) {
+      tg.BackButton.show();
+      telegramBackButtonHandler = () => {
+        safePlayClick();
+        if (targetScreenId === "view-gameplay" && window.Rules2Engine && typeof Rules2Engine.openAbandonModal === "function") {
+          Rules2Engine.openAbandonModal();
+        } else if (targetScreenId === "subview-shop-detail") {
+          AppRouter.navigate("shop");
+        } else if (targetScreenId === "subview-recipe-detail") {
+          AppRouter.navigate("recipes");
+        } else if (targetScreenId === "subview-game-detail" || targetScreenId === "view-multiplayer" || targetScreenId.includes("game")) {
+          AppRouter.navigate("games");
+        } else {
+          AppRouter.navigate("home");
+        }
+      };
+      tg.BackButton.onClick(telegramBackButtonHandler);
+    } else {
+      tg.BackButton.hide();
+    }
+  } catch (e) {}
+}
+
+// ----------------------------------------------------------------------------
+// 4. REGISTRY MOTORI DI GIOCO
+// ----------------------------------------------------------------------------
+const EngineRegistry = {
+  _engines: {},
+  register: function(k, inst) { 
+    this._engines[String(k).trim().toLowerCase().replace(/\s+/g, '')] = inst; 
+  },
+  get: function(k) { 
+    return this._engines[String(k).trim().toLowerCase().replace(/\s+/g, '')] || this._engines["rules2"] || null; 
+  }
+};
+window.EngineRegistry = EngineRegistry;
+
+// ----------------------------------------------------------------------------
+// 5. ROUTER DETERMINISTICO CON MACROSTATO & COLLEGAMENTO AUDIO TAB
+// ----------------------------------------------------------------------------
+const SCREEN_TO_TAB_MAP = {
+  "home": "home",
+  "view-home": "home",
   
-  --text-primary: #F8FAFC;
-  --text-secondary: #CBD5E1;
-  --text-muted: #94A3B8;
-  --text-subtle: #64748B;
+  "games": "games",
+  "view-hub": "games",
+  "hub": "games",
+  "subview-game-detail": "games",
+  "multiplayer": "games",
+  "view-multiplayer": "games",
   
-  --border-subtle: rgba(255, 255, 255, 0.08);
-  --border-medium: rgba(56, 189, 248, 0.28);
-  --border-light: rgba(255, 255, 255, 0.16);
-  --tg-border: var(--border-subtle);
+  "shop": "shop",
+  "view-shop": "shop",
+  "subview-shop-detail": "shop",
+  
+  "recipes": "recipes",
+  "view-recipes": "recipes",
+  "subview-recipe-detail": "recipes",
+  
+  "profile": "profile",
+  "view-profile": "profile",
 
-  /* Accenti Neon e Funzionali */
-  --color-accent: #38BDF8;                 /* Cyan Syndicate / Brand primario */
-  --color-gold: #F59E0B;                   /* Oro sonante / Megoin */
-  --color-emerald: #10B981;                /* Punti Fedeltà / Successo */
-  --color-crimson: #F43F5E;                /* Pericolo / Salute / Morte */
-  --color-purple: #A855F7;                 /* Caveau / Stanze Multiplayer */
+  "view-wizard": "games",
+  "wizard": "games",
+  "view-gameplay": "games",
+  "gameplay": "games"
+};
 
-  /* Aliasing Compatibilità */
-  --tg-sky: var(--color-accent);
-  --tg-amber: var(--color-gold);
-  --tg-emerald: var(--color-emerald);
-  --tg-rose: var(--color-crimson);
-  --tg-purple: var(--color-purple);
+const ALL_SCREENS = [
+  "view-home", "view-hub", "subview-game-detail",
+  "view-wizard", "view-gameplay", "view-multiplayer",
+  "view-shop", "subview-shop-detail",
+  "view-recipes", "subview-recipe-detail",
+  "view-profile"
+];
 
-  /* Tipografia */
-  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+const AppRouter = {
+  navigate: function(screenName, subScreenName = null) {
+    safePlayClick();
+    safeHaptic("selection");
 
-  /* Safe-Areas Telegram SDK 7.0+ / 8.0 */
-  --safe-top: var(--tg-safe-area-inset-top, env(safe-area-inset-top, 0px));
-  --safe-bottom: var(--tg-safe-area-inset-bottom, env(safe-area-inset-bottom, 0px));
-  --safe-right: var(--tg-safe-area-inset-right, env(safe-area-inset-right, 0px));
-  --safe-left: var(--tg-safe-area-inset-left, env(safe-area-inset-left, 0px));
+    let targetId = subScreenName || screenName;
 
-  /* 🔒 ALTEZZA FOOTER SNELLA: Perfettamente allineata all'header (44px) */
-  --tg-header-height: 44px;
-  --tg-footer-height: 44px;
-}
+    if (targetId === "games" || targetId === "view-games") {
+      targetId = "view-hub";
+      if (window.AppModules && typeof AppModules.renderGamesCatalog === "function") AppModules.renderGamesCatalog();
+    } else if (targetId === "multiplayer" || targetId === "view-multiplayer") {
+      targetId = "view-multiplayer";
+      if (window.AppModules && typeof AppModules.renderMultiplayerRoom === "function") AppModules.renderMultiplayerRoom();
+    } else if (targetId === "gameplay" || targetId === "view-gameplay") {
+      targetId = "view-gameplay";
+      if (window.Rules2Engine && typeof Rules2Engine.syncHUD === "function") Rules2Engine.syncHUD();
+    } else if (targetId === "wizard" || targetId === "view-wizard") {
+      targetId = "view-wizard";
+    } else if (!targetId.startsWith("view-") && !targetId.startsWith("subview-")) {
+      targetId = "view-" + targetId;
+    }
 
-*, *::before, *::after {
-  box-sizing: border-box;
-}
+    const scrollContainer = document.getElementById("app-main-scroll");
+    if (scrollContainer) scrollContainer.scrollTop = 0;
 
-html, body.rpg-app-body {
-  background-color: var(--tg-bg);
-  color: var(--text-primary);
-  font-family: var(--font-sans);
-  touch-action: manipulation;
-  height: 100vh;
-  height: 100dvh;
-  max-height: 100dvh;
-  width: 100vw;
-  max-width: 100vw;
-  margin: 0;
-  padding: 0;
-  overflow: hidden;
-  overscroll-behavior: none;
-  display: flex;
-  flex-direction: column;
-  user-select: none;
-  -webkit-user-select: none;
-  -webkit-tap-highlight-color: transparent;
-}
+    // 1. DETERMINAZIONE DEL MACROSTATO (Fonte Unica per il CSS)
+    let macroContext = "app";
+    if (targetId === "view-gameplay") {
+      macroContext = "gameplay";
+    } else if (targetId === "view-wizard") {
+      macroContext = "wizard";
+    }
+    AppState.currentContext = macroContext;
 
-.hidden {
-  display: none !important;
-}
+    document.body.dataset.context = macroContext;
+    document.body.dataset.activeScreen = targetId;
 
-.app-screen {
-  animation: screenFade 0.16s ease-out forwards;
-}
+    // 2. CHIUSURA DI SICUREZZA CASSETTI E MODALI AL CAMBIO VISTA
+    if (macroContext === "app") {
+      const drawersToClose = ["drawer-hero-sheet", "drawer-emporio", "modal-cockpit-assetto", "modal-abandon"];
+      drawersToClose.forEach(dId => {
+        const el = document.getElementById(dId);
+        if (el && typeof el.close === "function" && el.open) el.close();
+      });
+    }
 
-@keyframes screenFade {
-  from { opacity: 0; transform: scale(0.995); }
-  to { opacity: 1; transform: scale(1); }
-}
+    // 3. ATTIVAZIONE DELLA SCHERMATA CORRENTE
+    ALL_SCREENS.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) {
+        el.classList.toggle("hidden", id !== targetId);
+      }
+    });
 
-/* ----------------------------------------------------------------------------
-   2. SCROLLBARS & UTILITY GRAFICHE
-   ---------------------------------------------------------------------------- */
-::-webkit-scrollbar {
-  width: 3px;
-  height: 3px;
-}
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.16);
-  border-radius: 9999px;
-}
-.no-scrollbar::-webkit-scrollbar {
-  display: none;
-}
-.no-scrollbar {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
+    // 4. COORDINAMENTO VISIBILITÀ HEADER & FOOTER
+    const appHeader = document.getElementById("main-app-header");
+    const gameHeader = document.getElementById("main-game-header");
+    const appFooter = document.getElementById("main-app-footer");
+    const wizardFooter = document.getElementById("main-wizard-footer");
+    const gameFooter = document.getElementById("main-game-cockpit-footer");
 
-.text-glow-amber { text-shadow: 0 0 10px rgba(245, 158, 11, 0.55); }
-.text-glow-rose  { text-shadow: 0 0 10px rgba(244, 63, 94, 0.60); }
-.text-glow-sky   { text-shadow: 0 0 10px rgba(56, 189, 248, 0.55); }
+    if (appHeader) appHeader.classList.toggle("hidden", macroContext === "gameplay");
+    if (gameHeader) gameHeader.classList.toggle("hidden", macroContext !== "gameplay");
 
-/* ----------------------------------------------------------------------------
-   3. SCHERMATA LOADER D'AVVIO
-   ---------------------------------------------------------------------------- */
-.app-loader-screen {
-  position: fixed;
-  inset: 0;
-  z-index: 999;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  background-color: var(--tg-bg);
-  padding: 1.5rem;
-  text-align: center;
-  transition: opacity 0.25s ease-out;
-  pointer-events: auto;
-}
-.app-loader-screen.fade-out {
-  opacity: 0;
-  pointer-events: none !important;
-}
+    if (appFooter) appFooter.classList.toggle("hidden", macroContext !== "app");
+    if (wizardFooter) wizardFooter.classList.toggle("hidden", macroContext !== "wizard");
+    if (gameFooter) gameFooter.classList.toggle("hidden", macroContext !== "gameplay");
 
-/* ----------------------------------------------------------------------------
-   4. TOP BAR UNIVERSALE (44px) & SUB-HEADER COMPATTO
-   ---------------------------------------------------------------------------- */
-.universal-top-bar {
-  flex: none;
-  z-index: 40;
-  width: 100%;
-  height: calc(var(--safe-top, 0px) + var(--tg-header-height, 44px));
-  padding-top: var(--safe-top, 0px);
-  padding-left: calc(var(--safe-left, 0px) + 0.75rem);
-  padding-right: calc(var(--safe-right, 0px) + 85px);
-  background: rgba(7, 10, 18, 0.96);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border-bottom: 1px solid var(--border-subtle);
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-}
+    // 5. DETERMINAZIONE DETERMINISTICA DEL TAB ATTIVO
+    const matchedTab = SCREEN_TO_TAB_MAP[targetId] || SCREEN_TO_TAB_MAP[screenName] || "home";
+    AppState.activeTab = matchedTab;
 
-#top-bar-title-box {
-  position: absolute;
-  top: var(--safe-top, 0px);
-  left: 0;
-  right: 0;
-  height: var(--tg-header-height, 44px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  pointer-events: none;
-  z-index: 5;
-}
+    document.querySelectorAll(".nav-tab").forEach(btn => {
+      btn.classList.toggle("active", btn.dataset.tab === matchedTab);
+    });
 
-/* Fascia Sub-Header Compattata su Riga Singola */
-.page-title-row,
-.subview-header-bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
-  padding-bottom: 0.35rem;
-  border-bottom: 1px solid var(--border-subtle);
-  margin-bottom: 0.45rem;
-  min-height: 32px;
-}
+    document.querySelectorAll(".desk-nav-btn").forEach(btn => {
+      btn.classList.toggle("active", btn.dataset.tab === matchedTab);
+    });
 
-.btn-back-subview {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3rem;
-  padding: 0.25rem 0.6rem;
-  border-radius: 0.5rem;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid var(--border-subtle);
-  color: var(--text-secondary);
-  font-size: 11px;
-  font-weight: 800;
-  cursor: pointer;
-  transition: all 0.15s ease;
-  line-height: 1;
-}
-.btn-back-subview:hover {
-  background: rgba(255, 255, 255, 0.12);
-  color: #FFFFFF;
-  border-color: var(--border-light);
-}
+    // ⭐ 6. ROUTER SONORO: MIXAGGIO ASIMMETRICO (FADE-OUT 180ms / FADE-IN 800ms)
+    if (window.SoundEngine && typeof SoundEngine.playTabBgm === "function") {
+      if (macroContext === "app") {
+        SoundEngine.playTabBgm(matchedTab);
+      } else if (macroContext === "wizard") {
+        SoundEngine.playBgm("bass_walker", 800, 180);
+      }
+    }
 
-/* ----------------------------------------------------------------------------
-   5. VIEWPORT LAYOUT & SCROLL CONTAINER
-   ---------------------------------------------------------------------------- */
-.app-layout-container {
-  flex: 1 1 0%;
-  min-height: 0;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  position: relative;
-  width: 100%;
-}
+    setupTelegramBackButton(targetId);
+    setTimeout(() => { if (window.lucide) lucide.createIcons(); }, 15);
+  }
+};
 
-.app-main-viewport {
-  flex: 1 1 0%;
-  min-height: 0;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  overflow: hidden;
-  position: relative;
-}
+// ----------------------------------------------------------------------------
+// 6. COMUNICAZIONE API SERVER-AUTHORITATIVE (GOOGLE APPS SCRIPT)
+// ----------------------------------------------------------------------------
+let _isApiInProgress = false;
+async function apiCall(action, extraParams = {}) {
+  const isCritical = ["shop_buy", "currency_exchange", "game_start", "game_action", "game_node"].includes(action);
+  if (isCritical && _isApiInProgress) throw new Error("Operazione in corso...");
+  if (isCritical) _isApiInProgress = true;
 
-.app-scroll-area {
-  flex: 1 1 0%;
-  min-height: 0;
-  overflow-y: auto;
-  overflow-x: hidden;
-  position: relative;
-  -webkit-overflow-scrolling: touch;
-}
+  const endpointUrl = AppState.config?.gasWebAppUrl || AppConfig.GAS_URL;
+  const initData = (tg && tg.initData) ? tg.initData : "";
+  const payload = { action: action, initData: initData, params: extraParams, timestamp: Date.now() };
 
-/* Margine inferiore ridotto per adattarsi al footer da 44px */
-.app-content-wrapper {
-  padding: 0.65rem 0.65rem calc(var(--safe-bottom, 0px) + 3.8rem) 0.65rem !important;
-  max-width: 960px;
-  margin: 0 auto;
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-  min-width: 0;
-}
-@media (min-width: 768px) {
-  .app-content-wrapper {
-    padding: 1.15rem 1.4rem calc(var(--safe-bottom, 0px) + 1.5rem) 1.4rem !important;
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), AppConfig.TIMEOUT_MS);
+
+  try {
+    const response = await fetch(endpointUrl, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify(payload),
+      signal: controller.signal
+    });
+    clearTimeout(timeoutId);
+    if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
+    const rawText = await response.text();
+    let result = JSON.parse(rawText);
+    if (!result.success && result.error) throw new Error(result.error);
+    return result.data;
+  } finally {
+    clearTimeout(timeoutId);
+    if (isCritical) _isApiInProgress = false;
   }
 }
 
-/* ----------------------------------------------------------------------------
-   6. DELEGA AL CSS DELLA VISIBILITÀ DEL MACROSTATO
-   ---------------------------------------------------------------------------- */
-body[data-context="app"] #main-app-header { display: flex !important; }
-body[data-context="app"] #main-game-header { display: none !important; }
-body[data-context="app"] #main-wizard-footer { display: none !important; }
-body[data-context="app"] #main-game-cockpit-footer { display: none !important; }
-body[data-context="app"] .main-app-footer { display: flex !important; }
-
-body[data-context="wizard"] #main-app-header { display: flex !important; }
-body[data-context="wizard"] #main-game-header { display: none !important; }
-body[data-context="wizard"] .main-app-footer { display: none !important; }
-body[data-context="wizard"] #main-game-cockpit-footer { display: none !important; }
-body[data-context="wizard"] #main-wizard-footer { display: flex !important; }
-
-body[data-context="gameplay"] #main-app-header { display: none !important; }
-body[data-context="gameplay"] #main-game-header { display: flex !important; }
-body[data-context="gameplay"] .main-app-footer { display: none !important; }
-body[data-context="gameplay"] #main-wizard-footer { display: none !important; }
-body[data-context="gameplay"] #main-game-cockpit-footer { display: grid !important; }
-
-@media (min-width: 768px) {
-  .main-app-footer {
-    display: none !important;
+// ----------------------------------------------------------------------------
+// 7. GESTIONE BORSALE MEGOIN
+// ----------------------------------------------------------------------------
+const Wallet = {
+  getMegoin: function() { 
+    return AppState.user?.saldoMegoin || AppState.user?.megoin || 0; 
+  },
+  setMegoin: function(val) {
+    const num = Math.max(0, parseInt(val, 10) || 0);
+    if (!AppState.user) AppState.user = {};
+    AppState.user.saldoMegoin = num;
+    AppState.user.megoin = num;
+    
+    ["home-megoin-card", "user-megoin-desk", "profile-card-megoin", "cambio-megoin-balance", "arcade-user-balance"].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = (id.includes("balance")) ? num : `${num} 🪙`;
+    });
+  },
+  addMegoin: function(amt) { 
+    this.setMegoin(this.getMegoin() + amt); 
   }
-}
+};
 
-/* ----------------------------------------------------------------------------
-   7. FOOTER MENU MOBILE SNELLO (44px - PARI ALL'HEADER)
-   ---------------------------------------------------------------------------- */
-.main-app-footer {
-  flex: none;
-  z-index: 50;
-  width: 100%;
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  background: rgba(7, 10, 18, 0.98);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border-top: 1px solid var(--border-subtle);
-  display: flex;
-  justify-content: space-around;
-  align-items: center;
-  padding-bottom: var(--safe-bottom, 0px);
-  height: calc(var(--tg-footer-height, 44px) + var(--safe-bottom, 0px));
-}
+// ----------------------------------------------------------------------------
+// 8. APPCORE: TOAST, STORAGE & SINCRONIZZAZIONE UI COMPLETA
+// ----------------------------------------------------------------------------
+const AppCore = {
+  toast: function(message, type = "info") {
+    let container = document.getElementById("app-toast-container");
+    if (!container) {
+      container = document.createElement("div");
+      container.id = "app-toast-container";
+      container.style.cssText = "position:fixed;top:calc(var(--safe-top, 0px) + 52px);left:50%;transform:translateX(-50%);z-index:9999;display:flex;flex-direction:column;gap:8px;pointer-events:none;width:90%;max-width:380px;";
+      document.body.appendChild(container);
+    }
+    const toast = document.createElement("div");
+    const colors = { 
+      success: "border-emerald-500/50 text-emerald-300 bg-emerald-950/90", 
+      error: "border-rose-500/50 text-rose-300 bg-rose-950/90", 
+      info: "border-sky-500/50 text-sky-300 bg-slate-900/95",
+      warning: "border-amber-500/50 text-amber-300 bg-amber-950/90"
+    };
+    toast.className = `p-3 rounded-xl border shadow-2xl backdrop-blur-md text-xs font-mono font-bold flex items-center justify-between pointer-events-auto ${colors[type] || colors.info}`;
+    toast.innerHTML = `<span>${message}</span>`;
+    container.appendChild(toast);
+    setTimeout(() => toast.remove(), 2800);
+  },
 
-.nav-tab {
-  display: flex !important;
-  flex-direction: column !important;
-  align-items: center !important;
-  justify-content: center !important;
-  text-align: center !important;
-  position: relative !important;
-  flex: 1 1 0 !important;
-  max-width: 68px !important;
-  height: 40px !important;
-  padding: 1px 2px !important;
-  margin: 0 !important;
-  color: var(--text-muted) !important;
-  background: transparent !important;
-  border: none !important;
-  cursor: pointer !important;
-  outline: none !important;
-  transition: color 0.15s ease, transform 0.1s ease !important;
-}
+  save: function() {
+    try { 
+      localStorage.setItem(AppConfig.CACHE_KEYS.APP_STATE, JSON.stringify({ 
+        user: AppState.user, 
+        digitalVault: AppState.digitalVault 
+      })); 
+    } catch (e) {}
+  },
 
-.nav-tab:active {
-  transform: scale(0.92) !important;
-}
+  load: function() {
+    try {
+      const raw = localStorage.getItem(AppConfig.CACHE_KEYS.APP_STATE);
+      if (raw) {
+        const s = JSON.parse(raw);
+        if (s.user) {
+          AppState.user = { ...AppState.user, ...s.user };
+        }
+        if (s.digitalVault) AppState.digitalVault = s.digitalVault;
+      }
+    } catch (e) {}
+  },
 
-.nav-tab.active {
-  color: var(--color-accent) !important;
-}
+  // 🔒 SINCRONIZZAZIONE VISIVA INTEGRALE (NOME, USERNAME, AVATAR, SALDI, PIANO)
+  syncUI: function() {
+    const u = AppState.user;
+    if (!u) return;
+    const s = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+    const megoinVal = Wallet.getMegoin();
+    const puntiVal = u.puntiFedelta || u.loyalty_points || 0;
+    const nomeVal = u.nome || u.first_name || "Avventuriero";
+    const usernameVal = u.username ? (u.username.startsWith("@") ? u.username : `@${u.username}`) : "@anonimo";
+    const pianoVal = (u.piano || u.plan || "Free").toUpperCase();
 
-/* Icone compatte a 16px */
-.nav-tab svg, 
-.nav-tab i {
-  display: block !important;
-  margin: 0 auto !important;
-  width: 16px !important;
-  height: 16px !important;
-  flex-shrink: 0 !important;
-  pointer-events: none !important;
-}
+    // 1. Dashboard Home
+    s("home-username", nomeVal);
+    s("home-rank-points", puntiVal);
+    s("home-plan-badge", `PIANO ${pianoVal}`);
+    s("home-megoin-card", `${megoinVal} 🪙`);
+    s("home-punti-card", `${puntiVal} Pt`);
 
-/* Etichetta compatta a 8.5px */
-.nav-tab .nav-tab-label {
-  display: block !important;
-  width: 100% !important;
-  text-align: center !important;
-  font-size: 8.5px !important;
-  font-weight: 800 !important;
-  text-transform: uppercase !important;
-  margin-top: 2px !important;
-  line-height: 1 !important;
-  letter-spacing: 0.02em !important;
-  pointer-events: none !important;
-}
+    // 2. Profilo Utente
+    s("profile-card-name", nomeVal);
+    s("profile-card-username", usernameVal);
+    s("profile-card-plan", `PIANO ${pianoVal}`);
+    s("profile-card-id", `ID: ${u.chatId || u.id || "-"}`);
+    s("profile-card-megoin", `${megoinVal} 🪙`);
+    s("profile-card-points", `${puntiVal} Pt`);
+    s("profile-action-plan-name", `Piano: ${pianoVal}`);
 
-/* ----------------------------------------------------------------------------
-   8. SIDEBAR DESKTOP (>= 768px)
-   ---------------------------------------------------------------------------- */
-.desktop-sidebar {
-  border-right: 1px solid var(--border-subtle);
-  background: var(--tg-bg);
-}
+    // Conteggio download digitali Caveau
+    const vaultCount = (AppState.digitalVault && AppState.digitalVault.length > 0)
+      ? AppState.digitalVault.length 
+      : (u.prodottiAcquistati || 0);
+    s("profile-action-vault-count", vaultCount);
+    s("home-purchases-count", vaultCount);
 
-.desk-nav-btn {
-  border: 1px solid transparent;
-  transition: all 0.15s ease;
-}
+    // 3. Avatar Dinamico (Iniziale o Foto Profilo)
+    const avMob = document.getElementById("profile-card-avatar");
+    if (avMob) {
+      if (u.photo_url) {
+        avMob.innerHTML = `<img src="${u.photo_url}" class="w-full h-full object-cover rounded-xl" alt="Avatar">`;
+      } else {
+        avMob.textContent = (nomeVal.trim().charAt(0) || "A").toUpperCase();
+      }
+    }
 
-.desk-nav-btn:hover {
-  background: rgba(255, 255, 255, 0.05);
-  color: #FFFFFF;
-}
+    // 4. Desktop Sidebar
+    s("user-name-desk", nomeVal);
+    s("user-plan-desk", `PIANO ${pianoVal}`);
+    s("user-megoin-desk", `${megoinVal} 🪙`);
+    s("user-points-desk", `${puntiVal} Pt`);
+    const avDesk = document.getElementById("user-avatar-desk");
+    if (avDesk) {
+      if (u.photo_url) {
+        avDesk.innerHTML = `<img src="${u.photo_url}" class="w-full h-full object-cover rounded-xl" alt="Avatar">`;
+      } else {
+        avDesk.textContent = (nomeVal.trim().charAt(0) || "A").toUpperCase();
+      }
+    }
+  },
 
-.desk-nav-btn.active {
-  background: rgba(56, 189, 248, 0.12);
-  border-color: rgba(56, 189, 248, 0.35);
-  color: var(--color-accent);
-}
-
-/* ----------------------------------------------------------------------------
-   9. DASHBOARD HOME & KPI QUAD GRID
-   ---------------------------------------------------------------------------- */
-.home-hero-banner {
-  border-radius: 1.15rem;
-  padding: 1.15rem;
-  background: linear-gradient(135deg, #0F172A 0%, #0F172A 50%, #1E1B4B 100%);
-  border: 1px solid var(--border-light);
-  box-shadow: 0 15px 25px -10px rgba(0, 0, 0, 0.5);
-  display: flex;
-  flex-direction: column;
-  gap: 0.65rem;
-}
-@media (min-width: 768px) {
-  .home-hero-banner {
-    padding: 1.4rem;
+  dismissLoader: function() {
+    const loader = document.getElementById("app-loading");
+    if (loader) {
+      loader.style.pointerEvents = "none";
+      loader.style.opacity = "0";
+      setTimeout(() => { if (loader.parentNode) loader.remove(); }, 250);
+    }
   }
-}
+};
 
-.kpi-quad-grid {
-  display: grid !important;
-  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-  gap: 0.65rem !important;
-  width: 100% !important;
-}
-@media (min-width: 768px) {
-  .kpi-quad-grid {
-    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
-    gap: 0.75rem !important;
+// Esportazione Globale
+window.AppConfig = AppConfig;
+window.AppState = AppState;
+window.AppRouter = AppRouter;
+window.Wallet = Wallet;
+window.AppCore = AppCore;
+window.apiCall = apiCall;
+
+// ----------------------------------------------------------------------------
+// 9. BOOTSTRAP ALL'AVVIO
+// ----------------------------------------------------------------------------
+window.addEventListener("DOMContentLoaded", async () => {
+  AppCore.load();
+  AppCore.syncUI();
+  if (window.lucide) lucide.createIcons();
+
+  if (!AppState.activeTab || AppState.activeTab === "home") {
+    AppRouter.navigate("home");
   }
-}
 
-.kpi-card {
-  background: var(--tg-surface) !important;
-  padding: 0.75rem 0.85rem !important;
-  border-radius: 0.95rem !important;
-  border: 1px solid var(--border-subtle) !important;
-  cursor: pointer !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: space-between !important;
-  transition: transform 0.12s ease, border-color 0.15s ease, background-color 0.15s ease !important;
-}
-.kpi-card:hover {
-  background: var(--tg-surface-hover) !important;
-  border-color: var(--border-medium) !important;
-}
-.kpi-card:active {
-  transform: scale(0.97) !important;
-}
-.kpi-card-label {
-  font-size: 9px !important;
-  font-weight: 800 !important;
-  color: var(--text-muted) !important;
-  text-transform: uppercase !important;
-  letter-spacing: 0.05em !important;
-}
-.kpi-card-value {
-  font-size: 1.15rem !important;
-  font-weight: 900 !important;
-  font-family: var(--font-mono) !important;
-  font-variant-numeric: tabular-nums !important;
-  margin-top: 0.15rem !important;
-}
-.kpi-card-icon {
-  width: 1rem !important;
-  height: 1rem !important;
-  color: var(--text-subtle) !important;
-  flex-shrink: 0 !important;
-}
-
-/* ----------------------------------------------------------------------------
-   10. MINIPLAYER RADIO (~48px) & WIDGET MULTIPLAYER COMPATTO
-   ---------------------------------------------------------------------------- */
-#home-radio-miniplayer,
-#profile-radio-miniplayer {
-  height: 48px;
-  min-height: 48px;
-  padding: 0.45rem 0.75rem;
-  border-radius: 0.85rem;
-  background: rgba(15, 23, 42, 0.92);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(56, 189, 248, 0.32);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  cursor: pointer;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
-}
-#home-radio-miniplayer:hover,
-#profile-radio-miniplayer:hover {
-  border-color: rgba(56, 189, 248, 0.65);
-  box-shadow: 0 4px 18px rgba(56, 189, 248, 0.18);
-}
-
-/* ⭐ WIDGET MULTIPLAYER COMPATTO: Uniformato alle dimensioni del player radio */
-.multiplayer-compact-widget {
-  height: 48px !important;
-  min-height: 48px !important;
-  padding: 0.45rem 0.75rem !important;
-  border-radius: 0.85rem !important;
-  background: linear-gradient(135deg, rgba(88, 28, 135, 0.45), rgba(15, 23, 42, 0.92)) !important;
-  border: 1px solid rgba(168, 85, 247, 0.35) !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: space-between !important;
-  cursor: pointer !important;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease !important;
-}
-.multiplayer-compact-widget:hover {
-  border-color: rgba(168, 85, 247, 0.65) !important;
-  box-shadow: 0 4px 18px rgba(168, 85, 247, 0.18) !important;
-}
-
-.jukebox-eq-bars {
-  display: flex;
-  align-items: flex-end;
-  gap: 2px;
-  height: 12px;
-}
-.jukebox-eq-bars span {
-  width: 2.5px;
-  height: 3px;
-  background: var(--color-accent);
-  border-radius: 1px;
-}
-.jukebox-eq-bars.animated span:nth-child(1) { animation: eqBounce 0.8s ease-in-out infinite; }
-.jukebox-eq-bars.animated span:nth-child(2) { animation: eqBounce 1.1s ease-in-out infinite 0.2s; }
-.jukebox-eq-bars.animated span:nth-child(3) { animation: eqBounce 0.7s ease-in-out infinite 0.4s; }
-.jukebox-eq-bars.animated span:nth-child(4) { animation: eqBounce 1.0s ease-in-out infinite 0.1s; }
-.jukebox-eq-bars.animated span:nth-child(5) { animation: eqBounce 0.9s ease-in-out infinite 0.3s; }
-
-@keyframes eqBounce {
-  0%, 100% { height: 3px; }
-  50% { height: 12px; }
-}
-
-/* Carosello 16:9 con Ritaglio Centrato */
-.carousel-outer-wrapper {
-  position: relative;
-  overflow: hidden;
-  border-radius: 1.15rem;
-  background: var(--tg-sec-bg);
-  border: 1px solid var(--border-subtle);
-}
-.carousel-track {
-  display: flex;
-  transition: transform 0.45s cubic-bezier(0.2, 0.8, 0.2, 1);
-}
-.carousel-slide {
-  min-width: 100%;
-  position: relative;
-  aspect-ratio: 16 / 9;
-  width: 100%;
-  height: auto;
-  background: #000000;
-  cursor: pointer;
-  overflow: hidden;
-  flex: none;
-}
-.carousel-slide-img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover !important;
-  object-position: center center !important;
-}
-.carousel-slide-overlay {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(180deg, transparent 0%, rgba(9, 13, 22, 0.5) 45%, #090D16 100%);
-}
-.carousel-slide-badge {
-  position: absolute;
-  top: 0.75rem;
-  left: 0.75rem;
-  padding: 0.25rem 0.55rem;
-  border-radius: 0.5rem;
-  background: var(--color-accent);
-  color: #070A12;
-  font-size: 9px;
-  font-weight: 900;
-  text-transform: uppercase;
-}
-.carousel-slide-content {
-  position: absolute;
-  bottom: 0.85rem;
-  left: 0.85rem;
-  right: 0.85rem;
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 0.5rem;
-}
-.carousel-slide-title {
-  font-weight: 900;
-  font-size: 0.92rem;
-  color: #FFFFFF;
-  margin: 0;
-}
-.carousel-slide-sub {
-  font-size: 10.5px;
-  color: #CBD5E1;
-  margin: 0.15rem 0 0 0;
-}
-.carousel-slide-btn {
-  padding: 0.35rem 0.75rem;
-  border-radius: 0.55rem;
-  background: var(--color-accent);
-  color: #070A12;
-  font-size: 10.5px;
-  font-weight: 900;
-  border: none;
-  flex-shrink: 0;
-}
-.carousel-dot {
-  height: 0.4rem;
-  border-radius: 9999px;
-  transition: all 0.3s ease;
-  background: rgba(255, 255, 255, 0.22);
-  width: 0.45rem;
-}
-.carousel-dot.active {
-  background: var(--color-accent);
-  width: 1.25rem;
-}
-
-/* ----------------------------------------------------------------------------
-   11. CARD STEAM CAPSULE (SHOP, GIOCHI, RICETTE) - 16:9 CENTRATO AL 100%
-   ---------------------------------------------------------------------------- */
-.item-card {
-  background: var(--tg-surface);
-  border: 1px solid var(--border-subtle);
-  border-radius: 1rem;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  cursor: pointer !important;
-  transition: transform 0.15s ease, border-color 0.2s ease, box-shadow 0.2s ease;
-  user-select: none;
-}
-.item-card:hover {
-  border-color: var(--border-medium);
-  transform: translateY(-2px);
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.45);
-}
-.item-card:active {
-  transform: scale(0.98);
-}
-
-/* Involucro Immagine Rigido 16:9 */
-.item-card-media {
-  width: 100%;
-  aspect-ratio: 16 / 9;
-  height: auto !important;
-  position: relative;
-  background: #000000;
-  overflow: hidden;
-}
-
-.item-card-img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover !important;
-  object-position: center center !important;
-  display: block;
-  transition: transform 0.35s ease;
-}
-.item-card:hover .item-card-img {
-  transform: scale(1.04);
-}
-
-.item-card-badge {
-  position: absolute;
-  top: 8px;
-  left: 8px;
-  background: rgba(7, 10, 18, 0.88);
-  backdrop-filter: blur(4px);
-  border: 1px solid rgba(56, 189, 248, 0.35);
-  color: var(--color-accent);
-  font-size: 8.5px;
-  font-weight: 800;
-  padding: 2px 6px;
-  border-radius: 5px;
-  text-transform: uppercase;
-  z-index: 10;
-}
-
-.item-card-body {
-  padding: 10px 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-  flex: 1 1 auto;
-  justify-content: space-between;
-}
-.item-card-title {
-  font-size: 13px;
-  font-weight: 800;
-  color: #FFFFFF;
-  margin: 0;
-  line-height: 1.25;
-}
-.item-card-desc {
-  font-size: 11px;
-  color: var(--text-muted);
-  line-height: 1.4;
-  margin: 0;
-}
-.item-card-footer {
-  padding-top: 6px;
-  border-top: 1px solid var(--border-subtle);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-top: auto;
-}
-
-/* Chips Categorie */
-.rpg-category-chip, .category-chip {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  height: 26px;
-  padding: 0 10px;
-  border-radius: 9999px;
-  font-size: 10.5px;
-  font-weight: 700;
-  white-space: nowrap;
-  border: 1px solid var(--border-subtle);
-  background: rgba(17, 28, 52, 0.6);
-  color: var(--text-secondary);
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-.rpg-category-chip.active, .category-chip.active {
-  background: var(--color-accent);
-  color: #070A12;
-  border-color: var(--color-accent);
-}
-
-/* ----------------------------------------------------------------------------
-   12. SOTTO-VISTE DETTAGLIO & CONTENITORI 16:9
-   ---------------------------------------------------------------------------- */
-.detail-media-box,
-.cinema-frame-rigid {
-  width: 100%;
-  aspect-ratio: 16 / 9;
-  height: auto !important;
-  border-radius: 1rem;
-  overflow: hidden;
-  position: relative;
-  background: #000000;
-  border: 1px solid var(--border-subtle);
-}
-
-.detail-media-box img,
-.cinema-frame-rigid img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover !important;
-  object-position: center center !important;
-  display: block;
-}
-
-/* ----------------------------------------------------------------------------
-   13. SPOTIFY DECK: MIXER AUDIO A 3 CANALI & TRACKLIST
-   ---------------------------------------------------------------------------- */
-.audio-slider-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-  padding: 0.25rem 0;
-}
-.audio-slider-label {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  font-weight: 800;
-  color: var(--text-muted);
-  text-transform: uppercase;
-  width: 75px;
-  flex-shrink: 0;
-}
-
-/* Sliders Neon Personalizzati */
-.audio-slider {
-  flex: 1;
-  -webkit-appearance: none;
-  appearance: none;
-  height: 5px;
-  border-radius: 9999px;
-  background: rgba(255, 255, 255, 0.12);
-  outline: none;
-  cursor: pointer;
-}
-.audio-slider::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  background: var(--color-accent);
-  box-shadow: 0 0 8px rgba(56, 189, 248, 0.6);
-  cursor: pointer;
-}
-.audio-slider::-moz-range-thumb {
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  background: var(--color-accent);
-  box-shadow: 0 0 8px rgba(56, 189, 248, 0.6);
-  cursor: pointer;
-}
-
-/* Tracklist Jukebox */
-.audio-track-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0.45rem 0.65rem;
-  border-radius: 0.65rem;
-  border: 1px solid transparent;
-  cursor: pointer;
-  transition: all 0.15s ease;
-  background: rgba(0, 0, 0, 0.35);
-}
-.audio-track-item:hover,
-.audio-track-item.active {
-  background: rgba(56, 189, 248, 0.12);
-  border-color: rgba(56, 189, 248, 0.35);
-}
-
-/* ----------------------------------------------------------------------------
-   14. MODALI GLASSMORPHISM & DIALOG
-   ---------------------------------------------------------------------------- */
-dialog.modal.modal-middle,
-dialog.modal:not(.modal-bottom) {
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  position: fixed !important;
-  inset: 0 !important;
-  background: rgba(7, 10, 18, 0.90) !important;
-  backdrop-filter: blur(16px) !important;
-  -webkit-backdrop-filter: blur(16px) !important;
-  padding: 0.75rem !important;
-  z-index: 90 !important;
-}
-dialog.modal:not([open]) {
-  display: none !important;
-}
-
-.modal-close-btn {
-  position: absolute;
-  top: 0.75rem;
-  right: 0.75rem;
-  width: 2rem;
-  height: 2rem;
-  border-radius: 9999px;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid var(--border-light);
-  color: #CBD5E1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  z-index: 50;
-  transition: background 0.15s ease;
-}
-.modal-close-btn:hover {
-  background: rgba(255, 255, 255, 0.16);
-  color: #FFFFFF;
-}
+  try {
+    if (window.AppModules && typeof AppModules.init === "function") {
+      await AppModules.init();
+    }
+  } catch (err) {
+    console.warn("[DOMContentLoaded] Inizializzazione parziale:", err);
+  } finally {
+    AppCore.dismissLoader();
+  }
+});
