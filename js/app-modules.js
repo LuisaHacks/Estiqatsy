@@ -1,6 +1,6 @@
 // ============================================================================
 // PROJECT: ESTIQATSY SYNDICATE & RPG PLATFORM
-// FILE: js/app-modules.js (VERSIONE 19.0 - UNIFIED STEAM SYSTEM & ZERO-FLICKER)
+// FILE: js/app-modules.js (VERSIONE 20.0 - ATOMIC BOOTSTRAP, ZERO-FLICKER & CAROUSEL)
 // LAYER 2: SINGLE BOOTSTRAP, UNIFIED CATALOGS, CLICKABLE CARDS & DIGITAL VAULT
 // ============================================================================
 
@@ -44,25 +44,29 @@
   // 2. MOTORE DI PIATTAFORMA: APPMODULES
   // --------------------------------------------------------------------------
   const AppModules = {
+    _promoSlides: [],
+    _carouselTimer: null,
+    _carouselIndex: 0,
+    _radioTimer: null,
 
     // ------------------------------------------------------------------------
-    // INIZIALIZZAZIONE ATOMICA (TUTTI I DATI CARICATI PRIMA DI MOSTRARE L'APP)
+    // INIZIALIZZAZIONE ATOMICA (SINGLE BOOTSTRAP)
     // ------------------------------------------------------------------------
     init: async function() {
       this.loadVault();
       
-      // 1. Mostra istantaneamente l'app leggendo la memoria locale
+      // 1. Mostra istantaneamente l'app con profilo e cataloghi dalla memoria locale
       this.loadLocalCache();
 
       try {
-        // 2. UNICA CHIAMATA DI RETE ATOMICA: Scarica tutto in blocco
+        // 2. UNICA CHIAMATA DI RETE ATOMICA: Scarica tutto in un solo colpo
         const bootData = await apiCall("bootstrap");
         
         if (bootData) {
           this.applyBootstrapData(bootData);
         }
       } catch (err) {
-        console.warn("[AppModules.init] Connessione di rete non disponibile, uso cache:", err);
+        console.warn("[AppModules.init] Connessione di rete non disponibile, continuo con cache:", err);
       } finally {
         // 3. Setup componenti grafici e sonori
         this.initCarousel();
@@ -77,13 +81,25 @@
     },
 
     // ------------------------------------------------------------------------
-    // GESTIONE DELLA CACHE CLIENT (ZERO ATTESE SUI TAB)
+    // GESTIONE DELLA CACHE CLIENT (MEMORIZZA ANCHE L'UTENTE PER EVITARE RESET A 0)
     // ------------------------------------------------------------------------
     loadLocalCache: function() {
       try {
         const raw = localStorage.getItem("est_bootstrap_cache");
         if (raw) {
           const cached = JSON.parse(raw);
+          
+          // Ripristino Utente e Saldi Reali (Mai più 0 Megoin al refresh!)
+          if (cached.user) {
+            AppState.user = { ...AppState.user, ...cached.user };
+          }
+          if (cached.plans) AppState.plans = cached.plans;
+          if (cached.allowedModules) {
+            AppState.allowedModules = cached.allowedModules;
+            this.applyHardLocking(AppState.allowedModules);
+          }
+
+          // Ripristino Cataloghi
           if (cached.games && cached.games.length > 0) AppState.games.catalog = cached.games;
           if (cached.genres && cached.genres.length > 0) AppState.games.genres = cached.genres;
           if (cached.shop && cached.shop.length > 0) {
@@ -98,11 +114,12 @@
             AppState.transactions = cached.transactions;
           }
 
-          // Render immediato da memoria locale
+          // Render immediato a 0 millisecondi
           this.renderGamesCatalog();
           this.renderShop();
           this.renderRecipes();
           this.renderTransactions();
+          this.renderProfile();
         }
       } catch (e) {}
     },
@@ -110,6 +127,9 @@
     saveLocalCache: function(data) {
       try {
         localStorage.setItem("est_bootstrap_cache", JSON.stringify({
+          user: data.user || null,
+          plans: data.plans || [],
+          allowedModules: data.allowedModules || null,
           games: data.games || [],
           genres: data.genres || [],
           shop: data.shop || [],
@@ -122,7 +142,7 @@
     },
 
     applyBootstrapData: function(data) {
-      // 1. Profilo Utente & Permessi
+      // 1. Profilo Utente & Permessi Reali
       if (data.user) {
         AppState.user = {
           ...AppState.user,
@@ -223,26 +243,34 @@
       if (window.AppCore) AppCore.syncUI();
     },
 
+    // Sincronizzazione automatica del Caveau con le transazioni reali del server
     hydrateVaultFromTransactions: function(transactions) {
       if (!AppState.digitalVault) AppState.digitalVault = [];
       if (transactions && transactions.length > 0) {
         transactions.forEach(tx => {
-          const detail = String(tx.dettaglio || "");
-          const isDownload = detail.toLowerCase().includes("ebook") || detail.toLowerCase().includes("corso") || detail.toLowerCase().includes("digital");
-          if (isDownload) {
-            const exists = AppState.digitalVault.some(v => v.nome === detail);
-            if (!exists) {
-              AppState.digitalVault.push({
-                nome: detail,
-                url: "#",
-                data: tx.data || "Acquistato"
-              });
+          const detail = String(tx.dettaglio || tx.tipo || "");
+          if (detail && detail !== "—" && detail !== "-") {
+            const isRelevant = detail.toLowerCase().includes("partita") ||
+                               detail.toLowerCase().includes("ebook") ||
+                               detail.toLowerCase().includes("corso") ||
+                               detail.toLowerCase().includes("digital") ||
+                               detail.toLowerCase().includes("acquisto");
+            if (isRelevant) {
+              const exists = AppState.digitalVault.some(v => v.nome === detail);
+              if (!exists) {
+                AppState.digitalVault.push({
+                  nome: detail,
+                  url: "#",
+                  data: tx.data || "Disponibile"
+                });
+              }
             }
           }
         });
         localStorage.setItem(AppConfig.CACHE_KEYS.VAULT, JSON.stringify(AppState.digitalVault));
       }
       this.renderVault();
+      if (window.AppCore) AppCore.syncUI();
     },
 
     openVaultModal: function() {
@@ -305,6 +333,7 @@
         const res = await apiCall("my_transactions");
         if (res && res.transactions) {
           AppState.transactions = res.transactions;
+          this.hydrateVaultFromTransactions(res.transactions);
           this.renderTransactions();
         }
       } catch (e) {
@@ -314,12 +343,17 @@
     },
 
     // ------------------------------------------------------------------------
-    // CAROSELLO HOME DINAMICO (16:9 CENTRATO)
+    // CAROSELLO HOME DINAMICO (TIMER AUTO-SLIDE & LARGHEZZA 100%)
     // ------------------------------------------------------------------------
     initCarousel: function() {
       const track = document.getElementById("carousel-track");
       const dotsBox = document.getElementById("carousel-dots-container");
       if (!track) return;
+
+      if (this._carouselTimer) {
+        clearInterval(this._carouselTimer);
+        this._carouselTimer = null;
+      }
 
       const slides = [];
 
@@ -358,6 +392,7 @@
 
       if (slides.length === 0) return;
 
+      // Iniezione con larghezza forzata al 100%
       track.innerHTML = slides.map((s, idx) => `
         <div class="carousel-slide" onclick="AppModules.handleCarouselClick(${idx})">
           <img src="${s.img}" class="carousel-slide-img" alt="${s.titolo}">
@@ -375,11 +410,37 @@
 
       if (dotsBox) {
         dotsBox.innerHTML = slides.map((_, i) => `
-          <span class="carousel-dot ${i === 0 ? 'active' : ''}" id="car-dot-${i}"></span>
+          <span class="carousel-dot ${i === 0 ? 'active' : ''}" id="car-dot-${i}" onclick="AppModules.goToCarouselSlide(${i})"></span>
         `).join("");
       }
 
       this._promoSlides = slides;
+      this._carouselIndex = 0;
+      this.goToCarouselSlide(0);
+
+      // Auto-slide ogni 4 secondi solo se ci sono più di 1 slide
+      if (slides.length > 1) {
+        this._carouselTimer = setInterval(() => {
+          this.nextCarouselSlide();
+        }, 4000);
+      }
+    },
+
+    goToCarouselSlide: function(index) {
+      if (!this._promoSlides || this._promoSlides.length === 0) return;
+      this._carouselIndex = (index + this._promoSlides.length) % this._promoSlides.length;
+      const track = document.getElementById("carousel-track");
+      if (track) {
+        track.style.transform = `translateX(-${this._carouselIndex * 100}%)`;
+      }
+      this._promoSlides.forEach((_, i) => {
+        const dot = document.getElementById(`car-dot-${i}`);
+        if (dot) dot.classList.toggle("active", i === this._carouselIndex);
+      });
+    },
+
+    nextCarouselSlide: function() {
+      this.goToCarouselSlide(this._carouselIndex + 1);
     },
 
     handleCarouselClick: function(idx) {
@@ -389,7 +450,7 @@
     },
 
     // ------------------------------------------------------------------------
-    // CATALOGO GIOCHI (CARD STEAM UNIFORME, FILTRI CHIP & SUBVIEW 16:9)
+    // CATALOGO GIOCHI (FILTRI CHIP & CARD STEAM 16:9)
     // ------------------------------------------------------------------------
     setGameGenre: function(genre) {
       currentGameGenre = genre;
@@ -409,7 +470,7 @@
       if (!container) return;
 
       let list = AppState.games.catalog || [];
-      if (counter) counter.textContent = `${list.length} Saghe Attive`;
+      if (counter) counter.textContent = `${list.length} Saghe`;
 
       if (currentGameGenre !== 'tutti') {
         list = list.filter(g => (g.tipologia || '').toLowerCase() === currentGameGenre.toLowerCase());
@@ -420,7 +481,6 @@
         return;
       }
 
-      // Card Capsule Standard Steam (16:9 centrato, tag, corpo su 2 righe, footer con CTA uniforme)
       container.innerHTML = list.map(saga => {
         const epCount = (saga.episodes || []).filter(e => e.episodio > 0).length;
 
@@ -467,7 +527,6 @@
       const img = document.getElementById("hub-image");
       if (img) img.src = saga.mediaUrl;
 
-      // 3 Azioni Principali della Saga (Gioca, Regole, Caratteristiche)
       let actionsCluster = document.getElementById("hub-saga-actions-cluster");
       if (!actionsCluster) {
         const titleEl = document.getElementById("hub-title");
@@ -493,7 +552,6 @@
         `;
       }
 
-      // Elenco Episodi
       const epContainer = document.getElementById("hub-episodes-container");
       if (epContainer) {
         const playableEpisodes = (saga.episodes || []).filter(ep => ep.episodio > 0);
@@ -627,7 +685,7 @@
     },
 
     // ------------------------------------------------------------------------
-    // SHOP (CARD STEAM UNIFORME, FILTRI CHIP & ZERO RE-FETCH DI RETE)
+    // SHOP (FILTRI CHIP & ZERO CHIAMATE DI RETE AL CAMBIO CATEGORIA)
     // ------------------------------------------------------------------------
     setShopCategory: function(cat) {
       currentShopCategory = cat;
@@ -671,7 +729,7 @@
         return;
       }
 
-      // Card Capsule Standard Steam
+      // Card Capsule Standard Steam (16:9 centrato, tag, corpo 2 righe, footer con CTA uniforme)
       grid.innerHTML = list.map(p => `
         <div onclick="AppModules.openShopDetail('${p.id}')" class="item-card group">
           <div class="item-card-media">
@@ -821,7 +879,7 @@
     },
 
     // ------------------------------------------------------------------------
-    // RICETTARIO (CARD STEAM UNIFORME, FILTRI CHIP & BONIFICA DATI)
+    // RICETTARIO (FILTRI CHIP, CARD STEAM 16:9 & BONIFICA DATI)
     // ------------------------------------------------------------------------
     setRecipeCategory: function(cat) {
       currentRecipeCategory = cat;
@@ -865,7 +923,7 @@
         return;
       }
 
-      // Card Capsule Standard Steam (16:9 centrato, tag, corpo su 2 righe, footer con CTA uniforme)
+      // Card Capsule Standard Steam (16:9 centrato, tag, corpo 2 righe, footer con CTA uniforme)
       grid.innerHTML = list.map(r => {
         const tempoClean = (r.tempo && !String(r.tempo).includes("%")) ? r.tempo : "15 min";
         const diffClean = (r.difficolta && !String(r.difficolta).includes("%")) ? r.difficolta : "Media";
@@ -1235,7 +1293,7 @@
       const inviteUrl = this.getInviteLink(room.roomId);
 
       navigator.clipboard.writeText(inviteUrl).then(() => {
-        if (window.AppCore) AppCore.toast('Link Telegram copiato negli appunti! Invialo al tuo amico.', 'success');
+        if (window.AppCore) AppCore.toast('Link Telegram copiato negli appunti! Invialo al tuo compagno.', 'success');
       }).catch(() => {
         if (window.AppCore) AppCore.toast(`Link: ${inviteUrl}`, 'info');
       });
@@ -1643,13 +1701,13 @@
     },
 
     // ------------------------------------------------------------------------
-    // RADIO NOIR & JUKEBOX
+    // RADIO NOIR & JUKEBOX COMPLETA (HOME, PROFILO E MIXER SPOTIFY SLIDERS)
     // ------------------------------------------------------------------------
     initRadio: function() {
       this.updateRadioDisplay();
       if (!this._radioTimer) {
         this._radioTimer = setInterval(() => {
-          if (AppState.activeTab === 'home') this.updateRadioDisplay();
+          this.updateRadioDisplay();
         }, 1500);
       }
     },
@@ -1666,8 +1724,6 @@
       if (e) e.stopPropagation();
       if (window.SoundEngine && typeof SoundEngine.togglePlayPause === 'function') {
         SoundEngine.togglePlayPause();
-      } else if (window.SoundEngine && typeof SoundEngine.togglePlay === 'function') {
-        SoundEngine.togglePlay();
       }
       this.updateRadioDisplay();
     },
@@ -1678,27 +1734,65 @@
       this.updateRadioDisplay();
     },
 
+    // Sincronizzazione in tempo reale di Home, Profilo e Slider del modale
     updateRadioDisplay: function() {
       if (!window.SoundEngine) return;
       const track = (typeof SoundEngine.getCurrentTrack === 'function') 
         ? SoundEngine.getCurrentTrack() 
-        : { title: 'Hard Boiled', artist: 'Kevin MacLeod', mood: 'Noir Darsena' };
+        : { title: 'Hard Boiled', artist: 'Kevin MacLeod', mood: 'Noir Darsena', tag: 'NOIR' };
 
-      const isPlaying = SoundEngine.isPlaying !== undefined ? SoundEngine.isPlaying : true;
+      const isPlaying = SoundEngine.isPlaying !== undefined ? SoundEngine.isPlaying : false;
+      const isMuted = SoundEngine.isMuted !== undefined ? SoundEngine.isMuted : false;
+      const effectivePlaying = isPlaying && !isMuted;
 
       const s = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+
+      // 1. Miniplayer Home
       s('home-radio-title', track.title || 'Hard Boiled');
       s('home-radio-artist', `${track.artist || 'Kevin MacLeod'} • ${track.mood || 'Darsena'}`);
+      const playBtnHome = document.getElementById('home-radio-play-btn');
+      if (playBtnHome) playBtnHome.textContent = effectivePlaying ? '⏸' : '▶️';
+      const muteBtnHome = document.getElementById('home-radio-mute-btn');
+      if (muteBtnHome) muteBtnHome.textContent = isMuted ? '🔇' : '🔊';
 
-      const playBtn = document.getElementById('home-radio-play-btn');
-      if (playBtn) playBtn.textContent = isPlaying ? '⏸' : '▶️';
+      // 2. Miniplayer Profilo
+      s('profile-radio-title', track.title || 'Hard Boiled');
+      s('profile-radio-artist', `${track.artist || 'Kevin MacLeod'} • ${track.mood || 'Darsena'}`);
+      const playBtnProf = document.getElementById('profile-radio-play-btn');
+      if (playBtnProf) playBtnProf.textContent = effectivePlaying ? '⏸' : '▶️';
+      const muteBtnProf = document.getElementById('profile-radio-mute-btn');
+      if (muteBtnProf) muteBtnProf.textContent = isMuted ? '🔇' : '🔊';
 
+      // 3. Barre Equalizzatore animate solo se l'audio sta effettivamente suonando
+      document.querySelectorAll('.jukebox-eq-bars').forEach(eq => {
+        eq.classList.toggle('animated', effectivePlaying);
+      });
+
+      // 4. Modale Jukebox Deck
       s('jukebox-current-title', track.title || 'Hard Boiled');
       s('jukebox-current-artist', track.artist || 'Kevin MacLeod');
-      s('jukebox-current-mood', track.mood || 'Noir');
-
+      s('jukebox-current-mood', track.mood || 'Noir Darsena');
+      s('jukebox-current-tag', track.tag || 'TEMA ATTIVO');
       const jukePlayBtn = document.getElementById('jukebox-btn-play');
-      if (jukePlayBtn) jukePlayBtn.textContent = isPlaying ? '⏸ Pausa' : '▶️ Riproduci';
+      if (jukePlayBtn) jukePlayBtn.textContent = effectivePlaying ? '⏸ Pausa' : '▶️ Riproduci';
+
+      // 5. Sincronizzazione Cursori Volume
+      const slMaster = document.getElementById('juke-slider-master');
+      const slBgm = document.getElementById('juke-slider-bgm');
+      const slSfx = document.getElementById('juke-slider-sfx');
+      if (slMaster && SoundEngine.masterVolume !== undefined) slMaster.value = SoundEngine.masterVolume;
+      if (slBgm && SoundEngine.bgmVolume !== undefined) slBgm.value = SoundEngine.bgmVolume;
+      if (slSfx && SoundEngine.sfxVolume !== undefined) slSfx.value = SoundEngine.sfxVolume;
+
+      // 6. Evidenzia la traccia attiva nella lista del Jukebox
+      const tracklist = document.getElementById('jukebox-tracklist-container');
+      if (tracklist) {
+        tracklist.querySelectorAll('.audio-track-item').forEach(item => {
+          const onclickAttr = item.getAttribute('onclick') || '';
+          const isActive = onclickAttr.includes(`'${track.id}'`);
+          item.classList.toggle('active', isActive);
+        });
+      }
     }
   };
 
