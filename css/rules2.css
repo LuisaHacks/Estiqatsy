@@ -1,596 +1,274 @@
 /* ============================================================================
    PROJECT: ESTIQATSY SYNDICATE & RPG PLATFORM
-   FILE: css/rules2.css (VERSIONE 18.0 - COMPLETE GAMING HUD, TOUCH SNAP & MULTIPLAYER)
-   LAYER: ENGINE RULES 2, NARRATIVE COCKPIT, TOUCH SCROLL-SNAP, DRAWERS & MULTIPLAYER
+   FILE: css/rules2.css (VERSIONE 20.0 - TCG MOVERINA CARD, GLOW PADDING & 90dvh MODALS)
+   LAYER: ENGINE RULES 2, TCG CARD STAGE, IRIDESCENT GLOW, DEEP SHEETS & 44px DOCKS
+   NOTE: 100% SPECIFICO PER IL GIOCO - NESSUNA INTERFERENZA CON LA SHELL PRINCIPALE
    ============================================================================ */
 
 /* ----------------------------------------------------------------------------
-   1. TOP BAR & HUD DI GIOCO (ZERO DEFORMAZIONI AVATAR)
-   ---------------------------------------------------------------------------- */
-
-/* Header Cockpit di Gioco */
-#main-game-header.universal-top-bar {
-  background: rgba(7, 10, 18, 0.98);
-  border-bottom: 1px solid var(--border-subtle);
-}
-
-.game-header-titles {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-  flex: 1 1 auto;
-  min-width: 0;
-}
-.game-header-tag {
-  font-size: 9.5px;
-  font-weight: 900;
-  color: var(--color-gold);
-  text-transform: uppercase;
-  letter-spacing: 0.14em;
-  line-height: 1;
-}
-.game-header-sub {
-  font-size: 0.82rem;
-  font-weight: 900;
-  color: #FFFFFF;
-  line-height: 1.25;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 170px;
-  margin-top: 0.1rem;
-}
-@media (min-width: 640px) {
-  .game-header-sub {
-    max-width: 320px;
-    font-size: 0.95rem;
-  }
-}
-
-/* HUD Cockpit Unificato (Sopra la Scena) */
-.hud-cockpit {
-  flex: none;
-  background: var(--tg-sec-bg);
-  border: 1px solid var(--border-subtle);
-  border-radius: 1rem;
-  padding: 0.55rem 0.75rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.45rem;
-  margin-bottom: 0.45rem;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
-}
-
-.hud-row-identity {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
-  min-width: 0;
-}
-
-/* 🔒 FIX AVATAR HUD: Dimensioni rigide, inquadratura centrata sul volto */
-.hud-avatar-box {
-  width: 36px !important;
-  height: 36px !important;
-  min-width: 36px !important;
-  min-height: 36px !important;
-  max-width: 36px !important;
-  max-height: 36px !important;
-  border-radius: 0.65rem;
-  background: #000000;
-  border: 1.5px solid rgba(56, 189, 248, 0.4);
-  overflow: hidden !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  flex-shrink: 0 !important;
-}
-.hud-avatar-img {
-  width: 100% !important;
-  height: 100% !important;
-  object-fit: cover !important;
-  object-position: center 15% !important;
-  display: block;
-}
-.hud-avatar-fallback {
-  font-size: 1.1rem;
-  line-height: 1;
-}
-.hud-hero-name {
-  font-size: 0.88rem;
-  font-weight: 900;
-  color: #FFFFFF;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 160px;
-}
-.hud-gold-display {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-  font-family: var(--font-mono);
-  font-size: 11.5px;
-  font-weight: 900;
-  color: #FDE047;
-  background: rgba(0, 0, 0, 0.45);
-  padding: 0.2rem 0.55rem;
-  border-radius: 9999px;
-  border: 1px solid rgba(245, 158, 11, 0.35);
-  flex-shrink: 0;
-}
-.gold-suffix {
-  color: var(--text-muted);
-  font-size: 9.5px;
-}
-
-/* Riga Vitals (Barra Salute & D20 Trio) */
-.hud-row-vitals {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.65rem;
-}
-.hud-vitals-box {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  flex: 1 1 auto;
-  min-width: 0;
-}
-.heart-icon {
-  font-size: 11px;
-  flex-shrink: 0;
-}
-.progress-bar-container {
-  flex: 1 1 auto;
-  min-width: 0;
-}
-.hud-pv-number {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  font-weight: 900;
-  color: var(--color-crimson);
-  flex-shrink: 0;
-}
-.hud-d20-trio {
-  display: flex;
-  align-items: center;
-  gap: 0.3rem;
-  flex-shrink: 0;
-}
-.d20-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.15rem;
-  font-family: var(--font-mono);
-  font-size: 10px;
-  font-weight: 800;
-  color: #CBD5E1;
-  background: rgba(0, 0, 0, 0.45);
-  padding: 0.15rem 0.35rem;
-  border-radius: 0.45rem;
-  border: 1px solid var(--border-subtle);
-}
-.d20-chip b {
-  color: var(--color-accent);
-}
-
-/* ----------------------------------------------------------------------------
-   2. SCENA DI GIOCO, CINEMA FRAME & AZIONI NARRATIVE
-   ---------------------------------------------------------------------------- */
-.cinema-frame-rigid {
-  position: relative;
-  width: 100%;
-  height: clamp(150px, 22dvh, 220px);
-  border-radius: 1rem;
-  overflow: hidden;
-  background: #000000;
-  border: 1px solid var(--border-subtle);
-  flex-shrink: 0;
-}
-@media (min-width: 768px) {
-  .cinema-frame-rigid {
-    height: 250px;
-  }
-}
-.cinema-frame-rigid img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: center;
-  display: block;
-}
-
-.scene-badge {
-  position: absolute;
-  top: 0.65rem;
-  left: 0.65rem;
-  font-size: 9px;
-  font-weight: 900;
-  text-transform: uppercase;
-  z-index: 15;
-}
-
-.watermark-cover-banner {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  background: linear-gradient(180deg, transparent 0%, rgba(7, 10, 18, 0.85) 40%, #070A12 100%);
-  padding: 0.45rem 0.85rem 0.4rem 0.85rem;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-  text-align: right;
-  z-index: 10;
-  pointer-events: none;
-}
-.quote-text {
-  font-size: clamp(10.5px, 1.4dvh, 12px);
-  color: #F1F5F9;
-  font-style: italic;
-  line-height: 1.35;
-  text-align: right;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.95);
-}
-.quote-author {
-  font-family: var(--font-mono);
-  font-size: 9.5px;
-  font-weight: 800;
-  color: var(--color-gold);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  text-align: right;
-  margin-top: 0.15rem;
-}
-
-/* Scatola Narrativa Flessibile */
-.narrative-box-flexible {
-  background: var(--tg-surface);
-  border: 1px solid var(--border-subtle);
-  border-radius: 1rem;
-  padding: 0.75rem 0.85rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-  max-height: 28dvh;
-  overflow-y: auto;
-}
-.narrative-title {
-  font-size: 0.95rem;
-  font-weight: 900;
-  color: #FFFFFF;
-}
-.narrative-prose {
-  font-size: 0.82rem;
-  color: #CBD5E1;
-  line-height: 1.55;
-  margin: 0;
-}
-
-/* Pulsantiera Scelte con Animazione Hover */
-.scene-actions-area {
-  display: flex;
-  flex-direction: column;
-  gap: 0.45rem;
-  margin-top: 0.45rem;
-}
-.scene-action-btn {
-  background: rgba(22, 36, 66, 0.75);
-  border: 1px solid rgba(56, 189, 248, 0.25);
-  border-radius: 0.75rem;
-  padding: 0.65rem 0.85rem;
-  color: #F8FAFC;
-  font-size: 12.5px;
-  font-weight: 700;
-  text-align: left;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  cursor: pointer;
-  transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
-  min-height: 44px;
-}
-.scene-action-btn:hover {
-  background: rgba(56, 189, 248, 0.15);
-  border-color: var(--color-accent);
-  transform: translateX(3px);
-  box-shadow: 0 4px 16px rgba(56, 189, 248, 0.2);
-}
-.scene-action-btn:active {
-  transform: scale(0.99);
-}
-.scene-action-btn.action-danger {
-  border-color: rgba(244, 63, 94, 0.35);
-  background: rgba(40, 16, 28, 0.6);
-}
-.scene-action-btn.action-danger:hover {
-  background: rgba(244, 63, 94, 0.2);
-  border-color: var(--color-crimson);
-  box-shadow: 0 4px 16px rgba(244, 63, 94, 0.2);
-}
-
-/* Danni Fluttuanti */
-.floating-damage-layer {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  z-index: 25;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.floating-damage {
-  font-weight: 900;
-  font-size: 1.6rem;
-  color: var(--color-accent);
-  animation: floatDamage 1.2s ease-out forwards;
-}
-@keyframes floatDamage {
-  0% { opacity: 0; transform: translateY(10px) scale(0.8); }
-  20% { opacity: 1; transform: translateY(-5px) scale(1.15); }
-  80% { opacity: 1; transform: translateY(-22px) scale(1); }
-  100% { opacity: 0; transform: translateY(-38px) scale(0.9); }
-}
-
-/* ----------------------------------------------------------------------------
-   3. WIZARD STEPPER TRACKER & LIVE HUD DOCK
-   ---------------------------------------------------------------------------- */
-.wizard-stage-container {
-  flex: 1 1 auto;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  position: relative;
-  width: 100%;
-  min-height: 0;
-}
-
-.wizard-step-panel {
-  flex: 1 1 auto;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  gap: 0.25rem;
-  min-height: 0;
-}
-
-/* Stepper Tracker 1-4 */
-.wizard-stepper-tracker {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 6px;
-  margin-bottom: 10px;
-  padding: 8px 12px;
-  background: rgba(11, 18, 34, 0.85);
-  border: 1px solid var(--border-subtle);
-  border-radius: 12px;
-}
-.wizard-stepper-step {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  cursor: pointer;
-  opacity: 0.45;
-  transition: all 0.2s ease;
-}
-.wizard-stepper-step.active {
-  opacity: 1;
-}
-.wizard-stepper-step.completed {
-  opacity: 0.9;
-}
-.wizard-stepper-circle {
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: var(--font-mono);
-  font-size: 11px;
-  font-weight: 800;
-  background: rgba(255, 255, 255, 0.1);
-  color: var(--text-muted);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-}
-.wizard-stepper-step.active .wizard-stepper-circle {
-  background: var(--color-accent);
-  color: #070A12;
-  border-color: var(--color-accent);
-  box-shadow: 0 0 10px rgba(56, 189, 248, 0.5);
-}
-.wizard-stepper-step.completed .wizard-stepper-circle {
-  background: rgba(16, 185, 129, 0.2);
-  color: #34D399;
-  border-color: var(--color-emerald);
-}
-.wizard-stepper-label {
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--text-muted);
-}
-.wizard-stepper-step.active .wizard-stepper-label {
-  color: #FFFFFF;
-}
-
-/* Live HUD Dock */
-.wizard-live-hud {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 8px 12px;
-  background: linear-gradient(135deg, rgba(15, 23, 42, 0.90), rgba(7, 10, 18, 0.95));
-  border: 1px solid rgba(56, 189, 248, 0.25);
-  border-radius: 12px;
-  margin-bottom: 10px;
-}
-.wizard-live-hero-chip {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.wizard-live-avatar {
-  font-size: 20px;
-  line-height: 1;
-}
-.wizard-live-details {
-  display: flex;
-  flex-direction: column;
-}
-.wizard-live-name {
-  font-size: 12px;
-  font-weight: 800;
-  color: #FFFFFF;
-  line-height: 1.2;
-}
-.wizard-live-stats {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  color: var(--color-accent);
-}
-
-.wizard-single-header {
-  flex: none;
-  min-height: 36px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0.2rem 0.35rem;
-  border-bottom: 1px solid var(--border-subtle);
-  gap: 0.35rem;
-}
-.wizard-step-badge {
-  background: var(--color-gold);
-  color: #070A12;
-  font-size: 9.5px;
-  font-weight: 900;
-  padding: 0.2rem 0.45rem;
-  border-radius: 9999px;
-  line-height: 1;
-  flex-shrink: 0;
-}
-.wizard-step-title {
-  font-size: 0.85rem;
-  font-weight: 900;
-  color: #FFFFFF;
-  margin: 0;
-  line-height: 1.15;
-}
-.wizard-view-toggle-pill {
-  display: inline-flex;
-  align-items: center;
-  background: rgba(0, 0, 0, 0.65);
-  border: 1px solid var(--border-light);
-  border-radius: 9999px;
-  padding: 2px;
-  gap: 2px;
-  flex-shrink: 0;
-}
-.toggle-pill-btn {
-  padding: 0.2rem 0.55rem;
-  border-radius: 9999px;
-  font-size: 9.5px;
-  font-weight: 800;
-  color: var(--text-muted);
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  transition: all 0.15s ease;
-  line-height: 1;
-}
-.toggle-pill-btn.active {
-  background: var(--color-accent);
-  color: #070A12;
-  font-weight: 900;
-}
-
-.wizard-content-fill {
-  flex: 1 1 auto;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  position: relative;
-}
-
-/* ----------------------------------------------------------------------------
-   4. TOUCH SCROLL-SNAP NATIVO (CARTE CREAZIONE EROE)
+   1. PALCO DELLA CARTA UNIVERSALE TCG (MODELLO "MOVERINA")
    ---------------------------------------------------------------------------- */
 .coverflow-stage-outer {
   position: relative;
   width: 100%;
-  padding: 4px 0;
+  /* 🔒 SPAZIO DI RESPIRO ALTO E BASSO PER L'ALONE NEON */
+  padding: 8px 0 16px 0;
   overflow: hidden;
 }
+
 .coverflow-stage-wrapper {
   display: flex;
   align-items: stretch;
-  gap: 14px;
+  gap: 16px;
   overflow-x: auto;
   scroll-snap-type: x mandatory;
-  padding: 6px 16px 12px;
+  /* 🔒 PADDING LATERALE PER NON TAGLIARE IL BAGLIORE AI BORDI DELLO SCHERMO */
+  padding: 10px 24px 18px 24px;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior-x: contain;
 }
-.coverflow-card {
-  flex: 0 0 270px;
+
+/* Card Singola TCG a Bordo Tecnico 1px */
+.coverflow-card,
+.tcg-card {
+  flex: 0 0 285px;
   scroll-snap-align: center;
-  background: var(--tg-surface);
-  border: 1px solid var(--border-subtle);
-  border-radius: 1.15rem;
+  background: var(--tg-sec-bg, #0B1222);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 1.25rem;
   overflow: hidden;
   cursor: pointer;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  /* 🔒 MARGINE DI SICUREZZA ATTORNO ALLA CARTA PER EVITARE COLLISIONI */
+  margin: 6px 4px;
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), 
+              box-shadow 0.25s ease, 
+              border-color 0.25s ease,
+              opacity 0.25s ease;
+  user-select: none;
+  opacity: 0.65;
+  transform: scale(0.94);
 }
+
 @media (min-width: 768px) {
-  .coverflow-card {
-    flex: 0 0 300px;
+  .coverflow-card,
+  .tcg-card {
+    flex: 0 0 320px;
   }
 }
-.coverflow-card.selected {
-  border-color: var(--color-accent);
-  box-shadow: 0 0 18px rgba(56, 189, 248, 0.35);
-  transform: translateY(-2px);
+
+/* ⭐ STATO SELEZIONATO: BAGLIORE DIFFUSO RESPIRATO A 360° */
+.coverflow-card.selected,
+.tcg-card.selected {
+  opacity: 1 !important;
+  transform: scale(1) translateY(-2px) !important;
+  border-color: rgba(56, 189, 248, 0.8) !important;
+  /* Alone neon morbido con raggio di respiro */
+  box-shadow: 0 0 20px 2px rgba(56, 189, 248, 0.40),
+              0 12px 30px rgba(0, 0, 0, 0.75) !important;
 }
-.coverflow-card-img {
+
+/* Bagliore differenziato per fazione Sinistra (Crimson/Pink) */
+.coverflow-card[data-faction="sinistra"].selected,
+.tcg-card[data-faction="sinistra"].selected {
+  border-color: rgba(244, 63, 94, 0.85) !important;
+  box-shadow: 0 0 22px 2px rgba(244, 63, 94, 0.45),
+              0 12px 30px rgba(0, 0, 0, 0.75) !important;
+}
+
+/* Bagliore differenziato per fazione Destra (Gold/Amber) */
+.coverflow-card[data-faction="destra"].selected,
+.tcg-card[data-faction="destra"].selected {
+  border-color: rgba(245, 158, 11, 0.85) !important;
+  box-shadow: 0 0 22px 2px rgba(245, 158, 11, 0.45),
+              0 12px 30px rgba(0, 0, 0, 0.75) !important;
+}
+
+/* ----------------------------------------------------------------------------
+   2. ANATOMIA INTERNA DELLA CARTA "MOVERINA"
+   ---------------------------------------------------------------------------- */
+
+/* A. Testata Interna della Carta */
+.tcg-card-header {
+  padding: 10px 14px 8px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+.tcg-card-title {
+  font-size: 14px;
+  font-weight: 900;
+  color: #FFFFFF;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  letter-spacing: 0.02em;
+}
+.tcg-card-faction-badge {
+  padding: 2px 8px;
+  border-radius: 9999px;
+  font-size: 8.5px;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.tcg-card-faction-badge.sinistra {
+  background: rgba(244, 63, 94, 0.2);
+  color: #FB7185;
+  border: 1px solid rgba(244, 63, 94, 0.4);
+}
+.tcg-card-faction-badge.destra {
+  background: rgba(245, 158, 11, 0.2);
+  color: #FBBF24;
+  border: 1px solid rgba(245, 158, 11, 0.4);
+}
+
+/* B. Finestra Illustrazione (+20% altezza con citazione sfumata) */
+.tcg-card-media {
+  position: relative;
   width: 100%;
-  height: 140px;
-  object-fit: cover;
+  height: 175px; /* Spazio generoso per il ritratto */
   background: #000000;
+  overflow: hidden;
 }
-.coverflow-card-body {
-  padding: 12px;
+.tcg-card-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover !important;
+  object-position: center 18% !important; /* Mantiene a fuoco volto e sguardo */
+  display: block;
+}
+
+.tcg-card-quote-overlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  /* Sfumatura morbida che non soffoca il petto del personaggio */
+  background: linear-gradient(180deg, transparent 0%, rgba(7, 10, 18, 0.75) 45%, #070A12 100%);
+  padding: 8px 12px 6px 12px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  text-align: right;
+  pointer-events: none;
 }
+.tcg-card-quote-text {
+  font-size: 11px;
+  color: #F1F5F9;
+  font-style: italic;
+  line-height: 1.35;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.95);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.tcg-card-quote-author {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 900;
+  color: var(--color-gold);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-top: 2px;
+}
+
+/* C. Piastra Centrale delle Statistiche (Capsula Scura Incastonata) */
+.tcg-stats-plate {
+  margin: 10px 12px 8px 12px;
+  padding: 5px 8px;
+  background: rgba(0, 0, 0, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 9999px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  align-items: center;
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 800;
+  color: #E2E8F0;
+}
+.tcg-stats-plate span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+.tcg-stats-plate span:not(:last-child) {
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+}
+.tcg-stats-plate b {
+  color: #FFFFFF;
+}
+
+/* D. Descrizione Narrativa (Tipografia a 12.5px Confortevole) */
+.tcg-card-desc {
+  padding: 0 14px 10px 14px;
+  font-size: 12.5px;
+  line-height: 1.48;
+  color: #CBD5E1;
+  text-align: left;
+  margin: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* E. Piede della Carta (Dotazione Iniziale + PV + Oro) */
+.tcg-card-footer {
+  padding: 8px 14px 10px 14px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 800;
+  background: rgba(0, 0, 0, 0.25);
+  margin-top: auto;
+}
+.tcg-card-loot {
+  color: var(--color-gold);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 140px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.tcg-card-vitals {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.tcg-pv-badge {
+  color: var(--color-crimson);
+}
+.tcg-gold-badge {
+  color: #FDE047;
+}
+
+/* Dots Carosello */
 .coverflow-dots {
   display: flex;
   justify-content: center;
   gap: 6px;
-  margin-top: 10px;
+  margin-top: 6px;
 }
 .coverflow-dot {
-  width: 7px;
-  height: 7px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.2);
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: all 0.2s ease;
 }
 .coverflow-dot.active {
   background: var(--color-accent);
@@ -599,9 +277,44 @@
 }
 
 /* ----------------------------------------------------------------------------
-   5. FOOTER STICKY COCKPIT & WIZARD (SAFE-AREA INTEGRATA)
+   3. ⭐ BINARIO STEPPER INFERIORE (ZONA POLLICE - 22px)
    ---------------------------------------------------------------------------- */
-.cockpit-footer,
+.wizard-stepper-rail {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 22px;
+  min-height: 22px;
+  max-height: 22px;
+  /* 🔒 SPAZIO PROTETTIVO SOPRA I PULSANTI DEL FOOTER */
+  padding: 0 16px;
+  margin-bottom: 6px;
+  width: 100%;
+}
+
+.stepper-rail-segment {
+  flex: 1;
+  max-width: 75px;
+  height: 4px;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.12);
+  transition: all 0.25s ease;
+  position: relative;
+}
+
+.stepper-rail-segment.active {
+  background: var(--color-accent);
+  box-shadow: 0 0 10px var(--color-accent);
+}
+
+.stepper-rail-segment.completed {
+  background: var(--color-emerald);
+}
+
+/* ----------------------------------------------------------------------------
+   4. ⭐ PULSANTI WIZARD & BAGLIORE CANGIANTE (IRIDESCENT AURA)
+   ---------------------------------------------------------------------------- */
 .wizard-sticky-footer {
   flex: none;
   z-index: 50;
@@ -609,20 +322,168 @@
   max-width: 600px;
   margin: 0 auto;
   background: rgba(7, 10, 18, 0.98);
-  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  border-top: 1px solid rgba(255, 255, 255, 0.10);
   padding-bottom: var(--safe-bottom, 0px);
-  height: calc(46px + var(--safe-bottom, 0px)) !important;
+  height: calc(44px + var(--safe-bottom, 0px)) !important;
+  display: flex;
+  align-items: center;
+  /* 🔒 PADDING LATERALE PER ISOLARE L'ALONE DEL PULSANTE */
+  padding-left: 12px;
+  padding-right: 12px;
 }
 
+.wizard-footer-step-controls {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* ⭐ IL PULSANTE CON BAGLIORE CANGIANTE CIRCOLARE (IRIDESCENT SHIFTING GLOW) */
+.btn-wizard-glorious {
+  background: linear-gradient(135deg, #0284C7, #2563EB) !important;
+  color: #FFFFFF !important;
+  border: 1px solid rgba(56, 189, 248, 0.8) !important;
+  font-weight: 900 !important;
+  font-size: 12px !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+  border-radius: 0.75rem !important;
+  height: 36px !important;
+  min-height: 36px !important;
+  cursor: pointer;
+  /* 🔒 MARGINE D'ARIA ATTORNO AL PULSANTE PER IL BAGLIORE */
+  margin: 0 4px !important;
+  position: relative;
+  /* Animazione continua del bagliore sfumato */
+  animation: shiftingAura 3.6s infinite ease-in-out;
+  transition: transform 0.15s ease;
+}
+
+.btn-wizard-glorious:active {
+  transform: scale(0.97);
+}
+
+@keyframes shiftingAura {
+  0% {
+    box-shadow: 0 0 14px 2px rgba(56, 189, 248, 0.65), inset 0 0 8px rgba(56, 189, 248, 0.2);
+    border-color: rgba(56, 189, 248, 0.9);
+  }
+  33% {
+    box-shadow: 0 0 18px 3px rgba(168, 85, 247, 0.65), inset 0 0 8px rgba(168, 85, 247, 0.2);
+    border-color: rgba(168, 85, 247, 0.9);
+  }
+  66% {
+    box-shadow: 0 0 16px 2px rgba(245, 158, 11, 0.65), inset 0 0 8px rgba(245, 158, 11, 0.2);
+    border-color: rgba(245, 158, 11, 0.9);
+  }
+  100% {
+    box-shadow: 0 0 14px 2px rgba(56, 189, 248, 0.65), inset 0 0 8px rgba(56, 189, 248, 0.2);
+    border-color: rgba(56, 189, 248, 0.9);
+  }
+}
+
+/* Pulsante Indietro del Wizard (Discreto per non rubare attenzione) */
+.btn-wizard-back {
+  height: 36px !important;
+  min-height: 36px !important;
+  padding: 0 12px !important;
+  background: rgba(255, 255, 255, 0.04) !important;
+  border: 1px solid rgba(255, 255, 255, 0.16) !important;
+  color: var(--text-secondary) !important;
+  font-size: 11px !important;
+  font-weight: 800 !important;
+  border-radius: 0.75rem !important;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.btn-wizard-back:hover {
+  background: rgba(255, 255, 255, 0.10) !important;
+  color: #FFFFFF !important;
+}
+
+/* ----------------------------------------------------------------------------
+   5. ⭐ MODALI TATTICHE GLASSMORPHIC ESTESE (90dvh A SCHERMO QUASI INTERO)
+   ---------------------------------------------------------------------------- */
+dialog.game-modal-sheet {
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  max-width: 100vw !important;
+  max-height: 100vh !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  /* 🔒 OSCURAMENTO PROFONDO CHE COPRE SIA LA SCENA CHE IL FOOTER */
+  background: rgba(4, 6, 11, 0.88) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  display: flex !important;
+  align-items: flex-end !important;
+  justify-content: center !important;
+  z-index: 100 !important; /* Sopra tutti i footer sticky */
+  border: none !important;
+}
+
+dialog.game-modal-sheet:not([open]) {
+  display: none !important;
+}
+
+/* Scheda Spaziosa al 90% dell'Altezza */
+.game-sheet-container {
+  width: 100% !important;
+  max-width: 640px !important;
+  height: 90vh !important;
+  height: 90dvh !important;
+  max-height: 90dvh !important;
+  background: rgba(11, 18, 34, 0.96) !important;
+  border-top: 1px solid rgba(56, 189, 248, 0.35) !important;
+  border-left: 1px solid rgba(255, 255, 255, 0.10) !important;
+  border-right: 1px solid rgba(255, 255, 255, 0.10) !important;
+  border-radius: 1.35rem 1.35rem 0 0 !important;
+  padding: 16px 18px 24px 18px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.85) !important;
+  overflow: hidden !important;
+}
+
+.game-sheet-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.10);
+  margin-bottom: 12px;
+}
+
+.game-sheet-scroll {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+/* ----------------------------------------------------------------------------
+   6. FOOTER COCKPIT DI GIOCO SNELLO (44px)
+   ---------------------------------------------------------------------------- */
 .cockpit-footer {
+  flex: none;
+  z-index: 50;
+  width: 100%;
+  max-width: 600px;
+  margin: 0 auto;
+  background: rgba(7, 10, 18, 0.98);
+  border-top: 1px solid rgba(255, 255, 255, 0.10);
+  padding-bottom: var(--safe-bottom, 0px);
+  height: calc(44px + var(--safe-bottom, 0px)) !important;
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   align-items: center;
   gap: 6px;
   padding-left: 8px;
   padding-right: 8px;
-  padding-top: 4px;
 }
+
 .cockpit-btn {
   display: flex;
   align-items: center;
@@ -644,117 +505,44 @@
   color: var(--color-accent);
 }
 
-.wizard-sticky-footer {
-  display: flex;
-  align-items: center;
-  padding-left: 12px;
-  padding-right: 12px;
-}
-.btn-wizard-cta {
-  background: linear-gradient(135deg, #0284C7, #2563EB) !important;
-  color: #FFFFFF !important;
-  border: none !important;
-  font-weight: 900 !important;
-  border-radius: 10px;
-  height: 38px;
-}
-
 /* ----------------------------------------------------------------------------
-   6. MODALI TATTICHE, SCHEDA EROE A 4 TAB & ASSETTO
+   7. PULSANTI DEI BIVI NARRATIVI & AZIONI D20
    ---------------------------------------------------------------------------- */
-
-/* Scheda Eroe & Vitals */
-.hero-sheet-stats-grid {
-  display: grid !important;
-  grid-template-columns: repeat(3, 1fr) !important;
-  gap: 0.5rem !important;
-  width: 100%;
-}
-.sheet-stat-card {
-  background: rgba(0, 0, 0, 0.5);
-  border: 1px solid var(--border-subtle);
-  border-radius: 0.75rem;
-  padding: 0.5rem 0.35rem;
-  text-align: center;
+.scene-actions-area {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 0.15rem;
-}
-.stat-icon {
-  font-size: 1.2rem;
-  line-height: 1;
-}
-.stat-label {
-  font-size: 9px;
-  color: var(--text-muted);
-  font-weight: 800;
-  text-transform: uppercase;
-}
-.stat-val {
-  font-size: 1.15rem;
-  font-weight: 900;
-  color: var(--color-accent);
-  font-family: var(--font-mono);
-  line-height: 1;
-}
-.stat-pure {
-  font-size: 10px;
-  color: var(--text-subtle);
-  font-family: var(--font-mono);
+  gap: 6px;
+  /* Spazio di sicurezza sopra e sotto */
+  margin-top: 10px;
+  padding: 0 4px;
 }
 
-/* Assetto & Slot Operativi */
-.assetto-slot-card {
-  background: rgba(0, 0, 0, 0.4);
-  border: 1px solid var(--border-subtle);
+.scene-action-btn {
+  background: rgba(22, 36, 66, 0.85);
+  border: 1px solid rgba(56, 189, 248, 0.25);
   border-radius: 0.75rem;
   padding: 0.65rem 0.85rem;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: space-between !important;
-  gap: 0.65rem;
-  width: 100%;
-}
-
-/* Dado D20 Suspense */
-.dice-modal-box {
-  text-align: center;
-  padding: 24px;
-  max-width: 300px;
-  background: var(--tg-sec-bg);
-}
-.dice-wrapper {
-  margin: 12px auto 16px;
-  width: 80px;
-  height: 80px;
+  color: #F8FAFC;
+  font-size: 12.5px;
+  font-weight: 700;
   display: flex;
   align-items: center;
-  justify-content: center;
-}
-.dice-cube {
-  font-size: 52px;
-  line-height: 1;
-  filter: drop-shadow(0 0 14px rgba(56, 189, 248, 0.4));
-}
-.dice-rolling {
-  animation: diceWobble 0.5s infinite ease-in-out;
-}
-@keyframes diceWobble {
-  0% { transform: rotate(0deg) scale(1); }
-  25% { transform: rotate(-20deg) scale(1.1); }
-  50% { transform: rotate(20deg) scale(0.92); }
-  75% { transform: rotate(-12deg) scale(1.06); }
-  100% { transform: rotate(0deg) scale(1); }
-}
-
-/* ----------------------------------------------------------------------------
-   7. STANZE MULTIPLAYER (LOBBY & COCKPIT ONLINE)
-   ---------------------------------------------------------------------------- */
-.mode-select-btn {
+  justify-content: space-between;
   cursor: pointer;
+  min-height: 42px;
   transition: all 0.15s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
 }
-.mode-select-btn:hover {
+.scene-action-btn:hover {
+  background: rgba(56, 189, 248, 0.18);
   border-color: var(--color-accent);
+  transform: translateX(2px);
+}
+.scene-action-btn.action-danger {
+  border-color: rgba(244, 63, 94, 0.35);
+  background: rgba(45, 16, 28, 0.75);
+}
+.scene-action-btn.action-danger:hover {
+  background: rgba(244, 63, 94, 0.25);
+  border-color: var(--color-crimson);
 }
