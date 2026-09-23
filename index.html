@@ -513,55 +513,48 @@
           </section>
 
           <!-- =============================================================== -->
-          <!-- VISTA 4: COCKPIT GAMEPLAY (SUBHEADER REPLACED BY MICRO-HUD 36px) -->
+          <!-- VISTA 4: COCKPIT GAMEPLAY (ABOVE-THE-FOLD ZERO-SCROLL NATIVO)   -->
           <!-- =============================================================== -->
-          <section id="view-gameplay" class="gameplay-container hidden app-screen max-w-3xl mx-auto">
-            <!-- 🔒 IL MICRO-HUD REGGISCE ESATTAMENTE LO SLOT DEL SUBHEADER (~36px) -->
-            <div class="hud-cockpit-36px">
-              <div class="flex items-center gap-2 min-w-0">
-                <div class="hud-avatar-30px">
-                  <img id="kpi-hero-avatar-img" src="" class="hidden w-full h-full object-cover" alt="Avatar">
-                  <span id="kpi-hero-avatar-fallback" class="text-xs">🥋</span>
+          <section id="view-gameplay" class="gameplay-container hidden app-screen max-w-3xl mx-auto h-full flex flex-col justify-between overflow-hidden relative">
+            
+            <!-- 1. HUD LIVE UNIVERSALE (42px - SINCRONIZZATO CON WIZARD & REATTIVO) -->
+            <div id="gameplay-live-hud" class="hud-cockpit-48px">
+              <div class="flex items-center justify-between w-full min-w-0 leading-none">
+                <div class="flex items-center gap-1.5 min-w-0 flex-1 pr-2">
+                  <div class="w-5 h-5 rounded-full bg-slate-800 border border-sky-400/40 flex items-center justify-center text-xs overflow-hidden shrink-0">
+                    <span id="kpi-hero-avatar-fallback">👤</span>
+                  </div>
+                  <span class="text-xs font-black text-white truncate max-w-[170px]" id="kpi-hero-name">Avventuriero</span>
                 </div>
-                <span class="hud-hero-name-36px truncate" id="kpi-hero-name">Eroe</span>
+                <div class="flex items-center gap-2 shrink-0 font-mono text-[10.5px]">
+                  <span class="text-sky-300 font-bold" id="kpi-hero-px">✨ 0 PX</span>
+                  <span class="text-amber-300 font-bold">🟡 <b id="kpi-hero-gold">40</b> ORO</span>
+                </div>
               </div>
 
-              <div class="hud-vitals-36px">
-                <span class="text-[10px]">❤️</span>
-                <progress id="kpi-hero-pv-bar" class="progress progress-error hud-pv-bar-36px" value="25" max="25"></progress>
-                <span id="kpi-hero-pv-text" class="font-mono text-[9.5px] font-bold text-rose-400 shrink-0">25/25</span>
-              </div>
-
-              <div class="flex items-center gap-2 shrink-0">
-                <div class="font-mono text-[11px] font-bold text-amber-300 flex items-center gap-0.5">
-                  <span>🟡</span> <span id="kpi-hero-gold">40</span>
+              <div class="flex items-center justify-between w-full pt-1.5 mt-1 border-t border-white/5 text-[10px] font-mono leading-none">
+                <div class="flex items-center gap-1.5 shrink-0">
+                  <span class="text-rose-400">❤️</span>
+                  <div class="w-12 h-1.5 rounded-full bg-slate-800 overflow-hidden">
+                    <div id="kpi-hero-pv-bar" class="h-full bg-gradient-to-r from-emerald-500 to-sky-400 transition-all duration-300" style="width: 100%;"></div>
+                  </div>
+                  <span id="kpi-hero-pv-text" class="text-rose-300 font-bold">25/25</span>
                 </div>
-                <div class="hidden sm:flex gap-1 font-mono text-[9px] text-slate-400">
-                  <span title="Forza">🥊<b id="kpi-mod-for" class="text-sky-300">+0</b></span>
-                  <span title="Destrezza">🤸<b id="kpi-mod-des" class="text-sky-300">+0</b></span>
-                  <span title="Intelligenza">🧠<b id="kpi-mod-int" class="text-sky-300">+0</b></span>
+                <div class="text-slate-300 tracking-tight text-right shrink-0" id="kpi-hero-stats">
+                  🥊 10 (+0) · 🤸 10 (+0) · 🧠 10 (+0)
                 </div>
               </div>
             </div>
 
-            <!-- Cinema Frame con Rapporto 16:9 -->
-            <div class="cinema-frame-rigid shadow-xl relative rounded-2xl overflow-hidden mt-2">
-              <img id="scene-image" src="" alt="Scena di Gioco">
-              <span id="scene-type-badge" class="badge badge-xs badge-info scene-badge absolute top-2 left-2">SNODO</span>
-              <div id="floating-damage-box" class="floating-damage-layer"></div>
+            <!-- 2. LAYER FX DANNI FLUTTUANTI AD ARCO -->
+            <div id="floating-damage-box" class="floating-damage-layer"></div>
 
-              <div class="watermark-cover-banner">
-                <div class="quote-text" id="scene-quote"></div>
-                <div class="quote-author" id="scene-author"></div>
-              </div>
-            </div>
+            <!-- 3. PALCO CENTRALE CARTA FOCALE (330px - FLESSIBILE E ZERO SCROLL) -->
+            <div id="gameplay-card-stage" class="w-full flex-1 flex items-center justify-center min-h-0 relative my-0.5"></div>
 
-            <div class="narrative-box-flexible p-3 rounded-xl bg-slate-900 border border-white/10 mt-2 shadow-inner">
-              <div class="narrative-title text-sm font-black text-white" id="scene-title">Titolo Snodo</div>
-              <p class="narrative-prose text-xs text-slate-300 leading-relaxed mt-1" id="scene-text">Caricamento narrazione...</p>
-            </div>
-
-            <div id="scene-actions-container" class="scene-actions-area space-y-1.5 mt-2"></div>
+            <!-- 4. SLOT DECISIONALE AZIONI (COMBAT / ENIGMI / BIVI NARRATIVI) -->
+            <div id="scene-actions-container" class="scene-actions-area"></div>
+            
           </section>
 
           <!-- =============================================================== -->
