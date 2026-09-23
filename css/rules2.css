@@ -1,6 +1,6 @@
 /* ============================================================================
    PROJECT: ESTIQATSY SYNDICATE & RPG PLATFORM
-   FILE: css/rules2.css (VERSIONE 27.0 - SPLIT ACTION CLUSTER & ELASTIC MOVERINA)
+   FILE: css/rules2.css (VERSIONE 28.0 - ZERO-SCROLL ABOVE-THE-FOLD ENGINE)
    LAYER: ENGINE RULES 2, WIZARD STAGE, SPLIT ACTION SLOT, FULL HUD & COCKPIT
    NOTE: ZERO FONDINO, ZERO SACCHE VUOTE, SPESA DIVISA DA AZIONE & ALONE PLATINO
    ============================================================================ */
@@ -16,121 +16,129 @@
 }
 
 /* ----------------------------------------------------------------------------
-   2. HUD UNIVERSALE A 2 RIGHE (48px - A TUTTA LARGHEZZA, A FILO DELLO STEPPER)
+   2. HUD UNIVERSALE A 2 RIGHE (42px - COMPATTO, A FILO E RESPIRO COSTANTE)
    ---------------------------------------------------------------------------- */
 .hud-cockpit-48px {
   width: 100% !important;
-  height: 48px !important;
-  min-height: 48px !important;
-  max-height: 48px !important;
-  background: rgba(11, 18, 34, 0.94);
-  border: 1px solid rgba(255, 255, 255, 0.10);
-  border-radius: 0.85rem;
-  padding: 6px 12px;
+  height: 42px !important;
+  min-height: 42px !important;
+  max-height: 42px !important;
+  background: rgba(11, 18, 34, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 0.75rem;
+  padding: 4px 10px;
   display: flex;
   flex-direction: column;
   justify-content: center;
   gap: 2px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
   box-sizing: border-box;
-  margin-bottom: 8px !important; /* 🔒 Respiro costante: 8px sotto l'HUD */
+  margin-bottom: 6px !important;
+  flex-shrink: 0;
 }
 
 /* ----------------------------------------------------------------------------
-   3. PALCO CAROSELLO WIZARD (PEEKING LATERALE DELLE CARTE ADIACENTI)
+   3. PALCO CAROSELLO WIZARD (PEEKING LATERALE E TOUCH-SWIPE ELASTICO)
    ---------------------------------------------------------------------------- */
 .coverflow-stage-outer {
   position: relative;
   width: 100%;
-  padding: 2px 0;
+  padding: 0;
   overflow: hidden;
-  margin-top: 8px !important; /* 🔒 Respiro costante: 8px sopra la carta */
+  margin: 0 !important;
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  align-items: center;
 }
 
 .coverflow-stage-wrapper {
   display: flex;
-  align-items: stretch;
-  gap: 14px;
+  align-items: center;
+  gap: 12px;
   overflow-x: auto;
   scroll-snap-type: x mandatory;
-  padding: 4px 24px 6px 24px;
+  padding: 4px 20px;
+  width: 100%;
+  height: 100%;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior-x: contain;
+  box-sizing: border-box;
 }
 
-/* 🔒 BASE CARTA TCG CON FISICA ELASTICA ANTI-GHIGLIOTTINA */
+/* ----------------------------------------------------------------------------
+   4. CARTA TCG DINAMICA AD ALTEZZA PROPORZIONALE (ABOVE-THE-FOLD GARANTITO)
+   ---------------------------------------------------------------------------- */
 .coverflow-card,
 .tcg-card {
   position: relative !important;
-  flex: 0 0 290px;
-  width: 290px;
-  max-width: 290px;
-  /* Scala fluidamente tra 380px (iPhone SE) e 480px (iPhone standard/Pro Max) */
-  height: clamp(380px, 58dvh, 480px) !important;
-  min-height: 380px !important;
-  max-height: 480px !important;
+  flex: 0 0 280px;
+  width: 280px;
+  max-width: 280px;
+  /* Scala dinamicamente tra 300px e 410px in base all'altezza effettiva del viewport */
+  height: clamp(300px, 48dvh, 410px) !important;
+  min-height: 300px !important;
+  max-height: 410px !important;
   scroll-snap-align: center;
   background: #0B1222;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 1.25rem;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 1rem;
   overflow: hidden !important;
   cursor: pointer;
   display: flex !important;
   flex-direction: column !important;
   justify-content: space-between !important;
-  margin: 2px auto;
-  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), 
-              box-shadow 0.25s ease, 
-              border-color 0.25s ease,
-              opacity 0.25s ease,
-              width 0.25s ease;
+  margin: auto;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), 
+              box-shadow 0.2s ease, 
+              border-color 0.2s ease,
+              opacity 0.2s ease;
   user-select: none;
-  opacity: 0.50;
-  transform: scale(0.92);
+  opacity: 0.55;
+  transform: scale(0.93);
   box-sizing: border-box;
 }
 
-/* ⭐ STATO SELEZIONATO: ALONE LUNARE BIANCO PLATINO PURO AD ALTA DEFINIZIONE */
+/* ⭐ STATO SELEZIONATO: ALONE LUNARE BIANCO PLATINO AD ALTA DEFINIZIONE */
 .coverflow-card.selected,
 .tcg-card.selected {
   opacity: 1 !important;
-  transform: scale(1) translateY(-2px) !important;
-  border-color: rgba(255, 255, 255, 0.88) !important;
+  transform: scale(1) !important;
+  border-color: rgba(255, 255, 255, 0.90) !important;
   box-shadow: 0 0 16px 2px rgba(255, 255, 255, 0.35),
-              0 16px 36px rgba(0, 0, 0, 0.88) !important;
+              0 12px 30px rgba(0, 0, 0, 0.85) !important;
 }
 
-/* ----------------------------------------------------------------------------
-   4. IL "GAMEPLAY ZOOM": LA CARTA SI ALLARGA A TUTTO CAMPO SUL TAVOLO (335px)
-   ---------------------------------------------------------------------------- */
+/* CARTA IN GAMEPLAY: ZOOMATA SUL TAVOLO SENZA ECCEDERE IL VIEWPORT */
 #gameplay-moverina-card .tcg-card,
 #view-gameplay .tcg-card,
 .tcg-card.gameplay-focal {
-  flex: 0 0 min(335px, calc(100vw - 28px)) !important;
-  width: min(335px, calc(100vw - 28px)) !important;
-  max-width: 340px !important;
+  flex: 0 0 min(330px, calc(100vw - 24px)) !important;
+  width: min(330px, calc(100vw - 24px)) !important;
+  max-width: 330px !important;
+  height: clamp(310px, 50dvh, 420px) !important;
   opacity: 1 !important;
   transform: scale(1) !important;
-  margin: 4px auto !important;
-  box-shadow: 0 0 18px 2px rgba(255, 255, 255, 0.40),
-              0 20px 42px rgba(0, 0, 0, 0.90) !important;
+  margin: 2px auto !important;
+  box-shadow: 0 0 16px 2px rgba(255, 255, 255, 0.35),
+              0 14px 32px rgba(0, 0, 0, 0.90) !important;
 }
 
 /* ----------------------------------------------------------------------------
-   5. ANATOMIA MOVERINA A LIVELLI SOVRAPPOSTI (ZERO FONDINO, ZERO SACCHE VUOTE)
+   5. ANATOMIA INTERNA CARTA A LIVELLI (ZERO FONDINO, ZERO SACCHE VUOTE)
    ---------------------------------------------------------------------------- */
 
-/* 🔒 FASCIA 2: Media a Schermo Pieno Alto (Proporzionale ed elastica) */
+/* FASCIA 2: Media a Schermo Pieno Alto */
 .tcg-card-media {
   position: relative !important;
   width: 100% !important;
-  height: clamp(150px, 25dvh, 200px) !important;
-  min-height: 150px !important;
-  max-height: 200px !important;
+  height: clamp(115px, 20dvh, 160px) !important;
+  min-height: 115px !important;
+  max-height: 160px !important;
   background: #000000;
   overflow: hidden !important;
   box-sizing: border-box;
-  border-radius: 1.20rem 1.20rem 0 0;
+  border-radius: 0.95rem 0.95rem 0 0;
   flex-shrink: 0;
 }
 
@@ -142,45 +150,40 @@
   display: block;
 }
 
-/* 🔒 FASCIA 1: Testata Fluttuante Trasparente SOPRA l'Illustrazione (38px) */
+/* FASCIA 1: Testata Fluttuante Trasparente SOPRA l'Illustrazione */
 .tcg-card-header {
   position: absolute !important;
   top: 0 !important;
   left: 0 !important;
   right: 0 !important;
-  height: 38px !important;
-  min-height: 38px !important;
-  max-height: 38px !important;
-  padding: 0 14px !important;
+  height: 32px !important;
+  min-height: 32px !important;
+  padding: 0 10px !important;
   display: flex !important;
   align-items: center !important;
   justify-content: space-between !important;
-  background: linear-gradient(180deg, rgba(7, 10, 18, 0.88) 0%, rgba(7, 10, 18, 0.40) 65%, transparent 100%) !important;
+  background: linear-gradient(180deg, rgba(7, 10, 18, 0.90) 0%, rgba(7, 10, 18, 0.35) 70%, transparent 100%) !important;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
   z-index: 10 !important;
   box-sizing: border-box !important;
 }
 
 .tcg-card-title {
-  font-size: 13px;
+  font-size: 11.5px;
   font-weight: 900;
   color: #FFFFFF;
-  display: flex;
-  align-items: center;
-  gap: 6px;
   margin: 0;
   letter-spacing: 0.02em;
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.9);
 }
 
 .tcg-card-faction-badge {
-  padding: 2px 8px;
+  padding: 1.5px 6px;
   border-radius: 9999px;
-  font-size: 8px;
+  font-size: 7.5px;
   font-weight: 900;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
 }
 
 .tcg-card-faction-badge.sinistra {
@@ -195,50 +198,44 @@
   border: 1px solid rgba(245, 158, 11, 0.45);
 }
 
-/* Overlay Sfumato Inferiore per la Citazione */
+/* Overlay Citazione d'Atmosfera */
 .tcg-card-quote-overlay {
   position: absolute;
   bottom: 0;
   left: 0;
   right: 0;
-  background: linear-gradient(180deg, transparent 0%, rgba(7, 10, 18, 0.78) 40%, #070A12 100%);
-  padding: 6px 12px 6px 12px;
-  display: flex;
-  flex-direction: column;
+  background: linear-gradient(180deg, transparent 0%, rgba(7, 10, 18, 0.85) 50%, #070A12 100%);
+  padding: 4px 8px;
   text-align: right;
   pointer-events: none;
   z-index: 5;
 }
 
 .tcg-card-quote-text {
-  font-size: 10px;
+  font-size: 9px;
   color: #F1F5F9;
   font-style: italic;
-  line-height: 1.3;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.95);
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
+  line-height: 1.25;
+  white-space: nowrap;
   overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .tcg-card-quote-author {
   font-family: monospace;
-  font-size: 8px;
+  font-size: 7.5px;
   font-weight: 900;
   color: #F59E0B;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
-  margin-top: 1px;
 }
 
-/* FASCIA 3: Piastra Metrica Incastonata a 3 Capsule (34px) */
+/* FASCIA 3: Piastra Metrica Incastonata a 3 Capsule */
 .tcg-stats-plate {
-  height: 34px;
-  min-height: 34px;
-  max-height: 34px;
-  margin: 4px 12px;
-  padding: 0 8px;
+  height: 28px;
+  min-height: 28px;
+  max-height: 28px;
+  margin: 3px 8px;
+  padding: 0 6px;
   background: rgba(0, 0, 0, 0.65);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 9999px;
@@ -247,7 +244,7 @@
   align-items: center;
   text-align: center;
   font-family: monospace;
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 800;
   color: #E2E8F0;
   box-sizing: border-box;
@@ -270,42 +267,39 @@
   color: #FFFFFF;
 }
 
-/* 🔒 FASCIA 4: Corpo Narrativo Fluido (Elimina la sacca vuota interna) */
+/* FASCIA 4: Corpo Narrativo Fluido */
 .tcg-card-desc {
   flex: 1 1 auto !important;
   min-height: 0 !important;
-  padding: 6px 14px;
-  font-size: 11.5px;
-  line-height: 1.42;
+  padding: 4px 10px;
+  font-size: 10.5px;
+  line-height: 1.35;
   color: #CBD5E1;
   text-align: left;
   margin: 0;
   overflow-y: auto !important;
   scrollbar-width: none;
   box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-start;
 }
 
 .tcg-card-desc::-webkit-scrollbar {
   display: none;
 }
 
-/* 🔒 FASCIA 5: Piede Scheda Ancorato al Fondo (Saldato alla base, zero tagli) */
+/* FASCIA 5: Piede Scheda Ancorato al Fondo */
 .tcg-card-footer {
-  height: 44px;
-  min-height: 44px;
-  max-height: 44px;
-  padding: 0 14px;
+  height: 34px;
+  min-height: 34px;
+  max-height: 34px;
+  padding: 0 10px;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
   display: flex;
   align-items: center;
   justify-content: space-between;
   font-family: monospace;
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 800;
-  background: rgba(0, 0, 0, 0.40);
+  background: rgba(0, 0, 0, 0.45);
   margin-top: auto !important;
   flex-shrink: 0 !important;
   box-sizing: border-box;
@@ -328,39 +322,33 @@
   gap: 8px;
 }
 
-.tcg-pv-badge {
-  color: #F43F5E;
-}
-
-.tcg-gold-badge {
-  color: #FDE047;
-}
+.tcg-pv-badge { color: #F43F5E; }
+.tcg-gold-badge { color: #FDE047; }
 
 /* ----------------------------------------------------------------------------
-   6. FRECCE DI NAVIGAZIONE FLUTTUANTI IN SOVRAIMPRESSIONE (CAROSELLO INFINITO)
+   6. FRECCE DI NAVIGAZIONE IN SOVRAIMPRESSIONE
    ---------------------------------------------------------------------------- */
 .carousel-arrow-btn {
-  width: 32px;
-  height: 32px;
+  width: 28px;
+  height: 28px;
   border-radius: 9999px;
-  background: rgba(11, 18, 34, 0.85);
-  border: 1px solid rgba(255, 255, 255, 0.20);
+  background: rgba(11, 18, 34, 0.88);
+  border: 1px solid rgba(255, 255, 255, 0.25);
   color: #FFFFFF;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 900;
   cursor: pointer;
   pointer-events: auto;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.75);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.8);
   transition: all 0.15s ease;
 }
 
 .carousel-arrow-btn:hover {
   background: rgba(30, 41, 59, 1);
   border-color: rgba(255, 255, 255, 0.45);
-  transform: scale(1.05);
 }
 
 .carousel-arrow-btn:active {
@@ -368,13 +356,13 @@
 }
 
 /* ----------------------------------------------------------------------------
-   7. LO SLOT DECISIONALE DIVISO (AZIONE A SX + DELTA CONTABILE A DX)
+   7. LO SLOT DECISIONALE DIVISO & GRIGLIE AZIONE (COMPATTE & FLESSIBILI)
    ---------------------------------------------------------------------------- */
 .scene-actions-area {
   width: 100%;
-  max-width: min(335px, calc(100vw - 28px));
-  /* 🔒 12px di respiro: l'alone bianco platino sfuma dolcemente senza toccare il tasto */
-  margin: 12px auto 0 auto !important;
+  max-width: min(330px, calc(100vw - 24px));
+  margin: 6px auto 0 auto !important;
+  flex-shrink: 0;
   box-sizing: border-box;
 }
 
@@ -382,21 +370,21 @@
 .action-split-cluster {
   display: flex !important;
   align-items: center !important;
-  gap: 8px !important;
+  gap: 6px !important;
   width: 100% !important;
 }
 
-/* Tasto Azione Principale (Flessibile) */
+/* Tasto Azione Principale */
 .btn-action-main {
   flex: 1 1 auto !important;
-  height: 42px !important;
-  min-height: 42px !important;
-  padding: 0 12px !important;
-  border-radius: 0.75rem !important;
-  font-size: 11.5px !important;
+  height: 38px !important;
+  min-height: 38px !important;
+  padding: 0 10px !important;
+  border-radius: 0.65rem !important;
+  font-size: 11px !important;
   font-weight: 900 !important;
   text-transform: uppercase !important;
-  letter-spacing: 0.04em !important;
+  letter-spacing: 0.03em !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
@@ -404,7 +392,7 @@
   cursor: pointer !important;
   transition: all 0.15s ease !important;
   box-sizing: border-box !important;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35) !important;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.35) !important;
 }
 
 .btn-action-main.primary {
@@ -430,14 +418,14 @@
 /* Tasto Ausiliario Svuota (Emporio) */
 .btn-action-aux {
   flex: 0 0 auto !important;
-  height: 42px !important;
-  min-height: 42px !important;
-  padding: 0 10px !important;
-  border-radius: 0.75rem !important;
+  height: 38px !important;
+  min-height: 38px !important;
+  padding: 0 8px !important;
+  border-radius: 0.65rem !important;
   background: rgba(45, 16, 28, 0.75) !important;
   border: 1px solid rgba(244, 63, 94, 0.35) !important;
   color: #FB7185 !important;
-  font-size: 11px !important;
+  font-size: 10px !important;
   font-weight: 800 !important;
   display: flex !important;
   align-items: center !important;
@@ -448,67 +436,45 @@
   box-sizing: border-box !important;
 }
 
-.btn-action-aux:hover {
-  background: rgba(244, 63, 94, 0.25) !important;
-  border-color: #F43F5E !important;
-}
-
-/* Badge Contabile Delta (Spesa / Rimborso) */
+/* Badge Contabile Delta */
 .badge-cost-delta {
   flex: 0 0 auto !important;
-  height: 42px !important;
-  min-height: 42px !important;
-  padding: 0 12px !important;
-  border-radius: 0.75rem !important;
+  height: 38px !important;
+  min-height: 38px !important;
+  padding: 0 10px !important;
+  border-radius: 0.65rem !important;
   background: rgba(11, 18, 34, 0.95) !important;
   border: 1px solid rgba(255, 255, 255, 0.14) !important;
   font-family: monospace !important;
-  font-size: 12px !important;
+  font-size: 11px !important;
   font-weight: 900 !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
   box-sizing: border-box !important;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5) !important;
   white-space: nowrap !important;
 }
 
-.badge-cost-delta.spend {
-  color: #38BDF8 !important;
-  border-color: rgba(56, 189, 248, 0.4) !important;
-}
+.badge-cost-delta.spend { color: #38BDF8 !important; border-color: rgba(56, 189, 248, 0.4) !important; }
+.badge-cost-delta.refund { color: #10B981 !important; border-color: rgba(16, 185, 129, 0.45) !important; background: rgba(6, 78, 59, 0.3) !important; }
+.badge-cost-delta.gold { color: #FBBF24 !important; border-color: rgba(245, 158, 11, 0.45) !important; }
+.badge-cost-delta.locked { color: #64748B !important; border-color: rgba(255, 255, 255, 0.08) !important; }
 
-.badge-cost-delta.refund {
-  color: #10B981 !important;
-  border-color: rgba(16, 185, 129, 0.45) !important;
-  background: rgba(6, 78, 59, 0.3) !important;
-}
-
-.badge-cost-delta.gold {
-  color: #FBBF24 !important;
-  border-color: rgba(245, 158, 11, 0.45) !important;
-}
-
-.badge-cost-delta.locked {
-  color: #64748B !important;
-  border-color: rgba(255, 255, 255, 0.08) !important;
-}
-
-/* Griglie Bivi Gameplay Dinamiche (1, 2, 3 Colonne o Quiz 2x2) */
-.actions-grid-1 { display: grid; grid-template-columns: 1fr; gap: 6px; }
+/* Griglie Bivi Gameplay Dinamiche */
+.actions-grid-1 { display: grid; grid-template-columns: 1fr; gap: 4px; }
 .actions-grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; }
-.actions-grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; }
-.actions-grid-4, .actions-grid-quiz { display: grid; grid-template-columns: repeat(2, 1fr); grid-template-rows: repeat(2, auto); gap: 6px; }
+.actions-grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
+.actions-grid-4, .actions-grid-quiz { display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px; }
 
 .scene-action-btn {
-  height: 42px;
-  min-height: 42px;
+  height: 38px;
+  min-height: 38px;
   padding: 0 8px;
-  background: rgba(22, 36, 66, 0.85);
-  border: 1px solid rgba(56, 189, 248, 0.25);
-  border-radius: 0.75rem;
+  background: rgba(22, 36, 66, 0.9);
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  border-radius: 0.65rem;
   color: #F8FAFC;
-  font-size: 11.5px;
+  font-size: 11px;
   font-weight: 800;
   display: flex;
   align-items: center;
@@ -518,36 +484,37 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  transition: all 0.15s ease;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
   box-sizing: border-box;
 }
 
 .scene-action-btn:hover {
   background: rgba(56, 189, 248, 0.18);
   border-color: #38BDF8;
-  transform: translateX(2px);
+}
+
+.scene-action-btn:active {
+  transform: scale(0.98);
 }
 
 .scene-action-btn.action-danger {
-  border-color: rgba(244, 63, 94, 0.35);
-  background: rgba(45, 16, 28, 0.75);
+  border-color: rgba(244, 63, 94, 0.4);
+  background: rgba(45, 16, 28, 0.85);
 }
 
 .actions-grid-3 .scene-action-btn {
-  font-size: 10px;
+  font-size: 9.5px;
   padding: 0 4px;
 }
 
 .actions-grid-4 .scene-action-btn,
 .actions-grid-quiz .scene-action-btn {
-  height: 38px;
-  min-height: 38px;
-  font-size: 10.5px;
+  height: 36px;
+  min-height: 36px;
+  font-size: 10px;
 }
 
 /* ----------------------------------------------------------------------------
-   8. FOOTER CONSOLE INTEGRATO: STEPPER-DOCK (WIZARD & COCKPIT - 44px)
+   8. FOOTER STICKY: STEPPER-DOCK & COCKPIT CON PROTEZIONE NOTCH iOS
    ---------------------------------------------------------------------------- */
 .wizard-sticky-footer,
 .cockpit-footer {
@@ -555,86 +522,66 @@
   z-index: 40;
   width: 100%;
   max-width: 600px;
-  /* 🔒 10px di respiro sopra per non toccare lo slot d'azione */
-  margin: 10px auto 0 auto !important;
+  margin: 0 auto !important;
   background: rgba(7, 10, 18, 0.98);
   border-top: 1px solid rgba(255, 255, 255, 0.10);
-  /* 🔒 16px di respiro da entrambi i bordi dello schermo + safe-area iOS */
-  padding-left: 16px !important;
-  padding-right: 16px !important;
-  padding-bottom: max(env(safe-area-inset-bottom, 0px), var(--tg-safe-area-inset-bottom, 0px), 12px) !important;
+  /* Calcolo dinamico dell'altezza reale: 46px di contenuto + padding safe area senza tagli */
+  height: calc(46px + max(env(safe-area-inset-bottom, 0px), var(--tg-safe-area-inset-bottom, 0px))) !important;
+  min-height: calc(46px + max(env(safe-area-inset-bottom, 0px), var(--tg-safe-area-inset-bottom, 0px))) !important;
+  padding-top: 4px !important;
+  padding-left: 12px !important;
+  padding-right: 12px !important;
+  padding-bottom: max(env(safe-area-inset-bottom, 0px), var(--tg-safe-area-inset-bottom, 0px), 6px) !important;
   box-sizing: border-box !important;
-  height: 44px;
-  min-height: 44px;
   display: flex;
   align-items: center;
 }
 
-/* Contenitore interno a 3 blocchi: Indietro | Nodi 1-4 | Tasto Avanzamento */
+/* Controlli Wizard Footer a 3 Elementi */
 #main-wizard-footer > div,
 .wizard-footer-step-controls {
   width: 100%;
   display: flex !important;
   align-items: center !important;
   justify-content: space-between !important;
-  /* 🔒 Spazio fisso di 12px tra i 3 elementi, zero sovrapposizioni */
-  gap: 12px !important;
+  gap: 8px !important;
 }
 
-/* Tasto Indietro a sinistra */
-#main-wizard-footer button:first-child {
-  flex-shrink: 0;
-  padding-left: 4px;
-  padding-right: 8px;
-}
-
-/* Nodi centrali di avanzamento (1 - 2 - 3 - 4) */
-#main-wizard-footer .flex.items-center.gap-1\.5 {
-  flex-shrink: 0;
-  gap: 6px !important;
-}
-
-/* Pulsante CTA d'azione a destra */
-#main-wizard-footer button:last-child,
 .btn-wizard-cta {
   flex-shrink: 0;
-  height: 34px !important;
-  min-height: 34px !important;
-  padding-left: 14px !important;
-  padding-right: 14px !important;
-  border-radius: 0.65rem !important;
+  height: 32px !important;
+  min-height: 32px !important;
+  padding-left: 12px !important;
+  padding-right: 12px !important;
+  border-radius: 0.6rem !important;
   background: #38BDF8 !important;
   color: #070A12 !important;
   font-weight: 900 !important;
-  font-size: 11px !important;
+  font-size: 10.5px !important;
   text-transform: uppercase !important;
-  letter-spacing: 0.04em !important;
+  letter-spacing: 0.03em !important;
   border: none !important;
-  box-shadow: 0 4px 14px rgba(56, 189, 248, 0.35) !important;
+  box-shadow: 0 3px 12px rgba(56, 189, 248, 0.35) !important;
 }
 
 .cockpit-footer {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 6px;
-  padding-left: 8px;
-  padding-right: 8px;
 }
 
 .cockpit-btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 4px;
-  height: 34px;
-  background: rgba(255, 255, 255, 0.04);
-  border-radius: 8px;
+  gap: 3px;
+  height: 32px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 6px;
   border: 1px solid transparent;
   color: #94A3B8;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 700;
-  cursor: pointer;
-  transition: all 0.15s ease;
 }
 
 .cockpit-btn:active {
@@ -644,7 +591,7 @@
 }
 
 /* ----------------------------------------------------------------------------
-   9. NUMERI FLUTTUANTI (SORGONO DAL BORDO CARTA E SFUMANO SOTTO L'HEADER)
+   9. NUMERI FLUTTUANTI (SORGONO DALLA CARTA E SALGONO VERSO L'HUD)
    ---------------------------------------------------------------------------- */
 .floating-damage-layer {
   position: absolute;
@@ -657,22 +604,22 @@
 .floating-fx-number {
   position: absolute;
   left: 50%;
-  top: 170px;
+  top: 140px;
   transform: translateX(-50%);
   font-family: monospace;
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 900;
-  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.9);
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.9);
   pointer-events: none;
   z-index: 100;
-  animation: floatTowardHeader 1.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: floatTowardHeader 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 @keyframes floatTowardHeader {
-  0% { opacity: 0; transform: translate(-50%, 0) scale(0.85); }
-  15% { opacity: 1; transform: translate(-50%, -25px) scale(1.1); }
-  75% { opacity: 0.9; transform: translate(-50%, -85px) scale(1); }
-  100% { opacity: 0; transform: translate(-50%, -120px) scale(0.85); }
+  0% { opacity: 0; transform: translate(-50%, 0) scale(0.9); }
+  20% { opacity: 1; transform: translate(-50%, -20px) scale(1.1); }
+  80% { opacity: 0.9; transform: translate(-50%, -60px) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -90px) scale(0.85); }
 }
 
 /* ----------------------------------------------------------------------------
@@ -693,8 +640,8 @@
 }
 
 @keyframes diceRoll {
-  0% { transform: rotateX(0deg) rotateY(0deg) scale(0.9); }
-  100% { transform: rotateX(360deg) rotateY(180deg) scale(1.15); }
+  0% { transform: rotateX(0deg) rotateY(0deg); }
+  100% { transform: rotateX(360deg) rotateY(180deg); }
 }
 
 /* ----------------------------------------------------------------------------
@@ -724,15 +671,15 @@ dialog.game-modal-sheet:not([open]) {
 .game-sheet-container {
   width: 100%;
   max-width: 640px;
-  height: 90vh;
-  height: 90dvh;
-  max-height: 90dvh;
+  height: 88vh;
+  height: 88dvh;
+  max-height: 88dvh;
   background: rgba(11, 18, 34, 0.96);
   border-top: 1px solid rgba(56, 189, 248, 0.35);
   border-left: 1px solid rgba(255, 255, 255, 0.10);
   border-right: 1px solid rgba(255, 255, 255, 0.10);
-  border-radius: 1.35rem 1.35rem 0 0;
-  padding: 16px 18px 24px 18px;
+  border-radius: 1.25rem 1.25rem 0 0;
+  padding: 14px 16px 20px 16px;
   display: flex;
   flex-direction: column;
   box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.85);
@@ -743,9 +690,9 @@ dialog.game-modal-sheet:not([open]) {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding-bottom: 10px;
+  padding-bottom: 8px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.10);
-  margin-bottom: 12px;
+  margin-bottom: 10px;
 }
 
 .game-sheet-scroll {
