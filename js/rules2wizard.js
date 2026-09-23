@@ -1,7 +1,8 @@
 // ============================================================================
 // PROJECT: ESTIQATSY SYNDICATE & RPG PLATFORM
-// FILE: js/rules2wizard.js (VERSIONE 25.5 - UNIFIED MOVERINA & DECISIONAL SLOT)
+// FILE: js/rules2wizard.js (VERSIONE 26.0 - AGNOSTIC TCG ENGINE & TOUCH-SWIPE OBSERVER)
 // LAYER: WIZARD FULL-STAGE, 48px FULL-HUD, ZERO-FONDINO, 44px STEPPER-DOCK
+// NOTE: 100% DINAMICO, ZERO HARDCODING, CAROSELLO CIRCOLARE & AUTO-SELEZIONE
 // ============================================================================
 
 // ----------------------------------------------------------------------------
@@ -38,7 +39,7 @@ function Rules2_FormatMod(val) {
 }
 
 function Rules2_FormatHumanEffect(rawEffect, faction = "") {
-  if (!rawEffect || rawEffect === "—" || rawEffect === "-") return "Nessuna proprietà speciale.";
+  if (!rawEffect || rawEffect === "—" || rawEffect === "-") return "";
   const tags = String(rawEffect).split(/[,|]/);
   const out = [];
 
@@ -48,13 +49,12 @@ function Rules2_FormatHumanEffect(rawEffect, faction = "") {
 
     if (tag === "TASTO:ZOMBI_ABILITA") out.push("🧟 <b>Necromanzia:</b> Costa 1 PV per rianimare un nemico come Zombi (Danno x2).");
     else if (tag === "TASTO:ZOMBI_DROGA") out.push("🧟 <b>Risveglio Chimico:</b> Usa 1 dose di droga per rianimare uno Zombi.");
-    else if (tag === "CLASSE:Destra") out.push("⚖️ <b>Orientamento Destra:</b> +1 Danno fisso vs Mazzu e Ideologi.");
-    else if (tag === "CLASSE:Sinistra") out.push("⚖️ <b>Orientamento Sinistra:</b> +1 Danno fisso vs Camorristi e Burocrati.");
+    else if (tag.startsWith("CLASSE:")) out.push(`⚖️ <b>Affinità ${tag.replace("CLASSE:", "")}:</b> Bonus fazione attivo.`);
     else if (tag === "PASSIVO:STAT_FORTUNA_1") out.push("🍀 <b>Buona Sorte:</b> +1 costante a tutti i tiri D20 ed Eventi.");
-    else if (tag.startsWith("PASSIVO:INT_VS_")) out.push(`📂 <b>Dossier Mirato:</b> +1 INT contro la fazione ${tag.replace("PASSIVO:INT_VS_", "")}.`);
+    else if (tag.startsWith("PASSIVO:INT_VS_")) out.push(`📂 <b>Dossier Mirato:</b> +1 INT contro ${tag.replace("PASSIVO:INT_VS_", "")}.`);
     else if (tag === "PASSIVO:PROVE" || tag === "PASSIVO:DOSSIER") out.push("📁 <b>Organigramma del Potere:</b> +1 INT permanente sull'inchiesta.");
     else if (tag.startsWith("SINTESI:")) out.push(`⚗️ <b>Laboratorio:</b> Sintetizza sostanze (${tag.replace("SINTESI:", "")}).`);
-    else if (tag.startsWith("PASSIVO:INGREDIENTE_")) out.push("🧪 <b>Materia Prima:</b> Reagente chimico.");
+    else if (tag.startsWith("PASSIVO:INGREDIENTE_")) out.push("🧪 <b>Materia Prima:</b> Reagente per sintesi.");
     else if (tag.startsWith("PASSIVO:OGGETTO_")) out.push("🧰 <b>Strumento Speciale:</b> Sblocca varchi o controlli correlati.");
     else out.push(`⚡ <b>Proprietà:</b> ${tag.replace(/_/g, " ")}`);
   }
@@ -108,7 +108,7 @@ const Rules2Store = {
 };
 
 // ----------------------------------------------------------------------------
-// 3. WIZARD CREAZIONE PERSONAGGIO (MOVERINA 5 FASCE & SLOT DECISIONALE)
+// 3. WIZARD CREAZIONE PERSONAGGIO AGNOSTICO
 // ----------------------------------------------------------------------------
 const Rules2Wizard = {
   state: {
@@ -174,7 +174,7 @@ const Rules2Wizard = {
     if (!hudContainer) return;
 
     const heroName = this.state.heroName || (cls ? cls.nome : "Avventuriero");
-    const avatarEmoji = cls ? (cls.emoji || "🥋") : "🥋";
+    const avatarEmoji = cls ? (cls.emoji || "👤") : "👤";
     
     let effFor = cls ? Number(cls.forza || 10) : 10;
     let effDes = cls ? Number(cls.destrezza || 10) : 10;
@@ -192,7 +192,6 @@ const Rules2Wizard = {
     const desMod = Rules2_FormatMod(effDes);
     const intMod = Rules2_FormatMod(effInt);
 
-    // Larghezza 100% identica alla colonna madre
     hudContainer.className = "hud-cockpit-48px w-full p-2 rounded-xl bg-slate-900/90 border border-white/10 shadow-lg mb-1";
     hudContainer.innerHTML = `
       <!-- RIGA 1: NOME LUNGO FLESSIBILE A SX & RISORSE BLOCCATE A DX -->
@@ -223,6 +222,16 @@ const Rules2Wizard = {
     `;
   },
 
+  updateStepper: function(step) {
+    [1, 2, 3, 4].forEach(n => {
+      const ind = document.getElementById(`wiz-step-ind-${n}`);
+      if (!ind) return;
+      ind.classList.remove('active', 'completed');
+      if (n === step) ind.classList.add('active');
+      else if (n < step) ind.classList.add('completed');
+    });
+  },
+
   // --------------------------------------------------------------------------
   // FOOTER INTEGRATO: "STEPPER-DOCK" (44px)
   // --------------------------------------------------------------------------
@@ -250,12 +259,10 @@ const Rules2Wizard = {
     footerDock.className = "wizard-sticky-footer flex items-center justify-between px-3 bg-[#070A12]/95 border-t border-white/10 z-40";
     footerDock.innerHTML = `
       <div class="flex items-center justify-between w-full h-full text-xs font-mono">
-        <!-- Sinistra: Tasto Indietro discreto -->
         <button onclick="Rules2Wizard.prevStep(${stepNum - 1})" class="btn btn-xs btn-ghost text-slate-400 ${stepNum === 1 ? 'invisible pointer-events-none' : ''} px-2">
           ‹ Indietro
         </button>
 
-        <!-- Centro: Nodi di Avanzamento compatti -->
         <div class="flex items-center gap-1.5">
           ${[1, 2, 3, 4].map(n => `
             <div onclick="Rules2Wizard.goToStep(${n})" class="flex items-center gap-1 cursor-pointer ${n === stepNum ? 'opacity-100' : 'opacity-40'}">
@@ -265,7 +272,6 @@ const Rules2Wizard = {
           `).join('')}
         </div>
 
-        <!-- Destra: Tasto Avanzamento Primario -->
         <button onclick="${ctaAction}" class="btn btn-xs btn-primary font-black uppercase tracking-wider px-3 h-[32px] min-h-[32px] shadow-lg">
           ${ctaLabel}
         </button>
@@ -285,7 +291,7 @@ const Rules2Wizard = {
       fase: faseName,
       classeId: this.state.chosenClass?.id || "",
       classe: this.state.chosenClass?.nome || "",
-      schieramentoPolitico: this.state.chosenClass?.sottocategoria || "Destra",
+      schieramentoPolitico: this.state.chosenClass?.sottocategoria || "Neutrale",
       oro: this.state.currentGold,
       px: this.state.remainingPx,
       abilita: (this.state.chosenAbilities || []).map(id => {
@@ -472,6 +478,7 @@ const Rules2Wizard = {
   showStep: function(stepNum) {
     this.state.step = stepNum;
     this.syncLiveHUD();
+    this.updateStepper(stepNum);
     this.updateFooterDock(stepNum);
 
     [1, 2, 3, 4].forEach(n => {
@@ -484,12 +491,50 @@ const Rules2Wizard = {
   },
 
   // --------------------------------------------------------------------------
-  // CAROSELLO INFINITO & NAVIGAZIONE FLUTTUANTE CON FRECCE (‹ e ›)
+  // CAROSELLO: SCROLL, TOUCH-SWIPE OBSERVER & NAVIGAZIONE INFINITA
   // --------------------------------------------------------------------------
-  scrollToIndex: function(stageId, index, cardWidth = 316) {
+  scrollToIndex: function(stageId, index, cardWidth = 314) {
     const stage = document.getElementById(stageId);
     if (!stage) return;
     stage.scrollTo({ left: index * cardWidth, behavior: 'smooth' });
+  },
+
+  // 🔒 Ascoltatore intelligente: rileva la carta al centro dopo lo swipe touch
+  bindScrollDetection: function(stageId, step) {
+    const stage = document.getElementById(stageId);
+    if (!stage || stage._hasSwipeObserver) return;
+    stage._hasSwipeObserver = true;
+
+    let timer = null;
+    stage.addEventListener("scroll", () => {
+      clearTimeout(timer);
+      timer = setTimeout(() => {
+        const cards = stage.querySelectorAll(".tcg-card");
+        if (!cards || cards.length === 0) return;
+        const stageCenter = stage.getBoundingClientRect().left + stage.offsetWidth / 2;
+
+        let closestIdx = 0;
+        let minDistance = Infinity;
+
+        cards.forEach((card, idx) => {
+          const rect = card.getBoundingClientRect();
+          const cardCenter = rect.left + rect.width / 2;
+          const dist = Math.abs(stageCenter - cardCenter);
+          if (dist < minDistance) {
+            minDistance = dist;
+            closestIdx = idx;
+          }
+        });
+
+        if (step === 1 && this.state.activeClassIndex !== closestIdx) {
+          this.selectClassByIndex(closestIdx, false);
+        } else if (step === 2 && this.state.activeAbilityIndex !== closestIdx) {
+          this.selectAbilityByIndex(closestIdx, false);
+        } else if (step === 3 && this.state.activeShopIndex !== closestIdx) {
+          this.selectShopItemByIndex(closestIdx, false);
+        }
+      }, 70);
+    }, { passive: true });
   },
 
   getFilteredClasses: function() {
@@ -522,22 +567,22 @@ const Rules2Wizard = {
       const list = this.getFilteredClasses();
       if (list.length <= 1) return;
       const nextIdx = (this.state.activeClassIndex + direction + list.length) % list.length;
-      this.selectClassByIndex(nextIdx);
+      this.selectClassByIndex(nextIdx, true);
     } else if (step === 2) {
       const list = this.getFilteredAbilities();
       if (list.length <= 1) return;
       const nextIdx = (this.state.activeAbilityIndex + direction + list.length) % list.length;
-      this.selectAbilityByIndex(nextIdx);
+      this.selectAbilityByIndex(nextIdx, true);
     } else if (step === 3) {
       const list = this.getFilteredShopItems();
       if (list.length <= 1) return;
       const nextIdx = (this.state.activeShopIndex + direction + list.length) % list.length;
-      this.selectShopItemByIndex(nextIdx);
+      this.selectShopItemByIndex(nextIdx, true);
     }
   },
 
   // --------------------------------------------------------------------------
-  // STEP 1: SCELTA CLASSE (MOVERINA 5 FASCE - ZERO FONDINO, IMMAGINE A TOP:0)
+  // STEP 1: SCELTA CLASSE (ZERO FONDINO, TESTATA SOVRIMPRESSA, 100% DINAMICO)
   // --------------------------------------------------------------------------
   setClassFactionFilter: function(faction) {
     this.state.classFactionFilter = faction;
@@ -549,10 +594,15 @@ const Rules2Wizard = {
     const stage = document.getElementById("wizard-classes-stage");
     if (!stage) return;
 
-    let classes = this.getFilteredClasses();
-    const filter = this.state.classFactionFilter || "tutte";
+    // Estrazione dinamica delle fazioni presenti nei dati (Zero hardcoding)
+    const factionSet = {};
+    (this.state.classes || []).forEach(c => {
+      const f = String(c.sottocategoria || "").trim();
+      if (f && f !== "—" && f !== "-") factionSet[f] = true;
+    });
+    const factions = ["tutte", ...Object.keys(factionSet)];
+    const currentFilter = this.state.classFactionFilter || "tutte";
 
-    // Iniezione Micro-Chip compatti sotto l'HUD
     let filterBar = document.getElementById("wizard-class-faction-chips");
     if (!filterBar) {
       const parentPanel = document.getElementById("wizard-step-class");
@@ -565,14 +615,13 @@ const Rules2Wizard = {
     }
 
     if (filterBar) {
-      filterBar.innerHTML = `
-        <button onclick="Rules2Wizard.setClassFactionFilter('tutte')" class="rpg-category-chip ${filter === 'tutte' ? 'active' : ''}">TUTTE</button>
-        <button onclick="Rules2Wizard.setClassFactionFilter('sinistra')" class="rpg-category-chip ${filter === 'sinistra' ? 'active' : ''}">SINISTRA</button>
-        <button onclick="Rules2Wizard.setClassFactionFilter('destra')" class="rpg-category-chip ${filter === 'destra' ? 'active' : ''}">DESTRA</button>
-      `;
+      filterBar.innerHTML = factions.map(f => `
+        <button onclick="Rules2Wizard.setClassFactionFilter('${f}')" class="rpg-category-chip ${currentFilter.toLowerCase() === f.toLowerCase() ? 'active' : ''}">
+          ${f.toUpperCase()}
+        </button>
+      `).join("");
     }
 
-    // Iniezione frecce fluttuanti nel container esterno
     const outerStage = stage.closest(".coverflow-stage-outer");
     if (outerStage && !document.getElementById("arrows-step-1")) {
       const arrowWrap = document.createElement("div");
@@ -585,31 +634,32 @@ const Rules2Wizard = {
       outerStage.appendChild(arrowWrap);
     }
 
-    // Render Carte Moverina: L'immagine tocca il bordo superiore, testata in sovraimpressione
+    let classes = this.getFilteredClasses();
+
     stage.innerHTML = classes.map((cls, idx) => {
       const isSelected = (this.state.activeClassIndex === idx);
-      const pol = String(cls.sottocategoria || "Destra").toLowerCase();
+      const subCat = String(cls.sottocategoria || "").trim();
       const forVal = Number(cls.forza || 10);
       const desVal = Number(cls.destrezza || 10);
       const intVal = Number(cls.intelligenza || 10);
-      const startingLoot = cls.equipLoot || "Pugni nudi";
+      const startingLoot = cls.equipLoot || "Dotazione Iniziale";
 
       return `
-        <div id="class-card-${idx}" onclick="Rules2Wizard.selectClassByIndex(${idx})" class="coverflow-card tcg-card ${isSelected ? 'selected' : ''}">
-          <!-- FASCIA 2: Media a tutto campo superiore (da Y=0 della carta) -->
+        <div id="class-card-${idx}" onclick="Rules2Wizard.selectClassByIndex(${idx}, true)" class="coverflow-card tcg-card ${isSelected ? 'selected' : ''}">
+          <!-- FASCIA 2: Media a Schermo Pieno Alto (da Y=0 della carta con angoli tondi) -->
           <div class="tcg-card-media">
-            <!-- FASCIA 1: Testata Fluttuante Trasparente in Sovraimpressione -->
+            <!-- FASCIA 1: Testata Fluttuante Trasparente Sovrimpressa -->
             <div class="tcg-card-header">
-              <h4 class="tcg-card-title">${cls.emoji || '🥋'} ${cls.nome}</h4>
-              <span class="tcg-card-faction-badge ${pol}">${pol.toUpperCase()}</span>
+              <h4 class="tcg-card-title truncate">${cls.emoji ? cls.emoji + ' ' : ''}${cls.nome}</h4>
+              ${subCat ? `<span class="tcg-card-faction-badge ${subCat.toLowerCase()}">${subCat.toUpperCase()}</span>` : ''}
             </div>
             
             <img src="${cls.mediaUrl}" class="tcg-card-img" alt="${Rules2_SafeAttr(cls.nome)}" loading="lazy">
             
-            ${(cls.citazione && cls.citazione !== "—") ? `
+            ${(cls.citazione && cls.citazione !== "—" && cls.citazione !== "-") ? `
               <div class="tcg-card-quote-overlay">
                 <div class="tcg-card-quote-text">“${cls.citazione.replace(/^["'“”]+|["'“”]+$/g, "")}”</div>
-                <div class="tcg-card-quote-author">${cls.autoreCitazione || 'LA FAZIONE'}</div>
+                ${cls.autoreCitazione ? `<div class="tcg-card-quote-author">${cls.autoreCitazione}</div>` : ''}
               </div>
             ` : ''}
           </div>
@@ -621,10 +671,10 @@ const Rules2Wizard = {
             <span>🧠 INT <b>${intVal}</b> (${Rules2_FormatMod(intVal)})</span>
           </div>
 
-          <!-- FASCIA 4: Descrizione Narrativa (Fino a 8-9 righe distese) -->
+          <!-- FASCIA 4: Descrizione Narrativa -->
           <p class="tcg-card-desc">${cls.descrizione || cls.testo || ''}</p>
 
-          <!-- FASCIA 5: Piede Scheda con Dotazione, PV e Oro (Pura Vetrina, Zero Bottoni) -->
+          <!-- FASCIA 5: Piede Scheda di sola consultazione (Zero Bottoni) -->
           <div class="tcg-card-footer">
             <div class="tcg-card-loot" title="${Rules2_SafeAttr(startingLoot)}">🎒 ${startingLoot}</div>
             <div class="tcg-card-vitals">
@@ -648,16 +698,17 @@ const Rules2Wizard = {
     actionSlot.innerHTML = `
       <div class="actions-grid-1">
         <button onclick="Rules2Wizard.confirmStep1()" class="scene-action-btn font-black text-xs">
-          <span>Scegli Classe: <b>${currentClass ? currentClass.nome : 'Avventuriero'}</b></span>
+          <span>Conferma Classe: <b>${currentClass ? currentClass.nome : 'Avventuriero'}</b></span>
           <span>›</span>
         </button>
       </div>
     `;
 
+    this.bindScrollDetection("wizard-classes-stage", 1);
     this.syncLiveHUD();
   },
 
-  selectClassByIndex: function(idx) {
+  selectClassByIndex: function(idx, shouldScroll = true) {
     this.state.activeClassIndex = idx;
     const list = this.getFilteredClasses();
     this.state.chosenClass = list[idx] || this.state.classes[idx];
@@ -669,13 +720,14 @@ const Rules2Wizard = {
     }
 
     tgHaptic("selection");
-    if (window.SoundEngine) SoundEngine.playClick();
     this.renderStep1();
-    this.scrollToIndex('wizard-classes-stage', idx);
+    if (shouldScroll) {
+      this.scrollToIndex('wizard-classes-stage', idx);
+    }
   },
 
   // --------------------------------------------------------------------------
-  // STEP 2: ABILITÀ & TALENTI (TESTO NARRATIVO + EFFETTO + SLOT SPESA ESTERNO)
+  // STEP 2: ABILITÀ & TALENTI (TESTO NARRATIVO + EFFETTO + AUTO-SWIPE)
   // --------------------------------------------------------------------------
   setAbilityCategoryFilter: function(cat) {
     this.state.abilityCategoryFilter = cat;
@@ -687,11 +739,15 @@ const Rules2Wizard = {
     const stage = document.getElementById("wizard-abilities-stage");
     if (!stage) return;
 
-    let abilities = this.getFilteredAbilities();
-    const filter = this.state.abilityCategoryFilter || "tutti";
-    const userFaction = String(this.state.chosenClass?.sottocategoria || "Destra").toLowerCase();
+    // Estrazione dinamica delle categorie presenti
+    const catSet = {};
+    (this.state.abilities || []).forEach(a => {
+      const c = String(a.categoria || "").trim();
+      if (c && c !== "—" && c !== "-") catSet[c] = true;
+    });
+    const categories = ["tutti", ...Object.keys(catSet)];
+    const currentFilter = this.state.abilityCategoryFilter || "tutti";
 
-    // Micro-Chip compatti
     let filterBar = document.getElementById("wizard-abilities-filter-chips");
     if (!filterBar) {
       const parentPanel = document.getElementById("wizard-step-abilities");
@@ -704,15 +760,13 @@ const Rules2Wizard = {
     }
 
     if (filterBar) {
-      filterBar.innerHTML = `
-        <button onclick="Rules2Wizard.setAbilityCategoryFilter('tutti')" class="rpg-category-chip ${filter === 'tutti' ? 'active' : ''}">TUTTI</button>
-        <button onclick="Rules2Wizard.setAbilityCategoryFilter('fisica')" class="rpg-category-chip ${filter === 'fisica' ? 'active' : ''}">FISICA</button>
-        <button onclick="Rules2Wizard.setAbilityCategoryFilter('mentale')" class="rpg-category-chip ${filter === 'mentale' ? 'active' : ''}">MENTALE</button>
-        <button onclick="Rules2Wizard.setAbilityCategoryFilter('clandestina')" class="rpg-category-chip ${filter === 'clandestina' ? 'active' : ''}">OCCULTA</button>
-      `;
+      filterBar.innerHTML = categories.map(c => `
+        <button onclick="Rules2Wizard.setAbilityCategoryFilter('${c}')" class="rpg-category-chip ${currentFilter.toLowerCase() === c.toLowerCase() ? 'active' : ''}">
+          ${c.toUpperCase()}
+        </button>
+      `).join("");
     }
 
-    // Frecce fluttuanti
     const outerStage = stage.closest(".coverflow-stage-outer");
     if (outerStage && !document.getElementById("arrows-step-2")) {
       const arrowWrap = document.createElement("div");
@@ -725,47 +779,47 @@ const Rules2Wizard = {
       outerStage.appendChild(arrowWrap);
     }
 
+    let abilities = this.getFilteredAbilities();
+    const userFaction = String(this.state.chosenClass?.sottocategoria || "").toLowerCase();
+
     stage.innerHTML = abilities.map((abl, idx) => {
-      // 🔒 Alone bianco platino sull'indice della carta attiva al centro!
       const isSelected = (this.state.activeAbilityIndex === idx);
       const isLearned = this.state.chosenAbilities.includes(abl.id);
       const req = String(abl.requisitiCodificati || abl.effettoCodificato || "tutti").toLowerCase();
-      const isCompatible = req.includes("tutti") || req.includes(userFaction);
+      const isCompatible = req.includes("tutti") || (userFaction && req.includes(userFaction));
       const perkText = Rules2_FormatHumanEffect(abl.requisitiCodificati || abl.effettoCodificato, userFaction);
       const loreText = abl.descrizione || abl.testo || "";
 
       return `
-        <div id="abilities-card-${idx}" onclick="Rules2Wizard.selectAbilityByIndex(${idx})" class="coverflow-card tcg-card ${isSelected ? 'selected' : ''}">
-          <!-- FASCIA 2: Media a Schermo Pieno con Testata Sovrimpressa -->
+        <div id="abilities-card-${idx}" onclick="Rules2Wizard.selectAbilityByIndex(${idx}, true)" class="coverflow-card tcg-card ${isSelected ? 'selected' : ''}">
           <div class="tcg-card-media">
-            <!-- FASCIA 1: Testata Fluttuante Trasparente -->
             <div class="tcg-card-header">
-              <h4 class="tcg-card-title">${abl.emoji || '⚡'} ${abl.nome}</h4>
+              <h4 class="tcg-card-title truncate">${abl.emoji ? abl.emoji + ' ' : ''}${abl.nome}</h4>
               <span class="tcg-card-faction-badge ${isCompatible ? 'destra' : 'sinistra'}">${(abl.categoria || 'Talento').toUpperCase()}</span>
             </div>
 
             ${abl.mediaUrl ? `<img src="${abl.mediaUrl}" class="tcg-card-img" alt="${Rules2_SafeAttr(abl.nome)}" loading="lazy">` : `<div class="w-full h-full flex items-center justify-center bg-gradient-to-b from-slate-900 to-black text-6xl drop-shadow(0 0 10px rgba(56,189,248,0.5))">${abl.emoji || '⚡'}</div>`}
             
-            <div class="tcg-card-quote-overlay">
-              <div class="tcg-card-quote-text">“${abl.citazione || 'La disciplina del molo non ammette errori.'}”</div>
-              <div class="tcg-card-quote-author">${abl.autoreCitazione || 'IL VETERANO'}</div>
-            </div>
+            ${(abl.citazione && abl.citazione !== "—" && abl.citazione !== "-") ? `
+              <div class="tcg-card-quote-overlay">
+                <div class="tcg-card-quote-text">“${abl.citazione.replace(/^["'“”]+|["'“”]+$/g, "")}”</div>
+                ${abl.autoreCitazione ? `<div class="tcg-card-quote-author">${abl.autoreCitazione}</div>` : ''}
+              </div>
+            ` : ''}
           </div>
 
-          <!-- FASCIA 3: Piastra Requisiti & Costo -->
           <div class="tcg-stats-plate">
             <span>✨ <b>${abl.costoPX || 100} PX</b></span>
             <span>🎯 <b>${isCompatible ? 'Compatibile' : 'Vincolato'}</b></span>
             <span>⚡ <b>${isLearned ? 'Appreso ✓' : 'Disponibile'}</b></span>
           </div>
 
-          <!-- FASCIA 4: Testo Narrativo + Effetto Meccanico Codificato -->
+          <!-- Stampa prima la lore di ambientazione e subito sotto l'effetto meccanico -->
           <div class="tcg-card-desc">
             ${loreText ? `<p class="mb-1 text-slate-300 leading-snug">${loreText}</p>` : ''}
-            <div class="text-[11px] text-sky-300 font-bold">${perkText}</div>
+            ${perkText ? `<div class="text-[11px] text-sky-300 font-bold">${perkText}</div>` : ''}
           </div>
 
-          <!-- FASCIA 5: Piede Scheda di Sola Lettura (Zero Bottoni Spremuti) -->
           <div class="tcg-card-footer">
             <div class="tcg-card-loot">${abl.sottocategoria || 'Abilità'}</div>
             <div class="tcg-card-vitals">
@@ -778,7 +832,6 @@ const Rules2Wizard = {
       `;
     }).join("");
 
-    // Slot Decisionale di Spesa sotto la carta
     let actionSlot = document.getElementById("wizard-action-slot-step-2");
     if (!actionSlot) {
       actionSlot = document.createElement("div");
@@ -793,20 +846,20 @@ const Rules2Wizard = {
       const cost = Number(currentAbl.costoPX || 100);
       const canAfford = (this.state.remainingPx >= cost);
       const req = String(currentAbl.requisitiCodificati || currentAbl.effettoCodificato || "tutti").toLowerCase();
-      const isCompatible = req.includes("tutti") || req.includes(userFaction);
+      const isCompatible = req.includes("tutti") || (userFaction && req.includes(userFaction));
 
       let btnHtml = "";
       if (isLearned) {
         btnHtml = `
           <button onclick="Rules2Wizard.toggleAbility('${currentAbl.id}')" class="scene-action-btn border-amber-400/50 text-amber-300 font-black justify-between">
-            <span>✓ TALENTO APPRESO</span>
+            <span>✓ APPRESO</span>
             <span class="text-[10px] font-normal underline">Rimborsa +${cost} PX</span>
           </button>
         `;
       } else if (!isCompatible) {
         btnHtml = `
           <button disabled class="scene-action-btn opacity-40 justify-center text-slate-400 cursor-not-allowed">
-            🔒 VINCOLATO A ${userFaction.toUpperCase() === 'DESTRA' ? 'SINISTRA' : 'DESTRA'}
+            🔒 REQUISITI NON SODDISFATTI
           </button>
         `;
       } else if (!canAfford) {
@@ -826,15 +879,17 @@ const Rules2Wizard = {
       actionSlot.innerHTML = `<div class="actions-grid-1">${btnHtml}</div>`;
     }
 
+    this.bindScrollDetection("wizard-abilities-stage", 2);
     this.syncLiveHUD();
   },
 
-  selectAbilityByIndex: function(idx) {
+  selectAbilityByIndex: function(idx, shouldScroll = true) {
     this.state.activeAbilityIndex = idx;
     tgHaptic("selection");
-    if (window.SoundEngine) SoundEngine.playClick();
     this.renderStep2();
-    this.scrollToIndex('wizard-abilities-stage', idx);
+    if (shouldScroll) {
+      this.scrollToIndex('wizard-abilities-stage', idx);
+    }
   },
 
   toggleAbility: function(ablId) {
@@ -866,7 +921,7 @@ const Rules2Wizard = {
   },
 
   // --------------------------------------------------------------------------
-  // STEP 3: EMPORIO (MOVERINA 5 FASCE - CITAZIONE & SLOT COMPRA SOTTO)
+  // STEP 3: EMPORIO (ZERO HARDCODING, COMPRA SOTTO, ALONE ATTIVO)
   // --------------------------------------------------------------------------
   renderStep3: function() {
     this.syncGold();
@@ -891,7 +946,6 @@ const Rules2Wizard = {
 
     const filtered = this.getFilteredShopItems();
 
-    // Frecce fluttuanti
     const outerStage = stage.closest(".coverflow-stage-outer");
     if (outerStage && !document.getElementById("arrows-step-3")) {
       const arrowWrap = document.createElement("div");
@@ -905,39 +959,36 @@ const Rules2Wizard = {
     }
 
     stage.innerHTML = filtered.map((it, idx) => {
-      // 🔒 Alone bianco platino sulla carta attiva
       const isSelected = (this.state.activeShopIndex === idx);
       const price = Math.abs(Number(it.costoOro || it.costo || 15));
       const inBag = (this.state.boughtItems || []).filter(b => b.id === it.id || b.nome === it.nome).length;
 
       return `
-        <div id="shop-card-${idx}" onclick="Rules2Wizard.selectShopItemByIndex(${idx})" class="coverflow-card tcg-card relative ${isSelected ? 'selected' : ''}">
-          <!-- FASCIA 2: Media a Schermo Pieno con Testata Sovrimpressa -->
+        <div id="shop-card-${idx}" onclick="Rules2Wizard.selectShopItemByIndex(${idx}, true)" class="coverflow-card tcg-card relative ${isSelected ? 'selected' : ''}">
           <div class="tcg-card-media">
-            <!-- FASCIA 1: Testata Fluttuante Trasparente -->
             <div class="tcg-card-header">
-              <h4 class="tcg-card-title">${it.emoji || '📦'} ${it.nome}</h4>
+              <h4 class="tcg-card-title truncate">${it.emoji ? it.emoji + ' ' : ''}${it.nome}</h4>
               <span class="tcg-card-faction-badge destra">${this.state.shopCategory}</span>
             </div>
 
-            <img src="${it.mediaUrl || 'https://image.pollinations.ai/prompt/noir-black-market-item-docks?width=600&height=400&nologo=true'}" class="tcg-card-img" alt="${Rules2_SafeAttr(it.nome)}" loading="lazy">
-            <div class="tcg-card-quote-overlay">
-              <div class="tcg-card-quote-text">“${it.citazione || 'Fornitura pulita, nessun seriale registrato.'}”</div>
-              <div class="tcg-card-quote-author">${it.autoreCitazione || 'CICCIO IL RICETTATORE'}</div>
-            </div>
+            <img src="${it.mediaUrl || 'https://image.pollinations.ai/prompt/dark-noir-rpg-equipment-item?width=600&height=400&nologo=true'}" class="tcg-card-img" alt="${Rules2_SafeAttr(it.nome)}" loading="lazy">
+            
+            ${(it.citazione && it.citazione !== "—" && it.citazione !== "-") ? `
+              <div class="tcg-card-quote-overlay">
+                <div class="tcg-card-quote-text">“${it.citazione.replace(/^["'“”]+|["'“”]+$/g, "")}”</div>
+                ${it.autoreCitazione ? `<div class="tcg-card-quote-author">${it.autoreCitazione}</div>` : ''}
+              </div>
+            ` : ''}
           </div>
 
-          <!-- FASCIA 3: Piastra Metrica Tattica -->
           <div class="tcg-stats-plate">
             <span>💰 <b>${price} 🟡</b></span>
             <span>💥 <b>${it.danno ? '+' + it.danno : '—'}</b></span>
             <span>❤️ <b>${it.pv ? '+' + it.pv : '—'}</b></span>
           </div>
 
-          <!-- FASCIA 4: Descrizione Tattica Distesa -->
-          <p class="tcg-card-desc">${it.descrizione || it.testo || 'Nessuna specifica aggiuntiva nel registro di banchina.'}</p>
+          <p class="tcg-card-desc">${it.descrizione || it.testo || ''}</p>
 
-          <!-- FASCIA 5: Piede Scheda Pulito (Il bottone compra è esterno) -->
           <div class="tcg-card-footer">
             <div class="tcg-card-loot font-bold">${price} ORO</div>
             <div class="tcg-card-vitals">
@@ -948,7 +999,6 @@ const Rules2Wizard = {
       `;
     }).join("");
 
-    // Slot Decisionale di Spesa sotto la carta Emporio
     let actionSlot = document.getElementById("wizard-action-slot-step-3");
     if (!actionSlot) {
       actionSlot = document.createElement("div");
@@ -981,16 +1031,18 @@ const Rules2Wizard = {
       actionSlot.innerHTML = `<div class="actions-grid-1">${btnHtml}</div>`;
     }
 
+    this.bindScrollDetection("wizard-shop-stage", 3);
     this.updateBackpackSummary();
     this.syncLiveHUD();
   },
 
-  selectShopItemByIndex: function(idx) {
+  selectShopItemByIndex: function(idx, shouldScroll = true) {
     this.state.activeShopIndex = idx;
     tgHaptic("selection");
-    if (window.SoundEngine) SoundEngine.playClick();
     this.filterShop(this.state.shopCategory);
-    this.scrollToIndex('wizard-shop-stage', idx);
+    if (shouldScroll) {
+      this.scrollToIndex('wizard-shop-stage', idx);
+    }
   },
 
   buyItem: function(itemId, price) {
@@ -1048,16 +1100,16 @@ const Rules2Wizard = {
   },
 
   // --------------------------------------------------------------------------
-  // STEP 4: CONSACRAZIONE (CARTA DEFINITIVA MOVERINA DELL'EROE)
+  // STEP 4: CONSACRAZIONE DINAMICA DELL'EROE
   // --------------------------------------------------------------------------
   renderStep4: function() {
     this.syncGold();
     const cls = this.state.chosenClass;
     if (!cls) return;
 
-    const pol = String(cls.sottocategoria || 'Destra').toLowerCase();
+    const subCat = String(cls.sottocategoria || 'Neutrale').trim();
     const heroName = this.state.heroName || AppState.user?.nome || "Avventuriero";
-    const startingGear = cls.equipLoot || "Pugni nudi";
+    const startingGear = cls.equipLoot || "Dotazione Base";
 
     let effFor = Number(cls.forza || 10);
     let effDes = Number(cls.destrezza || 10);
@@ -1074,49 +1126,42 @@ const Rules2Wizard = {
     const container = document.getElementById("wizard-step-name");
     if (!container) return;
 
-    // Carta Moverina definitiva dell'Eroe consacrato
     container.innerHTML = `
-      <!-- Input Nome dell'Eroe -->
       <div class="p-2 rounded-xl bg-slate-900 border border-white/10 mb-2 w-full max-w-[300px] mx-auto">
         <div class="flex items-center justify-between mb-1">
           <label class="text-[9.5px] font-mono text-sky-400 font-bold uppercase tracking-wider">Nome dell'Eroe</label>
           <button onclick="Rules2Wizard.randomizeHeroName()" class="text-[10px] text-amber-300 font-mono hover:underline flex items-center gap-1 font-bold">
-            🎲 Nome da Bisca
+            🎲 Casuale
           </button>
         </div>
         <input id="wizard-hero-name-input" type="text" value="${heroName}" oninput="Rules2Wizard.updateHeroName(this.value)" class="input input-bordered input-xs w-full bg-slate-950 text-white font-bold text-xs focus:border-sky-400">
       </div>
 
-      <!-- LA CARTA MOVERINA CONSACRATA -->
       <div class="coverflow-card tcg-card selected max-w-[300px] mx-auto shadow-2xl">
-        <!-- FASCIA 2: Media a tutto campo con Testata Sovrimpressa -->
         <div class="tcg-card-media">
-          <!-- FASCIA 1: Testata Fluttuante Trasparente -->
           <div class="tcg-card-header">
-            <h4 class="tcg-card-title truncate" id="final-card-title">${cls.emoji || '🥋'} ${heroName}</h4>
-            <span class="tcg-card-faction-badge ${pol}">${pol.toUpperCase()}</span>
+            <h4 class="tcg-card-title truncate" id="final-card-title">${cls.emoji ? cls.emoji + ' ' : ''}${heroName}</h4>
+            <span class="tcg-card-faction-badge ${subCat.toLowerCase()}">${subCat.toUpperCase()}</span>
           </div>
 
           <img src="${cls.mediaUrl}" class="tcg-card-img" alt="${Rules2_SafeAttr(cls.nome)}">
-          <div class="tcg-card-quote-overlay">
-            <div class="tcg-card-quote-text">“${cls.citazione || 'Pronto a scendere sui pontili della Darsena.'}”</div>
-            <div class="tcg-card-quote-author">${cls.autoreCitazione || 'CONSACRAZIONE'}</div>
-          </div>
+          
+          ${(cls.citazione && cls.citazione !== "—" && cls.citazione !== "-") ? `
+            <div class="tcg-card-quote-overlay">
+              <div class="tcg-card-quote-text">“${cls.citazione.replace(/^["'“”]+|["'“”]+$/g, "")}”</div>
+              ${cls.autoreCitazione ? `<div class="tcg-card-quote-author">${cls.autoreCitazione}</div>` : ''}
+            </div>
+          ` : ''}
         </div>
 
-        <!-- FASCIA 3: Piastra Statistiche con Bonus Derivati -->
         <div class="tcg-stats-plate">
           <span>🥊 FOR <b>${effFor}</b> (${Rules2_FormatMod(effFor)})</span>
           <span>🤸 DES <b>${effDes}</b> (${Rules2_FormatMod(effDes)})</span>
           <span>🧠 INT <b>${effInt}</b> (${Rules2_FormatMod(effInt)})</span>
         </div>
 
-        <!-- FASCIA 4: Descrizione Narrativa -->
-        <p class="tcg-card-desc">
-          Agente consacrato di classe <b>${cls.nome}</b>. Equipaggiato per l'inchiesta con dotazione clandestina e ${this.state.chosenAbilities.length} talenti appresi.
-        </p>
+        <p class="tcg-card-desc">${cls.descrizione || cls.testo || ''}</p>
 
-        <!-- FASCIA 5: Dotazione Finale e Vitali -->
         <div class="tcg-card-footer">
           <div class="tcg-card-loot truncate">🎒 ${startingGear} + ${this.state.boughtItems.length}</div>
           <div class="tcg-card-vitals">
@@ -1126,7 +1171,6 @@ const Rules2Wizard = {
         </div>
       </div>
 
-      <!-- Pulsanti di revisione discreti -->
       <div class="flex items-center justify-center gap-2 mt-2 font-mono text-[9.5px]">
         <button onclick="Rules2Wizard.goToStep(1)" class="btn btn-xs btn-outline border-white/20 text-slate-300">✎ Classe</button>
         <button onclick="Rules2Wizard.goToStep(2)" class="btn btn-xs btn-outline border-white/20 text-slate-300">✎ Talenti</button>
@@ -1142,7 +1186,7 @@ const Rules2Wizard = {
       this.state.heroName = val.trim();
       const title = document.getElementById("final-card-title");
       if (title && this.state.chosenClass) {
-        title.textContent = `${this.state.chosenClass.emoji || '🥋'} ${this.state.heroName}`;
+        title.textContent = `${this.state.chosenClass.emoji ? this.state.chosenClass.emoji + ' ' : ''}${this.state.heroName}`;
       }
       this.syncLiveHUD();
       this._syncStepToServer("WIZARD_NOME");
@@ -1160,7 +1204,7 @@ const Rules2Wizard = {
     if (input) input.value = this.state.heroName;
     const title = document.getElementById("final-card-title");
     if (title && this.state.chosenClass) {
-      title.textContent = `${this.state.chosenClass.emoji || '🥋'} ${this.state.heroName}`;
+      title.textContent = `${this.state.chosenClass.emoji ? this.state.chosenClass.emoji + ' ' : ''}${this.state.heroName}`;
     }
     this.syncLiveHUD();
     this._syncStepToServer("WIZARD_NOME");
