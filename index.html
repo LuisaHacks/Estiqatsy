@@ -19,13 +19,13 @@
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
 
   <!-- FOGLI DI STILE VERSIONATI -->
-  <link rel="stylesheet" href="css/core.css?v=22.0">
-  <link rel="stylesheet" href="css/rules2.css?v=22.0">
+  <link rel="stylesheet" href="css/core.css?v=23.0">
+  <link rel="stylesheet" href="css/rules2.css?v=23.0">
 </head>
 
 <body class="rpg-app-body bg-[#070A12] text-slate-100 flex flex-col h-screen overflow-hidden select-none" data-context="app" data-active-screen="view-home">
 
-  <!-- 1. LOADER D'AVVIO CON DISATTIVAZIONE TOCCHI IMMEDIATA -->
+  <!-- 1. LOADER D'AVVIO CON DISATTIVAZIONE TOCCHI -->
   <div id="app-loading" class="app-loader-screen fixed inset-0 z-[999] flex flex-col items-center justify-center bg-[#070A12] p-6 text-center transition-opacity duration-300">
     <div class="loader-spinner-box relative mb-4">
       <div class="loader-spinner w-14 h-14 border-4 border-sky-400/20 border-t-sky-400 rounded-full animate-spin"></div>
@@ -37,7 +37,7 @@
     <button id="loading-retry-btn" onclick="location.reload()" class="btn btn-sm btn-primary hidden mt-4">Riprova</button>
   </div>
 
-  <!-- SBLOCCO DI EMERGENZA (Fail-safe di sicurezza a tempo) -->
+  <!-- SBLOCCO DI EMERGENZA (Fail-safe di sicurezza) -->
   <script>
     setTimeout(function() {
       var l = document.getElementById("app-loading");
@@ -49,13 +49,12 @@
     }, 4000);
   </script>
 
-  <!-- 2.A TOP BAR PIATTAFORMA (CENTRATA TRA I TASTI NATIVI TELEGRAM - 44px) -->
-  <header id="main-app-header" class="universal-top-bar relative w-full z-40 flex items-center px-3 bg-[#070A12]/95 backdrop-blur-md border-b border-white/10">
-    <div class="w-8 h-10 flex items-center z-10"></div>
-    <div class="absolute inset-x-0 bottom-0 h-10 flex items-center justify-center pointer-events-none z-0" id="top-bar-title-box">
-      <span class="text-xs font-black tracking-widest text-white uppercase">⚓ ESTIQATSY</span>
+  <!-- 2.A TOP BAR PIATTAFORMA (44px - CENTRATA TRA I TASTI NATIVI TELEGRAM) -->
+  <header id="main-app-header" class="universal-top-bar relative w-full h-[44px] min-h-[44px] z-40 flex items-center justify-center px-[72px] bg-[#070A12]/95 backdrop-blur-md border-b border-white/10">
+    <div class="flex items-center justify-center pointer-events-none select-none" id="top-bar-title-box">
+      <span class="text-xs font-black tracking-widest text-white uppercase text-center truncate">⚓ ESTIQATSY</span>
     </div>
-    <div class="ml-auto z-10 flex items-center">
+    <div class="absolute right-3 inset-y-0 flex items-center z-10">
       <button id="audio-toggle-btn-mob" onclick="AppModules.toggleRadioMute(event)" class="btn btn-xs btn-circle btn-ghost text-sky-400" title="Audio">
         <i data-lucide="volume-2" class="w-4 h-4"></i>
       </button>
@@ -63,18 +62,14 @@
   </header>
 
   <!-- 2.B TOP BAR COCKPIT DI GIOCO RULES 2 -->
-  <header id="main-game-header" class="universal-top-bar hidden relative w-full z-40 flex items-center px-3 bg-[#070A12]/95 backdrop-blur-md border-b border-white/10">
-    <button onclick="GameEngine.leaveGameToHub()" class="btn btn-xs btn-ghost text-slate-300 z-10 flex items-center gap-1">
-      <i data-lucide="chevron-left" class="w-4 h-4"></i>
-      <span class="text-xs font-bold">Hub</span>
-    </button>
-    <div class="absolute inset-x-0 bottom-0 h-10 flex flex-col items-center justify-center pointer-events-none z-0">
-      <div class="text-[9px] font-black tracking-wider text-amber-400 uppercase" id="game-header-series">GIOCO</div>
-      <div class="text-xs font-bold text-white truncate max-w-[180px]" id="game-header-episode">Episodio 1</div>
+  <header id="main-game-header" class="universal-top-bar hidden relative w-full h-[44px] min-h-[44px] z-40 flex items-center justify-center px-[72px] bg-[#070A12]/95 backdrop-blur-md border-b border-white/10">
+    <div class="flex flex-col items-center justify-center pointer-events-none text-center">
+      <div class="text-[9px] font-black tracking-wider text-amber-400 uppercase leading-none" id="game-header-series">GIOCO</div>
+      <div class="text-xs font-bold text-white truncate max-w-[160px] leading-tight mt-0.5" id="game-header-episode">Episodio 1</div>
     </div>
-    <div class="ml-auto z-10 flex items-center">
+    <div class="absolute right-3 inset-y-0 flex items-center z-10">
       <button onclick="AppModules.toggleRadioMute(event)" class="btn btn-xs btn-circle btn-ghost text-slate-400" title="Audio">
-        <i data-lucide="volume-2" class="w-3.5 h-3.5"></i>
+        <i data-lucide="volume-2" class="w-4 h-4"></i>
       </button>
     </div>
   </header>
@@ -128,7 +123,7 @@
             <i data-lucide="shopping-bag" class="w-4 h-4 text-amber-400"></i> <span>Mercato Syndicate</span>
           </button>
           <button id="desk-nav-recipes" data-module="recipes" onclick="AppRouter.navigate('recipes')" class="desk-nav-btn flex items-center gap-3 w-full p-2.5 rounded-xl text-xs font-bold text-slate-300 hover:text-white transition" data-tab="recipes">
-            <i data-lucide="utensils" class="w-4 h-4 text-emerald-400"></i> <span>Workshop Barlady</span>
+            <i data-lucide="chef-hat" class="w-4 h-4 text-emerald-400"></i> <span>Workshop Barlady</span>
           </button>
           <button id="desk-nav-profile" onclick="AppRouter.navigate('profile')" class="desk-nav-btn flex items-center gap-3 w-full p-2.5 rounded-xl text-xs font-bold text-slate-300 hover:text-white transition" data-tab="profile">
             <i data-lucide="user" class="w-4 h-4 text-purple-400"></i> <span>Hub Agente & Arena</span>
@@ -141,7 +136,7 @@
           <i data-lucide="volume-2" class="w-4 h-4 text-sky-400"></i>
           <span>Audio Radio</span>
         </button>
-        <span class="font-mono text-[9px]">v22.0</span>
+        <span class="font-mono text-[9px]">v23.0</span>
       </div>
     </aside>
 
@@ -174,8 +169,8 @@
               </div>
             </div>
 
-            <!-- MINIPLAYER RADIO HOME (~48px) CON DOPPIO BERSAGLIO DI TOCCO -->
-            <div id="home-radio-miniplayer" onclick="AppModules.openRadioModal()" class="shadow-lg">
+            <!-- MINIPLAYER RADIO HOME -->
+            <div id="home-radio-miniplayer" onclick="AppModules.openRadioModal()" class="p-3 rounded-2xl bg-slate-900 border border-white/10 flex items-center justify-between shadow-lg cursor-pointer hover:border-sky-400/40 transition">
               <div class="flex items-center space-x-2.5 min-w-0 flex-1">
                 <div class="w-8 h-8 rounded-lg bg-black/60 border border-sky-400/40 flex items-center justify-center flex-shrink-0 text-base">
                   📻
@@ -191,10 +186,10 @@
                 </div>
               </div>
               <div class="flex items-center space-x-1 flex-shrink-0 ml-2" onclick="event.stopPropagation()">
-                <button onclick="AppModules.toggleRadioPlay(event)" id="home-radio-play-btn" class="btn btn-xs btn-circle btn-primary font-bold w-6 h-6 min-h-0 text-[10px]" title="Play/Pausa">
+                <button onclick="AppModules.toggleRadioPlay(event)" id="home-radio-play-btn" class="btn btn-xs btn-circle btn-primary font-bold w-7 h-7 min-h-0 text-[11px]" title="Play/Pausa">
                   ⏸
                 </button>
-                <button onclick="AppModules.toggleRadioMute(event)" id="home-radio-mute-btn" class="btn btn-xs btn-circle btn-ghost text-slate-300 w-6 h-6 min-h-0 text-[10px]" title="Muto">
+                <button onclick="AppModules.toggleRadioMute(event)" id="home-radio-mute-btn" class="btn btn-xs btn-circle btn-ghost text-slate-300 w-7 h-7 min-h-0 text-[11px]" title="Muto">
                   🔊
                 </button>
               </div>
@@ -248,14 +243,13 @@
           </section>
 
           <!-- =============================================================== -->
-          <!-- VISTA 2: GIOCHI (LIBRERIA SAGHE & MULTIPLAYER DOCK FLUTTUANTE)  -->
+          <!-- VISTA 2: GIOCHI (LIBRERIA SAGHE & MULTIPLAYER DOCK)             -->
           <!-- =============================================================== -->
           <section id="view-hub" class="space-y-2.5 hidden app-screen max-w-4xl mx-auto relative">
-            <!-- ⭐ SUB-HEADER A 3 COLONNE (36px RIGIDI) -->
             <div class="subheader-3col">
               <div class="subheader-left">LIBRERIA</div>
               <div class="subheader-center">Saghe & Stanze</div>
-              <div class="subheader-right" id="games-total-counter">4 Saghe</div>
+              <div class="subheader-right" id="games-total-counter">Saghe</div>
             </div>
 
             <!-- FILTRI CHIP PER GENERE -->
@@ -266,11 +260,11 @@
               <button onclick="AppModules.setGameGenre('azione')" class="rpg-category-chip">AZIONE</button>
             </div>
 
-            <!-- GRIGLIA UNIFORME A CARD (16:9 CENTRATO) -->
+            <!-- GRIGLIA UNIFORME A CARD -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-3" id="games-catalog-container"></div>
 
-            <!-- ⭐ WIDGET MULTIPLAYER FLUTTUANTE STICKY (OVERLAY SOPRA IL FOOTER) -->
-            <div onclick="AppModules.openMultiplayerLobby()" class="multiplayer-floating-dock">
+            <!-- WIDGET MULTIPLAYER FLUTTUANTE STICKY -->
+            <div onclick="AppModules.openMultiplayerLobby()" class="multiplayer-floating-dock cursor-pointer">
               <div class="flex items-center space-x-2.5 min-w-0 flex-1">
                 <div class="w-7 h-7 rounded-lg bg-purple-500/20 border border-purple-400/40 flex items-center justify-center text-sm text-purple-300 shrink-0">
                   👥
@@ -287,13 +281,10 @@
             </div>
           </section>
 
-          <!-- DETTAGLIO SAGA (16:9 + TASTO TORNA ALLE SAGHE) -->
+          <!-- DETTAGLIO SAGA (NAVIGAZIONE AFFIDATA AL TASTO NATIVO TELEGRAM) -->
           <section id="subview-game-detail" class="space-y-3 hidden app-screen max-w-3xl mx-auto">
-            <div class="subview-header-bar">
-              <button onclick="AppRouter.navigate('games')" class="btn-back-subview">
-                <i data-lucide="chevron-left" class="w-3.5 h-3.5"></i> <span>Torna alle Saghe</span>
-              </button>
-              <span class="text-[10px] font-mono text-sky-400 uppercase font-bold">Fascicolo Saga</span>
+            <div class="flex items-center justify-between pb-1 border-b border-white/10">
+              <span class="text-[10px] font-mono text-sky-400 uppercase font-bold tracking-wider">Fascicolo Saga</span>
             </div>
 
             <div class="cinema-frame-rigid shadow-xl rounded-2xl overflow-hidden relative">
@@ -335,9 +326,7 @@
               <div class="subheader-3col">
                 <div class="subheader-left">MULTIPLAYER</div>
                 <div class="subheader-center">Lobby Duelli</div>
-                <div class="subheader-right">
-                  <button onclick="AppRouter.navigate('games')" class="hover:underline">Chiudi ✕</button>
-                </div>
+                <div class="subheader-right">1VS1 • CO-OP</div>
               </div>
 
               <!-- Selezione Modalità -->
@@ -492,15 +481,11 @@
                 </div>
                 <div id="cockpit-combat-log" class="font-mono text-[11px] text-slate-300 max-h-24 overflow-y-auto space-y-1 divide-y divide-white/5"></div>
               </div>
-
-              <button onclick="AppModules.leaveMultiplayerRoom()" class="btn btn-xs btn-ghost text-slate-400 w-full uppercase font-bold">
-                Esci dalla Stanza 🚪
-              </button>
             </div>
           </section>
 
           <!-- =============================================================== -->
-          <!-- VISTA 3: WIZARD FULL-STAGE (STEPPER 1..4 & LIVE HUD DOCK)       -->
+          <!-- VISTA 3: WIZARD FULL-STAGE                                      -->
           <!-- =============================================================== -->
           <section id="view-wizard" class="wizard-stage-container hidden app-screen max-w-4xl mx-auto">
             <!-- Stepper Progress Tracker -->
@@ -540,82 +525,22 @@
 
             <!-- PASSO 1: SCELTA CLASSE -->
             <div id="wizard-step-class" class="wizard-step-panel">
-              <div class="wizard-single-header flex items-center justify-between pb-1.5 border-b border-white/10 mb-2">
-                <div>
-                  <span class="wizard-step-badge badge badge-xs badge-warning font-mono font-bold text-[9px]">1/4</span>
-                  <h3 class="wizard-step-title text-xs font-black text-white inline ml-1">Classe Costiera</h3>
-                </div>
-                <div class="wizard-view-toggle-pill flex bg-black/50 p-0.5 rounded-lg border border-white/10 text-xs">
-                  <button id="toggle-view-btn-class-3d" onclick="GameEngine.setWizardViewMode('class', '3d')" class="toggle-pill-btn active px-2 py-0.5 rounded font-bold text-[9.5px]">
-                    🎡 Touch
-                  </button>
-                  <button id="toggle-view-btn-class-list" onclick="GameEngine.setWizardViewMode('class', 'list')" class="toggle-pill-btn px-2 py-0.5 rounded font-bold text-[9.5px]">
-                    📋 Lista
-                  </button>
-                </div>
-              </div>
-
-              <div id="wizard-class-view-3d" class="wizard-content-fill">
-                <div class="coverflow-stage-outer">
-                  <div class="coverflow-stage-wrapper flex gap-3 overflow-x-auto py-2" id="wizard-classes-stage"></div>
-                  <div class="coverflow-dots flex justify-center gap-1.5 mt-2" id="wizard-coverflow-dots"></div>
-                </div>
-              </div>
-
-              <div id="wizard-class-view-list" class="wizard-content-fill hidden">
-                <div class="space-y-2" id="wizard-classes-list-container"></div>
+              <div class="coverflow-stage-outer">
+                <div class="coverflow-stage-wrapper flex gap-3 overflow-x-auto py-2" id="wizard-classes-stage"></div>
+                <div class="coverflow-dots flex justify-center gap-1.5 mt-2" id="wizard-coverflow-dots"></div>
               </div>
             </div>
 
             <!-- PASSO 2: TALENTI CLANDESTINI -->
             <div id="wizard-step-abilities" class="wizard-step-panel hidden">
-              <div class="wizard-single-header flex items-center justify-between pb-1.5 border-b border-white/10 mb-2">
-                <div>
-                  <span class="wizard-step-badge badge badge-xs badge-warning font-mono font-bold text-[9px]">2/4</span>
-                  <h3 class="wizard-step-title text-xs font-black text-white inline ml-1">Abilità & Talenti</h3>
-                  <span class="badge badge-xs badge-info font-mono ml-1 font-bold text-[9px]" id="wizard-px-budget">✨ 100 PX</span>
-                </div>
-                <div class="wizard-view-toggle-pill flex bg-black/50 p-0.5 rounded-lg border border-white/10 text-xs">
-                  <button id="toggle-view-btn-abilities-3d" onclick="GameEngine.setWizardViewMode('abilities', '3d')" class="toggle-pill-btn active px-2 py-0.5 rounded font-bold text-[9.5px]">
-                    🎡 Touch
-                  </button>
-                  <button id="toggle-view-btn-abilities-list" onclick="GameEngine.setWizardViewMode('abilities', 'list')" class="toggle-pill-btn px-2 py-0.5 rounded font-bold text-[9.5px]">
-                    📋 Griglia
-                  </button>
-                </div>
-              </div>
-
-              <div id="wizard-abilities-view-3d" class="wizard-content-fill">
-                <div class="coverflow-stage-outer">
-                  <div class="coverflow-stage-wrapper flex gap-3 overflow-x-auto py-2" id="wizard-abilities-stage"></div>
-                  <div class="coverflow-dots flex justify-center gap-1.5 mt-2" id="wizard-abilities-dots"></div>
-                </div>
-              </div>
-
-              <div id="wizard-abilities-view-list" class="wizard-content-fill hidden">
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2" id="wizard-abilities-grid"></div>
+              <div class="coverflow-stage-outer">
+                <div class="coverflow-stage-wrapper flex gap-3 overflow-x-auto py-2" id="wizard-abilities-stage"></div>
+                <div class="coverflow-dots flex justify-center gap-1.5 mt-2" id="wizard-abilities-dots"></div>
               </div>
             </div>
 
             <!-- PASSO 3: MERCATO NERO DI CICCIO -->
             <div id="wizard-step-shop" class="wizard-step-panel hidden">
-              <div class="wizard-single-header flex items-center justify-between pb-1.5 border-b border-white/10 mb-2">
-                <div>
-                  <span class="wizard-step-badge badge badge-xs badge-warning font-mono font-bold text-[9px]">3/4</span>
-                  <h3 class="wizard-step-title text-xs font-black text-white inline ml-1">Mercato Nero</h3>
-                  <span id="wizard-shop-gold-display" class="font-mono text-amber-300 font-bold text-[11px] ml-1">💰 40 🟡</span>
-                  <button onclick="GameEngine.openCambioModal()" class="btn btn-xs btn-warning font-black text-[9px] h-5 min-h-0 px-1.5 ml-1">💱 Cambio</button>
-                </div>
-                <div class="wizard-view-toggle-pill flex bg-black/50 p-0.5 rounded-lg border border-white/10 text-xs">
-                  <button id="toggle-view-btn-shop-3d" onclick="GameEngine.setWizardViewMode('shop', '3d')" class="toggle-pill-btn active px-2 py-0.5 rounded font-bold text-[9.5px]">
-                    🎡 Touch
-                  </button>
-                  <button id="toggle-view-btn-shop-list" onclick="GameEngine.setWizardViewMode('shop', 'list')" class="toggle-pill-btn px-2 py-0.5 rounded font-bold text-[9.5px]">
-                    📋 Griglia
-                  </button>
-                </div>
-              </div>
-
               <div class="chips-scroll-bar flex gap-1 overflow-x-auto py-1.5" id="wizard-shop-category-chips">
                 <button onclick="GameEngine.filterWizardShop('ARMI')" class="rpg-category-chip active">🗡️ Armi</button>
                 <button onclick="GameEngine.filterWizardShop('VEICOLI')" class="rpg-category-chip">🛴 Veicoli</button>
@@ -625,15 +550,9 @@
                 <button onclick="GameEngine.filterWizardShop('TALISMANI')" class="rpg-category-chip">📿 Talismani</button>
               </div>
 
-              <div id="wizard-shop-view-3d" class="wizard-content-fill">
-                <div class="coverflow-stage-outer">
-                  <div class="coverflow-stage-wrapper flex gap-3 overflow-x-auto py-2" id="wizard-shop-stage"></div>
-                  <div class="coverflow-dots flex justify-center gap-1.5 mt-2" id="wizard-shop-dots"></div>
-                </div>
-              </div>
-
-              <div id="wizard-shop-view-list" class="wizard-content-fill hidden">
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2" id="wizard-shop-grid"></div>
+              <div class="coverflow-stage-outer">
+                <div class="coverflow-stage-wrapper flex gap-3 overflow-x-auto py-2" id="wizard-shop-stage"></div>
+                <div class="coverflow-dots flex justify-center gap-1.5 mt-2" id="wizard-shop-dots"></div>
               </div>
             </div>
 
@@ -642,12 +561,11 @@
           </section>
 
           <!-- =============================================================== -->
-          <!-- VISTA 4: ⭐ COCKPIT GAMEPLAY (MICRO-HUD A 36px)                  -->
+          <!-- VISTA 4: COCKPIT GAMEPLAY (MICRO-HUD A 36px)                     -->
           <!-- =============================================================== -->
           <section id="view-gameplay" class="gameplay-container hidden app-screen max-w-3xl mx-auto">
-            <!-- ⭐ MICRO-HUD DELL'EROE (36px RIGIDI SU RIGA SINGOLA) -->
+            <!-- MICRO-HUD DELL'EROE (36px RIGIDI SU RIGA SINGOLA) -->
             <div class="hud-cockpit-36px">
-              <!-- Sinistra: Avatar & Nome -->
               <div class="flex items-center gap-2 min-w-0">
                 <div class="hud-avatar-30px">
                   <img id="kpi-hero-avatar-img" src="" class="hidden w-full h-full object-cover" alt="Avatar">
@@ -656,14 +574,12 @@
                 <span class="hud-hero-name-36px truncate" id="kpi-hero-name">Eroe</span>
               </div>
 
-              <!-- Centro: Barra Vitale Micro -->
               <div class="hud-vitals-36px">
                 <span class="text-[10px]">❤️</span>
                 <progress id="kpi-hero-pv-bar" class="progress progress-error hud-pv-bar-36px" value="25" max="25"></progress>
                 <span id="kpi-hero-pv-text" class="font-mono text-[9.5px] font-bold text-rose-400 shrink-0">25/25</span>
               </div>
 
-              <!-- Destra: Monete d'Oro & Modificatori -->
               <div class="flex items-center gap-2 shrink-0">
                 <div class="font-mono text-[11px] font-bold text-amber-300 flex items-center gap-0.5">
                   <span>🟡</span> <span id="kpi-hero-gold">40</span>
@@ -676,7 +592,7 @@
               </div>
             </div>
 
-            <!-- Cinema Frame con Rapporto 16:9 Rigoroso -->
+            <!-- Cinema Frame con Rapporto 16:9 -->
             <div class="cinema-frame-rigid shadow-xl relative rounded-2xl overflow-hidden mt-2">
               <img id="scene-image" src="" alt="Scena di Gioco">
               <span id="scene-type-badge" class="badge badge-xs badge-info scene-badge absolute top-2 left-2">SNODO</span>
@@ -700,28 +616,19 @@
           <!-- VISTA 5: SHOP REALE (MERCATO SYNDICATE)                         -->
           <!-- =============================================================== -->
           <section id="view-shop" class="space-y-2.5 hidden app-screen">
-            <!-- ⭐ SUB-HEADER A 3 COLONNE (36px RIGIDI) -->
             <div class="subheader-3col">
               <div class="subheader-left">MERCATO</div>
               <div class="subheader-center">Forniture</div>
-              <div class="subheader-right" id="shop-total-counter">Disponibili</div>
+              <div class="subheader-right" id="shop-total-counter">Articoli</div>
             </div>
 
-            <input type="hidden" id="shop-search-input" value="">
-
-            <!-- FILTRI A CHIP ORIZZONTALI -->
             <div class="chips-scroll-bar flex gap-1 overflow-x-auto pb-0.5" id="shop-category-chips"></div>
-
-            <!-- Griglia Prodotti Uniforme 16:9 -->
             <div id="shop-products-grid" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
           </section>
 
-          <!-- DETTAGLIO SHOP (CON TASTO TORNA INDIETRO + IMMAGINE 16:9 CENTRATA) -->
+          <!-- DETTAGLIO SHOP (NAVIGAZIONE AFFIDATA AL TASTO NATIVO TELEGRAM) -->
           <section id="subview-shop-detail" class="space-y-3 hidden app-screen max-w-2xl mx-auto">
-            <div class="subview-header-bar">
-              <button onclick="AppRouter.navigate('shop')" class="btn-back-subview">
-                <i data-lucide="chevron-left" class="w-3.5 h-3.5"></i> <span>Torna al Mercato</span>
-              </button>
+            <div class="flex items-center justify-between pb-1 border-b border-white/10">
               <span id="detail-shop-cat" class="text-[10px] font-mono text-sky-400 font-bold uppercase">Reparto</span>
             </div>
 
@@ -753,28 +660,19 @@
           <!-- VISTA 6: RICETTARIO (WORKSHOP BARLADY)                         -->
           <!-- =============================================================== -->
           <section id="view-recipes" class="space-y-2.5 hidden app-screen">
-            <!-- ⭐ SUB-HEADER A 3 COLONNE (36px RIGIDI) -->
             <div class="subheader-3col">
               <div class="subheader-left">BARLADY</div>
               <div class="subheader-center">Ricette & Cocktail</div>
               <div class="subheader-right" id="recipes-total-counter">Ricette</div>
             </div>
 
-            <input type="hidden" id="recipes-search-input" value="">
-
-            <!-- FILTRI A CHIP ORIZZONTALI -->
             <div class="chips-scroll-bar flex gap-1 overflow-x-auto pb-0.5" id="recipes-category-chips"></div>
-
-            <!-- Griglia Ricette Uniforme 16:9 -->
             <div id="recipes-grid" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
           </section>
 
-          <!-- DETTAGLIO RICETTA (CON TASTO TORNA INDIETRO + IMMAGINE 16:9 CENTRATA) -->
+          <!-- DETTAGLIO RICETTA (NAVIGAZIONE AFFIDATA AL TASTO NATIVO TELEGRAM) -->
           <section id="subview-recipe-detail" class="space-y-3 hidden app-screen max-w-2xl mx-auto">
-            <div class="subview-header-bar">
-              <button onclick="AppRouter.navigate('recipes')" class="btn-back-subview">
-                <i data-lucide="chevron-left" class="w-3.5 h-3.5"></i> <span>Torna alle Ricette</span>
-              </button>
+            <div class="flex items-center justify-between pb-1 border-b border-white/10">
               <span id="detail-recipe-cat" class="text-[10px] font-mono text-emerald-400 font-bold uppercase">Categoria</span>
             </div>
 
@@ -846,8 +744,8 @@
               </div>
             </div>
 
-            <!-- MINIPLAYER RADIO ANCHE NEL PROFILO (~48px, DOPPIO BERSAGLIO DI TOCCO) -->
-            <div id="profile-radio-miniplayer" onclick="AppModules.openRadioModal()" class="shadow-lg">
+            <!-- MINIPLAYER RADIO NEL PROFILO -->
+            <div id="profile-radio-miniplayer" onclick="AppModules.openRadioModal()" class="p-3 rounded-2xl bg-slate-900 border border-white/10 flex items-center justify-between shadow-lg cursor-pointer hover:border-sky-400/40 transition">
               <div class="flex items-center space-x-2.5 min-w-0 flex-1">
                 <div class="w-8 h-8 rounded-lg bg-black/60 border border-sky-400/40 flex items-center justify-center flex-shrink-0 text-base">
                   📻
@@ -863,16 +761,16 @@
                 </div>
               </div>
               <div class="flex items-center space-x-1 flex-shrink-0 ml-2" onclick="event.stopPropagation()">
-                <button onclick="AppModules.toggleRadioPlay(event)" id="profile-radio-play-btn" class="btn btn-xs btn-circle btn-primary font-bold w-6 h-6 min-h-0 text-[10px]" title="Play/Pausa">
+                <button onclick="AppModules.toggleRadioPlay(event)" id="profile-radio-play-btn" class="btn btn-xs btn-circle btn-primary font-bold w-7 h-7 min-h-0 text-[11px]" title="Play/Pausa">
                   ⏸
                 </button>
-                <button onclick="AppModules.toggleRadioMute(event)" id="profile-radio-mute-btn" class="btn btn-xs btn-circle btn-ghost text-slate-300 w-6 h-6 min-h-0 text-[10px]" title="Muto">
+                <button onclick="AppModules.toggleRadioMute(event)" id="profile-radio-mute-btn" class="btn btn-xs btn-circle btn-ghost text-slate-300 w-7 h-7 min-h-0 text-[11px]" title="Muto">
                   🔊
                 </button>
               </div>
             </div>
 
-            <!-- 3. Pulsanti Azione Rapida (Apertura Modali Piani & Download) -->
+            <!-- 3. Pulsanti Azione Rapida -->
             <div class="grid grid-cols-2 gap-2">
               <button onclick="AppModules.openPlansCatalogModal()" class="p-2.5 rounded-xl bg-slate-900 border border-sky-400/30 flex items-center justify-between text-left hover:border-sky-400/60 transition">
                 <div class="flex items-center gap-2">
@@ -917,90 +815,81 @@
       </main>
 
       <!-- =================================================================== -->
-      <!-- 4. FOOTER MENU STICKY SNELLO (44px - ALLINEATO ALL'HEADER)          -->
+      <!-- 4. FOOTER MENU STICKY (44px + SAFE AREA iOS - ICONE & TESTI CENTRATI)-->
       <!-- =================================================================== -->
-      <footer id="main-app-footer" class="main-app-footer md:hidden flex justify-around items-center bg-[#070A12]/95 backdrop-blur-lg border-t border-white/10 relative z-40">
-        <button id="mob-nav-home" onclick="AppRouter.navigate('home')" class="nav-tab active flex flex-col items-center justify-center text-slate-400" data-tab="home">
-          <i data-lucide="home" class="w-4 h-4"></i>
-          <span class="nav-tab-label text-[8.5px] font-bold mt-0.5">Home</span>
+      <footer id="main-app-footer" class="main-app-footer md:hidden grid grid-cols-5 items-center bg-[#070A12]/95 backdrop-blur-lg border-t border-white/10 relative z-40 h-[44px] min-h-[44px] pb-[env(safe-area-inset-bottom,0px)]">
+        <button id="mob-nav-home" onclick="AppRouter.navigate('home')" class="nav-tab active flex flex-col items-center justify-center h-full w-full py-0 leading-none text-slate-400 transition" data-tab="home">
+          <i data-lucide="home" class="w-[18px] h-[18px]"></i>
+          <span class="nav-tab-label text-[10px] font-bold mt-1">Home</span>
         </button>
 
-        <button id="mob-nav-games" data-module="games" onclick="AppRouter.navigate('games')" class="nav-tab flex flex-col items-center justify-center text-slate-400 relative" data-tab="games">
-          <i data-lucide="gamepad-2" class="w-4 h-4"></i>
-          <span class="nav-tab-label text-[8.5px] font-bold mt-0.5">Giochi</span>
+        <button id="mob-nav-games" data-module="games" onclick="AppRouter.navigate('games')" class="nav-tab flex flex-col items-center justify-center h-full w-full py-0 leading-none text-slate-400 transition" data-tab="games">
+          <i data-lucide="gamepad-2" class="w-[18px] h-[18px]"></i>
+          <span class="nav-tab-label text-[10px] font-bold mt-1">Giochi</span>
         </button>
 
-        <button id="mob-nav-shop" data-module="shop" onclick="AppRouter.navigate('shop')" class="nav-tab flex flex-col items-center justify-center text-slate-400" data-tab="shop">
-          <i data-lucide="shopping-bag" class="w-4 h-4"></i>
-          <span class="nav-tab-label text-[8.5px] font-bold mt-0.5">Mercato</span>
+        <button id="mob-nav-shop" data-module="shop" onclick="AppRouter.navigate('shop')" class="nav-tab flex flex-col items-center justify-center h-full w-full py-0 leading-none text-slate-400 transition" data-tab="shop">
+          <i data-lucide="shopping-bag" class="w-[18px] h-[18px]"></i>
+          <span class="nav-tab-label text-[10px] font-bold mt-1">Mercato</span>
         </button>
 
-        <button id="mob-nav-recipes" data-module="recipes" onclick="AppRouter.navigate('recipes')" class="nav-tab flex flex-col items-center justify-center text-slate-400" data-tab="recipes">
-          <i data-lucide="utensils" class="w-4 h-4"></i>
-          <span class="nav-tab-label text-[8.5px] font-bold mt-0.5">Ricette</span>
+        <button id="mob-nav-recipes" data-module="recipes" onclick="AppRouter.navigate('recipes')" class="nav-tab flex flex-col items-center justify-center h-full w-full py-0 leading-none text-slate-400 transition" data-tab="recipes">
+          <i data-lucide="chef-hat" class="w-[18px] h-[18px]"></i>
+          <span class="nav-tab-label text-[10px] font-bold mt-1">Ricette</span>
         </button>
 
-        <button id="mob-nav-profile" onclick="AppRouter.navigate('profile')" class="nav-tab flex flex-col items-center justify-center text-slate-400" data-tab="profile">
-          <i data-lucide="user" class="w-4 h-4"></i>
-          <span class="nav-tab-label text-[8.5px] font-bold mt-0.5">Profilo</span>
+        <button id="mob-nav-profile" onclick="AppRouter.navigate('profile')" class="nav-tab flex flex-col items-center justify-center h-full w-full py-0 leading-none text-slate-400 transition" data-tab="profile">
+          <i data-lucide="user" class="w-[18px] h-[18px]"></i>
+          <span class="nav-tab-label text-[10px] font-bold mt-1">Profilo</span>
         </button>
       </footer>
 
       <!-- 4.B FOOTER WIZARD STICKY (44px) -->
-      <footer id="main-wizard-footer" class="wizard-sticky-footer hidden flex items-center px-3 bg-[#070A12]/95 border-t border-white/10 z-40">
+      <footer id="main-wizard-footer" class="wizard-sticky-footer hidden flex items-center px-3 bg-[#070A12]/95 border-t border-white/10 z-40 h-[44px] min-h-[44px] pb-[env(safe-area-inset-bottom,0px)]">
         <div id="wiz-footer-step-1" class="wizard-footer-step-controls w-full flex">
-          <button id="wizard-step1-confirm-btn" onclick="GameEngine.wizardConfirmStep1()" class="btn btn-xs sm:btn-sm btn-wizard-cta w-full font-black uppercase text-xs">
+          <button id="wizard-step1-confirm-btn" onclick="GameEngine.wizardConfirmStep1()" class="btn btn-xs sm:btn-sm btn-wizard-cta w-full font-black uppercase text-xs h-[36px] min-h-[36px]">
             Scegli Classe ›
           </button>
         </div>
 
         <div id="wiz-footer-step-2" class="wizard-footer-step-controls w-full flex space-x-2 hidden">
-          <button onclick="GameEngine.wizardPrevStep(1)" class="btn btn-xs btn-outline border-white/20 text-slate-300 font-bold px-2.5">
-            ‹ Classi
-          </button>
-          <button onclick="GameEngine.wizardConfirmStep2()" class="btn btn-xs sm:btn-sm btn-wizard-cta flex-1 font-black uppercase text-xs">
+          <button onclick="GameEngine.wizardConfirmStep2()" class="btn btn-xs sm:btn-sm btn-wizard-cta flex-1 font-black uppercase text-xs h-[36px] min-h-[36px]">
             All'Emporio ›
           </button>
         </div>
 
         <div id="wiz-footer-step-3" class="wizard-footer-step-controls w-full flex items-center space-x-2 hidden">
-          <button onclick="GameEngine.wizardPrevStep(2)" class="btn btn-xs btn-outline border-white/20 text-slate-300 font-bold px-2.5">
-            ‹ Talenti
-          </button>
-          <div class="flex-1 flex items-center justify-between px-2.5 py-0.5 bg-black/40 rounded-lg border border-white/10 text-[10px]">
+          <div class="flex-1 flex items-center justify-between px-2.5 py-1 bg-black/40 rounded-lg border border-white/10 text-[10px]">
             <span class="text-slate-300">🎒 Zaino: <b id="wizard-shop-backpack-count" class="text-amber-300">0</b></span>
             <button onclick="GameEngine.resetWizardShop()" class="text-rose-400 font-bold text-[9.5px] hover:underline px-1">Azzera</button>
           </div>
-          <button id="wizard-step3-next-btn" onclick="GameEngine.wizardNextStep(4)" class="btn btn-xs sm:btn-sm btn-wizard-cta font-black uppercase text-xs px-3">
+          <button id="wizard-step3-next-btn" onclick="GameEngine.wizardNextStep(4)" class="btn btn-xs sm:btn-sm btn-wizard-cta font-black uppercase text-xs px-4 h-[36px] min-h-[36px]">
             Riepilogo ›
           </button>
         </div>
 
         <div id="wiz-footer-step-4" class="wizard-footer-step-controls w-full flex space-x-2 hidden">
-          <button onclick="GameEngine.wizardPrevStep(3)" class="btn btn-xs btn-outline border-white/20 text-slate-300 font-bold px-2.5">
-            ‹ Emporio
-          </button>
-          <button id="wizard-finalize-btn" onclick="GameEngine.wizardFinalizeHero()" class="btn btn-xs sm:btn-sm btn-wizard-cta flex-1 font-black uppercase text-xs">
+          <button id="wizard-finalize-btn" onclick="GameEngine.wizardFinalizeHero()" class="btn btn-xs sm:btn-sm btn-wizard-cta flex-1 font-black uppercase text-xs h-[36px] min-h-[36px]">
             Lancia Eroe 🚀
           </button>
         </div>
       </footer>
 
       <!-- 4.C FOOTER GAME COCKPIT RULES 2 (44px) -->
-      <footer id="main-game-cockpit-footer" class="cockpit-footer hidden grid grid-cols-4 gap-2 items-center px-3 bg-[#070A12]/95 border-t border-white/10 z-40">
-        <button onclick="Rules2Engine.openHeroModal('scheda')" class="cockpit-btn flex items-center justify-center gap-1 p-1.5 rounded-lg bg-white/5 text-slate-300 text-[11px] font-bold">
+      <footer id="main-game-cockpit-footer" class="cockpit-footer hidden grid grid-cols-4 gap-2 items-center px-3 bg-[#070A12]/95 border-t border-white/10 z-40 h-[44px] min-h-[44px] pb-[env(safe-area-inset-bottom,0px)]">
+        <button onclick="Rules2Engine.openHeroModal('scheda')" class="cockpit-btn flex items-center justify-center gap-1 p-1.5 rounded-lg bg-white/5 text-slate-300 text-[11px] font-bold h-[34px]">
           <i data-lucide="user" class="w-3.5 h-3.5"></i>
           <span>Eroe</span>
         </button>
-        <button onclick="Rules2Engine.openAssettoModal()" class="cockpit-btn flex items-center justify-center gap-1 p-1.5 rounded-lg bg-white/5 text-slate-300 text-[11px] font-bold">
+        <button onclick="Rules2Engine.openAssettoModal()" class="cockpit-btn flex items-center justify-center gap-1 p-1.5 rounded-lg bg-white/5 text-slate-300 text-[11px] font-bold h-[34px]">
           <i data-lucide="shield" class="w-3.5 h-3.5"></i>
           <span>Assetto</span>
         </button>
-        <button onclick="Rules2Engine.openEmporioDrawer()" class="cockpit-btn flex items-center justify-center gap-1 p-1.5 rounded-lg bg-white/5 text-slate-300 text-[11px] font-bold">
+        <button onclick="Rules2Engine.openEmporioDrawer()" class="cockpit-btn flex items-center justify-center gap-1 p-1.5 rounded-lg bg-white/5 text-slate-300 text-[11px] font-bold h-[34px]">
           <i data-lucide="shopping-bag" class="w-3.5 h-3.5"></i>
           <span>Emporio</span>
         </button>
-        <button onclick="Rules2Engine.openAbandonModal()" class="cockpit-btn flex items-center justify-center gap-1 p-1.5 rounded-lg bg-rose-500/10 border border-rose-500/30 text-rose-300 text-[11px] font-bold">
+        <button onclick="Rules2Engine.openAbandonModal()" class="cockpit-btn flex items-center justify-center gap-1 p-1.5 rounded-lg bg-rose-500/10 border border-rose-500/30 text-rose-300 text-[11px] font-bold h-[34px]">
           <i data-lucide="log-out" class="w-3.5 h-3.5"></i>
           <span>Esci</span>
         </button>
@@ -1010,15 +899,14 @@
   </div>
 
   <!-- ======================================================================= -->
-  <!-- 5. MODALI GLASSMORPHISM & SPOTIFY DECK                                 -->
+  <!-- 5. MODALI (CHIUSURA UNIFICATA: "X" CERCHIATA IN ALTO A DESTRA + BACKDROP) -->
   <!-- ======================================================================= -->
 
-  <!-- ⭐ MODALE SPOTIFY DECK: CONSOLE AUDIO & MIXER A 3 CANALI -->
+  <!-- MODALE AUDIO JUKEBOX -->
   <dialog id="modal-audio-jukebox" class="modal modal-middle">
     <div class="modal-box jukebox-modal-box p-4 bg-slate-950 border border-sky-400/40 rounded-2xl max-w-sm space-y-3 relative">
-      <button onclick="document.getElementById('modal-audio-jukebox').close()" class="btn btn-xs btn-circle btn-ghost absolute right-3 top-3">✕</button>
+      <button onclick="document.getElementById('modal-audio-jukebox').close()" class="modal-close-btn absolute top-3 right-3 w-7 h-7 rounded-full bg-slate-800/80 border border-white/10 flex items-center justify-center text-slate-300 hover:text-white z-50">✕</button>
       
-      <!-- Testata Console -->
       <div class="flex items-center justify-between pr-8 border-b border-white/10 pb-2">
         <div class="flex items-center space-x-2">
           <span class="text-xl">🎛️</span>
@@ -1027,9 +915,6 @@
             <span class="text-[9.5px] font-mono text-slate-400">Mixer a 3 canali & Radio Noir</span>
           </div>
         </div>
-        <button onclick="SoundEngine.toggleMasterMute()" class="btn btn-xs btn-outline border-rose-500/50 text-rose-300 font-mono text-[9px] font-bold px-2">
-          Muta Tutto 🔇
-        </button>
       </div>
 
       <!-- MIXER A 3 CANALI: MASTER, BGM & SFX -->
@@ -1048,7 +933,7 @@
         </div>
       </div>
 
-      <!-- SCHEDA BRANO ATTIVO SPOTIFY STYLE -->
+      <!-- SCHEDA BRANO ATTIVO -->
       <div class="p-3 rounded-xl bg-slate-900 border border-sky-400/30">
         <div class="flex items-center justify-between mb-1">
           <span class="badge badge-xs badge-info font-mono font-bold text-[8.5px]" id="jukebox-current-tag">TEMA ATTIVO</span>
@@ -1061,7 +946,6 @@
           <span id="jukebox-current-artist">Kevin MacLeod</span> • <span id="jukebox-current-mood" class="text-amber-300">Tromba Noir & Pioggia</span>
         </div>
         
-        <!-- Controlli Riproduzione -->
         <div class="flex items-center justify-center gap-3 mt-2.5 pt-2 border-t border-white/5">
           <button onclick="SoundEngine.playPrevTrack()" class="btn btn-xs btn-circle btn-ghost text-slate-300">⏮</button>
           <button id="jukebox-btn-play" onclick="SoundEngine.togglePlayPause()" class="btn btn-xs btn-primary font-bold px-3">⏸ Pausa</button>
@@ -1070,7 +954,7 @@
         </div>
       </div>
 
-      <!-- PLAYLIST NOIR SELEZIONABILE -->
+      <!-- PLAYLIST -->
       <div class="space-y-1">
         <div class="text-[9.5px] font-mono text-slate-400 uppercase font-bold px-1">Libreria Tracce Disponibili</div>
         <div class="space-y-1 max-h-36 overflow-y-auto pr-1" id="jukebox-tracklist-container">
@@ -1099,31 +983,27 @@
     </div>
   </dialog>
 
-  <!-- MODALE DEDICATO: I MIEI DOWNLOAD / CAVEAU DIGITALE -->
+  <!-- MODALE CAVEAU DIGITALE -->
   <dialog id="modal-vault-downloads" class="modal modal-middle">
     <div class="modal-box p-4 bg-slate-950 border border-purple-500/40 rounded-2xl max-w-md space-y-3 relative">
-      <button onclick="document.getElementById('modal-vault-downloads').close()" class="btn btn-xs btn-circle btn-ghost absolute right-3 top-3">✕</button>
+      <button onclick="document.getElementById('modal-vault-downloads').close()" class="modal-close-btn absolute top-3 right-3 w-7 h-7 rounded-full bg-slate-800/80 border border-white/10 flex items-center justify-center text-slate-300 hover:text-white z-50">✕</button>
 
-      <div class="flex items-center gap-2 pb-2 border-b border-white/10">
+      <div class="flex items-center gap-2 pb-2 border-b border-white/10 pr-8">
         <span class="text-xl">📥</span>
         <div>
           <h3 class="text-xs font-black text-white uppercase tracking-wider">I Miei Download & Caveau</h3>
-          <span class="text-[9.5px] font-mono text-purple-400">File e prodotti digitali riscattati</span>
+          <span class="text-[9.5px] font-mono text-purple-400">File e guide digitali riscattati</span>
         </div>
       </div>
 
       <div id="profile-vault-container" class="space-y-1.5 max-h-64 overflow-y-auto pt-1"></div>
-
-      <button onclick="document.getElementById('modal-vault-downloads').close()" class="btn btn-xs btn-ghost text-slate-400 w-full uppercase font-bold mt-1">
-        Chiudi ✕
-      </button>
     </div>
   </dialog>
 
   <!-- MODALE CABINATO MEGOIN -->
   <dialog id="modal-insert-megoin" class="modal modal-middle">
     <div class="modal-box p-4 bg-slate-950 border border-sky-400/40 rounded-2xl max-w-sm text-center relative space-y-2.5">
-      <button onclick="document.getElementById('modal-insert-megoin').close()" class="btn btn-xs btn-circle btn-ghost absolute right-3 top-3">✕</button>
+      <button onclick="document.getElementById('modal-insert-megoin').close()" class="modal-close-btn absolute top-3 right-3 w-7 h-7 rounded-full bg-slate-800/80 border border-white/10 flex items-center justify-center text-slate-300 hover:text-white z-50">✕</button>
 
       <div class="w-12 h-12 mx-auto rounded-full bg-amber-500/20 border border-amber-400/40 flex items-center justify-center text-2xl">
         🪙
@@ -1164,11 +1044,11 @@
   <!-- FASCICOLO APPROFONDITO UNIVERSALE -->
   <dialog id="modal-universal-detail" class="modal modal-middle">
     <div class="modal-box p-4 bg-slate-950 border border-sky-400/40 rounded-2xl max-w-md space-y-2.5 relative">
-      <button onclick="document.getElementById('modal-universal-detail').close()" class="btn btn-xs btn-circle btn-ghost absolute right-3 top-3">✕</button>
+      <button onclick="document.getElementById('modal-universal-detail').close()" class="modal-close-btn absolute top-3 right-3 w-7 h-7 rounded-full bg-slate-800/80 border border-white/10 flex items-center justify-center text-slate-300 hover:text-white z-50">✕</button>
 
-      <div class="flex items-center gap-2.5">
+      <div class="flex items-center gap-2.5 pr-8">
         <span class="text-2xl" id="uni-detail-icon">📦</span>
-        <div class="min-w-0 pr-6">
+        <div class="min-w-0">
           <h3 class="text-xs font-black text-white truncate" id="uni-detail-title">Nome Scheda</h3>
           <span class="badge badge-xs badge-info font-mono uppercase text-[8px]" id="uni-detail-badge">TIPO</span>
         </div>
@@ -1191,7 +1071,7 @@
 
   <!-- DADO D20 SUSPENSE -->
   <dialog id="modal-dice-suspense" class="modal modal-middle">
-    <div class="modal-box dice-modal-box p-4 bg-slate-950 border border-sky-400/40 rounded-2xl max-w-xs text-center space-y-2">
+    <div class="modal-box dice-modal-box p-4 bg-slate-950 border border-sky-400/40 rounded-2xl max-w-xs text-center space-y-2 relative">
       <div class="dice-wrapper my-2 flex items-center justify-center">
         <div id="dice-visual-cube" class="dice-cube text-4xl animate-bounce">🎲</div>
       </div>
@@ -1206,12 +1086,13 @@
   <!-- MODALE EROE A 4 TAB -->
   <dialog id="drawer-hero-sheet" class="modal modal-middle">
     <div class="modal-box p-4 bg-slate-950 border border-sky-400/40 rounded-2xl max-w-md space-y-2.5 relative">
-      <div class="flex items-center justify-between pb-1.5 border-b border-white/10 pr-6">
+      <button onclick="document.getElementById('drawer-hero-sheet').close()" class="modal-close-btn absolute top-3 right-3 w-7 h-7 rounded-full bg-slate-800/80 border border-white/10 flex items-center justify-center text-slate-300 hover:text-white z-50">✕</button>
+
+      <div class="flex items-center justify-between pb-1.5 border-b border-white/10 pr-8">
         <div class="flex items-center space-x-2">
           <span class="text-base">👤</span>
           <h3 class="text-xs font-black text-white uppercase">Fascicolo Agente & Risorse</h3>
         </div>
-        <button onclick="document.getElementById('drawer-hero-sheet').close()" class="btn btn-xs btn-circle btn-ghost absolute right-3 top-3">✕</button>
       </div>
 
       <div class="flex space-x-1 border-b border-white/10 pb-1.5">
@@ -1287,10 +1168,6 @@
         <div class="text-[10px] text-slate-400">Le <b>Prove</b> assegnano +1 INT permanente; gli <b>Indizi</b> conferiscono +1 INT situazionale.</div>
         <div id="dossier-list-container" class="space-y-1.5 text-xs"></div>
       </div>
-
-      <button onclick="document.getElementById('drawer-hero-sheet').close()" class="btn btn-xs btn-ghost text-slate-400 font-bold uppercase w-full mt-1">
-        Chiudi ✕
-      </button>
     </div>
   </dialog>
 
@@ -1300,12 +1177,13 @@
   <!-- MODALE EMPORIO DI CICCIO -->
   <dialog id="drawer-emporio" class="modal modal-middle">
     <div class="modal-box p-4 bg-slate-950 border border-amber-400/40 rounded-2xl max-w-md space-y-2.5 relative">
-      <div class="flex items-center justify-between pb-1.5 border-b border-white/10 pr-6">
+      <button onclick="document.getElementById('drawer-emporio').close()" class="modal-close-btn absolute top-3 right-3 w-7 h-7 rounded-full bg-slate-800/80 border border-white/10 flex items-center justify-center text-slate-300 hover:text-white z-50">✕</button>
+
+      <div class="flex items-center justify-between pb-1.5 border-b border-white/10 pr-8">
         <div class="flex items-center space-x-2">
           <span class="text-base">🏪</span>
           <h3 class="text-xs font-black text-white uppercase">Emporio di Ciccio & CO.</h3>
         </div>
-        <button onclick="document.getElementById('drawer-emporio').close()" class="btn btn-xs btn-circle btn-ghost absolute right-3 top-3">✕</button>
       </div>
       <div class="p-2 rounded-xl bg-slate-900 border border-white/10 flex items-center justify-between text-xs font-mono">
         <span>💰 Borsello: <b class="text-amber-400" id="emporio-gold-display">0 🟡</b></span>
@@ -1316,16 +1194,13 @@
         <button id="emporio-tab-sell" onclick="GameEngine.setEmporioMode('sell')" class="flex-1 btn btn-xs btn-ghost text-slate-400 font-bold text-[10px]">Vendi (25%)</button>
       </div>
       <div class="space-y-1.5 max-h-48 overflow-y-auto" id="emporio-items-container"></div>
-      <button onclick="document.getElementById('drawer-emporio').close()" class="btn btn-xs btn-ghost text-slate-400 font-bold uppercase w-full mt-1">
-        Chiudi ✕
-      </button>
     </div>
   </dialog>
 
   <!-- MODALE BANCO DI CAMBIO -->
   <dialog id="modal-banco-cambio" class="modal modal-middle">
     <div class="modal-box p-4 bg-slate-950 border border-amber-400/40 rounded-2xl max-w-sm text-center relative space-y-2.5">
-      <button onclick="document.getElementById('modal-banco-cambio').close()" class="btn btn-xs btn-circle btn-ghost absolute right-3 top-3">✕</button>
+      <button onclick="document.getElementById('modal-banco-cambio').close()" class="modal-close-btn absolute top-3 right-3 w-7 h-7 rounded-full bg-slate-800/80 border border-white/10 flex items-center justify-center text-slate-300 hover:text-white z-50">✕</button>
       <span class="text-2xl">💱</span>
       <h3 class="text-xs font-black text-white uppercase">Banco di Cambio del Molo</h3>
       <p class="text-[10.5px] text-slate-300">Converti gettoni Megoin in monete d'oro sonanti direttamente sul server:</p>
@@ -1346,7 +1221,7 @@
   <!-- MODALE ABBANDONO / SOSPENSIONE -->
   <dialog id="modal-abandon" class="modal modal-middle">
     <div class="modal-box p-4 bg-slate-950 border border-white/20 rounded-2xl max-w-sm text-center relative space-y-2.5">
-      <button onclick="document.getElementById('modal-abandon').close()" class="btn btn-xs btn-circle btn-ghost absolute right-3 top-3">✕</button>
+      <button onclick="document.getElementById('modal-abandon').close()" class="modal-close-btn absolute top-3 right-3 w-7 h-7 rounded-full bg-slate-800/80 border border-white/10 flex items-center justify-center text-slate-300 hover:text-white z-50">✕</button>
       <span class="text-2xl">🚪</span>
       <h3 class="text-xs font-black text-white uppercase">Gestione Sessione</h3>
       <p class="text-[10.5px] text-slate-300 leading-relaxed">
@@ -1369,17 +1244,14 @@
           La partita viene chiusa e archiviata. Non potrai più riprenderla.
         </div>
       </div>
-      <button onclick="document.getElementById('modal-abandon').close()" class="btn btn-xs btn-ghost w-full text-xs text-slate-400 font-bold uppercase mt-1">
-        Continua l'Avventura ›
-      </button>
     </div>
   </dialog>
 
   <!-- MODALE PIANI SAAS REALI -->
   <dialog id="modal-plans-catalog" class="modal modal-middle">
     <div class="modal-box plans-catalog-box p-4 bg-slate-950 border border-sky-400/40 rounded-2xl max-w-md space-y-2.5 relative">
-      <button onclick="document.getElementById('modal-plans-catalog').close()" class="btn btn-xs btn-circle btn-ghost absolute right-3 top-3">✕</button>
-      <div>
+      <button onclick="document.getElementById('modal-plans-catalog').close()" class="modal-close-btn absolute top-3 right-3 w-7 h-7 rounded-full bg-slate-800/80 border border-white/10 flex items-center justify-center text-slate-300 hover:text-white z-50">✕</button>
+      <div class="pr-8">
         <span class="text-[9.5px] font-mono text-sky-400 uppercase font-bold tracking-wider">AFFILIAZIONE SYNDICATE</span>
         <h3 class="text-sm font-black text-white">Scegli il Tuo Piano</h3>
       </div>
@@ -1393,14 +1265,14 @@
     </div>
   </dialog>
 
-  <!-- MODALI REGOLE E SCHEDA TECNICA -->
+  <!-- MODALI REGOLE E SCHEDA TECNICA (DINAMICI) -->
   <dialog id="modal-saga-rules" class="modal modal-middle"></dialog>
   <dialog id="modal-saga-features" class="modal modal-middle"></dialog>
 
   <!-- MODALE CONFERMA ACQUISTO SHOP -->
   <dialog id="modal-fulfillment" class="modal modal-middle">
     <div class="modal-box p-4 bg-slate-950 border border-emerald-500/40 rounded-2xl max-w-sm text-center relative space-y-2.5">
-      <button onclick="document.getElementById('modal-fulfillment').close()" class="btn btn-xs btn-circle btn-ghost absolute right-3 top-3">✕</button>
+      <button onclick="document.getElementById('modal-fulfillment').close()" class="modal-close-btn absolute top-3 right-3 w-7 h-7 rounded-full bg-slate-800/80 border border-white/10 flex items-center justify-center text-slate-300 hover:text-white z-50">✕</button>
       <div class="text-3xl">🎉</div>
       <h3 class="text-sm font-black text-white">Acquisto Confermato!</h3>
       <p class="text-xs text-slate-300" id="fulfillment-summary"></p>
@@ -1409,10 +1281,10 @@
   </dialog>
 
   <!-- SCRIPT DI SISTEMA VERSIONATI -->
-  <script src="audio.js?v=22.0"></script>
-  <script src="js/app-core.js?v=22.0"></script>
-  <script src="js/app-modules.js?v=22.0"></script>
-  <script src="js/rules2wizard.js?v=22.0"></script>
-  <script src="js/rules2engine.js?v=22.0"></script>
+  <script src="audio.js?v=23.0"></script>
+  <script src="js/app-core.js?v=23.0"></script>
+  <script src="js/app-modules.js?v=23.0"></script>
+  <script src="js/rules2wizard.js?v=23.0"></script>
+  <script src="js/rules2engine.js?v=23.0"></script>
 </body>
 </html>
