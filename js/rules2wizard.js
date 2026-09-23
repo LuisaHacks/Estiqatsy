@@ -226,7 +226,7 @@ const Rules2Wizard = {
   // --------------------------------------------------------------------------
   // FOOTER INTEGRATO: "STEPPER-DOCK" (44px)
   // --------------------------------------------------------------------------
-  updateStepperDock: function(stepNum) {
+  updateFooterDock: function(stepNum) {
     const footerDock = document.getElementById("main-wizard-footer");
     if (!footerDock) return;
 
