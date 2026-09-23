@@ -19,8 +19,8 @@
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
 
   <!-- FOGLI DI STILE VERSIONATI -->
-  <link rel="stylesheet" href="css/core.css?v=18.0">
-  <link rel="stylesheet" href="css/rules2.css?v=18.0">
+  <link rel="stylesheet" href="css/core.css?v=18.5">
+  <link rel="stylesheet" href="css/rules2.css?v=18.5">
 </head>
 
 <body class="rpg-app-body bg-[#070A12] text-slate-100 flex flex-col h-screen overflow-hidden select-none" data-context="app" data-active-screen="view-home">
@@ -32,7 +32,7 @@
       <div class="loader-icon absolute inset-0 flex items-center justify-center text-xl">⚓</div>
     </div>
     <h2 class="loader-title text-sm font-black tracking-widest text-white uppercase mb-1">Estiqatsy Syndicate</h2>
-    <p class="loader-status text-xs text-slate-400 animate-pulse" id="loading-status">Sincronizzazione frequenze con Google Sheets...</p>
+    <p class="loader-status text-xs text-slate-400 animate-pulse" id="loading-status">Sincronizzazione con il database Syndicate...</p>
     <div id="loading-error-box" class="loader-error-box hidden mt-4 p-3 bg-rose-950/80 border border-rose-500 rounded-xl text-xs text-rose-200 font-mono text-left max-w-sm"></div>
     <button id="loading-retry-btn" onclick="location.reload()" class="btn btn-sm btn-primary hidden mt-4">Riprova</button>
   </div>
@@ -120,18 +120,18 @@
           <button id="desk-nav-games" data-module="games" onclick="AppRouter.navigate('games')" class="desk-nav-btn flex items-center justify-between w-full p-2.5 rounded-xl text-xs font-bold text-slate-300 hover:text-white transition" data-tab="games">
             <div class="flex items-center gap-3">
               <i data-lucide="gamepad-2" class="w-4 h-4 text-sky-400"></i>
-              <span>Giochi Noir & Stanze</span>
+              <span>Libreria Saghe & Stanze</span>
             </div>
             <span class="badge badge-xs badge-primary font-bold text-[8px]">PLAY</span>
           </button>
           <button id="desk-nav-shop" data-module="shop" onclick="AppRouter.navigate('shop')" class="desk-nav-btn flex items-center gap-3 w-full p-2.5 rounded-xl text-xs font-bold text-slate-300 hover:text-white transition" data-tab="shop">
-            <i data-lucide="shopping-bag" class="w-4 h-4 text-amber-400"></i> <span>Shop Syndicate</span>
+            <i data-lucide="shopping-bag" class="w-4 h-4 text-amber-400"></i> <span>Mercato Syndicate</span>
           </button>
           <button id="desk-nav-recipes" data-module="recipes" onclick="AppRouter.navigate('recipes')" class="desk-nav-btn flex items-center gap-3 w-full p-2.5 rounded-xl text-xs font-bold text-slate-300 hover:text-white transition" data-tab="recipes">
-            <i data-lucide="utensils" class="w-4 h-4 text-emerald-400"></i> <span>Barlady & Ricette</span>
+            <i data-lucide="utensils" class="w-4 h-4 text-emerald-400"></i> <span>Workshop Barlady</span>
           </button>
           <button id="desk-nav-profile" onclick="AppRouter.navigate('profile')" class="desk-nav-btn flex items-center gap-3 w-full p-2.5 rounded-xl text-xs font-bold text-slate-300 hover:text-white transition" data-tab="profile">
-            <i data-lucide="user" class="w-4 h-4 text-purple-400"></i> <span>Profilo & Arena</span>
+            <i data-lucide="user" class="w-4 h-4 text-purple-400"></i> <span>Hub Agente & Arena</span>
           </button>
         </nav>
       </div>
@@ -141,7 +141,7 @@
           <i data-lucide="volume-2" class="w-4 h-4 text-sky-400"></i>
           <span>Audio Radio</span>
         </button>
-        <span class="font-mono text-[10px]">v18.0</span>
+        <span class="font-mono text-[10px]">v18.5</span>
       </div>
     </aside>
 
@@ -151,13 +151,12 @@
         <div class="app-content-wrapper p-3 md:p-6 max-w-5xl mx-auto space-y-4">
 
           <!-- =============================================================== -->
-          <!-- VISTA 1: DASHBOARD HOME                                        -->
+          <!-- VISTA 1: DASHBOARD HOME (VETRINA SYNDICATE)                     -->
           <!-- =============================================================== -->
           <section id="view-home" class="space-y-4 app-screen">
             <div class="home-hero-banner p-4 md:p-6 rounded-2xl bg-gradient-to-br from-slate-900 via-slate-900 to-indigo-950 border border-white/10 shadow-xl space-y-3">
               <div class="flex items-center space-x-2.5 flex-wrap gap-y-2">
                 <span class="badge badge-sm badge-info font-mono font-bold uppercase text-[9px]">Piattaforma Ufficiale</span>
-                <!-- Rimosso il testo duplicato dei punti dal greeting per valorizzare i KPI sotto -->
                 <span id="home-rank-points" class="hidden">0</span>
                 <button onclick="AppModules.openPlansCatalogModal()" class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-sky-500/10 border border-sky-400/40 text-[9px] font-bold text-sky-300 uppercase">
                   <span>👑</span> <span id="home-plan-badge">PIANO BASE</span> <span>›</span>
@@ -171,7 +170,7 @@
 
               <div class="pt-1 flex gap-2.5">
                 <button onclick="AppRouter.navigate('games')" class="btn btn-sm btn-primary font-bold">🎮 Saghe RPG & Stanze</button>
-                <button onclick="AppRouter.navigate('shop')" class="btn btn-sm btn-outline border-white/20 text-slate-200 font-bold">🏪 Shop</button>
+                <button onclick="AppRouter.navigate('shop')" class="btn btn-sm btn-outline border-white/20 text-slate-200 font-bold">🏪 Mercato</button>
               </div>
             </div>
 
@@ -201,7 +200,7 @@
               </div>
             </div>
 
-            <!-- KPI QUAD GRID (AUTORITÀ UNICA DELLE METRICHE IN HOME) -->
+            <!-- KPI QUAD GRID (AUTORITÀ UNICA DELLE METRICHE) -->
             <div class="kpi-quad-grid grid grid-cols-2 md:grid-cols-4 gap-2.5 w-full">
               <div onclick="AppRouter.navigate('profile')" class="kpi-card p-3.5 rounded-xl bg-slate-900/90 border border-white/10 flex items-center justify-between cursor-pointer hover:border-amber-400/40 transition">
                 <div>
@@ -249,41 +248,49 @@
           </section>
 
           <!-- =============================================================== -->
-          <!-- VISTA 2: GIOCHI (SAGHE NARRATIVE & BANNER STANZE MULTIPLAYER)   -->
+          <!-- VISTA 2: GIOCHI (LIBRERIA SAGHE & HERO EVENT MULTIPLAYER)       -->
           <!-- =============================================================== -->
-          <section id="view-hub" class="space-y-4 hidden app-screen max-w-4xl mx-auto">
-            <div class="page-title-row flex items-center justify-between pb-2 border-b border-white/10">
+          <section id="view-hub" class="space-y-3.5 hidden app-screen max-w-4xl mx-auto">
+            <!-- Testata Unificata Steam Style -->
+            <div class="flex items-center justify-between pb-2 border-b border-white/10">
               <div>
-                <span class="sub-header-tag text-[10px] font-mono text-sky-400 font-bold uppercase">DATABASE GIOCHI</span>
-                <h2 class="page-headline text-lg font-black text-white">Saghe & Stanze Clandestine</h2>
+                <span class="text-[10px] font-mono text-sky-400 font-bold uppercase tracking-wider">LIBRERIA SYNDICATE</span>
+                <h2 class="text-base md:text-lg font-black text-white">Saghe Narrative & Stanze</h2>
               </div>
-              <span class="text-xs text-slate-400 font-mono" id="games-total-counter">Caricamento...</span>
+              <span class="text-xs text-slate-400 font-mono" id="games-total-counter">4 Saghe Attive</span>
             </div>
 
-            <!-- BANNER MULTIPLAYER INTEGRATO (LAYOUT ANTI-SOVRAPPOSIZIONE) -->
-            <div onclick="AppModules.openMultiplayerLobby()" class="p-4 rounded-2xl bg-gradient-to-r from-purple-950/70 via-slate-900 to-slate-900 border border-purple-500/40 flex items-center justify-between cursor-pointer hover:border-purple-400 transition shadow-xl">
-              <div class="flex items-center gap-3.5 min-w-0 flex-1">
-                <div class="w-11 h-11 rounded-xl bg-purple-500/20 border border-purple-400/40 flex items-center justify-center text-2xl text-purple-300 shrink-0">
+            <!-- ⭐ FEATURED HERO EVENT: MULTIPLAYER BANNER (FLUIDO E SENZA TRONCAMENTI) -->
+            <div onclick="AppModules.openMultiplayerLobby()" class="p-4 rounded-2xl bg-gradient-to-r from-purple-950/80 via-slate-900 to-slate-900 border border-purple-500/40 flex items-center justify-between cursor-pointer hover:border-purple-400 transition shadow-xl gap-3">
+              <div class="flex items-start gap-3.5 min-w-0 flex-1">
+                <div class="w-11 h-11 rounded-xl bg-purple-500/20 border border-purple-400/40 flex items-center justify-center text-2xl text-purple-300 shrink-0 mt-0.5">
                   👥
                 </div>
-                <div class="min-w-0 pr-2">
+                <div class="min-w-0 flex-1">
                   <div class="flex items-center gap-2 flex-wrap">
-                    <h3 class="font-black text-sm text-white truncate">Stanze Multiplayer Clandestine</h3>
-                    <span class="badge badge-xs badge-secondary font-mono font-bold shrink-0">1VS1 & CO-OP</span>
+                    <h3 class="font-black text-sm text-white leading-snug">Stanze Clandestine</h3>
+                    <span class="badge badge-xs badge-secondary font-mono font-bold">1VS1 & CO-OP</span>
                   </div>
-                  <p class="text-[11px] text-slate-300 mt-0.5 line-clamp-1">Sfida un compagno a colpi di D20 o assalta i boss del porto in cooperativa.</p>
+                  <p class="text-[11px] text-slate-300 mt-1 leading-relaxed">Sfida un compagno a colpi di D20 o abbatti i boss del porto in cooperativa.</p>
                 </div>
               </div>
-              <button class="btn btn-xs btn-secondary font-black px-3 shrink-0">Entra ›</button>
+              <button class="btn btn-sm btn-secondary font-black px-4 shrink-0 text-xs shadow-md">Entra ›</button>
             </div>
 
-            <!-- GRIGLIA SAGHE RPG -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="games-catalog-container"></div>
+            <!-- BARRA FILTRI CATEGORIA A CHIP (SENZA CAMPO INPUT CERCA) -->
+            <div class="chips-scroll-bar flex gap-1.5 overflow-x-auto pb-1" id="games-category-chips">
+              <button onclick="AppModules.setGameGenre('tutti')" class="rpg-category-chip active">TUTTI</button>
+              <button onclick="AppModules.setGameGenre('investigativo')" class="rpg-category-chip">INVESTIGATIVO</button>
+              <button onclick="AppModules.setGameGenre('noir')" class="rpg-category-chip">NOIR</button>
+              <button onclick="AppModules.setGameGenre('azione')" class="rpg-category-chip">AZIONE</button>
+            </div>
+
+            <!-- GRIGLIA UNIFORME A CARD (CONDIVISA CON SHOP E RICETTE) -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3.5" id="games-catalog-container"></div>
           </section>
 
-          <!-- DETTAGLIO SAGA (16:9 + TASTO TORNA AI GIOCHI) -->
+          <!-- DETTAGLIO SAGA (16:9 + TASTO TORNA ALLE SAGHE) -->
           <section id="subview-game-detail" class="space-y-4 hidden app-screen max-w-3xl mx-auto">
-            <!-- Barra di Ritorno Subview -->
             <div class="subview-header-bar flex items-center justify-between pb-2 border-b border-white/10 mb-1">
               <button onclick="AppRouter.navigate('games')" class="btn-back-subview flex items-center gap-1.5 text-xs font-bold text-slate-300 hover:text-white">
                 <i data-lucide="chevron-left" class="w-4 h-4"></i> <span>Torna alle Saghe</span>
@@ -344,7 +351,7 @@
                       <span class="font-black text-xs text-white">Duello 1vs1</span>
                       <span>⚔️</span>
                     </div>
-                    <div class="text-[10px] text-slate-300 mt-1">Sfida un amico testa a testa a colpi di D20 sul molo.</div>
+                    <div class="text-[10px] text-slate-300 mt-1">Sfida un compagno a colpi di D20 sul molo.</div>
                   </button>
 
                   <button id="btn-mode-coop" onclick="AppModules.selectMultiplayerMode('coop')" class="mode-select-btn p-3 rounded-xl border border-white/10 bg-slate-900/60 text-left transition">
@@ -352,7 +359,7 @@
                       <span class="font-black text-xs text-white">Co-op Boss</span>
                       <span>🤝</span>
                     </div>
-                    <div class="text-[10px] text-slate-400 mt-1">Unisciti con un amico per abbattere il Boss Bruto.</div>
+                    <div class="text-[10px] text-slate-400 mt-1">Unisciti con un compagno per abbattere il Boss Bruto.</div>
                   </button>
 
                   <button id="btn-mode-raid" onclick="AppModules.selectMultiplayerMode('raid')" class="mode-select-btn p-3 rounded-xl border border-white/10 bg-slate-900/60 text-left transition">
@@ -380,7 +387,7 @@
               <div class="p-4 rounded-2xl bg-slate-900 border border-white/10 space-y-3">
                 <div>
                   <h3 class="font-black text-xs text-white">Hai Ricevuto un Codice Stanza?</h3>
-                  <p class="text-[10px] text-slate-400 mt-0.5">Inserisci il codice ricevuto dal tuo compagno (es. ROOM_A9X7K2):</p>
+                  <p class="text-[10px] text-slate-400 mt-0.5">Inserisci il codice ricevuto dal compagno (es. ROOM_A9X7K2):</p>
                 </div>
                 <div class="flex gap-2">
                   <input id="input-join-room-code" type="text" placeholder="ROOM_XXXXXX" class="input input-sm input-bordered bg-slate-950 text-white font-mono font-bold flex-1 uppercase">
@@ -694,24 +701,33 @@
           </section>
 
           <!-- =============================================================== -->
-          <!-- VISTA 5: SHOP REALE PIATTAFORMA                                -->
+          <!-- VISTA 5: SHOP REALE (MERCATO SYNDICATE - CHIPS STREAMLINED)    -->
           <!-- =============================================================== -->
-          <section id="view-shop" class="space-y-4 hidden app-screen">
-            <div class="search-bar-box relative">
-              <i data-lucide="search" class="w-4 h-4 absolute left-3 top-2.5 text-slate-400"></i>
-              <input type="text" id="shop-search-input" oninput="AppModules.filterShop()" placeholder="Cerca nello Shop..." class="input input-sm input-bordered w-full pl-9 bg-slate-900 text-white">
+          <section id="view-shop" class="space-y-3.5 hidden app-screen">
+            <!-- Testata Unificata Steam Style -->
+            <div class="flex items-center justify-between pb-2 border-b border-white/10">
+              <div>
+                <span class="text-[10px] font-mono text-amber-400 font-bold uppercase tracking-wider">MERCATO SYNDICATE</span>
+                <h2 class="text-base md:text-lg font-black text-white">Articoli & Forniture</h2>
+              </div>
+              <span class="text-xs text-slate-400 font-mono" id="shop-total-counter">Disponibili</span>
             </div>
+
+            <!-- Campo Cerca Nascosto (Preservato per compatibilità JS) -->
+            <input type="hidden" id="shop-search-input" value="">
+
+            <!-- BARRA FILTRI CATEGORIA A CHIP (SENZA CAMPO INPUT CERCA) -->
             <div class="chips-scroll-bar flex gap-1.5 overflow-x-auto pb-1" id="shop-category-chips"></div>
+
             <!-- Griglia Prodotti a 2 Colonne con Schede Interamente Cliccabili -->
-            <div id="shop-products-grid" class="grid grid-cols-2 md:grid-cols-4 gap-3"></div>
+            <div id="shop-products-grid" class="grid grid-cols-1 md:grid-cols-2 gap-3.5"></div>
           </section>
 
           <!-- DETTAGLIO SHOP (CON TASTO TORNA INDIETRO + IMMAGINE 16:9 CENTRATA) -->
           <section id="subview-shop-detail" class="space-y-4 hidden app-screen max-w-2xl mx-auto">
-            <!-- Barra di Ritorno allo Shop -->
             <div class="subview-header-bar flex items-center justify-between pb-2 border-b border-white/10 mb-1">
               <button onclick="AppRouter.navigate('shop')" class="btn-back-subview flex items-center gap-1.5 text-xs font-bold text-slate-300 hover:text-white">
-                <i data-lucide="chevron-left" class="w-4 h-4"></i> <span>Torna allo Shop</span>
+                <i data-lucide="chevron-left" class="w-4 h-4"></i> <span>Torna al Mercato</span>
               </button>
               <span id="detail-shop-cat" class="text-[10px] font-mono text-sky-400 font-bold uppercase">Reparto</span>
             </div>
@@ -720,7 +736,6 @@
               <h2 class="text-base md:text-lg font-black text-white" id="detail-shop-title">Nome Articolo</h2>
             </div>
 
-            <!-- Involucro 16:9 con Ritaglio Centrato -->
             <div class="detail-media-box rounded-xl overflow-hidden relative bg-slate-900">
               <img id="detail-shop-img" src="" alt="Foto Articolo">
               <span id="detail-shop-stock" class="badge badge-sm badge-success stock-badge absolute top-2 right-2">Disponibile</span>
@@ -729,7 +744,6 @@
             <div class="space-y-4">
               <p id="detail-shop-desc" class="text-xs text-slate-300 leading-relaxed"></p>
               
-              <!-- Barra Acquisto Fissa / Box Azione -->
               <div class="p-3.5 rounded-xl bg-slate-900 border border-white/10 flex items-center justify-between gap-3">
                 <div>
                   <div class="text-[9px] font-mono text-slate-400 uppercase">Prezzo Piattaforma</div>
@@ -743,21 +757,30 @@
           </section>
 
           <!-- =============================================================== -->
-          <!-- VISTA 6: RICETTARIO REALE                                      -->
+          <!-- VISTA 6: RICETTARIO (WORKSHOP BARLADY - CHIPS STREAMLINED)     -->
           <!-- =============================================================== -->
-          <section id="view-recipes" class="space-y-4 hidden app-screen">
-            <div class="search-bar-box relative">
-              <i data-lucide="search" class="w-4 h-4 absolute left-3 top-2.5 text-slate-400"></i>
-              <input type="text" id="recipes-search-input" oninput="AppModules.filterRecipes()" placeholder="Cerca cocktail o piatti..." class="input input-sm input-bordered w-full pl-9 bg-slate-900 text-white">
+          <section id="view-recipes" class="space-y-3.5 hidden app-screen">
+            <!-- Testata Unificata Steam Style -->
+            <div class="flex items-center justify-between pb-2 border-b border-white/10">
+              <div>
+                <span class="text-[10px] font-mono text-emerald-400 font-bold uppercase tracking-wider">WORKSHOP BARLADY</span>
+                <h2 class="text-base md:text-lg font-black text-white">Cocktails & Food</h2>
+              </div>
+              <span class="text-xs text-slate-400 font-mono" id="recipes-total-counter">Ricette</span>
             </div>
+
+            <!-- Campo Cerca Nascosto (Preservato per compatibilità JS) -->
+            <input type="hidden" id="recipes-search-input" value="">
+
+            <!-- BARRA FILTRI CATEGORIA A CHIP (SENZA CAMPO INPUT CERCA) -->
             <div class="chips-scroll-bar flex gap-1.5 overflow-x-auto pb-1" id="recipes-category-chips"></div>
-            <!-- Griglia Ricette con Schede Cliccabili -->
-            <div id="recipes-grid" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
+
+            <!-- Griglia Ricette con Schede Cliccabili Uniformi -->
+            <div id="recipes-grid" class="grid grid-cols-1 md:grid-cols-2 gap-3.5"></div>
           </section>
 
           <!-- DETTAGLIO RICETTA (CON TASTO TORNA INDIETRO + IMMAGINE 16:9 CENTRATA) -->
           <section id="subview-recipe-detail" class="space-y-4 hidden app-screen max-w-2xl mx-auto">
-            <!-- Barra di Ritorno alle Ricette -->
             <div class="subview-header-bar flex items-center justify-between pb-2 border-b border-white/10 mb-1">
               <button onclick="AppRouter.navigate('recipes')" class="btn-back-subview flex items-center gap-1.5 text-xs font-bold text-slate-300 hover:text-white">
                 <i data-lucide="chevron-left" class="w-4 h-4"></i> <span>Torna alle Ricette</span>
@@ -769,7 +792,6 @@
               <h2 class="detail-title text-base md:text-lg font-black text-white" id="detail-recipe-title">Piatto</h2>
             </div>
 
-            <!-- Involucro 16:9 con Ritaglio Centrato -->
             <div class="detail-media-box rounded-xl overflow-hidden bg-slate-900">
               <img id="detail-recipe-img" src="" alt="Foto Piatto">
             </div>
@@ -795,10 +817,10 @@
           </section>
 
           <!-- =============================================================== -->
-          <!-- VISTA 7: PROFILO UTENTE (STANDARDIZZATO SECONDO PATTERN NATIVI) -->
+          <!-- VISTA 7: PROFILO UTENTE (HUB AGENTE)                           -->
           <!-- =============================================================== -->
           <section id="view-profile" class="space-y-4 hidden app-screen">
-            <!-- 1. Scheda Identità Utente Pulita (Senza numeri ammassati) -->
+            <!-- 1. Scheda Identità Utente -->
             <div class="profile-header-card p-4 rounded-2xl bg-gradient-to-br from-slate-900 to-indigo-950/60 border border-white/10 flex items-center justify-between">
               <div class="flex items-center space-x-3.5 min-w-0">
                 <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-sky-600 to-indigo-900 border border-sky-400/40 flex items-center justify-center text-xl font-black text-white shrink-0 overflow-hidden" id="profile-card-avatar">
@@ -815,7 +837,7 @@
               </div>
             </div>
 
-            <!-- 2. Dock KPI Orizzontale a 2 Colonne (Consistente con la Home) -->
+            <!-- 2. Dock KPI Orizzontale a 2 Colonne -->
             <div class="grid grid-cols-2 gap-2.5 w-full">
               <div class="kpi-card p-3 rounded-xl bg-slate-900 border border-white/10 flex items-center justify-between">
                 <div>
@@ -834,7 +856,7 @@
               </div>
             </div>
 
-            <!-- 3. Azioni Rapide Piano & Download -->
+            <!-- 3. Pulsanti Azione Rapida (Apertura Modali Piani & Download) -->
             <div class="grid grid-cols-2 gap-3">
               <button onclick="AppModules.openPlansCatalogModal()" class="p-3 rounded-xl bg-slate-900 border border-sky-400/30 flex items-center justify-between text-left hover:border-sky-400/60 transition">
                 <div class="flex items-center gap-2.5">
@@ -847,31 +869,22 @@
                 <span class="badge badge-xs badge-info font-mono">INFO</span>
               </button>
 
-              <button onclick="AppModules.openVaultSection()" class="p-3 rounded-xl bg-slate-900 border border-purple-500/30 flex items-center justify-between text-left hover:border-purple-400/60 transition">
+              <button onclick="AppModules.openVaultModal()" class="p-3 rounded-xl bg-slate-900 border border-purple-500/30 flex items-center justify-between text-left hover:border-purple-400/60 transition">
                 <div class="flex items-center gap-2.5">
                   <span class="text-lg">📥</span>
                   <div>
                     <div class="font-bold text-xs text-white">I Miei Download</div>
-                    <div class="text-[9px] text-purple-400 font-mono">Caveau Digitale ›</div>
+                    <div class="text-[9px] text-purple-400 font-mono">Apri Caveau ›</div>
                   </div>
                 </div>
                 <span class="badge badge-xs badge-secondary font-mono" id="profile-action-vault-count">0</span>
               </button>
             </div>
 
-            <!-- CONTENITORE ARENA DUELLI CLANDESTINI -->
+            <!-- 4. CONTENITORE ARENA DUELLI CLANDESTINI -->
             <div id="profile-arena-section" class="space-y-3 pt-1"></div>
 
-            <!-- Caveau File Scaricati -->
-            <div id="profile-vault-container-card" class="p-4 rounded-2xl bg-slate-900 border border-white/10 space-y-3">
-              <div class="flex items-center gap-2 text-xs font-bold text-slate-300 uppercase">
-                <i data-lucide="download" class="w-4 h-4 text-emerald-400"></i>
-                <span>File & Prodotti Digitali Riscattati</span>
-              </div>
-              <div id="profile-vault-container" class="space-y-2"></div>
-            </div>
-
-            <!-- Ultime Transazioni Reali -->
+            <!-- 5. Ultime Transazioni Reali -->
             <div class="p-4 rounded-2xl bg-slate-900 border border-white/10 space-y-3">
               <div class="flex justify-between items-center text-xs">
                 <div class="flex items-center gap-2 font-bold text-slate-300 uppercase">
@@ -891,31 +904,26 @@
       <!-- 4. FOOTER MENU STICKY (MOBILE: 5 TAB THUMB-FRIENDLY COMPLETI)       -->
       <!-- =================================================================== -->
       <footer id="main-app-footer" class="main-app-footer md:hidden flex justify-around items-center bg-[#070A12]/95 backdrop-blur-lg border-t border-white/10 relative z-40" style="height: calc(52px + var(--safe-bottom, 0px)); padding-bottom: var(--safe-bottom, 0px);">
-        <!-- TAB 1: HOME -->
         <button id="mob-nav-home" onclick="AppRouter.navigate('home')" class="nav-tab active flex flex-col items-center justify-center h-12 w-16 text-slate-400" data-tab="home">
           <i data-lucide="home" class="w-4 h-4"></i>
           <span class="nav-tab-label text-[9px] font-bold mt-1">Home</span>
         </button>
 
-        <!-- TAB 2: GIOCHI -->
         <button id="mob-nav-games" data-module="games" onclick="AppRouter.navigate('games')" class="nav-tab flex flex-col items-center justify-center h-12 w-16 text-slate-400 relative" data-tab="games">
           <i data-lucide="gamepad-2" class="w-4 h-4"></i>
           <span class="nav-tab-label text-[9px] font-bold mt-1">Giochi</span>
         </button>
 
-        <!-- TAB 3: SHOP -->
         <button id="mob-nav-shop" data-module="shop" onclick="AppRouter.navigate('shop')" class="nav-tab flex flex-col items-center justify-center h-12 w-16 text-slate-400" data-tab="shop">
           <i data-lucide="shopping-bag" class="w-4 h-4"></i>
-          <span class="nav-tab-label text-[9px] font-bold mt-1">Shop</span>
+          <span class="nav-tab-label text-[9px] font-bold mt-1">Mercato</span>
         </button>
 
-        <!-- TAB 4: RICETTE -->
         <button id="mob-nav-recipes" data-module="recipes" onclick="AppRouter.navigate('recipes')" class="nav-tab flex flex-col items-center justify-center h-12 w-16 text-slate-400" data-tab="recipes">
           <i data-lucide="utensils" class="w-4 h-4"></i>
           <span class="nav-tab-label text-[9px] font-bold mt-1">Ricette</span>
         </button>
 
-        <!-- TAB 5: PROFILO -->
         <button id="mob-nav-profile" onclick="AppRouter.navigate('profile')" class="nav-tab flex flex-col items-center justify-center h-12 w-16 text-slate-400" data-tab="profile">
           <i data-lucide="user" class="w-4 h-4"></i>
           <span class="nav-tab-label text-[9px] font-bold mt-1">Profilo</span>
@@ -988,6 +996,27 @@
   <!-- ======================================================================= -->
   <!-- 5. MODALI GLASSMORPHISM & DRAWERS TATTICI                              -->
   <!-- ======================================================================= -->
+
+  <!-- ⭐ MODALE DEDICATO: I MIEI DOWNLOAD / CAVEAU DIGITALE -->
+  <dialog id="modal-vault-downloads" class="modal modal-middle">
+    <div class="modal-box p-5 bg-slate-950 border border-purple-500/40 rounded-2xl max-w-md space-y-3 relative">
+      <button onclick="document.getElementById('modal-vault-downloads').close()" class="btn btn-xs btn-circle btn-ghost absolute right-3 top-3">✕</button>
+
+      <div class="flex items-center gap-2.5 pb-2 border-b border-white/10">
+        <span class="text-2xl">📥</span>
+        <div>
+          <h3 class="text-sm font-black text-white">I Miei Download & Caveau</h3>
+          <span class="text-[10px] font-mono text-purple-400">File e prodotti digitali riscattati</span>
+        </div>
+      </div>
+
+      <div id="profile-vault-container" class="space-y-2 max-h-72 overflow-y-auto pt-1"></div>
+
+      <button onclick="document.getElementById('modal-vault-downloads').close()" class="btn btn-xs btn-ghost text-slate-400 w-full uppercase font-bold mt-2">
+        Chiudi ✕
+      </button>
+    </div>
+  </dialog>
 
   <!-- MODALE CABINATO MEGOIN -->
   <dialog id="modal-insert-megoin" class="modal modal-middle">
@@ -1310,10 +1339,10 @@
   </dialog>
 
   <!-- SCRIPT DI SISTEMA VERSIONATI -->
-  <script src="audio.js?v=19.0"></script>
-  <script src="js/app-core.js?v=19.0"></script>
-  <script src="js/app-modules.js?v=19.0"></script>
-  <script src="js/rules2wizard.js?v=19.0"></script>
-  <script src="js/rules2engine.js?v=19.0"></script>
+  <script src="audio.js?v=18.5"></script>
+  <script src="js/app-core.js?v=18.5"></script>
+  <script src="js/app-modules.js?v=18.5"></script>
+  <script src="js/rules2wizard.js?v=18.5"></script>
+  <script src="js/rules2engine.js?v=18.5"></script>
 </body>
 </html>
