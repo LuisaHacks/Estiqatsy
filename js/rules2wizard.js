@@ -1,6 +1,6 @@
 // ============================================================================
 // PROJECT: ESTIQATSY SYNDICATE & RPG PLATFORM
-// FILE: js/rules2wizard.js (VERSIONE 26.0 - AGNOSTIC TCG ENGINE & TOUCH-SWIPE OBSERVER)
+// FILE: js/rules2wizard.js (VERSIONE 32.0 - PRECISION TCG ENGINE & ABOVE-THE-FOLD)
 // LAYER: WIZARD FULL-STAGE, 48px FULL-HUD, ZERO-FONDINO, 44px STEPPER-DOCK
 // NOTE: 100% DINAMICO, ZERO HARDCODING, CAROSELLO CIRCOLARE & AUTO-SELEZIONE
 // ============================================================================
@@ -166,9 +166,6 @@ const Rules2Wizard = {
   },
 
   // --------------------------------------------------------------------------
-  // HUD A 2 RIGHE (48px - A TUTTA LARGHEZZA, A FILO DELLO STEPPER)
-  // --------------------------------------------------------------------------
-  // --------------------------------------------------------------------------
   // HUD A 2 RIGHE (48px - KPI BLOCCATI E VISIBILI AL 100%)
   // --------------------------------------------------------------------------
   syncLiveHUD: function() {
@@ -201,7 +198,7 @@ const Rules2Wizard = {
       <div class="flex items-center justify-between w-full min-w-0 leading-none">
         <div class="flex items-center gap-1.5 min-w-0 flex-1 pr-2">
           <span class="text-sm shrink-0">${avatarEmoji}</span>
-          <span class="text-xs font-black text-white truncate max-w-[140px]">${heroName}</span>
+          <span class="text-xs font-black text-white truncate max-w-[130px]">${heroName}</span>
         </div>
         <div class="flex items-center gap-2 shrink-0 font-mono text-[10.5px]">
           <span class="text-sky-300 font-bold whitespace-nowrap">✨ ${this.state.remainingPx} PX</span>
@@ -236,7 +233,7 @@ const Rules2Wizard = {
   },
 
   // --------------------------------------------------------------------------
-  // FOOTER INTEGRATO: "STEPPER-DOCK" (44px)
+  // FOOTER INTEGRATO: STEPPER-DOCK (44px + SAFE AREA)
   // --------------------------------------------------------------------------
   updateFooterDock: function(stepNum) {
     const footerDock = document.getElementById("main-wizard-footer");
@@ -275,16 +272,13 @@ const Rules2Wizard = {
           `).join('')}
         </div>
 
-        <button onclick="${ctaAction}" class="btn btn-xs btn-primary font-black uppercase tracking-wider px-3 h-[32px] min-h-[32px] shadow-lg">
+        <button onclick="${ctaAction}" class="btn btn-xs btn-primary btn-wizard-cta font-black uppercase tracking-wider px-3 h-[34px] min-h-[34px] shadow-lg">
           ${ctaLabel}
         </button>
       </div>
     `;
   },
 
-  // --------------------------------------------------------------------------
-  // SINCRONIZZAZIONE SERVER-SIDE STEP WIZARD
-  // --------------------------------------------------------------------------
   _syncStepToServer: function(faseName) {
     if (!this.state.gameKey) return;
     const heroPayload = {
@@ -307,9 +301,6 @@ const Rules2Wizard = {
     apiCall("game_action", heroPayload).catch(() => {});
   },
 
-  // --------------------------------------------------------------------------
-  // APERTURA E RIPRISTINO SESSIONE DA SERVER
-  // --------------------------------------------------------------------------
   open: async function(gameKey, epNum, isVeteran = false, savedHero = null) {
     try {
       this.state.gameKey = gameKey;
@@ -494,15 +485,17 @@ const Rules2Wizard = {
   },
 
   // --------------------------------------------------------------------------
-  // CAROSELLO: SCROLL, TOUCH-SWIPE OBSERVER & NAVIGAZIONE INFINITA
+  // CAROSELLO: CENTRATURA DINAMICA SENZA DRIFT PIXEL
   // --------------------------------------------------------------------------
-  scrollToIndex: function(stageId, index, cardWidth = 314) {
+  scrollToIndex: function(stageId, index) {
     const stage = document.getElementById(stageId);
     if (!stage) return;
-    stage.scrollTo({ left: index * cardWidth, behavior: 'smooth' });
+    const cards = stage.querySelectorAll(".tcg-card");
+    if (cards && cards[index]) {
+      cards[index].scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+    }
   },
 
-  // 🔒 Ascoltatore intelligente: rileva la carta al centro dopo lo swipe touch
   bindScrollDetection: function(stageId, step) {
     const stage = document.getElementById(stageId);
     if (!stage || stage._hasSwipeObserver) return;
@@ -612,6 +605,7 @@ const Rules2Wizard = {
       if (parentPanel) {
         filterBar = document.createElement("div");
         filterBar.id = "wizard-class-faction-chips";
+        // 🔒 justify-start previene il taglio dei chip a sinistra
         filterBar.className = "chips-scroll-bar flex gap-1.5 overflow-x-auto py-1 mb-1 justify-start";
         parentPanel.insertBefore(filterBar, parentPanel.firstChild);
       }
@@ -734,7 +728,8 @@ const Rules2Wizard = {
       if (parentPanel) {
         filterBar = document.createElement("div");
         filterBar.id = "wizard-abilities-filter-chips";
-        filterBar.className = "chips-scroll-bar flex gap-1.5 overflow-x-auto py-1 mb-1 justify-center";
+        // 🔒 justify-start previene l'overflow irraggiungibile a sinistra
+        filterBar.className = "chips-scroll-bar flex gap-1.5 overflow-x-auto py-1 mb-1 justify-start";
         parentPanel.insertBefore(filterBar, parentPanel.firstChild);
       }
     }
@@ -816,7 +811,8 @@ const Rules2Wizard = {
     if (!actionSlot) {
       actionSlot = document.createElement("div");
       actionSlot.id = "wizard-action-slot-step-2";
-      actionSlot.className = "scene-actions-area";
+      // 🔒 Centratura garantita e larghezza vincolata sotto la carta
+      actionSlot.className = "scene-actions-area w-full max-w-[310px] mx-auto flex justify-center";
       outerStage.parentNode.insertBefore(actionSlot, outerStage.nextSibling);
     }
 
@@ -856,7 +852,7 @@ const Rules2Wizard = {
           </button>
         `;
       }
-      actionSlot.innerHTML = `<div class="actions-grid-1">${btnHtml}</div>`;
+      actionSlot.innerHTML = `<div class="actions-grid-1 w-full">${btnHtml}</div>`;
     }
 
     this.bindScrollDetection("wizard-abilities-stage", 2);
@@ -983,7 +979,7 @@ const Rules2Wizard = {
     if (!actionSlot) {
       actionSlot = document.createElement("div");
       actionSlot.id = "wizard-action-slot-step-3";
-      actionSlot.className = "scene-actions-area";
+      actionSlot.className = "scene-actions-area w-full max-w-[310px] mx-auto flex justify-center";
       outerStage.parentNode.insertBefore(actionSlot, outerStage.nextSibling);
     }
 
@@ -1008,7 +1004,7 @@ const Rules2Wizard = {
           </button>
         `;
       }
-      actionSlot.innerHTML = `<div class="actions-grid-1">${btnHtml}</div>`;
+      actionSlot.innerHTML = `<div class="actions-grid-1 w-full">${btnHtml}</div>`;
     }
 
     this.bindScrollDetection("wizard-shop-stage", 3);
