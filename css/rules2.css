@@ -1,10 +1,12 @@
 /* ============================================================================
    PROJECT: ESTIQATSY SYNDICATE & RPG PLATFORM
-   FILE: css/rules2.css (VERSIONE 30.0 - ANTI-BLOWOUT FLEX ENGINE)
+   FILE: css/rules2.css (VERSIONE 29.5 - ZERO-LEAK STRUCTURAL BLINDING)
+   LAYER: ENGINE RULES 2, WIZARD STAGE, SPLIT ACTION SLOT, FULL HUD & COCKPIT
+   NOTE: MIN-WIDTH: 0 ANTI-EXPANSION, ABOVE-THE-FOLD, ZERO-SCROLL GUARANTEED
    ============================================================================ */
 
 /* ----------------------------------------------------------------------------
-   1. PROTEZIONE VISIBILITÀ CONTESTUALE
+   1. PROTEZIONE DI VISIBILITÀ CONTESTUALE
    ---------------------------------------------------------------------------- */
 .wizard-sticky-footer.hidden,
 .cockpit-footer.hidden,
@@ -14,7 +16,7 @@
 }
 
 /* ----------------------------------------------------------------------------
-   2. BLINDATURA PERIMETRALE ANTI-OVERFLOW (RISOLVE IL BLOWOUT A 1860px)
+   2. BLINDATURA STRUTTURALE WIZARD (IMPEDISCE L'ESPLOSIONE A 1500px)
    ---------------------------------------------------------------------------- */
 #view-wizard,
 .wizard-stage-container {
@@ -22,7 +24,12 @@
   max-width: 100% !important;
   min-width: 0 !important;
   overflow: hidden !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: space-between !important;
   box-sizing: border-box !important;
+  height: 100% !important;
+  flex: 1 1 auto !important;
 }
 
 .wizard-step-panel {
@@ -33,11 +40,13 @@
   display: flex !important;
   flex-direction: column !important;
   align-items: center !important;
+  justify-content: space-between !important;
   box-sizing: border-box !important;
+  flex: 1 1 auto !important;
 }
 
 /* ----------------------------------------------------------------------------
-   3. HUD UNIVERSALE A 2 RIGHE (48px - KPI BLOCCATI DENTRO LO SCHERMO)
+   3. HUD UNIVERSALE A 2 RIGHE (48px - KPI BLOCCATI DENTRO LA VISUALE 390px)
    ---------------------------------------------------------------------------- */
 .hud-cockpit-48px {
   width: 100% !important;
@@ -49,30 +58,29 @@
   background: rgba(11, 18, 34, 0.95);
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 0.75rem;
-  padding: 5px 12px !important;
+  padding: 5px 10px !important;
   display: flex !important;
   flex-direction: column !important;
   justify-content: center !important;
   gap: 2px !important;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
   box-sizing: border-box !important;
-  margin-bottom: 6px !important;
+  margin-bottom: 4px !important;
   flex-shrink: 0 !important;
 }
 
 /* ----------------------------------------------------------------------------
-   4. PALCO CAROSELLO WIZARD (LARGHEZZA BLOCCATA A 100%, ZERO SLITTAMENTO)
+   4. PALCO CAROSELLO WIZARD (PEEKING LATERALE BLOCCATO NELLA LARGHEZZA SCHERMO)
    ---------------------------------------------------------------------------- */
 .coverflow-stage-outer {
   position: relative !important;
   width: 100% !important;
   max-width: 100% !important;
   min-width: 0 !important;
-  padding: 0 !important;
   overflow: hidden !important;
   margin: 0 !important;
-  flex: 1 1 auto;
-  min-height: 0;
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
@@ -85,7 +93,7 @@
   gap: 14px !important;
   overflow-x: auto !important;
   scroll-snap-type: x mandatory !important;
-  padding: 6px 20px !important;
+  padding: 4px 16px !important;
   width: 100% !important;
   max-width: 100% !important;
   min-width: 0 !important;
@@ -96,7 +104,7 @@
 }
 
 /* ----------------------------------------------------------------------------
-   5. CARTA TCG CENTRALE (DIMENSIONE ARMONICA: ZERO VUOTI SOTTO)
+   5. CARTA TCG CENTRATA E BILANCIATA (RIEMPIE IL VUOTO SENZA SCROLLARE)
    ---------------------------------------------------------------------------- */
 .coverflow-card,
 .tcg-card {
@@ -104,9 +112,11 @@
   flex: 0 0 min(310px, calc(100vw - 32px)) !important;
   width: min(310px, calc(100vw - 32px)) !important;
   max-width: 315px !important;
-  height: clamp(370px, 54dvh, 445px) !important;
-  min-height: 370px !important;
-  max-height: 445px !important;
+  min-width: 280px !important;
+  /* Scala fluidamente eliminando il vuoto nero sottostante */
+  height: clamp(380px, 56dvh, 460px) !important;
+  min-height: 380px !important;
+  max-height: 460px !important;
   scroll-snap-align: center !important;
   background: #0B1222;
   border: 1px solid rgba(255, 255, 255, 0.14);
@@ -151,13 +161,17 @@
               0 16px 36px rgba(0, 0, 0, 0.90) !important;
 }
 
+/* ----------------------------------------------------------------------------
+   6. ANATOMIA INTERNA CARTA
+   ---------------------------------------------------------------------------- */
+
 /* Illustrazione / Media */
 .tcg-card-media {
   position: relative !important;
   width: 100% !important;
-  height: clamp(135px, 21dvh, 175px) !important;
-  min-height: 135px !important;
-  max-height: 175px !important;
+  height: clamp(140px, 22dvh, 180px) !important;
+  min-height: 140px !important;
+  max-height: 180px !important;
   background: #000000;
   overflow: hidden !important;
   box-sizing: border-box;
@@ -173,6 +187,7 @@
   display: block;
 }
 
+/* Testata Sovrimpressa */
 .tcg-card-header {
   position: absolute !important;
   top: 0 !important;
@@ -220,6 +235,7 @@
   border: 1px solid rgba(245, 158, 11, 0.45);
 }
 
+/* Overlay Citazione */
 .tcg-card-quote-overlay {
   position: absolute;
   bottom: 0;
@@ -250,6 +266,7 @@
   text-transform: uppercase;
 }
 
+/* Piastra Statistiche D20 */
 .tcg-stats-plate {
   height: 30px;
   min-height: 30px;
@@ -332,7 +349,7 @@
 .tcg-gold-badge { color: #FDE047; }
 
 /* ----------------------------------------------------------------------------
-   6. FRECCE DI NAVIGAZIONE
+   7. FRECCE DI NAVIGAZIONE
    ---------------------------------------------------------------------------- */
 .carousel-arrow-btn {
   width: 30px;
@@ -357,7 +374,7 @@
 }
 
 /* ----------------------------------------------------------------------------
-   7. SLOT AZIONI: ANCORATO E CENTRATO SOTTO LA CARTA (NON SCIVOLA PIÙ A DESTRA)
+   8. SLOT AZIONI: PERFETTAMENTE CENTRATO SOTTO LA CARTA (MAI PIÙ A DESTRA)
    ---------------------------------------------------------------------------- */
 .scene-actions-area {
   width: 100% !important;
@@ -369,28 +386,28 @@
   justify-content: center !important;
 }
 
-.actions-grid-1 { display: grid; grid-template-columns: 1fr; width: 100%; gap: 4px; }
-.actions-grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); width: 100%; gap: 6px; }
-.actions-grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); width: 100%; gap: 4px; }
+.actions-grid-1 { display: grid; grid-template-columns: 1fr; gap: 4px; width: 100%; }
+.actions-grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; width: 100%; }
+.actions-grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; width: 100%; }
+.actions-grid-4, .actions-grid-quiz { display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px; width: 100%; }
 
 .scene-action-btn {
-  height: 38px;
-  min-height: 38px;
-  padding: 0 12px;
-  background: rgba(22, 36, 66, 0.9);
-  border: 1px solid rgba(56, 189, 248, 0.35);
-  border-radius: 0.65rem;
-  color: #F8FAFC;
-  font-size: 11px;
-  font-weight: 800;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 4px;
-  cursor: pointer;
-  white-space: nowrap;
-  box-sizing: border-box;
-  width: 100%;
+  height: 38px !important;
+  min-height: 38px !important;
+  padding: 0 12px !important;
+  background: rgba(22, 36, 66, 0.95) !important;
+  border: 1px solid rgba(56, 189, 248, 0.35) !important;
+  border-radius: 0.65rem !important;
+  color: #F8FAFC !important;
+  font-size: 11px !important;
+  font-weight: 800 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 6px !important;
+  cursor: pointer !important;
+  box-sizing: border-box !important;
+  width: 100% !important;
 }
 
 .scene-action-btn:active {
@@ -403,7 +420,7 @@
 }
 
 /* ----------------------------------------------------------------------------
-   8. FOOTER STICKY: BANDA UTILE 44px + SAFE AREA A 24px (CENTRATURA PERFETTA)
+   9. FOOTER STICKY: BANDA 44px + SAFE AREA A 24px (CENTRATURA PERFETTA)
    ---------------------------------------------------------------------------- */
 .wizard-sticky-footer,
 .cockpit-footer {
@@ -484,7 +501,7 @@
 }
 
 /* ----------------------------------------------------------------------------
-   9. FX FLUTTUANTI & DADO
+   10. FX FLUTTUANTI & DADO
    ---------------------------------------------------------------------------- */
 .floating-damage-layer {
   position: absolute;
@@ -525,7 +542,7 @@
 }
 
 /* ----------------------------------------------------------------------------
-   10. MODALI IN-GAME
+   11. CASSETTI TATTICI IN-GAME
    ---------------------------------------------------------------------------- */
 dialog.game-modal-sheet {
   position: fixed;
