@@ -594,7 +594,7 @@ const Rules2Wizard = {
     const stage = document.getElementById("wizard-classes-stage");
     if (!stage) return;
 
-    // Estrazione dinamica delle fazioni presenti nei dati (Zero hardcoding)
+    // Estrazione dinamica delle fazioni presenti
     const factionSet = {};
     (this.state.classes || []).forEach(c => {
       const f = String(c.sottocategoria || "").trim();
@@ -646,9 +646,7 @@ const Rules2Wizard = {
 
       return `
         <div id="class-card-${idx}" onclick="Rules2Wizard.selectClassByIndex(${idx}, true)" class="coverflow-card tcg-card ${isSelected ? 'selected' : ''}">
-          <!-- FASCIA 2: Media a Schermo Pieno Alto (da Y=0 della carta con angoli tondi) -->
           <div class="tcg-card-media">
-            <!-- FASCIA 1: Testata Fluttuante Trasparente Sovrimpressa -->
             <div class="tcg-card-header">
               <h4 class="tcg-card-title truncate">${cls.emoji ? cls.emoji + ' ' : ''}${cls.nome}</h4>
               ${subCat ? `<span class="tcg-card-faction-badge ${subCat.toLowerCase()}">${subCat.toUpperCase()}</span>` : ''}
@@ -664,17 +662,14 @@ const Rules2Wizard = {
             ` : ''}
           </div>
 
-          <!-- FASCIA 3: Piastra Statistiche con Modificatori D20 -->
           <div class="tcg-stats-plate">
             <span>🥊 FOR <b>${forVal}</b> (${Rules2_FormatMod(forVal)})</span>
             <span>🤸 DES <b>${desVal}</b> (${Rules2_FormatMod(desVal)})</span>
             <span>🧠 INT <b>${intVal}</b> (${Rules2_FormatMod(intVal)})</span>
           </div>
 
-          <!-- FASCIA 4: Descrizione Narrativa -->
           <p class="tcg-card-desc">${cls.descrizione || cls.testo || ''}</p>
 
-          <!-- FASCIA 5: Piede Scheda di sola consultazione (Zero Bottoni) -->
           <div class="tcg-card-footer">
             <div class="tcg-card-loot" title="${Rules2_SafeAttr(startingLoot)}">🎒 ${startingLoot}</div>
             <div class="tcg-card-vitals">
@@ -686,7 +681,10 @@ const Rules2Wizard = {
       `;
     }).join("");
 
-    // Slot Azione Decisionale sottostante alla carta
+    this.bindScrollDetection("wizard-classes-stage", 1);
+    this.syncLiveHUD();
+  },
+
   selectClassByIndex: function(idx, shouldScroll = true) {
     this.state.activeClassIndex = idx;
     const list = this.getFilteredClasses();
@@ -704,7 +702,7 @@ const Rules2Wizard = {
       this.scrollToIndex('wizard-classes-stage', idx);
     }
   },
-
+  
   // --------------------------------------------------------------------------
   // STEP 2: ABILITÀ & TALENTI (TESTO NARRATIVO + EFFETTO + AUTO-SWIPE)
   // --------------------------------------------------------------------------
