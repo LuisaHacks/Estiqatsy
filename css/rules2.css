@@ -456,10 +456,10 @@
 }
 
 /* ----------------------------------------------------------------------------
-   8. FOOTER CONSOLE INTEGRATO: STEPPER-DOCK (WIZARD & COCKPIT - 44px)
+   FOOTER WIZARD CONSOLE (STEPPER-DOCK STACCATO DAI BORDI CON GAP FISSO)
    ---------------------------------------------------------------------------- */
-.wizard-sticky-footer,
-.cockpit-footer {
+#main-wizard-footer,
+.wizard-sticky-footer {
   flex: none;
   z-index: 40;
   width: 100%;
@@ -467,14 +467,58 @@
   margin: 0 auto;
   background: rgba(7, 10, 18, 0.98);
   border-top: 1px solid rgba(255, 255, 255, 0.10);
-  padding-bottom: max(env(safe-area-inset-bottom, 0px), var(--tg-safe-area-inset-bottom, 0px), 12px);
-  box-sizing: content-box;
+  /* 🔒 16px di respiro da entrambi i bordi dello schermo + safe-area iOS */
+  padding-left: 16px !important;
+  padding-right: 16px !important;
+  padding-bottom: max(env(safe-area-inset-bottom, 0px), var(--tg-safe-area-inset-bottom, 0px), 12px) !important;
+  box-sizing: border-box !important;
   height: 44px;
   min-height: 44px;
   display: flex;
   align-items: center;
-  padding-left: 12px;
-  padding-right: 12px;
+}
+
+/* Contenitore interno a 3 blocchi: Indietro | Nodi 1-4 | Tasto Avanzamento */
+#main-wizard-footer > div,
+.wizard-footer-step-controls {
+  width: 100%;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  /* 🔒 Spazio fisso di 12px tra i 3 elementi, zero sovrapposizioni */
+  gap: 12px !important;
+}
+
+/* Tasto Indietro a sinistra */
+#main-wizard-footer button:first-child {
+  flex-shrink: 0;
+  padding-left: 4px;
+  padding-right: 8px;
+}
+
+/* Nodi centrali di avanzamento (1 - 2 - 3 - 4) */
+#main-wizard-footer .flex.items-center.gap-1\.5 {
+  flex-shrink: 0;
+  gap: 6px !important;
+}
+
+/* Pulsante CTA d'azione a destra */
+#main-wizard-footer button:last-child,
+.btn-wizard-cta {
+  flex-shrink: 0;
+  height: 34px !important;
+  min-height: 34px !important;
+  padding-left: 14px !important;
+  padding-right: 14px !important;
+  border-radius: 0.65rem !important;
+  background: #38BDF8 !important;
+  color: #070A12 !important;
+  font-weight: 900 !important;
+  font-size: 11px !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.04em !important;
+  border: none !important;
+  box-shadow: 0 4px 14px rgba(56, 189, 248, 0.35) !important;
 }
 
 .cockpit-footer {
