@@ -1,6 +1,6 @@
 /* ============================================================================
    PROJECT: ESTIQATSY SYNDICATE & RPG PLATFORM
-   FILE: css/rules2.css (VERSIONE 28.0 - ZERO-SCROLL ABOVE-THE-FOLD ENGINE)
+   FILE: css/rules2.css (VERSIONE 29.0 - PRECISION VIEWPORT & BALANCED CARDS)
    LAYER: ENGINE RULES 2, WIZARD STAGE, SPLIT ACTION SLOT, FULL HUD & COCKPIT
    NOTE: ZERO FONDINO, ZERO SACCHE VUOTE, SPESA DIVISA DA AZIONE & ALONE PLATINO
    ============================================================================ */
@@ -16,25 +16,25 @@
 }
 
 /* ----------------------------------------------------------------------------
-   2. HUD UNIVERSALE A 2 RIGHE (42px - COMPATTO, A FILO E RESPIRO COSTANTE)
+   2. HUD UNIVERSALE A 2 RIGHE (48px - SPAZIO INTEGRALE PER TUTTI I KPI)
    ---------------------------------------------------------------------------- */
 .hud-cockpit-48px {
   width: 100% !important;
-  height: 42px !important;
-  min-height: 42px !important;
-  max-height: 42px !important;
+  height: 48px !important;
+  min-height: 48px !important;
+  max-height: 48px !important;
   background: rgba(11, 18, 34, 0.95);
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 0.75rem;
-  padding: 4px 10px;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 2px;
+  padding: 5px 12px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: center !important;
+  gap: 2px !important;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
-  box-sizing: border-box;
+  box-sizing: border-box !important;
   margin-bottom: 6px !important;
-  flex-shrink: 0;
+  flex-shrink: 0 !important;
 }
 
 /* ----------------------------------------------------------------------------
@@ -50,15 +50,16 @@
   min-height: 0;
   display: flex;
   align-items: center;
+  justify-content: center;
 }
 
 .coverflow-stage-wrapper {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 14px;
   overflow-x: auto;
   scroll-snap-type: x mandatory;
-  padding: 4px 20px;
+  padding: 6px 20px;
   width: 100%;
   height: 100%;
   -webkit-overflow-scrolling: touch;
@@ -67,22 +68,22 @@
 }
 
 /* ----------------------------------------------------------------------------
-   4. CARTA TCG DINAMICA AD ALTEZZA PROPORZIONALE (ABOVE-THE-FOLD GARANTITO)
+   4. CARTA TCG BILANCIATA (RIEMPIE IL VUOTO SENZA SFORARE LA PIEGA)
    ---------------------------------------------------------------------------- */
 .coverflow-card,
 .tcg-card {
   position: relative !important;
-  flex: 0 0 280px;
-  width: 280px;
-  max-width: 280px;
-  /* Scala dinamicamente tra 300px e 410px in base all'altezza effettiva del viewport */
-  height: clamp(300px, 48dvh, 410px) !important;
-  min-height: 300px !important;
-  max-height: 410px !important;
+  flex: 0 0 min(310px, calc(100vw - 32px)) !important;
+  width: min(310px, calc(100vw - 32px)) !important;
+  max-width: 315px !important;
+  /* Scala fluidamente riempiendo lo spazio verticale vuoto senza scrollare */
+  height: clamp(375px, 55dvh, 455px) !important;
+  min-height: 375px !important;
+  max-height: 455px !important;
   scroll-snap-align: center;
   background: #0B1222;
   border: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: 1rem;
+  border-radius: 1.15rem;
   overflow: hidden !important;
   cursor: pointer;
   display: flex !important;
@@ -99,46 +100,46 @@
   box-sizing: border-box;
 }
 
-/* ⭐ STATO SELEZIONATO: ALONE LUNARE BIANCO PLATINO AD ALTA DEFINIZIONE */
+/* STATO SELEZIONATO: ALONE LUNARE BIANCO PLATINO AD ALTA DEFINIZIONE */
 .coverflow-card.selected,
 .tcg-card.selected {
   opacity: 1 !important;
   transform: scale(1) !important;
   border-color: rgba(255, 255, 255, 0.90) !important;
-  box-shadow: 0 0 16px 2px rgba(255, 255, 255, 0.35),
-              0 12px 30px rgba(0, 0, 0, 0.85) !important;
+  box-shadow: 0 0 18px 2px rgba(255, 255, 255, 0.35),
+              0 14px 34px rgba(0, 0, 0, 0.88) !important;
 }
 
-/* CARTA IN GAMEPLAY: ZOOMATA SUL TAVOLO SENZA ECCEDERE IL VIEWPORT */
+/* CARTA IN GAMEPLAY FOCALIZZATA SUL TAVOLO */
 #gameplay-moverina-card .tcg-card,
 #view-gameplay .tcg-card,
 .tcg-card.gameplay-focal {
   flex: 0 0 min(330px, calc(100vw - 24px)) !important;
   width: min(330px, calc(100vw - 24px)) !important;
-  max-width: 330px !important;
-  height: clamp(310px, 50dvh, 420px) !important;
+  max-width: 335px !important;
+  height: clamp(380px, 56dvh, 460px) !important;
   opacity: 1 !important;
   transform: scale(1) !important;
   margin: 2px auto !important;
-  box-shadow: 0 0 16px 2px rgba(255, 255, 255, 0.35),
-              0 14px 32px rgba(0, 0, 0, 0.90) !important;
+  box-shadow: 0 0 18px 2px rgba(255, 255, 255, 0.35),
+              0 16px 36px rgba(0, 0, 0, 0.90) !important;
 }
 
 /* ----------------------------------------------------------------------------
-   5. ANATOMIA INTERNA CARTA A LIVELLI (ZERO FONDINO, ZERO SACCHE VUOTE)
+   5. ANATOMIA INTERNA CARTA A LIVELLI
    ---------------------------------------------------------------------------- */
 
-/* FASCIA 2: Media a Schermo Pieno Alto */
+/* Illustrazione / Media */
 .tcg-card-media {
   position: relative !important;
   width: 100% !important;
-  height: clamp(115px, 20dvh, 160px) !important;
-  min-height: 115px !important;
-  max-height: 160px !important;
+  height: clamp(140px, 22dvh, 180px) !important;
+  min-height: 140px !important;
+  max-height: 180px !important;
   background: #000000;
   overflow: hidden !important;
   box-sizing: border-box;
-  border-radius: 0.95rem 0.95rem 0 0;
+  border-radius: 1.1rem 1.1rem 0 0;
   flex-shrink: 0;
 }
 
@@ -150,26 +151,26 @@
   display: block;
 }
 
-/* FASCIA 1: Testata Fluttuante Trasparente SOPRA l'Illustrazione */
+/* Testata Sovrimpressa */
 .tcg-card-header {
   position: absolute !important;
   top: 0 !important;
   left: 0 !important;
   right: 0 !important;
-  height: 32px !important;
-  min-height: 32px !important;
-  padding: 0 10px !important;
+  height: 34px !important;
+  min-height: 34px !important;
+  padding: 0 12px !important;
   display: flex !important;
   align-items: center !important;
   justify-content: space-between !important;
-  background: linear-gradient(180deg, rgba(7, 10, 18, 0.90) 0%, rgba(7, 10, 18, 0.35) 70%, transparent 100%) !important;
+  background: linear-gradient(180deg, rgba(7, 10, 18, 0.92) 0%, rgba(7, 10, 18, 0.40) 70%, transparent 100%) !important;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
   z-index: 10 !important;
   box-sizing: border-box !important;
 }
 
 .tcg-card-title {
-  font-size: 11.5px;
+  font-size: 12.5px;
   font-weight: 900;
   color: #FFFFFF;
   margin: 0;
@@ -178,9 +179,9 @@
 }
 
 .tcg-card-faction-badge {
-  padding: 1.5px 6px;
+  padding: 2px 7px;
   border-radius: 9999px;
-  font-size: 7.5px;
+  font-size: 8px;
   font-weight: 900;
   letter-spacing: 0.05em;
   text-transform: uppercase;
@@ -198,21 +199,21 @@
   border: 1px solid rgba(245, 158, 11, 0.45);
 }
 
-/* Overlay Citazione d'Atmosfera */
+/* Overlay Citazione */
 .tcg-card-quote-overlay {
   position: absolute;
   bottom: 0;
   left: 0;
   right: 0;
-  background: linear-gradient(180deg, transparent 0%, rgba(7, 10, 18, 0.85) 50%, #070A12 100%);
-  padding: 4px 8px;
+  background: linear-gradient(180deg, transparent 0%, rgba(7, 10, 18, 0.85) 45%, #070A12 100%);
+  padding: 5px 10px;
   text-align: right;
   pointer-events: none;
   z-index: 5;
 }
 
 .tcg-card-quote-text {
-  font-size: 9px;
+  font-size: 9.5px;
   color: #F1F5F9;
   font-style: italic;
   line-height: 1.25;
@@ -223,19 +224,19 @@
 
 .tcg-card-quote-author {
   font-family: monospace;
-  font-size: 7.5px;
+  font-size: 8px;
   font-weight: 900;
   color: #F59E0B;
   text-transform: uppercase;
 }
 
-/* FASCIA 3: Piastra Metrica Incastonata a 3 Capsule */
+/* Piastra Statistiche D20 */
 .tcg-stats-plate {
-  height: 28px;
-  min-height: 28px;
-  max-height: 28px;
-  margin: 3px 8px;
-  padding: 0 6px;
+  height: 30px;
+  min-height: 30px;
+  max-height: 30px;
+  margin: 4px 10px;
+  padding: 0 8px;
   background: rgba(0, 0, 0, 0.65);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 9999px;
@@ -244,36 +245,23 @@
   align-items: center;
   text-align: center;
   font-family: monospace;
-  font-size: 9px;
+  font-size: 9.5px;
   font-weight: 800;
   color: #E2E8F0;
   box-sizing: border-box;
   flex-shrink: 0;
 }
 
-.tcg-stats-plate span {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 3px;
-  white-space: nowrap;
-}
-
 .tcg-stats-plate span:not(:last-child) {
   border-right: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-.tcg-stats-plate b {
-  color: #FFFFFF;
-}
-
-/* FASCIA 4: Corpo Narrativo Fluido */
 .tcg-card-desc {
   flex: 1 1 auto !important;
   min-height: 0 !important;
-  padding: 4px 10px;
-  font-size: 10.5px;
-  line-height: 1.35;
+  padding: 5px 12px;
+  font-size: 11px;
+  line-height: 1.38;
   color: #CBD5E1;
   text-align: left;
   margin: 0;
@@ -286,18 +274,17 @@
   display: none;
 }
 
-/* FASCIA 5: Piede Scheda Ancorato al Fondo */
 .tcg-card-footer {
-  height: 34px;
-  min-height: 34px;
-  max-height: 34px;
-  padding: 0 10px;
+  height: 36px;
+  min-height: 36px;
+  max-height: 36px;
+  padding: 0 12px;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
   display: flex;
   align-items: center;
   justify-content: space-between;
   font-family: monospace;
-  font-size: 9px;
+  font-size: 9.5px;
   font-weight: 800;
   background: rgba(0, 0, 0, 0.45);
   margin-top: auto !important;
@@ -326,19 +313,19 @@
 .tcg-gold-badge { color: #FDE047; }
 
 /* ----------------------------------------------------------------------------
-   6. FRECCE DI NAVIGAZIONE IN SOVRAIMPRESSIONE
+   6. FRECCE DI NAVIGAZIONE
    ---------------------------------------------------------------------------- */
 .carousel-arrow-btn {
-  width: 28px;
-  height: 28px;
+  width: 30px;
+  height: 30px;
   border-radius: 9999px;
-  background: rgba(11, 18, 34, 0.88);
+  background: rgba(11, 18, 34, 0.90);
   border: 1px solid rgba(255, 255, 255, 0.25);
   color: #FFFFFF;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 900;
   cursor: pointer;
   pointer-events: auto;
@@ -346,121 +333,21 @@
   transition: all 0.15s ease;
 }
 
-.carousel-arrow-btn:hover {
-  background: rgba(30, 41, 59, 1);
-  border-color: rgba(255, 255, 255, 0.45);
-}
-
 .carousel-arrow-btn:active {
   transform: scale(0.95);
 }
 
 /* ----------------------------------------------------------------------------
-   7. LO SLOT DECISIONALE DIVISO & GRIGLIE AZIONE (COMPATTE & FLESSIBILI)
+   7. SLOT AZIONI WIZARD & GAMEPLAY
    ---------------------------------------------------------------------------- */
 .scene-actions-area {
   width: 100%;
-  max-width: min(330px, calc(100vw - 24px));
+  max-width: min(315px, calc(100vw - 32px));
   margin: 6px auto 0 auto !important;
   flex-shrink: 0;
   box-sizing: border-box;
 }
 
-/* Cluster Diviso Orizzontale */
-.action-split-cluster {
-  display: flex !important;
-  align-items: center !important;
-  gap: 6px !important;
-  width: 100% !important;
-}
-
-/* Tasto Azione Principale */
-.btn-action-main {
-  flex: 1 1 auto !important;
-  height: 38px !important;
-  min-height: 38px !important;
-  padding: 0 10px !important;
-  border-radius: 0.65rem !important;
-  font-size: 11px !important;
-  font-weight: 900 !important;
-  text-transform: uppercase !important;
-  letter-spacing: 0.03em !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  gap: 6px !important;
-  cursor: pointer !important;
-  transition: all 0.15s ease !important;
-  box-sizing: border-box !important;
-  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.35) !important;
-}
-
-.btn-action-main.primary {
-  background: #38BDF8 !important;
-  color: #070A12 !important;
-  border: none !important;
-}
-
-.btn-action-main.refund {
-  background: rgba(45, 26, 16, 0.85) !important;
-  border: 1px solid rgba(245, 158, 11, 0.4) !important;
-  color: #FBBF24 !important;
-}
-
-.btn-action-main.disabled {
-  background: rgba(30, 41, 59, 0.4) !important;
-  border: 1px solid rgba(255, 255, 255, 0.08) !important;
-  color: #64748B !important;
-  cursor: not-allowed !important;
-  opacity: 0.5 !important;
-}
-
-/* Tasto Ausiliario Svuota (Emporio) */
-.btn-action-aux {
-  flex: 0 0 auto !important;
-  height: 38px !important;
-  min-height: 38px !important;
-  padding: 0 8px !important;
-  border-radius: 0.65rem !important;
-  background: rgba(45, 16, 28, 0.75) !important;
-  border: 1px solid rgba(244, 63, 94, 0.35) !important;
-  color: #FB7185 !important;
-  font-size: 10px !important;
-  font-weight: 800 !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  gap: 4px !important;
-  cursor: pointer !important;
-  transition: all 0.15s ease !important;
-  box-sizing: border-box !important;
-}
-
-/* Badge Contabile Delta */
-.badge-cost-delta {
-  flex: 0 0 auto !important;
-  height: 38px !important;
-  min-height: 38px !important;
-  padding: 0 10px !important;
-  border-radius: 0.65rem !important;
-  background: rgba(11, 18, 34, 0.95) !important;
-  border: 1px solid rgba(255, 255, 255, 0.14) !important;
-  font-family: monospace !important;
-  font-size: 11px !important;
-  font-weight: 900 !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  box-sizing: border-box !important;
-  white-space: nowrap !important;
-}
-
-.badge-cost-delta.spend { color: #38BDF8 !important; border-color: rgba(56, 189, 248, 0.4) !important; }
-.badge-cost-delta.refund { color: #10B981 !important; border-color: rgba(16, 185, 129, 0.45) !important; background: rgba(6, 78, 59, 0.3) !important; }
-.badge-cost-delta.gold { color: #FBBF24 !important; border-color: rgba(245, 158, 11, 0.45) !important; }
-.badge-cost-delta.locked { color: #64748B !important; border-color: rgba(255, 255, 255, 0.08) !important; }
-
-/* Griglie Bivi Gameplay Dinamiche */
 .actions-grid-1 { display: grid; grid-template-columns: 1fr; gap: 4px; }
 .actions-grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; }
 .actions-grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
@@ -469,9 +356,9 @@
 .scene-action-btn {
   height: 38px;
   min-height: 38px;
-  padding: 0 8px;
+  padding: 0 10px;
   background: rgba(22, 36, 66, 0.9);
-  border: 1px solid rgba(56, 189, 248, 0.3);
+  border: 1px solid rgba(56, 189, 248, 0.35);
   border-radius: 0.65rem;
   color: #F8FAFC;
   font-size: 11px;
@@ -514,7 +401,7 @@
 }
 
 /* ----------------------------------------------------------------------------
-   8. FOOTER STICKY: STEPPER-DOCK & COCKPIT CON PROTEZIONE NOTCH iOS
+   8. FOOTER STICKY: BANDA UTILE 44px + SAFE AREA A 24px (CENTRATURA PERFETTA)
    ---------------------------------------------------------------------------- */
 .wizard-sticky-footer,
 .cockpit-footer {
@@ -525,63 +412,70 @@
   margin: 0 auto !important;
   background: rgba(7, 10, 18, 0.98);
   border-top: 1px solid rgba(255, 255, 255, 0.10);
-  /* Calcolo dinamico dell'altezza reale: 46px di contenuto + padding safe area senza tagli */
-  height: calc(46px + max(env(safe-area-inset-bottom, 0px), var(--tg-safe-area-inset-bottom, 0px))) !important;
-  min-height: calc(46px + max(env(safe-area-inset-bottom, 0px), var(--tg-safe-area-inset-bottom, 0px))) !important;
-  padding-top: 4px !important;
-  padding-left: 12px !important;
-  padding-right: 12px !important;
-  padding-bottom: max(env(safe-area-inset-bottom, 0px), var(--tg-safe-area-inset-bottom, 0px), 6px) !important;
+  /* 44px esatti di contenuto visibile + 24px minimi di Safe Area notch iOS */
+  height: calc(44px + max(env(safe-area-inset-bottom, 24px), var(--tg-safe-area-inset-bottom, 24px), 24px)) !important;
+  min-height: calc(44px + max(env(safe-area-inset-bottom, 24px), var(--tg-safe-area-inset-bottom, 24px), 24px)) !important;
+  padding-top: 0 !important;
+  padding-left: 14px !important;
+  padding-right: 14px !important;
+  padding-bottom: max(env(safe-area-inset-bottom, 24px), var(--tg-safe-area-inset-bottom, 24px), 24px) !important;
   box-sizing: border-box !important;
-  display: flex;
-  align-items: center;
+  display: flex !important;
+  align-items: center !important;
 }
 
-/* Controlli Wizard Footer a 3 Elementi */
+/* Controlli Wizard Footer perfettamente centrati verticalmente nella banda da 44px */
 #main-wizard-footer > div,
 .wizard-footer-step-controls {
   width: 100%;
+  height: 44px !important;
   display: flex !important;
   align-items: center !important;
   justify-content: space-between !important;
   gap: 8px !important;
+  margin: 0 !important;
+  padding: 0 !important;
 }
 
 .btn-wizard-cta {
   flex-shrink: 0;
-  height: 32px !important;
-  min-height: 32px !important;
-  padding-left: 12px !important;
-  padding-right: 12px !important;
+  height: 34px !important;
+  min-height: 34px !important;
+  padding-left: 14px !important;
+  padding-right: 14px !important;
   border-radius: 0.6rem !important;
   background: #38BDF8 !important;
   color: #070A12 !important;
   font-weight: 900 !important;
-  font-size: 10.5px !important;
+  font-size: 11px !important;
   text-transform: uppercase !important;
   letter-spacing: 0.03em !important;
   border: none !important;
   box-shadow: 0 3px 12px rgba(56, 189, 248, 0.35) !important;
 }
 
+/* Cockpit Footer: 4 tasti centrati verticalmente nella banda da 44px */
 .cockpit-footer {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 6px;
+  display: grid !important;
+  grid-template-columns: repeat(4, 1fr) !important;
+  align-items: center !important;
+  gap: 6px !important;
 }
 
 .cockpit-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 3px;
-  height: 32px;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 4px !important;
+  height: 34px !important;
   background: rgba(255, 255, 255, 0.05);
-  border-radius: 6px;
+  border-radius: 8px;
   border: 1px solid transparent;
   color: #94A3B8;
-  font-size: 10px;
+  font-size: 10.5px;
   font-weight: 700;
+  margin: 0 !important;
+  padding: 0 !important;
 }
 
 .cockpit-btn:active {
@@ -591,7 +485,7 @@
 }
 
 /* ----------------------------------------------------------------------------
-   9. NUMERI FLUTTUANTI (SORGONO DALLA CARTA E SALGONO VERSO L'HUD)
+   9. FX FLUTTUANTI & DADO
    ---------------------------------------------------------------------------- */
 .floating-damage-layer {
   position: absolute;
@@ -622,22 +516,9 @@
   100% { opacity: 0; transform: translate(-50%, -90px) scale(0.85); }
 }
 
-/* ----------------------------------------------------------------------------
-   10. ANIMAZIONE DADO D20 SUSPENSE
-   ---------------------------------------------------------------------------- */
-.dice-wrapper {
-  perspective: 600px;
-}
-
-.dice-cube {
-  display: inline-block;
-  transform-style: preserve-3d;
-  transition: transform 0.5s ease;
-}
-
-.dice-cube.animate-bounce {
-  animation: diceRoll 0.6s infinite ease-in-out alternate;
-}
+.dice-wrapper { perspective: 600px; }
+.dice-cube { display: inline-block; transform-style: preserve-3d; }
+.dice-cube.animate-bounce { animation: diceRoll 0.6s infinite ease-in-out alternate; }
 
 @keyframes diceRoll {
   0% { transform: rotateX(0deg) rotateY(0deg); }
@@ -645,7 +526,7 @@
 }
 
 /* ----------------------------------------------------------------------------
-   11. CASSETTI TATTICI IN-GAME (SCHEDA EROE, ASSETTO, EMPORIO)
+   10. MODALI IN-GAME
    ---------------------------------------------------------------------------- */
 dialog.game-modal-sheet {
   position: fixed;
