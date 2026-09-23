@@ -1,16 +1,16 @@
 /* ============================================================================
    PROJECT: ESTIQATSY SYNDICATE & RPG PLATFORM
-   FILE: css/core.css (VERSIONE 15.0 - COMPLETE RESPONSIVE DESIGN SYSTEM)
+   FILE: css/core.css (VERSIONE 16.0 - COMPLETE RESPONSIVE DESIGN SYSTEM)
    LAYER: PLATFORM DESIGN SYSTEM, TELEGRAM VIEWPORT FIT, SAAS, SHOP & PROFILO
    ============================================================================ */
 
 /* ----------------------------------------------------------------------------
-   1. DESIGN TOKENS, RESET & BRIDGE VARIABILI (ANTI-COLLAPSE)
+   1. DESIGN TOKENS, VARIABILI E PALETTE SYNDICATE NOIR
    ---------------------------------------------------------------------------- */
 :root {
-  /* Palette Principale Syndicate Noir */
-  --tg-bg: #070A12;                        /* Canvas nero profondo */
-  --tg-sec-bg: #0B1222;                    /* Superficie secondaria elevata */
+  /* Palette Canvas */
+  --tg-bg: #070A12;                        /* Sfondo primario notte profonda */
+  --tg-sec-bg: #0B1222;                    /* Superficie elevata / contenitori */
   --tg-surface: rgba(15, 23, 42, 0.88);    /* Card base glassmorphism */
   --tg-surface-hover: rgba(26, 38, 66, 0.95);
   
@@ -24,12 +24,12 @@
   --border-light: rgba(255, 255, 255, 0.16);
   --tg-border: var(--border-subtle);
 
-  /* Accenti Funzionali & Identità */
-  --color-accent: #38BDF8;                 /* Cyan Primario / Syndicate Brand */
-  --color-gold: #F59E0B;                   /* Oro / Borsello / Valuta */
-  --color-emerald: #10B981;                /* Fedeltà / Successo */
-  --color-crimson: #F43F5E;                /* Pericolo / Salute / Danno */
-  --color-purple: #A855F7;                 /* Download Caveau / Multiplayer */
+  /* Accenti Neon e Funzionali */
+  --color-accent: #38BDF8;                 /* Cyan Syndicate / Brand primario */
+  --color-gold: #F59E0B;                   /* Oro sonante / Borsello Megoin */
+  --color-emerald: #10B981;                /* Punti Fedeltà / Successo */
+  --color-crimson: #F43F5E;                /* Pericolo / Salute eroe / Morte */
+  --color-purple: #A855F7;                 /* Caveau / Stanze Multiplayer */
 
   /* Aliasing Compatibilità Retroattiva */
   --tg-sky: var(--color-accent);
@@ -150,7 +150,7 @@ html, body.rpg-app-body {
    ---------------------------------------------------------------------------- */
 .universal-top-bar {
   flex: none;
-  z-index: 50;
+  z-index: 40;
   width: 100%;
   height: calc(var(--safe-top, 0px) + var(--tg-header-height, 48px));
   padding-top: var(--safe-top, 0px);
@@ -175,7 +175,7 @@ html, body.rpg-app-body {
   z-index: 10;
 }
 
-/* Centraggio Ottico Assoluto: non risente dell'offset asimmetrico destro di Telegram */
+/* Centraggio Ottico Assoluto tra i bordi dello schermo */
 .top-bar-title-box {
   position: absolute;
   top: var(--safe-top, 0px);
@@ -199,7 +199,7 @@ html, body.rpg-app-body {
 }
 
 /* ----------------------------------------------------------------------------
-   5. STRUTTURA CENTRALE VIEWPORT & RESPONSIVE LAYOUT CONTAINER
+   5. STRUTTURA CENTRALE VIEWPORT & RESPONSIVE LAYOUT
    ---------------------------------------------------------------------------- */
 .app-layout-container {
   flex: 1 1 0%;
@@ -210,11 +210,6 @@ html, body.rpg-app-body {
   overflow: hidden;
   position: relative;
   width: 100%;
-}
-@media (min-width: 768px) {
-  .app-layout-container {
-    flex-direction: row;
-  }
 }
 
 .app-main-viewport {
@@ -237,9 +232,10 @@ html, body.rpg-app-body {
   -webkit-overflow-scrolling: touch;
 }
 
+/* Margine inferiore protettivo per non finire coperti dal footer fisso */
 .app-content-wrapper {
-  padding: 0.75rem 0.75rem 1.75rem 0.75rem;
-  max-width: 1200px;
+  padding: 0.75rem 0.75rem 5.5rem 0.75rem !important;
+  max-width: 960px;
   margin: 0 auto;
   display: flex;
   flex-direction: column;
@@ -248,217 +244,105 @@ html, body.rpg-app-body {
 }
 @media (min-width: 768px) {
   .app-content-wrapper {
-    padding: 1.25rem 1.5rem 2rem 1.5rem;
-    gap: 1rem;
+    padding: 1.25rem 1.5rem 6rem 1.5rem !important;
   }
 }
 
 /* ----------------------------------------------------------------------------
-   6. SIDEBAR DESKTOP WIDESCREEN (>= 768px) - ZERO STIRAMENTO AVATAR
-   ---------------------------------------------------------------------------- */
-.desktop-sidebar {
-  display: none;
-  width: 18.5rem;
-  background: var(--tg-sec-bg);
-  border-right: 1px solid var(--border-subtle);
-  height: 100%;
-  padding: 1.25rem 1rem;
-  flex-direction: column;
-  gap: 1rem;
-  flex-shrink: 0;
-  z-index: 30;
-}
-@media (min-width: 768px) {
-  .desktop-sidebar {
-    display: flex;
-  }
-}
-
-.user-card-desk {
-  background: var(--tg-surface);
-  padding: 1rem;
-  border-radius: 1.15rem;
-  border: 1px solid var(--border-light);
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4);
-  display: flex;
-  flex-direction: column;
-  gap: 0.85rem;
-}
-
-/* 🔒 FIX AVATAR DESKTOP: Dimensioni fisse rigide, mai più rettangoli blu giganti */
-.user-avatar-box {
-  width: 3.25rem !important;
-  height: 3.25rem !important;
-  min-width: 3.25rem !important;
-  min-height: 3.25rem !important;
-  max-width: 3.25rem !important;
-  max-height: 3.25rem !important;
-  border-radius: 0.95rem;
-  background: linear-gradient(135deg, #0284C7, #4F46E5, #0F172A);
-  border: 2px solid rgba(56, 189, 248, 0.4);
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  font-weight: 900;
-  font-size: 1.35rem;
-  color: #FFFFFF;
-  flex-shrink: 0 !important;
-  overflow: hidden !important;
-}
-.avatar-img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.badge-role {
-  font-size: 9px;
-  font-weight: 800;
-  color: var(--text-muted);
-  letter-spacing: 0.15em;
-  text-transform: uppercase;
-}
-.user-name-label {
-  font-size: 0.92rem;
-  font-weight: 900;
-  color: #FFFFFF;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  margin-top: 0.1rem;
-}
-.plan-pill-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  padding: 0.2rem 0.65rem;
-  border-radius: 9999px;
-  background: rgba(56, 189, 248, 0.14);
-  border: 1px solid rgba(56, 189, 248, 0.35);
-  font-size: 9.5px;
-  font-weight: 900;
-  color: #7DD3FC;
-  text-transform: uppercase;
-  cursor: pointer;
-  transition: background 0.15s ease;
-}
-.plan-pill-btn:hover {
-  background: rgba(56, 189, 248, 0.25);
-}
-
-.wallet-desk-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.5rem;
-  padding-top: 0.75rem;
-  border-top: 1px solid var(--border-subtle);
-}
-.wallet-desk-item {
-  background: rgba(0, 0, 0, 0.4);
-  padding: 0.5rem;
-  border-radius: 0.75rem;
-  text-align: center;
-  border: 1px solid var(--border-subtle);
-}
-.wallet-label {
-  font-size: 9px;
-  color: var(--text-muted);
-  font-weight: 800;
-  text-transform: uppercase;
-}
-.wallet-value {
-  font-size: 0.95rem;
-  font-weight: 900;
-  font-family: var(--font-mono);
-  font-variant-numeric: tabular-nums;
-  margin-top: 0.15rem;
-}
-
-.desktop-nav-menu {
-  flex: 1 1 0%;
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-}
-.desk-nav-btn {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.7rem 0.85rem;
-  border-radius: 0.85rem;
-  font-size: 0.82rem;
-  font-weight: 700;
-  color: var(--text-secondary);
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  transition: background 0.15s ease, color 0.15s ease;
-  text-align: left;
-}
-.desk-nav-btn:hover {
-  background: rgba(255, 255, 255, 0.05);
-  color: #FFFFFF;
-}
-.desk-nav-btn.active {
-  color: var(--color-accent);
-  background: rgba(56, 189, 248, 0.1);
-  border: 1px solid rgba(56, 189, 248, 0.25);
-}
-
-/* ----------------------------------------------------------------------------
-   7. FOOTER MOBILE (THUMB-FRIENDLY: 5 TAB CLASSICI)
+   6. FOOTER MENU UNIVERSALE (MOBILE, TABLET & DESKTOP DOCK)
    ---------------------------------------------------------------------------- */
 .main-app-footer {
   flex: none;
-  z-index: 50;
+  z-index: 50 !important;
   width: 100%;
-  background: rgba(7, 10, 18, 0.97);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  position: fixed !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  background: rgba(7, 10, 18, 0.98) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
   border-top: 1px solid var(--border-subtle);
-  display: flex;
+  display: flex !important; /* Sempre visibile su Mobile, Tablet e Desktop */
   justify-content: space-around;
   align-items: center;
   padding-bottom: var(--safe-bottom, 0px);
   height: calc(var(--tg-footer-height, 52px) + var(--safe-bottom, 0px));
 }
+
+/* Desktop Widescreen Dock Bar centrata */
+@media (min-width: 768px) {
+  .main-app-footer {
+    max-width: 600px !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    border-radius: 1.25rem 1.25rem 0 0 !important;
+    border-left: 1px solid var(--border-subtle) !important;
+    border-right: 1px solid var(--border-subtle) !important;
+    box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.6) !important;
+  }
+}
+
+/* 🔒 FIX TOTALE SFASAMENTO ICONA HOME: ALLINEAMENTO VERTICALE BLINDATO */
 .nav-tab {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  color: var(--text-muted);
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  height: var(--tg-footer-height, 52px);
-  min-width: 3.25rem;
-  transition: color 0.15s ease, transform 0.12s ease;
+  display: flex !important;
+  flex-direction: column !important; /* Forza l'icona rigorosamente sopra il testo */
+  align-items: center !important;
+  justify-content: center !important;
+  text-align: center !important;
+  position: relative !important;
+  flex: 1 1 0 !important;
+  max-width: 80px !important;
+  height: 48px !important;
+  padding: 3px 2px !important;
+  margin: 0 !important;
+  color: var(--text-muted) !important;
+  background: transparent !important;
+  border: none !important;
+  cursor: pointer !important;
+  outline: none !important;
+  transition: color 0.15s ease, transform 0.1s ease !important;
 }
 .nav-tab:active {
-  transform: scale(0.93);
+  transform: scale(0.92) !important;
 }
 .nav-tab.active {
   color: var(--color-accent) !important;
 }
-.nav-tab-label {
-  font-size: 9px;
-  font-weight: 800;
-  text-transform: uppercase;
-  margin-top: 0.15rem;
-  letter-spacing: 0.04em;
-  line-height: 1;
+
+/* L'icona SVG è perfettamente centrata e non intercetta i click */
+.nav-tab svg, 
+.nav-tab i {
+  display: block !important;
+  margin: 0 auto !important;
+  width: 18px !important;
+  height: 18px !important;
+  flex-shrink: 0 !important;
+  pointer-events: none !important;
 }
 
-/* Spegne il footer globale durante il gameplay e il wizard */
+/* L'etichetta di testo è centrata sotto l'icona */
+.nav-tab .nav-tab-label {
+  display: block !important;
+  width: 100% !important;
+  text-align: center !important;
+  font-size: 9px !important;
+  font-weight: 800 !important;
+  text-transform: uppercase !important;
+  margin-top: 3px !important;
+  line-height: 1 !important;
+  letter-spacing: 0.04em !important;
+  pointer-events: none !important;
+}
+
+/* Spegne il footer durante il gameplay e il wizard */
 body[data-active-screen="view-gameplay"] .main-app-footer,
 body[data-active-screen="view-wizard"] .main-app-footer {
   display: none !important;
 }
 
 /* ----------------------------------------------------------------------------
-   8. DASHBOARD HOME, SPOTIFY RADIO & KPI QUAD GRID (FIX SCREENSHOT 1 & 2)
+   7. DASHBOARD HOME & KPI QUAD GRID (FIX BLINDATO ANTI-COLLASSO)
    ---------------------------------------------------------------------------- */
 .home-hero-banner {
   border-radius: 1.25rem;
@@ -472,11 +356,11 @@ body[data-active-screen="view-wizard"] .main-app-footer {
 }
 @media (min-width: 768px) {
   .home-hero-banner {
-    padding: 1.75rem;
+    padding: 1.5rem;
   }
 }
 
-/* 🔒 FIX FONDAMENTALE KPI GRID: MAI PIÙ TESTO VERTICALE SFORMATO */
+/* Griglia KPI: 2 colonne su Mobile, 4 su Tablet/Desktop */
 .kpi-quad-grid {
   display: grid !important;
   grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
@@ -509,14 +393,14 @@ body[data-active-screen="view-wizard"] .main-app-footer {
   transform: scale(0.97) !important;
 }
 .kpi-card-label {
-  font-size: 9.5px !important;
+  font-size: 9px !important;
   font-weight: 800 !important;
   color: var(--text-muted) !important;
   text-transform: uppercase !important;
   letter-spacing: 0.05em !important;
 }
 .kpi-card-value {
-  font-size: 1.25rem !important;
+  font-size: 1.15rem !important;
   font-weight: 900 !important;
   font-family: var(--font-mono) !important;
   font-variant-numeric: tabular-nums !important;
@@ -529,7 +413,7 @@ body[data-active-screen="view-wizard"] .main-app-footer {
   flex-shrink: 0 !important;
 }
 
-/* Miniplayer Spotify-Style */
+/* Miniplayer Radio */
 #home-radio-miniplayer {
   background: rgba(15, 23, 42, 0.90);
   backdrop-filter: blur(16px);
@@ -658,7 +542,7 @@ body[data-active-screen="view-wizard"] .main-app-footer {
 }
 
 /* ----------------------------------------------------------------------------
-   9. CATALOGHI GIOCHI, SHOP & RICETTE (CARD ELEMENT UNIFICATE)
+   8. CATALOGHI GIOCHI, SHOP & RICETTE (CARD ELEMENT)
    ---------------------------------------------------------------------------- */
 .item-card {
   background: var(--tg-surface);
@@ -761,7 +645,7 @@ body[data-active-screen="view-wizard"] .main-app-footer {
 }
 
 /* ----------------------------------------------------------------------------
-   10. MODALI GLASSMORPHISM & COMPARATORE SAAS PLANS
+   9. MODALI GLASSMORPHISM & COMPARATORE SAAS PLANS
    ---------------------------------------------------------------------------- */
 dialog.modal.modal-middle,
 dialog.modal:not(.modal-bottom) {
@@ -800,18 +684,4 @@ dialog.modal:not([open]) {
 .modal-close-btn:hover {
   background: rgba(255, 255, 255, 0.16);
   color: #FFFFFF;
-}
-
-/* ----------------------------------------------------------------------------
-   11. RESPONSIVE BREAKPOINTS (TABLET & DESKTOP TUNING)
-   ---------------------------------------------------------------------------- */
-@media (min-width: 640px) {
-  .item-card-media {
-    height: 9.5rem;
-  }
-}
-@media (min-width: 1024px) {
-  .app-content-wrapper {
-    max-width: 1200px;
-  }
 }
