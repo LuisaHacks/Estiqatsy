@@ -1,8 +1,8 @@
 /* ============================================================================
    PROJECT: ESTIQATSY SYNDICATE & RPG PLATFORM
-   FILE: css/rules2.css (VERSIONE 24.6 - MOVERINA ARTWORK BLEED & TIGHT 545px)
-   LAYER: ENGINE RULES 2, WIZARD STAGE, TCG CARDS, LUNAR GLOW & 48px DUAL-HUD
-   NOTE: TESTATA TRASPARENTE SU ILLUSTRAZIONE, ZERO FONDINI OPACHI, CARTA 545px
+   FILE: css/rules2.css (VERSIONE 24.7 - FULL MOVERINA 545px, ZERO FONDINO & OVERLAY ARROWS)
+   LAYER: ENGINE RULES 2, WIZARD STAGE 545px, FULL HUD 48px, D20 COMBAT & SHEETS
+   NOTE: 100% SPECIFICO PER IL GIOCO - TESTATA SOVRIMPRESSA, ZERO PALLINI, ZERO VUOTI
    ============================================================================ */
 
 /* ----------------------------------------------------------------------------
@@ -16,9 +16,10 @@
 }
 
 /* ----------------------------------------------------------------------------
-   2. HUD UNIVERSALE A 2 RIGHE (48px - IDENTICO IN WIZARD E GAMEPLAY)
+   2. HUD UNIVERSALE A 2 RIGHE (48px - A TUTTA LARGHEZZA, A FILO DELLO STEPPER)
    ---------------------------------------------------------------------------- */
 .hud-cockpit-48px {
+  width: 100% !important;
   height: 48px !important;
   min-height: 48px !important;
   max-height: 48px !important;
@@ -35,7 +36,7 @@
 }
 
 /* ----------------------------------------------------------------------------
-   3. PALCO CAROSELLO CARTA (RECUPERO DEL VUOTO - ALTEZZA AUREA 545px)
+   3. PALCO CAROSELLO CARTA (545px - RECUPERATI I 100px DI VUOTO INFERIORE)
    ---------------------------------------------------------------------------- */
 .coverflow-stage-outer {
   position: relative;
@@ -108,6 +109,28 @@
    4. ANATOMIA MOVERINA A LIVELLI SOVRAPPOSTI (NESSUN FONDINO OPACO IN CIMA)
    ---------------------------------------------------------------------------- */
 
+/* 🔒 FASCIA 2: Media a Schermo Pieno Alto (210px: parte dal bordo tondo superiore) */
+.tcg-card-media {
+  position: relative !important;
+  width: 100% !important;
+  height: 210px !important;
+  min-height: 210px !important;
+  max-height: 210px !important;
+  background: #000000;
+  overflow: hidden !important;
+  box-sizing: border-box;
+  /* Segue l'arrotondamento degli angoli superiori della carta */
+  border-radius: 1.20rem 1.20rem 0 0;
+}
+
+.tcg-card-img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  object-position: center 20% !important;
+  display: block;
+}
+
 /* 🔒 FASCIA 1: Testata Fluttuante Trasparente SOPRA l'Illustrazione (38px) */
 .tcg-card-header {
   position: absolute !important;
@@ -121,7 +144,7 @@
   display: flex !important;
   align-items: center !important;
   justify-content: space-between !important;
-  /* Sfumatura morbida dal nero verso il trasparente: garantisce contrasto senza tagliare il dipinto */
+  /* Sfumatura morbida dal nero verso il trasparente: contrasto puro senza tagliare l'opera */
   background: linear-gradient(180deg, rgba(7, 10, 18, 0.85) 0%, rgba(7, 10, 18, 0.40) 65%, transparent 100%) !important;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
   z-index: 10 !important;
@@ -160,28 +183,6 @@
   background: rgba(245, 158, 11, 0.25);
   color: #FBBF24;
   border: 1px solid rgba(245, 158, 11, 0.45);
-}
-
-/* 🔒 FASCIA 2: Media a Schermo Pieno Superiore (210px: parte dal bordo tondo in cima) */
-.tcg-card-media {
-  position: relative;
-  width: 100%;
-  height: 210px !important;
-  min-height: 210px !important;
-  max-height: 210px !important;
-  background: #000000;
-  overflow: hidden;
-  box-sizing: border-box;
-  /* Segue l'arrotondamento degli angoli superiori della carta */
-  border-radius: 1.20rem 1.20rem 0 0;
-}
-
-.tcg-card-img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover !important;
-  object-position: center 20% !important;
-  display: block;
 }
 
 /* Overlay Sfumato Inferiore per la Citazione */
@@ -319,32 +320,39 @@
   color: #FDE047;
 }
 
-/* PALLINI CAROSELLO (TIGHT & CLOSE ALLA CARTA) */
-.coverflow-dots {
+/* ----------------------------------------------------------------------------
+   5. FRECCE DI NAVIGAZIONE FLUTTUANTI IN SOVRAIMPRESSIONE (CAROSELLO INFINITO)
+   ---------------------------------------------------------------------------- */
+.carousel-arrow-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 9999px;
+  background: rgba(11, 18, 34, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.20);
+  color: #FFFFFF;
   display: flex;
+  align-items: center;
   justify-content: center;
-  gap: 6px;
-  margin-top: 4px;
-  margin-bottom: 4px;
-}
-
-.coverflow-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.2);
+  font-size: 16px;
+  font-weight: 900;
   cursor: pointer;
-  transition: all 0.2s ease;
+  pointer-events: auto;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.75);
+  transition: all 0.15s ease;
 }
 
-.coverflow-dot.active {
-  background: #38BDF8;
-  transform: scale(1.3);
-  box-shadow: 0 0 6px #38BDF8;
+.carousel-arrow-btn:hover {
+  background: rgba(30, 41, 59, 1);
+  border-color: rgba(255, 255, 255, 0.45);
+  transform: scale(1.05);
+}
+
+.carousel-arrow-btn:active {
+  transform: scale(0.95);
 }
 
 /* ----------------------------------------------------------------------------
-   5. WIZARD STEPPER TRACKER
+   6. WIZARD STEPPER TRACKER
    ---------------------------------------------------------------------------- */
 .wizard-stepper-tracker {
   display: flex;
@@ -372,7 +380,7 @@
 }
 
 /* ----------------------------------------------------------------------------
-   6. FOOTER DEDICATO WIZARD (CTA A TUTTA LARGHEZZA - 44px)
+   7. FOOTER DEDICATO WIZARD (CTA A TUTTA LARGHEZZA SENZA VUOTI MORTI - 44px)
    ---------------------------------------------------------------------------- */
 .wizard-sticky-footer {
   flex: none;
@@ -413,7 +421,7 @@
 }
 
 /* ----------------------------------------------------------------------------
-   7. FOOTER COCKPIT RULES 2 GAMEPLAY (4 COMANDI TATTICI - 44px)
+   8. FOOTER COCKPIT RULES 2 GAMEPLAY (4 COMANDI TATTICI - 44px)
    ---------------------------------------------------------------------------- */
 .cockpit-footer {
   flex: none;
@@ -458,13 +466,13 @@
 }
 
 /* ----------------------------------------------------------------------------
-   8. PULSANTI DEI BIVI NARRATIVI & AZIONI D20
+   9. PULSANTI DEI BIVI NARRATIVI & AZIONI D20
    ---------------------------------------------------------------------------- */
 .scene-actions-area {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  margin-top: 6px;
+  margin-top: 8px;
   padding: 0 4px;
 }
 
@@ -502,7 +510,7 @@
 }
 
 /* ----------------------------------------------------------------------------
-   9. NUMERI FLUTTUANTI (SORGONO DAL BORDO SUPERIORE CARTA E SFUMANO SOTTO L'HEADER)
+   10. NUMERI FLUTTUANTI (SORGONO DAL BORDO CARTA E SFUMANO SOTTO L'HEADER)
    ---------------------------------------------------------------------------- */
 .floating-damage-layer {
   position: absolute;
@@ -534,7 +542,7 @@
 }
 
 /* ----------------------------------------------------------------------------
-   10. ANIMAZIONE DADO D20 SUSPENSE
+   11. ANIMAZIONE DADO D20 SUSPENSE
    ---------------------------------------------------------------------------- */
 .dice-wrapper {
   perspective: 600px;
@@ -556,7 +564,7 @@
 }
 
 /* ----------------------------------------------------------------------------
-   11. CASSETTI TATTICI IN-GAME (SCHEDA EROE, ASSETTO, EMPORIO)
+   12. CASSETTI TATTICI IN-GAME (SCHEDA EROE, ASSETTO, EMPORIO)
    ---------------------------------------------------------------------------- */
 dialog.game-modal-sheet {
   position: fixed;
