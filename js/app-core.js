@@ -1,13 +1,13 @@
 // ============================================================================
 // PROJECT: ESTIQATSY SYNDICATE & RPG PLATFORM
-// FILE: js/app-core.js (VERSIONE 23.1 - NATIVE FULLSCREEN & HIERARCHICAL ROUTER)
+// FILE: js/app-core.js (VERSIONE 23.4 - UNIVERSAL HEADER & HIERARCHICAL ROUTER)
 // LAYER 1: ARCHITETTURA A MACROSTATO, PWA FULLSCREEN, TELEGRAM LIFO BACK-STACK
 // ============================================================================
 
 const AppConfig = {
   GAS_URL: "https://script.google.com/macros/s/AKfycbyeCWHM9X4ycwWT7IOMwg24pySL78bJT5BRyiIR5eb0UJALWuaORzfJ2lkqLrjLv0xN/exec",
   CACHE_KEYS: {
-    APP_STATE: "est_app_state_v23",
+    APP_STATE: "est_app_state_v23_4",
     VAULT: "est_cache_vault",
     CONFIG: "est_admin_config"
   },
@@ -129,8 +129,8 @@ function updateTelegramBackButtonState() {
     const currentScreen = document.body.dataset.activeScreen || "view-home";
     const currentContext = AppState.currentContext || "app";
 
-    // 2. SCHERMATE DI 1° LIVELLO (I 5 tab primari)
-    // Su Home, Giochi, Shop, Ricette e Profilo il tasto DEVE essere rigorosamente nascosto!
+    // 2. SCHERMATE DI 1° LIVELLO (I 5 tab primari della piattaforma)
+    // Su Home, Giochi, Shop, Ricette e Profilo il tasto DEVE rimanere nascosto!
     const isLevel1Tab = (
       currentScreen === "view-home" ||
       currentScreen === "view-hub" ||
@@ -144,7 +144,7 @@ function updateTelegramBackButtonState() {
       return;
     }
 
-    // 3. SCHERMATE DI 2° LIVELLO (Dettagli, Wizard, Gameplay, Multiplayer)
+    // 3. SCHERMATE DI 2° LIVELLO (Schede Dettaglio, Wizard, Gameplay, Multiplayer)
     const isLevel2View = (
       currentScreen.startsWith("subview-") ||
       currentScreen === "view-wizard" ||
@@ -201,7 +201,7 @@ function handleUniversalTelegramBack() {
     return;
   }
 
-  // 4. PRIORITÀ 4: Subviews e schede di dettaglio -> Ritorno al tab genitore
+  // 4. PRIORITÀ 4: Subviews e schede di dettaglio -> Ritorno al rispettivo tab genitore
   if (currentScreen === "subview-shop-detail") {
     AppRouter.navigate("shop");
     return;
@@ -215,7 +215,7 @@ function handleUniversalTelegramBack() {
     return;
   }
 
-  // 5. PRIORITÀ 5: Se per qualsiasi motivo si trova su uno schermo non identificato
+  // 5. PRIORITÀ 5: Qualsiasi altra vista fuori posto -> Ritorno alla Home
   if (currentScreen !== "view-home") {
     AppRouter.navigate("home");
     return;
@@ -225,14 +225,14 @@ function handleUniversalTelegramBack() {
 }
 
 // ----------------------------------------------------------------------------
-// INIZIALIZZAZIONE SDK TELEGRAM CON VERO FULLSCREEN PWA
+// INIZIALIZZAZIONE SDK TELEGRAM CON FULLSCREEN PWA REALE
 // ----------------------------------------------------------------------------
 if (tg) {
   try {
     tg.ready();
     tg.expand();
 
-    // 🔒 FULLSCREEN NATIVO (Telegram 8.0+): Estende l'app al 100% dell'altezza (Zero chat di sfondo)
+    // 🔒 FULLSCREEN NATIVO TELEGRAM 8.0+: 100% altezza, nessuna chat visibile dietro
     if (typeof tg.requestFullscreen === "function") {
       tg.requestFullscreen();
     }
@@ -262,7 +262,6 @@ if (tg) {
     };
     updateSafeArea();
 
-    // Listener reattivo sui cambi di fullscreen e safe area da Telegram
     if (typeof tg.onEvent === "function") {
       tg.onEvent("fullscreenChanged", updateSafeArea);
       tg.onEvent("safeAreaChanged", updateSafeArea);
@@ -391,15 +390,11 @@ const AppRouter = {
       }
     });
 
-    // 4. COORDINAMENTO VISIBILITÀ HEADER & FOOTER
-    const appHeader = document.getElementById("main-app-header");
-    const gameHeader = document.getElementById("main-game-header");
+    // 4. MUTUA ESCLUSIONE RIGIDA DEI 3 FOOTER (1 DI 3 ATTIVO)
+    // 🔒 L'header #main-app-header rimane SEMPRE visibile e identico ovunque!
     const appFooter = document.getElementById("main-app-footer");
     const wizardFooter = document.getElementById("main-wizard-footer");
     const gameFooter = document.getElementById("main-game-cockpit-footer");
-
-    if (appHeader) appHeader.classList.toggle("hidden", macroContext === "gameplay");
-    if (gameHeader) gameHeader.classList.toggle("hidden", macroContext !== "gameplay");
 
     if (appFooter) appFooter.classList.toggle("hidden", macroContext !== "app");
     if (wizardFooter) wizardFooter.classList.toggle("hidden", macroContext !== "wizard");
@@ -473,7 +468,7 @@ async function apiCall(action, extraParams = {}) {
 }
 
 // ----------------------------------------------------------------------------
-// 7. GESTIONE BORSALE MEGOIN
+// 7. GESTIONE BORSELLO MEGOIN
 // ----------------------------------------------------------------------------
 const Wallet = {
   getMegoin: function() { 
@@ -592,7 +587,7 @@ const AppCore = {
     s("profile-card-points", `${puntiVal} Pt`);
     s("profile-action-plan-name", `Piano: ${pianoVal}`);
 
-    // Conteggio download digitali reali nel Caveau
+    // Conteggio download digitali effettivi nel Caveau
     const vaultCount = (AppState.digitalVault && Array.isArray(AppState.digitalVault))
       ? AppState.digitalVault.length 
       : 0;
