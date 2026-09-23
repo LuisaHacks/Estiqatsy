@@ -1,7 +1,7 @@
 // ============================================================================
 // PROJECT: ESTIQATSY SYNDICATE & RPG PLATFORM
-// FILE: js/app-modules.js (VERSIONE 14.0 - FULL GAS COORDINATED & HYBRID MULTIPLAYER)
-// LAYER 2: SHOP E-COMMERCE GAS, SAAS PLANS REALI, SAGHE 3-AZIONI, ARENA & ADMIN
+// FILE: js/app-modules.js (VERSIONE 18.0 - SINGLE BOOTSTRAP, 16:9 & LOCAL CACHE)
+// LAYER 2: CATALOGHI, SHOP, SAGHE RPG, ARENA, MODULI SPECIALISTICI & ADMIN
 // ============================================================================
 
 (function() {
@@ -45,66 +45,148 @@
   const AppModules = {
 
     // ------------------------------------------------------------------------
-    // INIZIALIZZAZIONE & FETCH PARALLELO DA GOOGLE APPS SCRIPT
+    // INIZIALIZZAZIONE ATOMICA (SINGLE BOOTSTRAP A CHIAMATA UNICA)
     // ------------------------------------------------------------------------
     init: async function() {
       this.loadVault();
+      
+      // 1. Carica prima la cache locale per mostrare i contenuti a zero millisecondi
+      this.loadLocalCache();
 
       try {
-        // 1. Profilo Utente, Permessi & Piani di Membership reali da Modulo_WebApp.gs
-        const profileData = await apiCall("profile");
-        if (profileData && profileData.user) {
-          AppState.user = {
-            id: profileData.user.chatId,
-            chatId: profileData.user.chatId,
-            first_name: profileData.user.nome,
-            nome: profileData.user.nome,
-            cognome: profileData.user.cognome,
-            username: profileData.user.username,
-            megoin: profileData.user.saldoMegoin,
-            saldoMegoin: profileData.user.saldoMegoin,
-            loyalty_points: profileData.user.puntiFedelta,
-            puntiFedelta: profileData.user.puntiFedelta,
-            plan: profileData.user.piano || "Free",
-            isAdmin: !!profileData.user.isAdmin,
-            prodottiAcquistati: profileData.user.prodottiAcquistati || 0,
-            combatStats: AppState.user.combatStats
-          };
-          AppState.allowedModules = profileData.allowedModules || AppState.allowedModules;
-          AppState.plans = profileData.plans || [];
-          this.applyHardLocking(AppState.allowedModules);
+        // 2. CHIAMATA ATOMICA SINGOLA: Un solo colpo per Profilo, Giochi, Shop, Ricette e Transazioni
+        const bootData = await apiCall("bootstrap");
+        
+        if (bootData) {
+          this.applyBootstrapData(bootData);
         }
-
-        // 2. Fetch Parallelo dei cataloghi reali da GAS
-        await Promise.allSettled([
-          this.loadGamesCatalog(),
-          this.fetchShop(),
-          this.fetchRecipes(),
-          this.syncTransactions(false)
-        ]);
-
-        // 3. Setup componenti grafici
+      } catch (err) {
+        console.warn("[AppModules.init] Fallback su cache o mancata connessione GAS:", err);
+        const errBox = document.getElementById("loading-error-box");
+        if (errBox && (!AppState.games.catalog || AppState.games.catalog.length === 0)) {
+          errBox.textContent = err.message || "Errore sincronizzazione con Google Apps Script.";
+          errBox.classList.remove("hidden");
+        }
+      } finally {
+        // Setup componenti multimediali
         this.initCarousel();
         this.initRadio();
 
-        // 4. Rimozione loader
-        const loader = document.getElementById("app-loading");
-        if (loader) {
-          loader.classList.add("fade-out");
-          setTimeout(() => loader.remove(), 250);
-        }
-
-        if (window.AppCore) AppCore.syncUI();
-      } catch (err) {
-        console.error("[AppModules.init] Errore bootstrap GAS:", err);
-        const errBox = document.getElementById("loading-error-box");
-        const retryBtn = document.getElementById("loading-retry-btn");
-        if (errBox) {
-          errBox.textContent = err.message || "Errore di connessione a Google Apps Script.";
-          errBox.classList.remove("hidden");
-          if (retryBtn) retryBtn.classList.remove("hidden");
+        // Sincronizza l'interfaccia con i dati memorizzati
+        if (window.AppCore) {
+          AppCore.syncUI();
+          AppCore.dismissLoader();
         }
       }
+    },
+
+    // ------------------------------------------------------------------------
+    // GESTIONE DELLA CACHE LOCALE (STALE-WHILE-REVALIDATE)
+    // ------------------------------------------------------------------------
+    loadLocalCache: function() {
+      try {
+        const raw = localStorage.getItem("est_bootstrap_cache");
+        if (raw) {
+          const cached = JSON.parse(raw);
+          if (cached.games && cached.games.length > 0) AppState.games.catalog = cached.games;
+          if (cached.shop && cached.shop.length > 0) {
+            AppState.shop.items = cached.shop;
+            AppState.shop.categories = cached.shopCategories || [];
+          }
+          if (cached.recipes && cached.recipes.length > 0) {
+            AppState.recipes.items = cached.recipes;
+            AppState.recipes.categories = cached.recipeCategories || [];
+          }
+          if (cached.transactions && cached.transactions.length > 0) {
+            AppState.transactions = cached.transactions;
+          }
+
+          // Pre-render istantaneo da memoria locale
+          this.renderGamesCatalog();
+          this.renderShop();
+          this.renderRecipes();
+          this.renderTransactions();
+        }
+      } catch (e) {}
+    },
+
+    saveLocalCache: function(data) {
+      try {
+        localStorage.setItem("est_bootstrap_cache", JSON.stringify({
+          games: data.games || [],
+          shop: data.shop || [],
+          shopCategories: data.shopCategories || [],
+          recipes: data.recipes || [],
+          recipeCategories: data.recipeCategories || [],
+          transactions: data.transactions || []
+        }));
+      } catch (e) {}
+    },
+
+    applyBootstrapData: function(data) {
+      // 1. Profilo Utente e Piani
+      if (data.user) {
+        AppState.user = {
+          ...AppState.user,
+          id: data.user.chatId,
+          chatId: data.user.chatId,
+          first_name: data.user.nome,
+          nome: data.user.nome,
+          cognome: data.user.cognome,
+          username: data.user.username,
+          megoin: data.user.saldoMegoin,
+          saldoMegoin: data.user.saldoMegoin,
+          loyalty_points: data.user.puntiFedelta,
+          puntiFedelta: data.user.puntiFedelta,
+          plan: data.user.piano || "Free",
+          isAdmin: !!data.user.isAdmin,
+          prodottiAcquistati: data.user.prodottiAcquistati || 0,
+          isGuest: !!data.user.isGuest
+        };
+      }
+
+      if (data.allowedModules) {
+        AppState.allowedModules = data.allowedModules;
+        this.applyHardLocking(AppState.allowedModules);
+      }
+
+      if (data.plans) {
+        AppState.plans = data.plans;
+      }
+
+      // 2. Catalogo Giochi
+      if (data.games) {
+        AppState.games.catalog = data.games;
+        const gc = document.getElementById("home-games-count");
+        if (gc) gc.textContent = data.games.length;
+      }
+
+      // 3. Catalogo Shop
+      if (data.shop) {
+        AppState.shop.items = data.shop;
+        AppState.shop.categories = data.shopCategories || [];
+      }
+
+      // 4. Ricettario
+      if (data.recipes) {
+        AppState.recipes.items = data.recipes;
+        AppState.recipes.categories = data.recipeCategories || [];
+      }
+
+      // 5. Transazioni
+      if (data.transactions) {
+        AppState.transactions = data.transactions;
+      }
+
+      // Salva nella cache locale per i prossimi avvii
+      this.saveLocalCache(data);
+
+      // Render di tutte le viste aggiornate dal server
+      this.renderGamesCatalog();
+      this.renderShop();
+      this.renderRecipes();
+      this.renderTransactions();
+      this.renderProfile();
     },
 
     applyHardLocking: function(allowed) {
@@ -123,6 +205,7 @@
       if (window.AppCore) AppCore.syncUI();
       this.renderVault();
       this.renderArenaSection();
+      this.renderTransactions();
     },
 
     loadVault: function() {
@@ -137,6 +220,7 @@
       AppState.digitalVault.unshift({ nome, url, data: new Date().toLocaleDateString("it-IT") });
       localStorage.setItem(AppConfig.CACHE_KEYS.VAULT, JSON.stringify(AppState.digitalVault));
       this.renderVault();
+      if (window.AppCore) AppCore.syncUI();
     },
 
     renderVault: function() {
@@ -160,34 +244,42 @@
       `).join("");
     },
 
+    renderTransactions: function() {
+      const c = document.getElementById("profile-transactions-container");
+      if (!c) return;
+      const list = AppState.transactions || [];
+      if (list.length === 0) {
+        c.innerHTML = `<div class="text-xs text-slate-500 font-mono py-2">Nessuna transazione registrata finora.</div>`;
+        return;
+      }
+      c.innerHTML = list.map(tx => `
+        <div class="flex justify-between items-center py-2 text-xs border-b border-white/5 last:border-none">
+          <div>
+            <div class="font-bold text-slate-200">${tx.dettaglio || tx.tipo}</div>
+            <div class="text-[10px] text-slate-500 font-mono">${tx.data}</div>
+          </div>
+          <div class="font-mono font-black ${String(tx.megoin).includes('+') ? 'text-emerald-400' : 'text-amber-400'}">
+            ${tx.megoin}
+          </div>
+        </div>
+      `).join("");
+    },
+
     syncTransactions: async function(notify = false) {
       try {
         const res = await apiCall("my_transactions");
         if (res && res.transactions) {
           AppState.transactions = res.transactions;
-          const c = document.getElementById("profile-transactions-container");
-          if (c) {
-            c.innerHTML = res.transactions.map(tx => `
-              <div class="flex justify-between items-center py-2 text-xs border-b border-white/5 last:border-none">
-                <div>
-                  <div class="font-bold text-slate-200">${tx.dettaglio || tx.tipo}</div>
-                  <div class="text-[10px] text-slate-500 font-mono">${tx.data}</div>
-                </div>
-                <div class="font-mono font-black ${String(tx.megoin).includes('+') ? 'text-emerald-400' : 'text-amber-400'}">
-                  ${tx.megoin}
-                </div>
-              </div>
-            `).join("");
-          }
+          this.renderTransactions();
         }
       } catch (e) {
         console.warn("[syncTransactions] Errore sync transazioni:", e);
       }
-      if (notify && window.AppCore) AppCore.toast("Transazioni aggiornate dal server.", "info");
+      if (notify && window.AppCore) AppCore.toast("Transazioni aggiornate.", "info");
     },
 
     // ------------------------------------------------------------------------
-    // CAROSELLO HOME DINAMICO (DATA-DRIVEN SUI GIOCHI, SHOP E RICETTE REALI)
+    // CAROSELLO HOME DINAMICO (16:9 CENTRATO)
     // ------------------------------------------------------------------------
     initCarousel: function() {
       const track = document.getElementById("carousel-track");
@@ -262,7 +354,7 @@
     },
 
     // ------------------------------------------------------------------------
-    // CATALOGO GIOCHI REALE (SEZIONE D GAS - 3 AZIONI)
+    // CATALOGO GIOCHI (SCHEDE TOTALMENTE CLICCABILI)
     // ------------------------------------------------------------------------
     loadGamesCatalog: async function() {
       try {
@@ -273,7 +365,7 @@
           if (gc) gc.textContent = gamesData.series.length;
         }
       } catch (e) {
-        console.warn("[AppModules] Errore caricamento catalogo giochi da GAS:", e);
+        console.warn("[AppModules] Errore caricamento catalogo giochi:", e);
       }
       this.renderGamesCatalog();
     },
@@ -291,9 +383,10 @@
         return;
       }
 
+      // Rimosso h-40 fisso: ora l'involucro .item-card-media adotta l'aspect-ratio 16:9 centrato
       container.innerHTML = list.map(saga => `
         <div class="item-card group" onclick="AppModules.openGameDetail('${saga.gameKey}')">
-          <div class="item-card-media h-40">
+          <div class="item-card-media">
             <img src="${saga.mediaUrl}" class="item-card-img" alt="${saga.serie}">
             <span class="item-card-badge">${saga.regole || 'Rules 2'}</span>
             <div class="absolute bottom-2 right-2 bg-black/80 px-2 py-0.5 rounded text-[10px] font-mono text-amber-300 font-bold">
@@ -310,7 +403,7 @@
               <span class="text-[10px] font-mono ${saga.hasActiveGame ? 'text-amber-400 font-bold' : 'text-slate-400'}">
                 ${saga.hasActiveGame ? '⚔️ In corso' : 'Pronto'}
               </span>
-              <button class="btn btn-xs btn-primary font-bold px-3">Apri Scheda ›</button>
+              <button onclick="event.stopPropagation(); AppModules.openGameDetail('${saga.gameKey}')" class="btn btn-xs btn-primary font-bold px-3">Apri Scheda ›</button>
             </div>
           </div>
         </div>
@@ -331,7 +424,7 @@
       const img = document.getElementById("hub-image");
       if (img) img.src = saga.mediaUrl;
 
-      // Iniezione delle 3 Azioni Principali della Saga (Gioca, Regole, Caratteristiche)
+      // 3 Azioni Principali della Saga (Gioca, Regole, Caratteristiche)
       let actionsCluster = document.getElementById("hub-saga-actions-cluster");
       if (!actionsCluster) {
         const titleEl = document.getElementById("hub-title");
@@ -357,7 +450,7 @@
         `;
       }
 
-      // Elenco Episodi Giocabili (da GAS)
+      // Capitoli giocabili
       const epContainer = document.getElementById("hub-episodes-container");
       if (epContainer) {
         const playableEpisodes = (saga.episodes || []).filter(ep => ep.episodio > 0);
@@ -491,7 +584,7 @@
     },
 
     // ------------------------------------------------------------------------
-    // SHOP REALE DA GOOGLE APPS SCRIPT (SEZIONE B GAS)
+    // SHOP (SCHEDE TOTALMENTE CLICCABILI & 16:9 CENTRATO)
     // ------------------------------------------------------------------------
     fetchShop: async function() {
       try {
@@ -501,7 +594,7 @@
           AppState.shop.categories = data.categories || [];
         }
       } catch (e) {
-        console.warn("[AppModules] Errore caricamento shop da GAS:", e);
+        console.warn("[AppModules] Errore caricamento shop:", e);
       }
       this.renderShop();
     },
@@ -561,7 +654,7 @@
             </div>
             <div class="item-card-footer mt-2">
               <span class="font-mono font-black text-amber-300 text-xs">${p.prezzoMegoin} 🪙</span>
-              <button class="btn btn-xs btn-primary font-bold px-3">Vedi Scheda ›</button>
+              <button onclick="event.stopPropagation(); AppModules.openShopDetail('${p.id}')" class="btn btn-xs btn-primary font-bold px-3">Vedi Scheda ›</button>
             </div>
           </div>
         </div>
@@ -626,7 +719,7 @@
     },
 
     // ------------------------------------------------------------------------
-    // PIANI SAAS REALI DA GOOGLE APPS SCRIPT (TAB '👑 Plans')
+    // PIANI SAAS
     // ------------------------------------------------------------------------
     openPlansCatalogModal: function() {
       this.renderPlansCatalog();
@@ -694,7 +787,7 @@
     },
 
     // ------------------------------------------------------------------------
-    // RICETTARIO REALE DA GOOGLE APPS SCRIPT (SEZIONE C GAS)
+    // RICETTARIO (BONIFICA DATI TEMPO/DIFFICOLTÀ & 16:9 CENTRATO)
     // ------------------------------------------------------------------------
     fetchRecipes: async function() {
       try {
@@ -704,7 +797,7 @@
           AppState.recipes.categories = data.categories || [];
         }
       } catch (e) {
-        console.warn("[AppModules] Errore caricamento ricette da GAS:", e);
+        console.warn("[AppModules] Errore caricamento ricette:", e);
       }
       this.renderRecipes();
     },
@@ -750,29 +843,38 @@
         return;
       }
 
-      grid.innerHTML = list.map(r => `
-        <div onclick="AppModules.openRecipeDetail(${r.rowIndex})" class="item-card">
-          <div class="item-card-media">
-            <img src="${r.mediaUrl}" class="item-card-img" alt="${r.piatto}">
-            <span class="item-card-badge">${r.categoria}</span>
-          </div>
-          <div class="item-card-body">
-            <div>
-              <h3 class="item-card-title">${r.piatto}</h3>
-              <p class="item-card-desc mt-1">Tempo: ${r.tempo} • Costo: ${r.costo}</p>
+      grid.innerHTML = list.map(r => {
+        // Bonifica contro colonne invertite nel foglio con percentuali
+        const tempoClean = (r.tempo && !String(r.tempo).includes("%")) ? r.tempo : "15 min";
+        const diffClean = (r.difficolta && !String(r.difficolta).includes("%")) ? r.difficolta : "Media";
+
+        return `
+          <div onclick="AppModules.openRecipeDetail(${r.rowIndex})" class="item-card">
+            <div class="item-card-media">
+              <img src="${r.mediaUrl}" class="item-card-img" alt="${r.piatto}">
+              <span class="item-card-badge">${r.categoria}</span>
             </div>
-            <div class="item-card-footer mt-2">
-              <span class="text-[10px] font-mono text-slate-400">Difficoltà: ${r.difficolta}</span>
-              <button class="btn btn-xs btn-primary font-bold px-3">Vedi Scheda ›</button>
+            <div class="item-card-body">
+              <div>
+                <h3 class="item-card-title">${r.piatto}</h3>
+                <p class="item-card-desc mt-1">Tempo: ${tempoClean} • Costo: ${r.costo || 'Conveniente'}</p>
+              </div>
+              <div class="item-card-footer mt-2">
+                <span class="text-[10px] font-mono text-slate-400">Difficoltà: ${diffClean}</span>
+                <button onclick="event.stopPropagation(); AppModules.openRecipeDetail(${r.rowIndex})" class="btn btn-xs btn-primary font-bold px-3">Vedi Scheda ›</button>
+              </div>
             </div>
           </div>
-        </div>
-      `).join("");
+        `;
+      }).join("");
     },
 
     openRecipeDetail: function(rowIdx) {
       const r = (AppState.recipes.items || []).find(x => x.rowIndex === rowIdx);
       if (!r) return;
+
+      const tempoClean = (r.tempo && !String(r.tempo).includes("%")) ? r.tempo : "15 min";
+      const diffClean = (r.difficolta && !String(r.difficolta).includes("%")) ? r.difficolta : "Media";
 
       const s = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
       s("detail-recipe-title", r.piatto);
@@ -786,9 +888,9 @@
       const meta = document.getElementById("detail-recipe-meta");
       if (meta) {
         meta.innerHTML = `
-          <span class="badge badge-sm badge-info font-bold">⏱️ ${r.tempo}</span>
-          <span class="badge badge-sm badge-ghost text-slate-300 font-bold">📊 ${r.difficolta}</span>
-          <span class="badge badge-sm badge-outline border-amber-400/50 text-amber-300 font-bold">💰 ${r.costo}</span>
+          <span class="badge badge-sm badge-info font-bold">⏱️ ${tempoClean}</span>
+          <span class="badge badge-sm badge-ghost text-slate-300 font-bold">📊 ${diffClean}</span>
+          <span class="badge badge-sm badge-outline border-amber-400/50 text-amber-300 font-bold">💰 ${r.costo || 'Conveniente'}</span>
         `;
       }
 
@@ -806,7 +908,7 @@
     },
 
     // ------------------------------------------------------------------------
-    // ARENA DUELLI CLANDESTINI (INTEGRATA NEL PROFILO)
+    // ARENA DUELLI CLANDESTINI
     // ------------------------------------------------------------------------
     renderArenaSection: function() {
       let arenaSection = document.getElementById('profile-arena-section');
@@ -940,7 +1042,7 @@
     },
 
     // ------------------------------------------------------------------------
-    // STANZE MULTIPLAYER (MOCKUP REAL-TIME IN ATTESA TABELLA GAS)
+    // STANZE MULTIPLAYER
     // ------------------------------------------------------------------------
     openMultiplayerLobby: function() {
       if (AppState.allowedModules && AppState.allowedModules.multiplayer === false) {
@@ -1347,7 +1449,7 @@
     },
 
     // ------------------------------------------------------------------------
-    // CONSOLE ADMIN SYNDICATE (RISERVATA AGLI AMMINISTRATORI)
+    // CONSOLE ADMIN SYNDICATE
     // ------------------------------------------------------------------------
     openAdminPanel: function() {
       const modal = document.getElementById('modal-admin-panel');
