@@ -1,6 +1,6 @@
 // ============================================================================
 // PROJECT: ESTIQATSY SYNDICATE & RPG PLATFORM
-// FILE: js/rules2wizard.js (VERSIONE 24.5 - INFINITE MOVERINA TCG & FULL HUD)
+// FILE: js/rules2wizard.js (VERSIONE 25.0 - INFINITE MOVERINA TCG & FULL HUD)
 // LAYER: WIZARD FULL-STAGE, OVERLAY ARROWS, 48px FULL-HUD & CROSS-SAVE ENGINE
 // ============================================================================
 
@@ -192,7 +192,7 @@ const Rules2Wizard = {
     const desMod = Rules2_FormatMod(effDes);
     const intMod = Rules2_FormatMod(effInt);
 
-    // w-full privo di max-w-[340px]: combacia al millimetro con lo Stepper
+    // w-full privo di max-w: combacia al millimetro con lo Stepper sovrastante
     hudContainer.className = "hud-cockpit-48px w-full p-2 rounded-xl bg-slate-900/90 border border-white/10 shadow-lg mb-1";
     hudContainer.innerHTML = `
       <!-- RIGA 1: NOME LUNGO FLESSIBILE A SX & RISORSE BLOCCATE A DX -->
@@ -234,7 +234,7 @@ const Rules2Wizard = {
   },
 
   // --------------------------------------------------------------------------
-  // SINCRONIZZAZIONE SERVER-SIDE STEP WIZARD (RIPRISTINO CODICE ORIGINALE)
+  // SINCRONIZZAZIONE SERVER-SIDE STEP WIZARD
   // --------------------------------------------------------------------------
   _syncStepToServer: function(faseName) {
     if (!this.state.gameKey) return;
@@ -259,7 +259,7 @@ const Rules2Wizard = {
   },
 
   // --------------------------------------------------------------------------
-  // APERTURA E RIPRISTINO SESSIONE DA SERVER (RIPRISTINO CODICE ORIGINALE)
+  // APERTURA E RIPRISTINO SESSIONE DA SERVER
   // --------------------------------------------------------------------------
   open: async function(gameKey, epNum, isVeteran = false, savedHero = null) {
     try {
@@ -475,7 +475,6 @@ const Rules2Wizard = {
     return (this.state.shopCatalog || []).filter(i => Rules2_ClassifyEntity(i) === this.state.shopCategory);
   },
 
-  // Navigazione circolare infinita su qualsiasi step
   navigateInfiniteCards: function(step, direction) {
     tgHaptic("selection");
     if (window.SoundEngine) SoundEngine.playClick();
@@ -499,7 +498,7 @@ const Rules2Wizard = {
   },
 
   // --------------------------------------------------------------------------
-  // STEP 1: SCELTA CLASSE (MOVERINA 5 FASCE - ZERO FONDINO, IMMAGINE A TOP:0)
+  // STEP 1: SCELTA CLASSE (MOVERINA: ZERO FONDINO, IMMAGINE A TOP:0)
   // --------------------------------------------------------------------------
   setClassFactionFilter: function(faction) {
     this.state.classFactionFilter = faction;
@@ -534,20 +533,20 @@ const Rules2Wizard = {
       `;
     }
 
-    // Iniezione frecce fluttuanti nel container esterno se non presenti
+    // Iniezione frecce fluttuanti in sovraimpressione
     const outerStage = stage.closest(".coverflow-stage-outer");
     if (outerStage && !document.getElementById("arrows-step-1")) {
       const arrowWrap = document.createElement("div");
       arrowWrap.id = "arrows-step-1";
       arrowWrap.className = "absolute inset-y-0 inset-x-1 flex items-center justify-between pointer-events-none z-30";
       arrowWrap.innerHTML = `
-        <button onclick="Rules2Wizard.navigateInfiniteCards(1, -1)" class="w-8 h-8 rounded-full bg-slate-900/80 border border-white/20 text-white flex items-center justify-center font-bold text-base pointer-events-auto shadow-xl hover:bg-slate-800">‹</button>
-        <button onclick="Rules2Wizard.navigateInfiniteCards(1, 1)" class="w-8 h-8 rounded-full bg-slate-900/80 border border-white/20 text-white flex items-center justify-center font-bold text-base pointer-events-auto shadow-xl hover:bg-slate-800">›</button>
+        <button onclick="Rules2Wizard.navigateInfiniteCards(1, -1)" class="carousel-arrow-btn" title="Precedente">‹</button>
+        <button onclick="Rules2Wizard.navigateInfiniteCards(1, 1)" class="carousel-arrow-btn" title="Successiva">›</button>
       `;
       outerStage.appendChild(arrowWrap);
     }
 
-    // Render Carte Moverina: L'immagine tocca il bordo superiore, testata in sovraimpressione
+    // Render Carte Moverina: Immagine a bordo superiore, testata sovrimpressa
     stage.innerHTML = classes.map((cls, idx) => {
       const isSelected = (this.state.activeClassIndex === idx);
       const pol = String(cls.sottocategoria || "Destra").toLowerCase();
@@ -558,7 +557,7 @@ const Rules2Wizard = {
 
       return `
         <div id="class-card-${idx}" onclick="Rules2Wizard.selectClassByIndex(${idx})" class="coverflow-card tcg-card ${isSelected ? 'selected' : ''}">
-          <!-- FASCIA 2: Media a tutto campo superiore (da Y=0 della carta) -->
+          <!-- FASCIA 2: Media a tutto campo superiore (parte da Y=0 della carta) -->
           <div class="tcg-card-media">
             <!-- FASCIA 1: Testata Fluttuante Trasparente in Sovraimpressione -->
             <div class="tcg-card-header">
@@ -567,6 +566,7 @@ const Rules2Wizard = {
             </div>
             
             <img src="${cls.mediaUrl}" class="tcg-card-img" alt="${Rules2_SafeAttr(cls.nome)}" loading="lazy">
+            
             ${(cls.citazione && cls.citazione !== "—") ? `
               <div class="tcg-card-quote-overlay">
                 <div class="tcg-card-quote-text">“${cls.citazione.replace(/^["'“”]+|["'“”]+$/g, "")}”</div>
@@ -575,14 +575,14 @@ const Rules2Wizard = {
             ` : ''}
           </div>
 
-          <!-- FASCIA 3: Piastra Statistiche Stondata con Modificatori D20 -->
+          <!-- FASCIA 3: Piastra Statistiche con Modificatori D20 -->
           <div class="tcg-stats-plate">
             <span>🥊 FOR <b>${forVal}</b> (${Rules2_FormatMod(forVal)})</span>
             <span>🤸 DES <b>${desVal}</b> (${Rules2_FormatMod(desVal)})</span>
             <span>🧠 INT <b>${intVal}</b> (${Rules2_FormatMod(intVal)})</span>
           </div>
 
-          <!-- FASCIA 4: Descrizione Narrativa (Fino a 8-9 righe distese) -->
+          <!-- FASCIA 4: Descrizione Narrativa (8-9 righe piene) -->
           <p class="tcg-card-desc">${cls.descrizione || cls.testo || ''}</p>
 
           <!-- FASCIA 5: Piede Scheda con Dotazione, PV e Oro -->
@@ -618,7 +618,7 @@ const Rules2Wizard = {
   },
 
   // --------------------------------------------------------------------------
-  // STEP 2: ABILITÀ & TALENTI (MODELLO MOVERINA A 5 FASCE - ALONE ATTIVO)
+  // STEP 2: ABILITÀ & TALENTI (MOVERINA COMPLETA: IMMAGINE + CITAZIONE)
   // --------------------------------------------------------------------------
   setAbilityCategoryFilter: function(cat) {
     this.state.abilityCategoryFilter = cat;
@@ -662,14 +662,14 @@ const Rules2Wizard = {
       arrowWrap.id = "arrows-step-2";
       arrowWrap.className = "absolute inset-y-0 inset-x-1 flex items-center justify-between pointer-events-none z-30";
       arrowWrap.innerHTML = `
-        <button onclick="Rules2Wizard.navigateInfiniteCards(2, -1)" class="w-8 h-8 rounded-full bg-slate-900/80 border border-white/20 text-white flex items-center justify-center font-bold text-base pointer-events-auto shadow-xl hover:bg-slate-800">‹</button>
-        <button onclick="Rules2Wizard.navigateInfiniteCards(2, 1)" class="w-8 h-8 rounded-full bg-slate-900/80 border border-white/20 text-white flex items-center justify-center font-bold text-base pointer-events-auto shadow-xl hover:bg-slate-800">›</button>
+        <button onclick="Rules2Wizard.navigateInfiniteCards(2, -1)" class="carousel-arrow-btn" title="Precedente">‹</button>
+        <button onclick="Rules2Wizard.navigateInfiniteCards(2, 1)" class="carousel-arrow-btn" title="Successiva">›</button>
       `;
       outerStage.appendChild(arrowWrap);
     }
 
     stage.innerHTML = abilities.map((abl, idx) => {
-      // 🔒 L'alone bianco platino si accende sulla carta attiva al centro!
+      // 🔒 L'alone si accende sulla carta attiva al centro!
       const isSelected = (this.state.activeAbilityIndex === idx);
       const isLearned = this.state.chosenAbilities.includes(abl.id);
       const req = String(abl.requisitiCodificati || abl.effettoCodificato || "tutti").toLowerCase();
@@ -678,7 +678,7 @@ const Rules2Wizard = {
 
       return `
         <div id="abilities-card-${idx}" onclick="Rules2Wizard.selectAbilityByIndex(${idx})" class="coverflow-card tcg-card ${isSelected ? 'selected' : ''}">
-          <!-- FASCIA 2: Media & Sigillo con Testata Sovrimpressa -->
+          <!-- FASCIA 2: Media a Schermo Pieno con Testata Sovrimpressa -->
           <div class="tcg-card-media">
             <!-- FASCIA 1: Testata Fluttuante Trasparente -->
             <div class="tcg-card-header">
@@ -755,7 +755,7 @@ const Rules2Wizard = {
   },
 
   // --------------------------------------------------------------------------
-  // STEP 3: EMPORIO (MOVERINA 5 FASCE - CITAZIONE & ALONE ATTIVO)
+  // STEP 3: EMPORIO (MOVERINA: CITAZIONE OVERLAY & ALONE ATTIVO)
   // --------------------------------------------------------------------------
   renderStep3: function() {
     this.syncGold();
@@ -787,8 +787,8 @@ const Rules2Wizard = {
       arrowWrap.id = "arrows-step-3";
       arrowWrap.className = "absolute inset-y-0 inset-x-1 flex items-center justify-between pointer-events-none z-30";
       arrowWrap.innerHTML = `
-        <button onclick="Rules2Wizard.navigateInfiniteCards(3, -1)" class="w-8 h-8 rounded-full bg-slate-900/80 border border-white/20 text-white flex items-center justify-center font-bold text-base pointer-events-auto shadow-xl hover:bg-slate-800">‹</button>
-        <button onclick="Rules2Wizard.navigateInfiniteCards(3, 1)" class="w-8 h-8 rounded-full bg-slate-900/80 border border-white/20 text-white flex items-center justify-center font-bold text-base pointer-events-auto shadow-xl hover:bg-slate-800">›</button>
+        <button onclick="Rules2Wizard.navigateInfiniteCards(3, -1)" class="carousel-arrow-btn" title="Precedente">‹</button>
+        <button onclick="Rules2Wizard.navigateInfiniteCards(3, 1)" class="carousel-arrow-btn" title="Successiva">›</button>
       `;
       outerStage.appendChild(arrowWrap);
     }
@@ -804,7 +804,7 @@ const Rules2Wizard = {
         <div id="shop-card-${idx}" onclick="Rules2Wizard.selectShopItemByIndex(${idx})" class="coverflow-card tcg-card relative ${isSelected ? 'selected' : ''}">
           ${inBag > 0 ? `<span class="badge badge-xs badge-warning absolute top-10 right-2 font-mono font-black z-20 shadow-md">x${inBag}</span>` : ''}
 
-          <!-- FASCIA 2: Media a Schermo Pieno Alto con Testata Sovrimpressa -->
+          <!-- FASCIA 2: Media a Schermo Pieno con Testata Sovrimpressa -->
           <div class="tcg-card-media">
             <!-- FASCIA 1: Testata Fluttuante Trasparente -->
             <div class="tcg-card-header">
@@ -819,7 +819,7 @@ const Rules2Wizard = {
             </div>
           </div>
 
-          <!-- FASCIA 3: Piastra Metrica Tattica a 3 Capsule -->
+          <!-- FASCIA 3: Piastra Metrica Tattica -->
           <div class="tcg-stats-plate">
             <span>💰 <b>${price} 🟡</b></span>
             <span>💥 <b>${it.danno ? '+' + it.danno : '—'}</b></span>
@@ -933,7 +933,6 @@ const Rules2Wizard = {
     const container = document.getElementById("wizard-step-name");
     if (!container) return;
 
-    // Carta Moverina definitiva dell'Eroe consacrato
     container.innerHTML = `
       <!-- Input Nome dell'Eroe -->
       <div class="p-2.5 rounded-xl bg-slate-900 border border-white/10 mb-2 w-full max-w-[300px] mx-auto">
@@ -1064,5 +1063,6 @@ Object.assign(window.GameEngine, {
   resetWizardShop: () => Rules2Wizard.resetShop(),
   wizardNextStep: (s) => Rules2Wizard.nextStep(s),
   wizardFinalizeHero: () => Rules2Wizard.finalizeHero(),
-  wizardGoToStep: (s) => Rules2Wizard.goToStep(s)
+  wizardGoToStep: (s) => Rules2Wizard.goToStep(s),
+  navigateInfiniteCards: (s, d) => Rules2Wizard.navigateInfiniteCards(s, d)
 });
