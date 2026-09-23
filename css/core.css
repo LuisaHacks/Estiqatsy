@@ -1,40 +1,49 @@
 /* ============================================================================
-   ESTIQATSY SYNDICATE - CORE DESIGN SYSTEM & TELEGRAM NATIVE
-   Viewport rigida, Bridge Variabili, Navigazione, Shop, Profilo & Admin Console
+   PROJECT: ESTIQATSY SYNDICATE & RPG PLATFORM
+   FILE: css/core.css (VERSIONE 15.0 - COMPLETE RESPONSIVE DESIGN SYSTEM)
+   LAYER: PLATFORM DESIGN SYSTEM, TELEGRAM VIEWPORT FIT, SAAS, SHOP & PROFILO
    ============================================================================ */
 
+/* ----------------------------------------------------------------------------
+   1. DESIGN TOKENS, RESET & BRIDGE VARIABILI (ANTI-COLLAPSE)
+   ---------------------------------------------------------------------------- */
 :root {
-  /* Bridge Palette Unificata */
-  --tg-bg: #070a12;
-  --tg-sec-bg: #0b1222;
-  --tg-surface: rgba(17, 28, 52, 0.75);
-  --tg-surface-hover: rgba(26, 42, 78, 0.85);
-
-  --color-accent: #38bdf8;
-  --color-gold: #f59e0b;
-  --color-crimson: #f43f5e;
-  --color-emerald: #10b981;
-  --color-purple: #a855f7;
-
-  /* Aliasing vecchio/nuovo */
-  --tg-sky: var(--color-accent);
-  --tg-amber: var(--color-gold);
-  --tg-rose: var(--color-crimson);
-  --tg-emerald: var(--color-emerald);
-
+  /* Palette Principale Syndicate Noir */
+  --tg-bg: #070A12;                        /* Canvas nero profondo */
+  --tg-sec-bg: #0B1222;                    /* Superficie secondaria elevata */
+  --tg-surface: rgba(15, 23, 42, 0.88);    /* Card base glassmorphism */
+  --tg-surface-hover: rgba(26, 38, 66, 0.95);
+  
+  --text-primary: #F8FAFC;
+  --text-secondary: #CBD5E1;
+  --text-muted: #94A3B8;
+  --text-subtle: #64748B;
+  
   --border-subtle: rgba(255, 255, 255, 0.08);
-  --border-medium: rgba(56, 189, 248, 0.25);
+  --border-medium: rgba(56, 189, 248, 0.28);
+  --border-light: rgba(255, 255, 255, 0.16);
   --tg-border: var(--border-subtle);
 
-  --text-primary: #f8fafc;
-  --text-secondary: #cbd5e1;
-  --text-muted: #94a3b8;
+  /* Accenti Funzionali & Identità */
+  --color-accent: #38BDF8;                 /* Cyan Primario / Syndicate Brand */
+  --color-gold: #F59E0B;                   /* Oro / Borsello / Valuta */
+  --color-emerald: #10B981;                /* Fedeltà / Successo */
+  --color-crimson: #F43F5E;                /* Pericolo / Salute / Danno */
+  --color-purple: #A855F7;                 /* Download Caveau / Multiplayer */
 
-  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  /* Aliasing Compatibilità Retroattiva */
+  --tg-sky: var(--color-accent);
+  --tg-amber: var(--color-gold);
+  --tg-emerald: var(--color-emerald);
+  --tg-rose: var(--color-crimson);
+  --tg-purple: var(--color-purple);
+
+  /* Tipografia */
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   --font-display: var(--font-sans);
 
-  /* Safe Area Telegram Hardware */
+  /* Geometria Hardware & Safe-Areas Telegram SDK 7.0+ / 8.0 */
   --safe-top: var(--tg-safe-area-inset-top, env(safe-area-inset-top, 0px));
   --safe-bottom: var(--tg-safe-area-inset-bottom, env(safe-area-inset-bottom, 0px));
   --safe-right: var(--tg-safe-area-inset-right, env(safe-area-inset-right, 0px));
@@ -52,6 +61,7 @@ html, body.rpg-app-body {
   background-color: var(--tg-bg);
   color: var(--text-primary);
   font-family: var(--font-sans);
+  touch-action: manipulation;
   height: 100vh;
   height: 100dvh;
   max-height: 100dvh;
@@ -59,7 +69,7 @@ html, body.rpg-app-body {
   max-width: 100vw;
   margin: 0;
   padding: 0;
-  overflow: hidden;
+  overflow: hidden; /* Blocca il rimbalzo elastico (rubber-band) di iOS */
   overscroll-behavior: none;
   display: flex;
   flex-direction: column;
@@ -68,16 +78,76 @@ html, body.rpg-app-body {
   -webkit-tap-highlight-color: transparent;
 }
 
-.hidden { display: none !important; }
+.hidden {
+  display: none !important;
+}
 
-/* Scrollbars */
-::-webkit-scrollbar { width: 3px; height: 3px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.16); border-radius: 9999px; }
-.no-scrollbar::-webkit-scrollbar { display: none; }
-.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+.app-screen {
+  animation: screenFade 0.16s ease-out forwards;
+}
 
-/* Top Bar Universale */
+@keyframes screenFade {
+  from { opacity: 0; transform: scale(0.995); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+/* ----------------------------------------------------------------------------
+   2. SCROLLBARS & UTILITY GRAFICHE
+   ---------------------------------------------------------------------------- */
+::-webkit-scrollbar {
+  width: 3px;
+  height: 3px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.16);
+  border-radius: 9999px;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Glow Neon */
+.text-glow-amber {
+  text-shadow: 0 0 10px rgba(245, 158, 11, 0.55);
+}
+.text-glow-rose {
+  text-shadow: 0 0 10px rgba(244, 63, 94, 0.60);
+}
+.text-glow-sky {
+  text-shadow: 0 0 10px rgba(56, 189, 248, 0.55);
+}
+
+/* ----------------------------------------------------------------------------
+   3. SCHERMATA LOADER D'AVVIO
+   ---------------------------------------------------------------------------- */
+.app-loader-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 999;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--tg-bg);
+  padding: 1.5rem;
+  text-align: center;
+  transition: opacity 0.25s ease-out;
+}
+.app-loader-screen.fade-out {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* ----------------------------------------------------------------------------
+   4. TOP BAR UNIVERSALE (CENTRAGGIO ASSOLUTO TRA I TASTI NATIVI TELEGRAM)
+   ---------------------------------------------------------------------------- */
 .universal-top-bar {
   flex: none;
   z-index: 50;
@@ -85,16 +155,27 @@ html, body.rpg-app-body {
   height: calc(var(--safe-top, 0px) + var(--tg-header-height, 48px));
   padding-top: var(--safe-top, 0px);
   padding-left: calc(var(--safe-left, 0px) + 0.75rem);
-  padding-right: calc(var(--safe-right, 0px) + 85px); /* Rispetto dead-zone capsule Telegram */
-  background: rgba(7, 10, 18, 0.95);
+  padding-right: calc(var(--safe-right, 0px) + 85px); /* Rispetto dead-zone capsule Telegram (••• e ✕) */
+  background: rgba(7, 10, 18, 0.96);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border-bottom: 1px solid var(--border-subtle);
+  position: relative;
   display: flex;
   align-items: center;
-  position: relative;
+  justify-content: flex-start;
 }
 
+.top-bar-placeholder {
+  width: 2.25rem;
+  height: var(--tg-header-height, 48px);
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  z-index: 10;
+}
+
+/* Centraggio Ottico Assoluto: non risente dell'offset asimmetrico destro di Telegram */
 .top-bar-title-box {
   position: absolute;
   top: var(--safe-top, 0px);
@@ -105,19 +186,25 @@ html, body.rpg-app-body {
   align-items: center;
   justify-content: center;
   pointer-events: none;
+  z-index: 5;
 }
+
 .top-bar-brand {
   font-size: 0.9rem;
   font-weight: 900;
-  letter-spacing: 0.18em;
-  color: #fff;
+  letter-spacing: 0.20em;
+  color: #FFFFFF;
   text-transform: uppercase;
+  line-height: 1;
 }
 
-/* Viewport Layout */
+/* ----------------------------------------------------------------------------
+   5. STRUTTURA CENTRALE VIEWPORT & RESPONSIVE LAYOUT CONTAINER
+   ---------------------------------------------------------------------------- */
 .app-layout-container {
   flex: 1 1 0%;
   min-height: 0;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -125,12 +212,15 @@ html, body.rpg-app-body {
   width: 100%;
 }
 @media (min-width: 768px) {
-  .app-layout-container { flex-direction: row; }
+  .app-layout-container {
+    flex-direction: row;
+  }
 }
 
 .app-main-viewport {
   flex: 1 1 0%;
   min-height: 0;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   height: 100%;
@@ -154,12 +244,171 @@ html, body.rpg-app-body {
   display: flex;
   flex-direction: column;
   gap: 0.85rem;
+  min-width: 0;
 }
 @media (min-width: 768px) {
-  .app-content-wrapper { padding: 1.25rem 1.5rem 2rem; }
+  .app-content-wrapper {
+    padding: 1.25rem 1.5rem 2rem 1.5rem;
+    gap: 1rem;
+  }
 }
 
-/* Footer Piattaforma Sticky */
+/* ----------------------------------------------------------------------------
+   6. SIDEBAR DESKTOP WIDESCREEN (>= 768px) - ZERO STIRAMENTO AVATAR
+   ---------------------------------------------------------------------------- */
+.desktop-sidebar {
+  display: none;
+  width: 18.5rem;
+  background: var(--tg-sec-bg);
+  border-right: 1px solid var(--border-subtle);
+  height: 100%;
+  padding: 1.25rem 1rem;
+  flex-direction: column;
+  gap: 1rem;
+  flex-shrink: 0;
+  z-index: 30;
+}
+@media (min-width: 768px) {
+  .desktop-sidebar {
+    display: flex;
+  }
+}
+
+.user-card-desk {
+  background: var(--tg-surface);
+  padding: 1rem;
+  border-radius: 1.15rem;
+  border: 1px solid var(--border-light);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4);
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+/* 🔒 FIX AVATAR DESKTOP: Dimensioni fisse rigide, mai più rettangoli blu giganti */
+.user-avatar-box {
+  width: 3.25rem !important;
+  height: 3.25rem !important;
+  min-width: 3.25rem !important;
+  min-height: 3.25rem !important;
+  max-width: 3.25rem !important;
+  max-height: 3.25rem !important;
+  border-radius: 0.95rem;
+  background: linear-gradient(135deg, #0284C7, #4F46E5, #0F172A);
+  border: 2px solid rgba(56, 189, 248, 0.4);
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-weight: 900;
+  font-size: 1.35rem;
+  color: #FFFFFF;
+  flex-shrink: 0 !important;
+  overflow: hidden !important;
+}
+.avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.badge-role {
+  font-size: 9px;
+  font-weight: 800;
+  color: var(--text-muted);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+.user-name-label {
+  font-size: 0.92rem;
+  font-weight: 900;
+  color: #FFFFFF;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-top: 0.1rem;
+}
+.plan-pill-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.2rem 0.65rem;
+  border-radius: 9999px;
+  background: rgba(56, 189, 248, 0.14);
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  font-size: 9.5px;
+  font-weight: 900;
+  color: #7DD3FC;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+.plan-pill-btn:hover {
+  background: rgba(56, 189, 248, 0.25);
+}
+
+.wallet-desk-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border-subtle);
+}
+.wallet-desk-item {
+  background: rgba(0, 0, 0, 0.4);
+  padding: 0.5rem;
+  border-radius: 0.75rem;
+  text-align: center;
+  border: 1px solid var(--border-subtle);
+}
+.wallet-label {
+  font-size: 9px;
+  color: var(--text-muted);
+  font-weight: 800;
+  text-transform: uppercase;
+}
+.wallet-value {
+  font-size: 0.95rem;
+  font-weight: 900;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  margin-top: 0.15rem;
+}
+
+.desktop-nav-menu {
+  flex: 1 1 0%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.desk-nav-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.7rem 0.85rem;
+  border-radius: 0.85rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+  text-align: left;
+}
+.desk-nav-btn:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: #FFFFFF;
+}
+.desk-nav-btn.active {
+  color: var(--color-accent);
+  background: rgba(56, 189, 248, 0.1);
+  border: 1px solid rgba(56, 189, 248, 0.25);
+}
+
+/* ----------------------------------------------------------------------------
+   7. FOOTER MOBILE (THUMB-FRIENDLY: 5 TAB CLASSICI)
+   ---------------------------------------------------------------------------- */
 .main-app-footer {
   flex: none;
   z-index: 50;
@@ -174,6 +423,12 @@ html, body.rpg-app-body {
   padding-bottom: var(--safe-bottom, 0px);
   height: calc(var(--tg-footer-height, 52px) + var(--safe-bottom, 0px));
 }
+@media (min-width: 768px) {
+  .main-app-footer {
+    display: none !important;
+  }
+}
+
 .nav-tab {
   display: flex;
   flex-direction: column;
@@ -185,75 +440,266 @@ html, body.rpg-app-body {
   cursor: pointer;
   height: var(--tg-footer-height, 52px);
   min-width: 3.25rem;
-  transition: all 0.15s ease;
+  transition: color 0.15s ease, transform 0.12s ease;
 }
-.nav-tab.active { color: var(--color-accent) !important; }
+.nav-tab:active {
+  transform: scale(0.93);
+}
+.nav-tab.active {
+  color: var(--color-accent) !important;
+}
 .nav-tab-label {
-  font-size: 9.5px;
+  font-size: 9px;
   font-weight: 800;
   text-transform: uppercase;
-  margin-top: 2px;
+  margin-top: 0.15rem;
+  letter-spacing: 0.04em;
+  line-height: 1;
 }
 
-/* Sidebar Desktop */
-.desktop-sidebar {
-  display: none;
-  width: 18rem;
-  background: var(--tg-sec-bg);
-  border-right: 1px solid var(--border-subtle);
-  padding: 1.25rem 1rem;
+/* Spegne il footer globale durante il gameplay e il wizard */
+body[data-active-screen="view-gameplay"] .main-app-footer,
+body[data-active-screen="view-wizard"] .main-app-footer {
+  display: none !important;
+}
+
+/* ----------------------------------------------------------------------------
+   8. DASHBOARD HOME, SPOTIFY RADIO & KPI QUAD GRID (FIX SCREENSHOT 1 & 2)
+   ---------------------------------------------------------------------------- */
+.home-hero-banner {
+  border-radius: 1.25rem;
+  padding: 1.15rem;
+  background: linear-gradient(135deg, #0F172A 0%, #0F172A 50%, #1E1B4B 100%);
+  border: 1px solid var(--border-light);
+  box-shadow: 0 15px 25px -10px rgba(0, 0, 0, 0.5);
+  display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 0.75rem;
 }
 @media (min-width: 768px) {
-  .desktop-sidebar { display: flex; }
+  .home-hero-banner {
+    padding: 1.75rem;
+  }
 }
-.desk-nav-btn {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.7rem 0.85rem;
-  border-radius: 10px;
-  font-size: 0.82rem;
-  font-weight: 700;
-  color: var(--text-secondary);
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-.desk-nav-btn:hover { background: rgba(255, 255, 255, 0.05); }
-.desk-nav-btn.active { color: var(--color-accent); background: rgba(56, 189, 248, 0.1); }
 
-/* Card Element & Griglie */
+/* 🔒 FIX FONDAMENTALE KPI GRID: MAI PIÙ TESTO VERTICALE SFORMATO */
+.kpi-quad-grid {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 0.65rem !important;
+  width: 100% !important;
+}
+@media (min-width: 768px) {
+  .kpi-quad-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    gap: 0.85rem !important;
+  }
+}
+
+.kpi-card {
+  background: var(--tg-surface) !important;
+  padding: 0.85rem 0.95rem !important;
+  border-radius: 0.95rem !important;
+  border: 1px solid var(--border-subtle) !important;
+  cursor: pointer !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  transition: transform 0.12s ease, border-color 0.15s ease, background-color 0.15s ease !important;
+}
+.kpi-card:hover {
+  background: var(--tg-surface-hover) !important;
+  border-color: var(--border-medium) !important;
+}
+.kpi-card:active {
+  transform: scale(0.97) !important;
+}
+.kpi-card-label {
+  font-size: 9.5px !important;
+  font-weight: 800 !important;
+  color: var(--text-muted) !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+}
+.kpi-card-value {
+  font-size: 1.25rem !important;
+  font-weight: 900 !important;
+  font-family: var(--font-mono) !important;
+  font-variant-numeric: tabular-nums !important;
+  margin-top: 0.15rem !important;
+}
+.kpi-card-icon {
+  width: 1.1rem !important;
+  height: 1.1rem !important;
+  color: var(--text-subtle) !important;
+  flex-shrink: 0 !important;
+}
+
+/* Miniplayer Spotify-Style */
+#home-radio-miniplayer {
+  background: rgba(15, 23, 42, 0.90);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(56, 189, 248, 0.32);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+#home-radio-miniplayer:hover {
+  border-color: rgba(56, 189, 248, 0.65);
+  box-shadow: 0 4px 20px rgba(56, 189, 248, 0.18);
+}
+
+/* Equalizzatore Grafico Bouncing */
+.jukebox-eq-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 2.5px;
+  height: 14px;
+}
+.jukebox-eq-bars span {
+  width: 2.5px;
+  height: 3px;
+  background: var(--color-accent);
+  border-radius: 1px;
+}
+.jukebox-eq-bars.animated span:nth-child(1) { animation: eqBounce 0.8s ease-in-out infinite; }
+.jukebox-eq-bars.animated span:nth-child(2) { animation: eqBounce 1.1s ease-in-out infinite 0.2s; }
+.jukebox-eq-bars.animated span:nth-child(3) { animation: eqBounce 0.7s ease-in-out infinite 0.4s; }
+.jukebox-eq-bars.animated span:nth-child(4) { animation: eqBounce 1.0s ease-in-out infinite 0.1s; }
+.jukebox-eq-bars.animated span:nth-child(5) { animation: eqBounce 0.9s ease-in-out infinite 0.3s; }
+
+@keyframes eqBounce {
+  0%, 100% { height: 3px; }
+  50% { height: 14px; }
+}
+
+/* Carosello Promozionale */
+.carousel-outer-wrapper {
+  position: relative;
+  overflow: hidden;
+  border-radius: 1.15rem;
+  background: var(--tg-sec-bg);
+  border: 1px solid var(--border-subtle);
+}
+.carousel-track {
+  display: flex;
+  transition: transform 0.45s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.carousel-slide {
+  min-width: 100%;
+  position: relative;
+  height: 11rem;
+  background: #0F172A;
+  cursor: pointer;
+  overflow: hidden;
+  flex: none;
+}
+@media (min-width: 768px) {
+  .carousel-slide {
+    height: 14rem;
+  }
+}
+.carousel-slide-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.carousel-slide-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, transparent 0%, rgba(9, 13, 22, 0.5) 45%, #090D16 100%);
+}
+.carousel-slide-badge {
+  position: absolute;
+  top: 0.75rem;
+  left: 0.75rem;
+  padding: 0.25rem 0.55rem;
+  border-radius: 0.5rem;
+  background: var(--color-accent);
+  color: #070A12;
+  font-size: 9px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+.carousel-slide-content {
+  position: absolute;
+  bottom: 0.85rem;
+  left: 0.85rem;
+  right: 0.85rem;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+.carousel-slide-title {
+  font-weight: 900;
+  font-size: 0.92rem;
+  color: #FFFFFF;
+  margin: 0;
+}
+.carousel-slide-sub {
+  font-size: 10.5px;
+  color: #CBD5E1;
+  margin: 0.15rem 0 0 0;
+}
+.carousel-slide-btn {
+  padding: 0.35rem 0.75rem;
+  border-radius: 0.55rem;
+  background: var(--color-accent);
+  color: #070A12;
+  font-size: 10.5px;
+  font-weight: 900;
+  border: none;
+  flex-shrink: 0;
+}
+.carousel-dot {
+  height: 0.4rem;
+  border-radius: 9999px;
+  transition: all 0.3s ease;
+  background: rgba(255, 255, 255, 0.22);
+  width: 0.45rem;
+}
+.carousel-dot.active {
+  background: var(--color-accent);
+  width: 1.25rem;
+}
+
+/* ----------------------------------------------------------------------------
+   9. CATALOGHI GIOCHI, SHOP & RICETTE (CARD ELEMENT UNIFICATE)
+   ---------------------------------------------------------------------------- */
 .item-card {
   background: var(--tg-surface);
   border: 1px solid var(--border-subtle);
-  border-radius: 14px;
+  border-radius: 1.05rem;
   overflow: hidden;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: transform 0.15s ease, border-color 0.2s ease, box-shadow 0.2s ease;
 }
 .item-card:hover {
   border-color: var(--border-medium);
   transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.45);
+}
+.item-card:active {
+  transform: scale(0.98);
 }
 .item-card-media {
   height: 8.5rem;
   width: 100%;
   position: relative;
-  background: #000;
+  background: #000000;
   overflow: hidden;
 }
 .item-card-img {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  transition: transform 0.35s ease;
+}
+.item-card:hover .item-card-img {
+  transform: scale(1.04);
 }
 .item-card-badge {
   position: absolute;
@@ -278,7 +724,7 @@ html, body.rpg-app-body {
 .item-card-title {
   font-size: 13px;
   font-weight: 800;
-  color: #fff;
+  color: #FFFFFF;
   margin: 0;
   line-height: 1.25;
 }
@@ -297,7 +743,7 @@ html, body.rpg-app-body {
 }
 
 /* Chips di Categoria */
-.rpg-category-chip {
+.rpg-category-chip, .category-chip {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -314,34 +760,64 @@ html, body.rpg-app-body {
   cursor: pointer;
   transition: all 0.15s ease;
 }
-.rpg-category-chip.active {
+.rpg-category-chip.active, .category-chip.active {
   background: var(--color-accent);
-  color: #070a12;
+  color: #070A12;
   border-color: var(--color-accent);
 }
 
-/* Modali Glassmorphism */
-dialog.modal {
-  background: rgba(7, 10, 18, 0.88);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  padding: 12px;
-  border: none;
+/* ----------------------------------------------------------------------------
+   10. MODALI GLASSMORPHISM & COMPARATORE SAAS PLANS
+   ---------------------------------------------------------------------------- */
+dialog.modal.modal-middle,
+dialog.modal:not(.modal-bottom) {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  position: fixed !important;
+  inset: 0 !important;
+  background: rgba(7, 10, 18, 0.90) !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
+  padding: 0.75rem !important;
+  z-index: 90 !important;
 }
+dialog.modal:not([open]) {
+  display: none !important;
+}
+
 .modal-close-btn {
   position: absolute;
-  top: 10px;
-  right: 10px;
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
+  top: 0.75rem;
+  right: 0.75rem;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 9999px;
   background: rgba(255, 255, 255, 0.08);
-  border: 1px solid var(--border-subtle);
-  color: #cbd5e1;
+  border: 1px solid var(--border-light);
+  color: #CBD5E1;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  font-size: 12px;
-  z-index: 20;
+  z-index: 50;
+  transition: background 0.15s ease;
+}
+.modal-close-btn:hover {
+  background: rgba(255, 255, 255, 0.16);
+  color: #FFFFFF;
+}
+
+/* ----------------------------------------------------------------------------
+   11. RESPONSIVE BREAKPOINTS (TABLET & DESKTOP TUNING)
+   ---------------------------------------------------------------------------- */
+@media (min-width: 640px) {
+  .item-card-media {
+    height: 9.5rem;
+  }
+}
+@media (min-width: 1024px) {
+  .app-content-wrapper {
+    max-width: 1200px;
+  }
 }
