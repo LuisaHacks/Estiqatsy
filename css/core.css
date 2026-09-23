@@ -1,16 +1,16 @@
 /* ============================================================================
    PROJECT: ESTIQATSY SYNDICATE & RPG PLATFORM
-   FILE: css/core.css (VERSIONE 16.0 - COMPLETE RESPONSIVE DESIGN SYSTEM)
-   LAYER: PLATFORM DESIGN SYSTEM, TELEGRAM VIEWPORT FIT, SAAS, SHOP & PROFILO
+   FILE: css/core.css (VERSIONE 17.0 - MACROSTATE CONTEXT & RESPONSIVE FOUNDATION)
+   LAYER: DESIGN SYSTEM, TELEGRAM VIEWPORT FIT, MACROSTATO, FOOTER & ROUTING
    ============================================================================ */
 
 /* ----------------------------------------------------------------------------
    1. DESIGN TOKENS, VARIABILI E PALETTE SYNDICATE NOIR
    ---------------------------------------------------------------------------- */
 :root {
-  /* Palette Canvas */
+  /* Canvas Palette */
   --tg-bg: #070A12;                        /* Sfondo primario notte profonda */
-  --tg-sec-bg: #0B1222;                    /* Superficie elevata / contenitori */
+  --tg-sec-bg: #0B1222;                    /* Superficie contenitori */
   --tg-surface: rgba(15, 23, 42, 0.88);    /* Card base glassmorphism */
   --tg-surface-hover: rgba(26, 38, 66, 0.95);
   
@@ -26,12 +26,12 @@
 
   /* Accenti Neon e Funzionali */
   --color-accent: #38BDF8;                 /* Cyan Syndicate / Brand primario */
-  --color-gold: #F59E0B;                   /* Oro sonante / Borsello Megoin */
+  --color-gold: #F59E0B;                   /* Oro sonante / Megoin */
   --color-emerald: #10B981;                /* Punti Fedeltà / Successo */
-  --color-crimson: #F43F5E;                /* Pericolo / Salute eroe / Morte */
+  --color-crimson: #F43F5E;                /* Pericolo / Salute / Morte */
   --color-purple: #A855F7;                 /* Caveau / Stanze Multiplayer */
 
-  /* Aliasing Compatibilità Retroattiva */
+  /* Aliasing Compatibilità */
   --tg-sky: var(--color-accent);
   --tg-amber: var(--color-gold);
   --tg-emerald: var(--color-emerald);
@@ -41,9 +41,8 @@
   /* Tipografia */
   --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  --font-display: var(--font-sans);
 
-  /* Geometria Hardware & Safe-Areas Telegram SDK 7.0+ / 8.0 */
+  /* Safe-Areas Telegram SDK 7.0+ / 8.0 */
   --safe-top: var(--tg-safe-area-inset-top, env(safe-area-inset-top, 0px));
   --safe-bottom: var(--tg-safe-area-inset-bottom, env(safe-area-inset-bottom, 0px));
   --safe-right: var(--tg-safe-area-inset-right, env(safe-area-inset-right, 0px));
@@ -69,7 +68,7 @@ html, body.rpg-app-body {
   max-width: 100vw;
   margin: 0;
   padding: 0;
-  overflow: hidden; /* Blocca il rimbalzo elastico (rubber-band) di iOS */
+  overflow: hidden;
   overscroll-behavior: none;
   display: flex;
   flex-direction: column;
@@ -113,16 +112,9 @@ html, body.rpg-app-body {
   scrollbar-width: none;
 }
 
-/* Glow Neon */
-.text-glow-amber {
-  text-shadow: 0 0 10px rgba(245, 158, 11, 0.55);
-}
-.text-glow-rose {
-  text-shadow: 0 0 10px rgba(244, 63, 94, 0.60);
-}
-.text-glow-sky {
-  text-shadow: 0 0 10px rgba(56, 189, 248, 0.55);
-}
+.text-glow-amber { text-shadow: 0 0 10px rgba(245, 158, 11, 0.55); }
+.text-glow-rose  { text-shadow: 0 0 10px rgba(244, 63, 94, 0.60); }
+.text-glow-sky   { text-shadow: 0 0 10px rgba(56, 189, 248, 0.55); }
 
 /* ----------------------------------------------------------------------------
    3. SCHERMATA LOADER D'AVVIO
@@ -139,14 +131,15 @@ html, body.rpg-app-body {
   padding: 1.5rem;
   text-align: center;
   transition: opacity 0.25s ease-out;
+  pointer-events: auto;
 }
 .app-loader-screen.fade-out {
   opacity: 0;
-  pointer-events: none;
+  pointer-events: none !important;
 }
 
 /* ----------------------------------------------------------------------------
-   4. TOP BAR UNIVERSALE (CENTRAGGIO ASSOLUTO TRA I TASTI NATIVI TELEGRAM)
+   4. TOP BAR UNIVERSALE (CENTRAGGIO TRA I TASTI NATIVI TELEGRAM)
    ---------------------------------------------------------------------------- */
 .universal-top-bar {
   flex: none;
@@ -155,7 +148,7 @@ html, body.rpg-app-body {
   height: calc(var(--safe-top, 0px) + var(--tg-header-height, 48px));
   padding-top: var(--safe-top, 0px);
   padding-left: calc(var(--safe-left, 0px) + 0.75rem);
-  padding-right: calc(var(--safe-right, 0px) + 85px); /* Rispetto dead-zone capsule Telegram (••• e ✕) */
+  padding-right: calc(var(--safe-right, 0px) + 85px); /* Spazio di sicurezza bottoni Telegram */
   background: rgba(7, 10, 18, 0.96);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
@@ -166,17 +159,7 @@ html, body.rpg-app-body {
   justify-content: flex-start;
 }
 
-.top-bar-placeholder {
-  width: 2.25rem;
-  height: var(--tg-header-height, 48px);
-  display: inline-flex;
-  align-items: center;
-  justify-content: flex-start;
-  z-index: 10;
-}
-
-/* Centraggio Ottico Assoluto tra i bordi dello schermo */
-.top-bar-title-box {
+#top-bar-title-box {
   position: absolute;
   top: var(--safe-top, 0px);
   left: 0;
@@ -189,17 +172,8 @@ html, body.rpg-app-body {
   z-index: 5;
 }
 
-.top-bar-brand {
-  font-size: 0.9rem;
-  font-weight: 900;
-  letter-spacing: 0.20em;
-  color: #FFFFFF;
-  text-transform: uppercase;
-  line-height: 1;
-}
-
 /* ----------------------------------------------------------------------------
-   5. STRUTTURA CENTRALE VIEWPORT & RESPONSIVE LAYOUT
+   5. VIEWPORT LAYOUT & SCROLL CONTAINER
    ---------------------------------------------------------------------------- */
 .app-layout-container {
   flex: 1 1 0%;
@@ -232,9 +206,9 @@ html, body.rpg-app-body {
   -webkit-overflow-scrolling: touch;
 }
 
-/* Margine inferiore protettivo per non finire coperti dal footer fisso */
+/* Padding inferiore dinamico per compensare i footer */
 .app-content-wrapper {
-  padding: 0.75rem 0.75rem 5.5rem 0.75rem !important;
+  padding: 0.75rem 0.75rem calc(var(--safe-bottom, 0px) + 5rem) 0.75rem !important;
   max-width: 960px;
   margin: 0 auto;
   display: flex;
@@ -244,55 +218,73 @@ html, body.rpg-app-body {
 }
 @media (min-width: 768px) {
   .app-content-wrapper {
-    padding: 1.25rem 1.5rem 6rem 1.5rem !important;
+    padding: 1.25rem 1.5rem calc(var(--safe-bottom, 0px) + 2rem) 1.5rem !important;
   }
 }
 
 /* ----------------------------------------------------------------------------
-   6. FOOTER MENU UNIVERSALE (MOBILE, TABLET & DESKTOP DOCK)
+   6. DELEGA AL CSS DELLA VISIBILITÀ DEL MACROSTATO
+   ---------------------------------------------------------------------------- */
+
+/* Modalità 1: APP STANDARD (Home, Giochi, Shop, Ricette, Profilo) */
+body[data-context="app"] #main-app-header { display: flex !important; }
+body[data-context="app"] #main-game-header { display: none !important; }
+body[data-context="app"] #main-wizard-footer { display: none !important; }
+body[data-context="app"] #main-game-cockpit-footer { display: none !important; }
+body[data-context="app"] .main-app-footer { display: flex !important; }
+
+/* Modalità 2: WIZARD FULL-STAGE */
+body[data-context="wizard"] #main-app-header { display: flex !important; }
+body[data-context="wizard"] #main-game-header { display: none !important; }
+body[data-context="wizard"] .main-app-footer { display: none !important; }
+body[data-context="wizard"] #main-game-cockpit-footer { display: none !important; }
+body[data-context="wizard"] #main-wizard-footer { display: flex !important; }
+
+/* Modalità 3: GAMEPLAY COCKPIT (Rules 2 Engine) */
+body[data-context="gameplay"] #main-app-header { display: none !important; }
+body[data-context="gameplay"] #main-game-header { display: flex !important; }
+body[data-context="gameplay"] .main-app-footer { display: none !important; }
+body[data-context="gameplay"] #main-wizard-footer { display: none !important; }
+body[data-context="gameplay"] #main-game-cockpit-footer { display: grid !important; }
+
+/* Su Desktop (>= 768px): La navigazione è delegata alla sidebar laterale */
+@media (min-width: 768px) {
+  .main-app-footer {
+    display: none !important;
+  }
+}
+
+/* ----------------------------------------------------------------------------
+   7. FOOTER MENU MOBILE (.main-app-footer & .nav-tab)
    ---------------------------------------------------------------------------- */
 .main-app-footer {
   flex: none;
-  z-index: 50 !important;
+  z-index: 50;
   width: 100%;
-  position: fixed !important;
-  bottom: 0 !important;
-  left: 0 !important;
-  right: 0 !important;
-  background: rgba(7, 10, 18, 0.98) !important;
-  backdrop-filter: blur(20px) !important;
-  -webkit-backdrop-filter: blur(20px) !important;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: rgba(7, 10, 18, 0.98);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   border-top: 1px solid var(--border-subtle);
-  display: flex !important; /* Sempre visibile su Mobile, Tablet e Desktop */
+  display: flex;
   justify-content: space-around;
   align-items: center;
   padding-bottom: var(--safe-bottom, 0px);
   height: calc(var(--tg-footer-height, 52px) + var(--safe-bottom, 0px));
 }
 
-/* Desktop Widescreen Dock Bar centrata */
-@media (min-width: 768px) {
-  .main-app-footer {
-    max-width: 600px !important;
-    left: 50% !important;
-    transform: translateX(-50%) !important;
-    border-radius: 1.25rem 1.25rem 0 0 !important;
-    border-left: 1px solid var(--border-subtle) !important;
-    border-right: 1px solid var(--border-subtle) !important;
-    box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.6) !important;
-  }
-}
-
-/* 🔒 FIX TOTALE SFASAMENTO ICONA HOME: ALLINEAMENTO VERTICALE BLINDATO */
 .nav-tab {
   display: flex !important;
-  flex-direction: column !important; /* Forza l'icona rigorosamente sopra il testo */
+  flex-direction: column !important;
   align-items: center !important;
   justify-content: center !important;
   text-align: center !important;
   position: relative !important;
   flex: 1 1 0 !important;
-  max-width: 80px !important;
+  max-width: 72px !important;
   height: 48px !important;
   padding: 3px 2px !important;
   margin: 0 !important;
@@ -303,14 +295,15 @@ html, body.rpg-app-body {
   outline: none !important;
   transition: color 0.15s ease, transform 0.1s ease !important;
 }
+
 .nav-tab:active {
   transform: scale(0.92) !important;
 }
+
 .nav-tab.active {
   color: var(--color-accent) !important;
 }
 
-/* L'icona SVG è perfettamente centrata e non intercetta i click */
 .nav-tab svg, 
 .nav-tab i {
   display: block !important;
@@ -321,7 +314,6 @@ html, body.rpg-app-body {
   pointer-events: none !important;
 }
 
-/* L'etichetta di testo è centrata sotto l'icona */
 .nav-tab .nav-tab-label {
   display: block !important;
   width: 100% !important;
@@ -335,14 +327,32 @@ html, body.rpg-app-body {
   pointer-events: none !important;
 }
 
-/* Spegne il footer durante il gameplay e il wizard */
-body[data-active-screen="view-gameplay"] .main-app-footer,
-body[data-active-screen="view-wizard"] .main-app-footer {
-  display: none !important;
+/* ----------------------------------------------------------------------------
+   8. SIDEBAR DESKTOP (>= 768px)
+   ---------------------------------------------------------------------------- */
+.desktop-sidebar {
+  border-right: 1px solid var(--border-subtle);
+  background: var(--tg-bg);
+}
+
+.desk-nav-btn {
+  border: 1px solid transparent;
+  transition: all 0.15s ease;
+}
+
+.desk-nav-btn:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: #FFFFFF;
+}
+
+.desk-nav-btn.active {
+  background: rgba(56, 189, 248, 0.12);
+  border-color: rgba(56, 189, 248, 0.35);
+  color: var(--color-accent);
 }
 
 /* ----------------------------------------------------------------------------
-   7. DASHBOARD HOME & KPI QUAD GRID (FIX BLINDATO ANTI-COLLASSO)
+   9. DASHBOARD HOME & KPI QUAD GRID
    ---------------------------------------------------------------------------- */
 .home-hero-banner {
   border-radius: 1.25rem;
@@ -360,7 +370,6 @@ body[data-active-screen="view-wizard"] .main-app-footer {
   }
 }
 
-/* Griglia KPI: 2 colonne su Mobile, 4 su Tablet/Desktop */
 .kpi-quad-grid {
   display: grid !important;
   grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
@@ -426,7 +435,6 @@ body[data-active-screen="view-wizard"] .main-app-footer {
   box-shadow: 0 4px 20px rgba(56, 189, 248, 0.18);
 }
 
-/* Equalizzatore Grafico Bouncing */
 .jukebox-eq-bars {
   display: flex;
   align-items: flex-end;
@@ -450,7 +458,7 @@ body[data-active-screen="view-wizard"] .main-app-footer {
   50% { height: 14px; }
 }
 
-/* Carosello Promozionale */
+/* Carosello */
 .carousel-outer-wrapper {
   position: relative;
   overflow: hidden;
@@ -542,7 +550,7 @@ body[data-active-screen="view-wizard"] .main-app-footer {
 }
 
 /* ----------------------------------------------------------------------------
-   8. CATALOGHI GIOCHI, SHOP & RICETTE (CARD ELEMENT)
+   10. CARD CATALOGHI (SHOP, GIOCHI, RICETTE)
    ---------------------------------------------------------------------------- */
 .item-card {
   background: var(--tg-surface);
@@ -620,7 +628,7 @@ body[data-active-screen="view-wizard"] .main-app-footer {
   justify-content: space-between;
 }
 
-/* Chips di Categoria */
+/* Category Chips */
 .rpg-category-chip, .category-chip {
   display: inline-flex;
   align-items: center;
@@ -645,7 +653,7 @@ body[data-active-screen="view-wizard"] .main-app-footer {
 }
 
 /* ----------------------------------------------------------------------------
-   9. MODALI GLASSMORPHISM & COMPARATORE SAAS PLANS
+   11. MODALI GLASSMORPHISM & DIALOG
    ---------------------------------------------------------------------------- */
 dialog.modal.modal-middle,
 dialog.modal:not(.modal-bottom) {
