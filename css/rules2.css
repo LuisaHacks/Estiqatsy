@@ -1,12 +1,10 @@
 /* ============================================================================
    PROJECT: ESTIQATSY SYNDICATE & RPG PLATFORM
-   FILE: css/rules2.css (VERSIONE 29.0 - PRECISION VIEWPORT & BALANCED CARDS)
-   LAYER: ENGINE RULES 2, WIZARD STAGE, SPLIT ACTION SLOT, FULL HUD & COCKPIT
-   NOTE: ZERO FONDINO, ZERO SACCHE VUOTE, SPESA DIVISA DA AZIONE & ALONE PLATINO
+   FILE: css/rules2.css (VERSIONE 30.0 - ANTI-BLOWOUT FLEX ENGINE)
    ============================================================================ */
 
 /* ----------------------------------------------------------------------------
-   1. PROTEZIONE DI VISIBILITÀ CONTESTUALE (MAI PIÙ FOOTER SOVRAPPOSTI)
+   1. PROTEZIONE VISIBILITÀ CONTESTUALE
    ---------------------------------------------------------------------------- */
 .wizard-sticky-footer.hidden,
 .cockpit-footer.hidden,
@@ -16,10 +14,35 @@
 }
 
 /* ----------------------------------------------------------------------------
-   2. HUD UNIVERSALE A 2 RIGHE (48px - SPAZIO INTEGRALE PER TUTTI I KPI)
+   2. BLINDATURA PERIMETRALE ANTI-OVERFLOW (RISOLVE IL BLOWOUT A 1860px)
+   ---------------------------------------------------------------------------- */
+#view-wizard,
+.wizard-stage-container {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  overflow: hidden !important;
+  box-sizing: border-box !important;
+}
+
+.wizard-step-panel {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  overflow: hidden !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  box-sizing: border-box !important;
+}
+
+/* ----------------------------------------------------------------------------
+   3. HUD UNIVERSALE A 2 RIGHE (48px - KPI BLOCCATI DENTRO LO SCHERMO)
    ---------------------------------------------------------------------------- */
 .hud-cockpit-48px {
   width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
   height: 48px !important;
   min-height: 48px !important;
   max-height: 48px !important;
@@ -38,37 +61,42 @@
 }
 
 /* ----------------------------------------------------------------------------
-   3. PALCO CAROSELLO WIZARD (PEEKING LATERALE E TOUCH-SWIPE ELASTICO)
+   4. PALCO CAROSELLO WIZARD (LARGHEZZA BLOCCATA A 100%, ZERO SLITTAMENTO)
    ---------------------------------------------------------------------------- */
 .coverflow-stage-outer {
-  position: relative;
-  width: 100%;
-  padding: 0;
-  overflow: hidden;
+  position: relative !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  padding: 0 !important;
+  overflow: hidden !important;
   margin: 0 !important;
   flex: 1 1 auto;
   min-height: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  box-sizing: border-box !important;
 }
 
 .coverflow-stage-wrapper {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  overflow-x: auto;
-  scroll-snap-type: x mandatory;
-  padding: 6px 20px;
-  width: 100%;
-  height: 100%;
-  -webkit-overflow-scrolling: touch;
-  overscroll-behavior-x: contain;
-  box-sizing: border-box;
+  display: flex !important;
+  align-items: center !important;
+  gap: 14px !important;
+  overflow-x: auto !important;
+  scroll-snap-type: x mandatory !important;
+  padding: 6px 20px !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  height: 100% !important;
+  -webkit-overflow-scrolling: touch !important;
+  overscroll-behavior-x: contain !important;
+  box-sizing: border-box !important;
 }
 
 /* ----------------------------------------------------------------------------
-   4. CARTA TCG BILANCIATA (RIEMPIE IL VUOTO SENZA SFORARE LA PIEGA)
+   5. CARTA TCG CENTRALE (DIMENSIONE ARMONICA: ZERO VUOTI SOTTO)
    ---------------------------------------------------------------------------- */
 .coverflow-card,
 .tcg-card {
@@ -76,11 +104,10 @@
   flex: 0 0 min(310px, calc(100vw - 32px)) !important;
   width: min(310px, calc(100vw - 32px)) !important;
   max-width: 315px !important;
-  /* Scala fluidamente riempiendo lo spazio verticale vuoto senza scrollare */
-  height: clamp(375px, 55dvh, 455px) !important;
-  min-height: 375px !important;
-  max-height: 455px !important;
-  scroll-snap-align: center;
+  height: clamp(370px, 54dvh, 445px) !important;
+  min-height: 370px !important;
+  max-height: 445px !important;
+  scroll-snap-align: center !important;
   background: #0B1222;
   border: 1px solid rgba(255, 255, 255, 0.14);
   border-radius: 1.15rem;
@@ -89,7 +116,7 @@
   display: flex !important;
   flex-direction: column !important;
   justify-content: space-between !important;
-  margin: auto;
+  margin: auto !important;
   transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), 
               box-shadow 0.2s ease, 
               border-color 0.2s ease,
@@ -97,10 +124,9 @@
   user-select: none;
   opacity: 0.55;
   transform: scale(0.93);
-  box-sizing: border-box;
+  box-sizing: border-box !important;
 }
 
-/* STATO SELEZIONATO: ALONE LUNARE BIANCO PLATINO AD ALTA DEFINIZIONE */
 .coverflow-card.selected,
 .tcg-card.selected {
   opacity: 1 !important;
@@ -110,7 +136,7 @@
               0 14px 34px rgba(0, 0, 0, 0.88) !important;
 }
 
-/* CARTA IN GAMEPLAY FOCALIZZATA SUL TAVOLO */
+/* CARTA IN GAMEPLAY */
 #gameplay-moverina-card .tcg-card,
 #view-gameplay .tcg-card,
 .tcg-card.gameplay-focal {
@@ -125,17 +151,13 @@
               0 16px 36px rgba(0, 0, 0, 0.90) !important;
 }
 
-/* ----------------------------------------------------------------------------
-   5. ANATOMIA INTERNA CARTA A LIVELLI
-   ---------------------------------------------------------------------------- */
-
 /* Illustrazione / Media */
 .tcg-card-media {
   position: relative !important;
   width: 100% !important;
-  height: clamp(140px, 22dvh, 180px) !important;
-  min-height: 140px !important;
-  max-height: 180px !important;
+  height: clamp(135px, 21dvh, 175px) !important;
+  min-height: 135px !important;
+  max-height: 175px !important;
   background: #000000;
   overflow: hidden !important;
   box-sizing: border-box;
@@ -151,7 +173,6 @@
   display: block;
 }
 
-/* Testata Sovrimpressa */
 .tcg-card-header {
   position: absolute !important;
   top: 0 !important;
@@ -199,7 +220,6 @@
   border: 1px solid rgba(245, 158, 11, 0.45);
 }
 
-/* Overlay Citazione */
 .tcg-card-quote-overlay {
   position: absolute;
   bottom: 0;
@@ -230,7 +250,6 @@
   text-transform: uppercase;
 }
 
-/* Piastra Statistiche D20 */
 .tcg-stats-plate {
   height: 30px;
   min-height: 30px;
@@ -338,25 +357,26 @@
 }
 
 /* ----------------------------------------------------------------------------
-   7. SLOT AZIONI WIZARD & GAMEPLAY
+   7. SLOT AZIONI: ANCORATO E CENTRATO SOTTO LA CARTA (NON SCIVOLA PIÙ A DESTRA)
    ---------------------------------------------------------------------------- */
 .scene-actions-area {
-  width: 100%;
-  max-width: min(315px, calc(100vw - 32px));
+  width: 100% !important;
+  max-width: min(310px, calc(100vw - 32px)) !important;
   margin: 6px auto 0 auto !important;
-  flex-shrink: 0;
-  box-sizing: border-box;
+  flex-shrink: 0 !important;
+  box-sizing: border-box !important;
+  display: flex !important;
+  justify-content: center !important;
 }
 
-.actions-grid-1 { display: grid; grid-template-columns: 1fr; gap: 4px; }
-.actions-grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; }
-.actions-grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
-.actions-grid-4, .actions-grid-quiz { display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px; }
+.actions-grid-1 { display: grid; grid-template-columns: 1fr; width: 100%; gap: 4px; }
+.actions-grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); width: 100%; gap: 6px; }
+.actions-grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); width: 100%; gap: 4px; }
 
 .scene-action-btn {
   height: 38px;
   min-height: 38px;
-  padding: 0 10px;
+  padding: 0 12px;
   background: rgba(22, 36, 66, 0.9);
   border: 1px solid rgba(56, 189, 248, 0.35);
   border-radius: 0.65rem;
@@ -365,18 +385,12 @@
   font-weight: 800;
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: space-between;
   gap: 4px;
   cursor: pointer;
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
   box-sizing: border-box;
-}
-
-.scene-action-btn:hover {
-  background: rgba(56, 189, 248, 0.18);
-  border-color: #38BDF8;
+  width: 100%;
 }
 
 .scene-action-btn:active {
@@ -386,18 +400,6 @@
 .scene-action-btn.action-danger {
   border-color: rgba(244, 63, 94, 0.4);
   background: rgba(45, 16, 28, 0.85);
-}
-
-.actions-grid-3 .scene-action-btn {
-  font-size: 9.5px;
-  padding: 0 4px;
-}
-
-.actions-grid-4 .scene-action-btn,
-.actions-grid-quiz .scene-action-btn {
-  height: 36px;
-  min-height: 36px;
-  font-size: 10px;
 }
 
 /* ----------------------------------------------------------------------------
@@ -412,7 +414,6 @@
   margin: 0 auto !important;
   background: rgba(7, 10, 18, 0.98);
   border-top: 1px solid rgba(255, 255, 255, 0.10);
-  /* 44px esatti di contenuto visibile + 24px minimi di Safe Area notch iOS */
   height: calc(44px + max(env(safe-area-inset-bottom, 24px), var(--tg-safe-area-inset-bottom, 24px), 24px)) !important;
   min-height: calc(44px + max(env(safe-area-inset-bottom, 24px), var(--tg-safe-area-inset-bottom, 24px), 24px)) !important;
   padding-top: 0 !important;
@@ -424,7 +425,6 @@
   align-items: center !important;
 }
 
-/* Controlli Wizard Footer perfettamente centrati verticalmente nella banda da 44px */
 #main-wizard-footer > div,
 .wizard-footer-step-controls {
   width: 100%;
@@ -454,7 +454,6 @@
   box-shadow: 0 3px 12px rgba(56, 189, 248, 0.35) !important;
 }
 
-/* Cockpit Footer: 4 tasti centrati verticalmente nella banda da 44px */
 .cockpit-footer {
   display: grid !important;
   grid-template-columns: repeat(4, 1fr) !important;
