@@ -1,7 +1,7 @@
 /* ============================================================================
    PROJECT: ESTIQATSY SYNDICATE & RPG PLATFORM
-   FILE: css/core.css (VERSIONE 18.0 - 16:9 RATIO, CENTERED CROP & SUBVIEW FLOW)
-   LAYER: DESIGN SYSTEM, 16:9 GEOMETRY, CARDS CLICKABLE & RESPONSIVE DOCK
+   FILE: css/core.css (VERSIONE 20.0 - SLIM FOOTER, COMPACT HEADERS & 3-CH MIXER)
+   LAYER: DESIGN SYSTEM, NATIVE TELEGRAM DOCK, 16:9 RATIO & SPOTIFY DECK
    ============================================================================ */
 
 /* ----------------------------------------------------------------------------
@@ -48,8 +48,9 @@
   --safe-right: var(--tg-safe-area-inset-right, env(safe-area-inset-right, 0px));
   --safe-left: var(--tg-safe-area-inset-left, env(safe-area-inset-left, 0px));
 
-  --tg-header-height: 48px;
-  --tg-footer-height: 52px;
+  /* 🔒 ALTEZZA FOOTER SNELLA: Perfettamente allineata all'header (44px) */
+  --tg-header-height: 44px;
+  --tg-footer-height: 44px;
 }
 
 *, *::before, *::after {
@@ -139,13 +140,13 @@ html, body.rpg-app-body {
 }
 
 /* ----------------------------------------------------------------------------
-   4. TOP BAR UNIVERSALE (CENTRAGGIO TRA I TASTI NATIVI TELEGRAM)
+   4. TOP BAR UNIVERSALE (44px) & SUB-HEADER COMPATTO
    ---------------------------------------------------------------------------- */
 .universal-top-bar {
   flex: none;
   z-index: 40;
   width: 100%;
-  height: calc(var(--safe-top, 0px) + var(--tg-header-height, 48px));
+  height: calc(var(--safe-top, 0px) + var(--tg-header-height, 44px));
   padding-top: var(--safe-top, 0px);
   padding-left: calc(var(--safe-left, 0px) + 0.75rem);
   padding-right: calc(var(--safe-right, 0px) + 85px);
@@ -164,12 +165,46 @@ html, body.rpg-app-body {
   top: var(--safe-top, 0px);
   left: 0;
   right: 0;
-  height: var(--tg-header-height, 48px);
+  height: var(--tg-header-height, 44px);
   display: flex;
   align-items: center;
   justify-content: center;
   pointer-events: none;
   z-index: 5;
+}
+
+/* Fascia Sub-Header Compattata su Riga Singola */
+.page-title-row,
+.subview-header-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding-bottom: 0.35rem;
+  border-bottom: 1px solid var(--border-subtle);
+  margin-bottom: 0.45rem;
+  min-height: 32px;
+}
+
+.btn-back-subview {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.25rem 0.6rem;
+  border-radius: 0.5rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  line-height: 1;
+}
+.btn-back-subview:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #FFFFFF;
+  border-color: var(--border-light);
 }
 
 /* ----------------------------------------------------------------------------
@@ -206,18 +241,19 @@ html, body.rpg-app-body {
   -webkit-overflow-scrolling: touch;
 }
 
+/* Margine inferiore ridotto per adattarsi al footer da 44px */
 .app-content-wrapper {
-  padding: 0.75rem 0.75rem calc(var(--safe-bottom, 0px) + 5rem) 0.75rem !important;
+  padding: 0.65rem 0.65rem calc(var(--safe-bottom, 0px) + 3.8rem) 0.65rem !important;
   max-width: 960px;
   margin: 0 auto;
   display: flex;
   flex-direction: column;
-  gap: 0.85rem;
+  gap: 0.75rem;
   min-width: 0;
 }
 @media (min-width: 768px) {
   .app-content-wrapper {
-    padding: 1.25rem 1.5rem calc(var(--safe-bottom, 0px) + 2rem) 1.5rem !important;
+    padding: 1.15rem 1.4rem calc(var(--safe-bottom, 0px) + 1.5rem) 1.4rem !important;
   }
 }
 
@@ -249,7 +285,7 @@ body[data-context="gameplay"] #main-game-cockpit-footer { display: grid !importa
 }
 
 /* ----------------------------------------------------------------------------
-   7. FOOTER MENU MOBILE (.main-app-footer & .nav-tab)
+   7. FOOTER MENU MOBILE SNELLO (44px - PARI ALL'HEADER)
    ---------------------------------------------------------------------------- */
 .main-app-footer {
   flex: none;
@@ -267,7 +303,7 @@ body[data-context="gameplay"] #main-game-cockpit-footer { display: grid !importa
   justify-content: space-around;
   align-items: center;
   padding-bottom: var(--safe-bottom, 0px);
-  height: calc(var(--tg-footer-height, 52px) + var(--safe-bottom, 0px));
+  height: calc(var(--tg-footer-height, 44px) + var(--safe-bottom, 0px));
 }
 
 .nav-tab {
@@ -278,9 +314,9 @@ body[data-context="gameplay"] #main-game-cockpit-footer { display: grid !importa
   text-align: center !important;
   position: relative !important;
   flex: 1 1 0 !important;
-  max-width: 72px !important;
-  height: 48px !important;
-  padding: 3px 2px !important;
+  max-width: 68px !important;
+  height: 40px !important;
+  padding: 1px 2px !important;
   margin: 0 !important;
   color: var(--text-muted) !important;
   background: transparent !important;
@@ -298,26 +334,28 @@ body[data-context="gameplay"] #main-game-cockpit-footer { display: grid !importa
   color: var(--color-accent) !important;
 }
 
+/* Icone compatte a 16px */
 .nav-tab svg, 
 .nav-tab i {
   display: block !important;
   margin: 0 auto !important;
-  width: 18px !important;
-  height: 18px !important;
+  width: 16px !important;
+  height: 16px !important;
   flex-shrink: 0 !important;
   pointer-events: none !important;
 }
 
+/* Etichetta compatta a 8.5px */
 .nav-tab .nav-tab-label {
   display: block !important;
   width: 100% !important;
   text-align: center !important;
-  font-size: 9px !important;
+  font-size: 8.5px !important;
   font-weight: 800 !important;
   text-transform: uppercase !important;
-  margin-top: 3px !important;
+  margin-top: 2px !important;
   line-height: 1 !important;
-  letter-spacing: 0.04em !important;
+  letter-spacing: 0.02em !important;
   pointer-events: none !important;
 }
 
@@ -349,18 +387,18 @@ body[data-context="gameplay"] #main-game-cockpit-footer { display: grid !importa
    9. DASHBOARD HOME & KPI QUAD GRID
    ---------------------------------------------------------------------------- */
 .home-hero-banner {
-  border-radius: 1.25rem;
+  border-radius: 1.15rem;
   padding: 1.15rem;
   background: linear-gradient(135deg, #0F172A 0%, #0F172A 50%, #1E1B4B 100%);
   border: 1px solid var(--border-light);
   box-shadow: 0 15px 25px -10px rgba(0, 0, 0, 0.5);
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 0.65rem;
 }
 @media (min-width: 768px) {
   .home-hero-banner {
-    padding: 1.5rem;
+    padding: 1.4rem;
   }
 }
 
@@ -373,13 +411,13 @@ body[data-context="gameplay"] #main-game-cockpit-footer { display: grid !importa
 @media (min-width: 768px) {
   .kpi-quad-grid {
     grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
-    gap: 0.85rem !important;
+    gap: 0.75rem !important;
   }
 }
 
 .kpi-card {
   background: var(--tg-surface) !important;
-  padding: 0.85rem 0.95rem !important;
+  padding: 0.75rem 0.85rem !important;
   border-radius: 0.95rem !important;
   border: 1px solid var(--border-subtle) !important;
   cursor: pointer !important;
@@ -410,30 +448,61 @@ body[data-context="gameplay"] #main-game-cockpit-footer { display: grid !importa
   margin-top: 0.15rem !important;
 }
 .kpi-card-icon {
-  width: 1.1rem !important;
-  height: 1.1rem !important;
+  width: 1rem !important;
+  height: 1rem !important;
   color: var(--text-subtle) !important;
   flex-shrink: 0 !important;
 }
 
-/* Miniplayer Radio */
-#home-radio-miniplayer {
-  background: rgba(15, 23, 42, 0.90);
+/* ----------------------------------------------------------------------------
+   10. MINIPLAYER RADIO (~48px) & WIDGET MULTIPLAYER COMPATTO
+   ---------------------------------------------------------------------------- */
+#home-radio-miniplayer,
+#profile-radio-miniplayer {
+  height: 48px;
+  min-height: 48px;
+  padding: 0.45rem 0.75rem;
+  border-radius: 0.85rem;
+  background: rgba(15, 23, 42, 0.92);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border: 1px solid rgba(56, 189, 248, 0.32);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
-#home-radio-miniplayer:hover {
+#home-radio-miniplayer:hover,
+#profile-radio-miniplayer:hover {
   border-color: rgba(56, 189, 248, 0.65);
-  box-shadow: 0 4px 20px rgba(56, 189, 248, 0.18);
+  box-shadow: 0 4px 18px rgba(56, 189, 248, 0.18);
+}
+
+/* ⭐ WIDGET MULTIPLAYER COMPATTO: Uniformato alle dimensioni del player radio */
+.multiplayer-compact-widget {
+  height: 48px !important;
+  min-height: 48px !important;
+  padding: 0.45rem 0.75rem !important;
+  border-radius: 0.85rem !important;
+  background: linear-gradient(135deg, rgba(88, 28, 135, 0.45), rgba(15, 23, 42, 0.92)) !important;
+  border: 1px solid rgba(168, 85, 247, 0.35) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  cursor: pointer !important;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease !important;
+}
+.multiplayer-compact-widget:hover {
+  border-color: rgba(168, 85, 247, 0.65) !important;
+  box-shadow: 0 4px 18px rgba(168, 85, 247, 0.18) !important;
 }
 
 .jukebox-eq-bars {
   display: flex;
   align-items: flex-end;
-  gap: 2.5px;
-  height: 14px;
+  gap: 2px;
+  height: 12px;
 }
 .jukebox-eq-bars span {
   width: 2.5px;
@@ -449,7 +518,7 @@ body[data-context="gameplay"] #main-game-cockpit-footer { display: grid !importa
 
 @keyframes eqBounce {
   0%, 100% { height: 3px; }
-  50% { height: 14px; }
+  50% { height: 12px; }
 }
 
 /* Carosello 16:9 con Ritaglio Centrato */
@@ -542,12 +611,12 @@ body[data-context="gameplay"] #main-game-cockpit-footer { display: grid !importa
 }
 
 /* ----------------------------------------------------------------------------
-   10. CARD CATALOGHI (SHOP, GIOCHI, RICETTE) - 16:9 CENTRATO AL 100%
+   11. CARD STEAM CAPSULE (SHOP, GIOCHI, RICETTE) - 16:9 CENTRATO AL 100%
    ---------------------------------------------------------------------------- */
 .item-card {
   background: var(--tg-surface);
   border: 1px solid var(--border-subtle);
-  border-radius: 1.05rem;
+  border-radius: 1rem;
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -565,17 +634,16 @@ body[data-context="gameplay"] #main-game-cockpit-footer { display: grid !importa
   transform: scale(0.98);
 }
 
-/* Involucro Immagine Rigido a 16:9 */
+/* Involucro Immagine Rigido 16:9 */
 .item-card-media {
   width: 100%;
   aspect-ratio: 16 / 9;
-  height: auto;
+  height: auto !important;
   position: relative;
   background: #000000;
   overflow: hidden;
 }
 
-/* 🔒 RITAGLIO CENTRATO AL 100% ORIZZONTALE E VERTICALE */
 .item-card-img {
   width: 100%;
   height: 100%;
@@ -585,30 +653,30 @@ body[data-context="gameplay"] #main-game-cockpit-footer { display: grid !importa
   transition: transform 0.35s ease;
 }
 .item-card:hover .item-card-img {
-  transform: scale(1.05);
+  transform: scale(1.04);
 }
 
 .item-card-badge {
   position: absolute;
   top: 8px;
   left: 8px;
-  background: rgba(7, 10, 18, 0.85);
+  background: rgba(7, 10, 18, 0.88);
   backdrop-filter: blur(4px);
   border: 1px solid rgba(56, 189, 248, 0.35);
   color: var(--color-accent);
-  font-size: 9px;
+  font-size: 8.5px;
   font-weight: 800;
   padding: 2px 6px;
-  border-radius: 6px;
+  border-radius: 5px;
   text-transform: uppercase;
   z-index: 10;
 }
 
 .item-card-body {
-  padding: 12px;
+  padding: 10px 12px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 5px;
   flex: 1 1 auto;
   justify-content: space-between;
 }
@@ -626,7 +694,7 @@ body[data-context="gameplay"] #main-game-cockpit-footer { display: grid !importa
   margin: 0;
 }
 .item-card-footer {
-  padding-top: 8px;
+  padding-top: 6px;
   border-top: 1px solid var(--border-subtle);
   display: flex;
   align-items: center;
@@ -640,10 +708,10 @@ body[data-context="gameplay"] #main-game-cockpit-footer { display: grid !importa
   align-items: center;
   justify-content: center;
   gap: 4px;
-  height: 28px;
-  padding: 0 12px;
+  height: 26px;
+  padding: 0 10px;
   border-radius: 9999px;
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 700;
   white-space: nowrap;
   border: 1px solid var(--border-subtle);
@@ -659,58 +727,9 @@ body[data-context="gameplay"] #main-game-cockpit-footer { display: grid !importa
 }
 
 /* ----------------------------------------------------------------------------
-   11. SOTTO-VISTE DETTAGLIO (SUBVIEWS SHOP, RICETTE, GIOCHI) & MEDIA 16:9
+   12. SOTTO-VISTE DETTAGLIO & CONTENITORI 16:9
    ---------------------------------------------------------------------------- */
-.subview-header-bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding-bottom: 0.5rem;
-  border-bottom: 1px solid var(--border-subtle);
-  margin-bottom: 0.75rem;
-}
-
-.btn-back-subview {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  padding: 0.35rem 0.75rem;
-  border-radius: 0.55rem;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid var(--border-subtle);
-  color: var(--text-secondary);
-  font-size: 11.5px;
-  font-weight: 800;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-.btn-back-subview:hover {
-  background: rgba(255, 255, 255, 0.12);
-  color: #FFFFFF;
-  border-color: var(--border-light);
-}
-
-/* Box Immagine Scheda Dettaglio: Rigorosamente 16:9 Centrato */
-.detail-media-box {
-  width: 100%;
-  aspect-ratio: 16 / 9;
-  height: auto !important;
-  border-radius: 1rem;
-  overflow: hidden;
-  position: relative;
-  background: #000000;
-  border: 1px solid var(--border-subtle);
-}
-
-.detail-media-box img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover !important;
-  object-position: center center !important;
-  display: block;
-}
-
-/* Frame Cinema delle Saghe RPG: 16:9 Centrato */
+.detail-media-box,
 .cinema-frame-rigid {
   width: 100%;
   aspect-ratio: 16 / 9;
@@ -722,6 +741,7 @@ body[data-context="gameplay"] #main-game-cockpit-footer { display: grid !importa
   border: 1px solid var(--border-subtle);
 }
 
+.detail-media-box img,
 .cinema-frame-rigid img {
   width: 100%;
   height: 100%;
@@ -731,7 +751,75 @@ body[data-context="gameplay"] #main-game-cockpit-footer { display: grid !importa
 }
 
 /* ----------------------------------------------------------------------------
-   12. MODALI GLASSMORPHISM & DIALOG
+   13. SPOTIFY DECK: MIXER AUDIO A 3 CANALI & TRACKLIST
+   ---------------------------------------------------------------------------- */
+.audio-slider-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.25rem 0;
+}
+.audio-slider-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 800;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  width: 75px;
+  flex-shrink: 0;
+}
+
+/* Sliders Neon Personalizzati */
+.audio-slider {
+  flex: 1;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 5px;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.12);
+  outline: none;
+  cursor: pointer;
+}
+.audio-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--color-accent);
+  box-shadow: 0 0 8px rgba(56, 189, 248, 0.6);
+  cursor: pointer;
+}
+.audio-slider::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--color-accent);
+  box-shadow: 0 0 8px rgba(56, 189, 248, 0.6);
+  cursor: pointer;
+}
+
+/* Tracklist Jukebox */
+.audio-track-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.45rem 0.65rem;
+  border-radius: 0.65rem;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  background: rgba(0, 0, 0, 0.35);
+}
+.audio-track-item:hover,
+.audio-track-item.active {
+  background: rgba(56, 189, 248, 0.12);
+  border-color: rgba(56, 189, 248, 0.35);
+}
+
+/* ----------------------------------------------------------------------------
+   14. MODALI GLASSMORPHISM & DIALOG
    ---------------------------------------------------------------------------- */
 dialog.modal.modal-middle,
 dialog.modal:not(.modal-bottom) {
