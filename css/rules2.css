@@ -1,17 +1,16 @@
 /* ============================================================================
    PROJECT: ESTIQATSY SYNDICATE & RPG PLATFORM
-   FILE: css/rules2.css (VERSIONE 20.0 - TCG MOVERINA CARD, GLOW PADDING & 90dvh MODALS)
-   LAYER: ENGINE RULES 2, TCG CARD STAGE, IRIDESCENT GLOW, DEEP SHEETS & 44px DOCKS
-   NOTE: 100% SPECIFICO PER IL GIOCO - NESSUNA INTERFERENZA CON LA SHELL PRINCIPALE
+   FILE: css/rules2.css (VERSIONE 23.3 - RULES 2 ENGINE, TCG STAGE & GAMEPLAY)
+   LAYER: ENGINE RULES 2, WIZARD STAGES, MICRO-HUD 36px, COMBAT & TACTICAL DRAWERS
+   NOTE: 100% SPECIFICO PER IL GIOCO - NESSUNA DUPLICAZIONE CON CSS/CORE.CSS
    ============================================================================ */
 
 /* ----------------------------------------------------------------------------
-   1. PALCO DELLA CARTA UNIVERSALE TCG (MODELLO "MOVERINA")
+   1. PALCO DELLA CARTA UNIVERSALE TCG (MODELLO "MOVERINA" NEL WIZARD)
    ---------------------------------------------------------------------------- */
 .coverflow-stage-outer {
   position: relative;
   width: 100%;
-  /* 🔒 SPAZIO DI RESPIRO ALTO E BASSO PER L'ALONE NEON */
   padding: 8px 0 16px 0;
   overflow: hidden;
 }
@@ -22,18 +21,16 @@
   gap: 16px;
   overflow-x: auto;
   scroll-snap-type: x mandatory;
-  /* 🔒 PADDING LATERALE PER NON TAGLIARE IL BAGLIORE AI BORDI DELLO SCHERMO */
   padding: 10px 24px 18px 24px;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior-x: contain;
 }
 
-/* Card Singola TCG a Bordo Tecnico 1px */
 .coverflow-card,
 .tcg-card {
   flex: 0 0 285px;
   scroll-snap-align: center;
-  background: var(--tg-sec-bg, #0B1222);
+  background: var(--bg-surface, #0B1222);
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 1.25rem;
   overflow: hidden;
@@ -41,7 +38,6 @@
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  /* 🔒 MARGINE DI SICUREZZA ATTORNO ALLA CARTA PER EVITARE COLLISIONI */
   margin: 6px 4px;
   transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), 
               box-shadow 0.25s ease, 
@@ -59,18 +55,15 @@
   }
 }
 
-/* ⭐ STATO SELEZIONATO: BAGLIORE DIFFUSO RESPIRATO A 360° */
 .coverflow-card.selected,
 .tcg-card.selected {
   opacity: 1 !important;
   transform: scale(1) translateY(-2px) !important;
   border-color: rgba(56, 189, 248, 0.8) !important;
-  /* Alone neon morbido con raggio di respiro */
   box-shadow: 0 0 20px 2px rgba(56, 189, 248, 0.40),
               0 12px 30px rgba(0, 0, 0, 0.75) !important;
 }
 
-/* Bagliore differenziato per fazione Sinistra (Crimson/Pink) */
 .coverflow-card[data-faction="sinistra"].selected,
 .tcg-card[data-faction="sinistra"].selected {
   border-color: rgba(244, 63, 94, 0.85) !important;
@@ -78,7 +71,6 @@
               0 12px 30px rgba(0, 0, 0, 0.75) !important;
 }
 
-/* Bagliore differenziato per fazione Destra (Gold/Amber) */
 .coverflow-card[data-faction="destra"].selected,
 .tcg-card[data-faction="destra"].selected {
   border-color: rgba(245, 158, 11, 0.85) !important;
@@ -87,10 +79,8 @@
 }
 
 /* ----------------------------------------------------------------------------
-   2. ANATOMIA INTERNA DELLA CARTA "MOVERINA"
+   2. ANATOMIA INTERNA DELLA CARTA TCG "MOVERINA"
    ---------------------------------------------------------------------------- */
-
-/* A. Testata Interna della Carta */
 .tcg-card-header {
   padding: 10px 14px 8px 14px;
   display: flex;
@@ -98,6 +88,7 @@
   justify-content: space-between;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
+
 .tcg-card-title {
   font-size: 14px;
   font-weight: 900;
@@ -108,6 +99,7 @@
   margin: 0;
   letter-spacing: 0.02em;
 }
+
 .tcg-card-faction-badge {
   padding: 2px 8px;
   border-radius: 9999px;
@@ -116,30 +108,32 @@
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
+
 .tcg-card-faction-badge.sinistra {
   background: rgba(244, 63, 94, 0.2);
   color: #FB7185;
   border: 1px solid rgba(244, 63, 94, 0.4);
 }
+
 .tcg-card-faction-badge.destra {
   background: rgba(245, 158, 11, 0.2);
   color: #FBBF24;
   border: 1px solid rgba(245, 158, 11, 0.4);
 }
 
-/* B. Finestra Illustrazione (+20% altezza con citazione sfumata) */
 .tcg-card-media {
   position: relative;
   width: 100%;
-  height: 175px; /* Spazio generoso per il ritratto */
+  height: 175px;
   background: #000000;
   overflow: hidden;
 }
+
 .tcg-card-img {
   width: 100%;
   height: 100%;
   object-fit: cover !important;
-  object-position: center 18% !important; /* Mantiene a fuoco volto e sguardo */
+  object-position: center 18% !important;
   display: block;
 }
 
@@ -148,7 +142,6 @@
   bottom: 0;
   left: 0;
   right: 0;
-  /* Sfumatura morbida che non soffoca il petto del personaggio */
   background: linear-gradient(180deg, transparent 0%, rgba(7, 10, 18, 0.75) 45%, #070A12 100%);
   padding: 8px 12px 6px 12px;
   display: flex;
@@ -156,6 +149,7 @@
   text-align: right;
   pointer-events: none;
 }
+
 .tcg-card-quote-text {
   font-size: 11px;
   color: #F1F5F9;
@@ -167,17 +161,17 @@
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
+
 .tcg-card-quote-author {
-  font-family: var(--font-mono);
+  font-family: monospace;
   font-size: 9px;
   font-weight: 900;
-  color: var(--color-gold);
+  color: #F59E0B;
   text-transform: uppercase;
   letter-spacing: 0.08em;
   margin-top: 2px;
 }
 
-/* C. Piastra Centrale delle Statistiche (Capsula Scura Incastonata) */
 .tcg-stats-plate {
   margin: 10px 12px 8px 12px;
   padding: 5px 8px;
@@ -188,25 +182,27 @@
   grid-template-columns: repeat(3, 1fr);
   align-items: center;
   text-align: center;
-  font-family: var(--font-mono);
+  font-family: monospace;
   font-size: 10.5px;
   font-weight: 800;
   color: #E2E8F0;
 }
+
 .tcg-stats-plate span {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 4px;
 }
+
 .tcg-stats-plate span:not(:last-child) {
   border-right: 1px solid rgba(255, 255, 255, 0.08);
 }
+
 .tcg-stats-plate b {
   color: #FFFFFF;
 }
 
-/* D. Descrizione Narrativa (Tipografia a 12.5px Confortevole) */
 .tcg-card-desc {
   padding: 0 14px 10px 14px;
   font-size: 12.5px;
@@ -220,21 +216,21 @@
   overflow: hidden;
 }
 
-/* E. Piede della Carta (Dotazione Iniziale + PV + Oro) */
 .tcg-card-footer {
   padding: 8px 14px 10px 14px;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-family: var(--font-mono);
+  font-family: monospace;
   font-size: 10.5px;
   font-weight: 800;
   background: rgba(0, 0, 0, 0.25);
   margin-top: auto;
 }
+
 .tcg-card-loot {
-  color: var(--color-gold);
+  color: #F59E0B;
   display: flex;
   align-items: center;
   gap: 4px;
@@ -243,25 +239,28 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
 .tcg-card-vitals {
   display: flex;
   align-items: center;
   gap: 8px;
 }
+
 .tcg-pv-badge {
-  color: var(--color-crimson);
+  color: #F43F5E;
 }
+
 .tcg-gold-badge {
   color: #FDE047;
 }
 
-/* Dots Carosello */
 .coverflow-dots {
   display: flex;
   justify-content: center;
   gap: 6px;
   margin-top: 6px;
 }
+
 .coverflow-dot {
   width: 6px;
   height: 6px;
@@ -270,50 +269,48 @@
   cursor: pointer;
   transition: all 0.2s ease;
 }
+
 .coverflow-dot.active {
-  background: var(--color-accent);
+  background: #38BDF8;
   transform: scale(1.3);
-  box-shadow: 0 0 6px var(--color-accent);
+  box-shadow: 0 0 6px #38BDF8;
 }
 
 /* ----------------------------------------------------------------------------
-   3. ⭐ BINARIO STEPPER INFERIORE (ZONA POLLICE - 22px)
+   3. WIZARD STEPPER TRACKER & LIVE HUD DOCK
    ---------------------------------------------------------------------------- */
-.wizard-stepper-rail {
+.wizard-stepper-tracker {
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 8px;
-  height: 22px;
-  min-height: 22px;
-  max-height: 22px;
-  /* 🔒 SPAZIO PROTETTIVO SOPRA I PULSANTI DEL FOOTER */
-  padding: 0 16px;
-  margin-bottom: 6px;
-  width: 100%;
+  justify-content: space-between;
+  gap: 4px;
 }
 
-.stepper-rail-segment {
-  flex: 1;
-  max-width: 75px;
-  height: 4px;
-  border-radius: 9999px;
-  background: rgba(255, 255, 255, 0.12);
-  transition: all 0.25s ease;
-  position: relative;
+.wizard-stepper-step {
+  transition: opacity 0.2s ease;
 }
 
-.stepper-rail-segment.active {
-  background: var(--color-accent);
-  box-shadow: 0 0 10px var(--color-accent);
+.wizard-stepper-step.active {
+  opacity: 1 !important;
 }
 
-.stepper-rail-segment.completed {
-  background: var(--color-emerald);
+.wizard-stepper-step.active .wizard-stepper-circle {
+  background: #38BDF8 !important;
+  color: #070A12 !important;
+  box-shadow: 0 0 8px rgba(56, 189, 248, 0.5);
+}
+
+.wizard-stepper-step.active .wizard-stepper-label {
+  color: #FFFFFF !important;
+}
+
+.wizard-live-hud {
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 }
 
 /* ----------------------------------------------------------------------------
-   4. ⭐ PULSANTI WIZARD & BAGLIORE CANGIANTE (IRIDESCENT AURA)
+   4. FOOTER & PULSANTI DEL WIZARD (44px)
    ---------------------------------------------------------------------------- */
 .wizard-sticky-footer {
   flex: none;
@@ -323,11 +320,9 @@
   margin: 0 auto;
   background: rgba(7, 10, 18, 0.98);
   border-top: 1px solid rgba(255, 255, 255, 0.10);
-  padding-bottom: var(--safe-bottom, 0px);
-  height: calc(44px + var(--safe-bottom, 0px)) !important;
+  padding-bottom: max(env(safe-area-inset-bottom, 0px), 12px);
   display: flex;
   align-items: center;
-  /* 🔒 PADDING LATERALE PER ISOLARE L'ALONE DEL PULSANTE */
   padding-left: 12px;
   padding-right: 12px;
 }
@@ -336,135 +331,74 @@
   width: 100%;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
 }
 
-/* ⭐ IL PULSANTE CON BAGLIORE CANGIANTE CIRCOLARE (IRIDESCENT SHIFTING GLOW) */
-.btn-wizard-glorious {
-  background: linear-gradient(135deg, #0284C7, #2563EB) !important;
-  color: #FFFFFF !important;
-  border: 1px solid rgba(56, 189, 248, 0.8) !important;
+.btn-wizard-cta {
+  background: #38BDF8 !important;
+  color: #070A12 !important;
+  border: none !important;
   font-weight: 900 !important;
-  font-size: 12px !important;
-  text-transform: uppercase !important;
-  letter-spacing: 0.05em !important;
-  border-radius: 0.75rem !important;
-  height: 36px !important;
-  min-height: 36px !important;
   cursor: pointer;
-  /* 🔒 MARGINE D'ARIA ATTORNO AL PULSANTE PER IL BAGLIORE */
-  margin: 0 4px !important;
-  position: relative;
-  /* Animazione continua del bagliore sfumato */
-  animation: shiftingAura 3.6s infinite ease-in-out;
   transition: transform 0.15s ease;
 }
 
-.btn-wizard-glorious:active {
-  transform: scale(0.97);
-}
-
-@keyframes shiftingAura {
-  0% {
-    box-shadow: 0 0 14px 2px rgba(56, 189, 248, 0.65), inset 0 0 8px rgba(56, 189, 248, 0.2);
-    border-color: rgba(56, 189, 248, 0.9);
-  }
-  33% {
-    box-shadow: 0 0 18px 3px rgba(168, 85, 247, 0.65), inset 0 0 8px rgba(168, 85, 247, 0.2);
-    border-color: rgba(168, 85, 247, 0.9);
-  }
-  66% {
-    box-shadow: 0 0 16px 2px rgba(245, 158, 11, 0.65), inset 0 0 8px rgba(245, 158, 11, 0.2);
-    border-color: rgba(245, 158, 11, 0.9);
-  }
-  100% {
-    box-shadow: 0 0 14px 2px rgba(56, 189, 248, 0.65), inset 0 0 8px rgba(56, 189, 248, 0.2);
-    border-color: rgba(56, 189, 248, 0.9);
-  }
-}
-
-/* Pulsante Indietro del Wizard (Discreto per non rubare attenzione) */
-.btn-wizard-back {
-  height: 36px !important;
-  min-height: 36px !important;
-  padding: 0 12px !important;
-  background: rgba(255, 255, 255, 0.04) !important;
-  border: 1px solid rgba(255, 255, 255, 0.16) !important;
-  color: var(--text-secondary) !important;
-  font-size: 11px !important;
-  font-weight: 800 !important;
-  border-radius: 0.75rem !important;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-.btn-wizard-back:hover {
-  background: rgba(255, 255, 255, 0.10) !important;
-  color: #FFFFFF !important;
+.btn-wizard-cta:active {
+  transform: scale(0.98);
 }
 
 /* ----------------------------------------------------------------------------
-   5. ⭐ MODALI TATTICHE GLASSMORPHIC ESTESE (90dvh A SCHERMO QUASI INTERO)
+   5. MICRO-HUD 36px COCKPIT DI GIOCO RULES 2
    ---------------------------------------------------------------------------- */
-dialog.game-modal-sheet {
-  position: fixed !important;
-  inset: 0 !important;
-  width: 100vw !important;
-  height: 100vh !important;
-  max-width: 100vw !important;
-  max-height: 100vh !important;
-  margin: 0 !important;
-  padding: 0 !important;
-  /* 🔒 OSCURAMENTO PROFONDO CHE COPRE SIA LA SCENA CHE IL FOOTER */
-  background: rgba(4, 6, 11, 0.88) !important;
-  backdrop-filter: blur(20px) !important;
-  -webkit-backdrop-filter: blur(20px) !important;
-  display: flex !important;
-  align-items: flex-end !important;
-  justify-content: center !important;
-  z-index: 100 !important; /* Sopra tutti i footer sticky */
-  border: none !important;
-}
-
-dialog.game-modal-sheet:not([open]) {
-  display: none !important;
-}
-
-/* Scheda Spaziosa al 90% dell'Altezza */
-.game-sheet-container {
-  width: 100% !important;
-  max-width: 640px !important;
-  height: 90vh !important;
-  height: 90dvh !important;
-  max-height: 90dvh !important;
-  background: rgba(11, 18, 34, 0.96) !important;
-  border-top: 1px solid rgba(56, 189, 248, 0.35) !important;
-  border-left: 1px solid rgba(255, 255, 255, 0.10) !important;
-  border-right: 1px solid rgba(255, 255, 255, 0.10) !important;
-  border-radius: 1.35rem 1.35rem 0 0 !important;
-  padding: 16px 18px 24px 18px !important;
-  display: flex !important;
-  flex-direction: column !important;
-  box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.85) !important;
-  overflow: hidden !important;
-}
-
-.game-sheet-header {
+.hud-cockpit-36px {
+  height: 36px;
+  min-height: 36px;
+  max-height: 36px;
+  background: rgba(15, 23, 42, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 0.75rem;
+  padding: 0 10px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding-bottom: 10px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.10);
-  margin-bottom: 12px;
+  gap: 8px;
 }
 
-.game-sheet-scroll {
-  flex: 1 1 auto;
-  overflow-y: auto;
-  padding-right: 4px;
+.hud-avatar-30px {
+  width: 24px;
+  height: 24px;
+  border-radius: 9999px;
+  background: #1E293B;
+  border: 1px solid rgba(56, 189, 248, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.hud-hero-name-36px {
+  font-size: 11px;
+  font-weight: 800;
+  color: #FFFFFF;
+  max-width: 90px;
+}
+
+.hud-vitals-36px {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  max-width: 140px;
+}
+
+.hud-pv-bar-36px {
+  height: 5px;
+  border-radius: 9999px;
 }
 
 /* ----------------------------------------------------------------------------
-   6. FOOTER COCKPIT DI GIOCO SNELLO (44px)
+   6. FOOTER COCKPIT DI GIOCO RULES 2 (44px)
    ---------------------------------------------------------------------------- */
 .cockpit-footer {
   flex: none;
@@ -474,8 +408,7 @@ dialog.game-modal-sheet:not([open]) {
   margin: 0 auto;
   background: rgba(7, 10, 18, 0.98);
   border-top: 1px solid rgba(255, 255, 255, 0.10);
-  padding-bottom: var(--safe-bottom, 0px);
-  height: calc(44px + var(--safe-bottom, 0px)) !important;
+  padding-bottom: max(env(safe-area-inset-bottom, 0px), 12px);
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   align-items: center;
@@ -489,30 +422,35 @@ dialog.game-modal-sheet:not([open]) {
   align-items: center;
   justify-content: center;
   gap: 4px;
-  height: 36px;
+  height: 34px;
   background: rgba(255, 255, 255, 0.04);
   border-radius: 8px;
   border: 1px solid transparent;
-  color: var(--text-secondary);
+  color: #94A3B8;
   font-size: 11px;
   font-weight: 700;
   cursor: pointer;
   transition: all 0.15s ease;
 }
+
 .cockpit-btn:active {
   background: rgba(56, 189, 248, 0.15);
-  border-color: var(--color-accent);
-  color: var(--color-accent);
+  border-color: #38BDF8;
+  color: #38BDF8;
 }
 
 /* ----------------------------------------------------------------------------
-   7. PULSANTI DEI BIVI NARRATIVI & AZIONI D20
+   7. NARRAZIONE, PULSANTI DEI BIVI & AZIONI D20
    ---------------------------------------------------------------------------- */
+.narrative-box-flexible {
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
 .scene-actions-area {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  /* Spazio di sicurezza sopra e sotto */
   margin-top: 10px;
   padding: 0 4px;
 }
@@ -533,16 +471,67 @@ dialog.game-modal-sheet:not([open]) {
   transition: all 0.15s ease;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
 }
+
 .scene-action-btn:hover {
   background: rgba(56, 189, 248, 0.18);
-  border-color: var(--color-accent);
+  border-color: #38BDF8;
   transform: translateX(2px);
 }
+
 .scene-action-btn.action-danger {
   border-color: rgba(244, 63, 94, 0.35);
   background: rgba(45, 16, 28, 0.75);
 }
+
 .scene-action-btn.action-danger:hover {
   background: rgba(244, 63, 94, 0.25);
-  border-color: var(--color-crimson);
+  border-color: #F43F5E;
+}
+
+/* ----------------------------------------------------------------------------
+   8. EFFETTI DI GIOCO: DANNI FLUTTUANTI & DADO D20 SUSPENSE
+   ---------------------------------------------------------------------------- */
+.floating-damage-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 25;
+}
+
+.floating-damage {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-family: monospace;
+  font-size: 1.35rem;
+  font-weight: 900;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.9);
+  animation: floatUpFade 1.2s forwards ease-out;
+}
+
+@keyframes floatUpFade {
+  0% { opacity: 1; transform: translate(-50%, -20%) scale(0.9); }
+  50% { transform: translate(-50%, -70%) scale(1.15); }
+  100% { opacity: 0; transform: translate(-50%, -120%) scale(0.85); }
+}
+
+.dice-wrapper {
+  perspective: 600px;
+}
+
+.dice-cube {
+  display: inline-block;
+  transform-style: preserve-3d;
+  transition: transform 0.5s ease;
+}
+
+.dice-cube.animate-bounce {
+  animation: diceRoll 0.6s infinite ease-in-out alternate;
+}
+
+@keyframes diceRoll {
+  0% { transform: rotateX(0deg) rotateY(0deg) scale(0.9); }
+  100% { transform: rotateX(360deg) rotateY(180deg) scale(1.15); }
 }
