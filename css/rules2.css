@@ -1,6 +1,6 @@
 /* ============================================================================
    PROJECT: ESTIQATSY SYNDICATE & RPG PLATFORM
-   FILE: css/rules2.css (VERSIONE 29.5 - ZERO-LEAK STRUCTURAL BLINDING)
+   FILE: css/rules2.css (VERSIONE 30.0 - COMPONENT MOUNT POINT & BALANCED STAGE)
    LAYER: ENGINE RULES 2, WIZARD STAGE, SPLIT ACTION SLOT, FULL HUD & COCKPIT
    NOTE: MIN-WIDTH: 0 ANTI-EXPANSION, ABOVE-THE-FOLD, ZERO-SCROLL GUARANTEED
    ============================================================================ */
@@ -16,7 +16,7 @@
 }
 
 /* ----------------------------------------------------------------------------
-   2. BLINDATURA STRUTTURALE WIZARD (IMPEDISCE L'ESPLOSIONE A 1500px)
+   2. BLINDATURA STRUTTURALE WIZARD (MOUNT POINT UNICO ANTI-EXPANSION 100%)
    ---------------------------------------------------------------------------- */
 #view-wizard,
 .wizard-stage-container {
@@ -32,6 +32,9 @@
   flex: 1 1 auto !important;
 }
 
+/* 🔒 Il nuovo mount point di index.html vincolato alla larghezza del display mobile */
+#wizard-stage-mount,
+.wizard-stage-content,
 .wizard-step-panel {
   width: 100% !important;
   max-width: 100% !important;
@@ -43,10 +46,11 @@
   justify-content: space-between !important;
   box-sizing: border-box !important;
   flex: 1 1 auto !important;
+  min-height: 0 !important;
 }
 
 /* ----------------------------------------------------------------------------
-   3. HUD UNIVERSALE A 2 RIGHE (48px - KPI BLOCCATI DENTRO LA VISUALE 390px)
+   3. HUD UNIVERSALE A 2 RIGHE (48px - SPAZIO INTEGRALE PER TUTTI I KPI)
    ---------------------------------------------------------------------------- */
 .hud-cockpit-48px {
   width: 100% !important;
@@ -70,7 +74,7 @@
 }
 
 /* ----------------------------------------------------------------------------
-   4. PALCO CAROSELLO WIZARD (PEEKING LATERALE BLOCCATO NELLA LARGHEZZA SCHERMO)
+   4. PALCO CAROSELLO WIZARD (PEEKING LATERALE E CENTRATURA CARTE)
    ---------------------------------------------------------------------------- */
 .coverflow-stage-outer {
   position: relative !important;
@@ -113,7 +117,6 @@
   width: min(310px, calc(100vw - 32px)) !important;
   max-width: 315px !important;
   min-width: 280px !important;
-  /* Scala fluidamente eliminando il vuoto nero sottostante */
   height: clamp(380px, 56dvh, 460px) !important;
   min-height: 380px !important;
   max-height: 460px !important;
@@ -146,7 +149,7 @@
               0 14px 34px rgba(0, 0, 0, 0.88) !important;
 }
 
-/* CARTA IN GAMEPLAY */
+/* CARTA IN GAMEPLAY FOCALIZZATA SUL TAVOLO */
 #gameplay-moverina-card .tcg-card,
 #view-gameplay .tcg-card,
 .tcg-card.gameplay-focal {
@@ -374,7 +377,7 @@
 }
 
 /* ----------------------------------------------------------------------------
-   8. SLOT AZIONI: PERFETTAMENTE CENTRATO SOTTO LA CARTA (MAI PIÙ A DESTRA)
+   8. SLOT AZIONI: ALLINEAMENTO INTELLIGENTE (CENTRATO O GIUSTIFICATO)
    ---------------------------------------------------------------------------- */
 .scene-actions-area {
   width: 100% !important;
@@ -403,11 +406,17 @@
   font-weight: 800 !important;
   display: flex !important;
   align-items: center !important;
-  justify-content: space-between !important;
+  justify-content: center !important; /* 🔒 Centrato di default */
   gap: 6px !important;
   cursor: pointer !important;
   box-sizing: border-box !important;
   width: 100% !important;
+}
+
+/* 🔒 Se il pulsante contiene 2 elementi (es. Nome Abilità a sx e Prezzo a dx), li distanzia automaticamente */
+.scene-action-btn.justify-between,
+.scene-action-btn:has(> span:nth-child(2)) {
+  justify-content: space-between !important;
 }
 
 .scene-action-btn:active {
