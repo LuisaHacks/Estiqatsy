@@ -1,521 +1,638 @@
-// ============================================================================
-// PROJECT: ESTIQATSY SYNDICATE & RPG PLATFORM
-// FILE: js/app-core.js (VERSIONE 20.0 - AUDIO ROUTER & FULL PROFILE SYNC)
-// LAYER 1: ARCHITETTURA A MACROSTATO, ROUTER SPA DETERMINISTICO & AUDIO ENGINE
-// ============================================================================
+/* ============================================================================
+   PROJECT: ESTIQATSY SYNDICATE & RPG PLATFORM
+   FILE: css/core.css (VERSIONE 23.0 - VIEWPORT STABILITY, 44px DOCKS & CAROUSEL)
+   LAYER: BASE STYLES, SHELL LAYOUT, RIGID 44px BARS, 16:9 MEDIA & UNIFIED MODALS
+   ============================================================================ */
 
-const AppConfig = {
-  GAS_URL: "https://script.google.com/macros/s/AKfycbyeCWHM9X4ycwWT7IOMwg24pySL78bJT5BRyiIR5eb0UJALWuaORzfJ2lkqLrjLv0xN/exec",
-  CACHE_KEYS: {
-    APP_STATE: "est_app_state_v20",
-    VAULT: "est_cache_vault",
-    CONFIG: "est_admin_config"
-  },
-  THEME: {
-    BG_COLOR: "#070A12",
-    HEADER_COLOR: "#070A12"
-  },
-  TIMEOUT_MS: 12000
-};
-
-// ----------------------------------------------------------------------------
-// 1. UTILITY AUDIO & FEEDBACK APTICO RESILIENTI
-// ----------------------------------------------------------------------------
-function safePlayClick() {
-  try {
-    if (window.SoundEngine) {
-      if (typeof SoundEngine.playSfx === "function") SoundEngine.playSfx("click");
-    }
-  } catch (e) {}
-}
-
-function safeHaptic(type = "selection") {
-  try {
-    const h = window.Telegram?.WebApp?.HapticFeedback;
-    if (!h) return;
-    if (type === "selection") h.selectionChanged();
-    else if (type === "success") h.notificationOccurred("success");
-    else if (type === "warning") h.notificationOccurred("warning");
-    else if (type === "error") h.notificationOccurred("error");
-    else h.impactOccurred(type);
-  } catch (e) {}
-}
-
-// ----------------------------------------------------------------------------
-// 2. STATO UNIFICATO DELLA PIATTAFORMA
-// ----------------------------------------------------------------------------
-const AppState = {
-  user: {
-    chatId: "",
-    id: "",
-    nome: "Avventuriero",
-    first_name: "Avventuriero",
-    cognome: "",
-    username: "@anonimo",
-    saldoMegoin: 0,
-    megoin: 0,
-    puntiFedelta: 0,
-    loyalty_points: 0,
-    piano: "Free",
-    plan: "Free",
-    isAdmin: false,
-    prodottiAcquistati: 0,
-    avatar: "⚓",
-    photo_url: null,
-    combatStats: { wins: 0, losses: 0, attack: 14, defense: 12, hacking: 10, readiness: 12, rank: "Agente Syndicate" }
-  },
-
-  allowedModules: { home: true, games: true, hub: true, shop: true, recipes: true, profile: true, multiplayer: true },
-  plans: [],
-  billingCycle: "monthly",
-  activeTab: "home",
-  currentContext: "app", // 'app' | 'wizard' | 'gameplay'
-
-  shop: { items: [], categories: [], activeCategory: "tutti", searchQuery: "" },
-  recipes: { items: [], categories: [], activeCategory: "tutti", searchQuery: "" },
-  carousel: { timer: null, index: 0, count: 0, isPaused: false },
-  digitalVault: [],
-  transactions: [],
-
-  games: { catalog: [], genres: [], activeGameKey: null, activeEpisode: 1 },
-  activeSeriesId: null,
-  activeEpisodeId: 1,
-  activeSession: { 
-    engineKey: "Rules2", 
-    gameKey: null, 
-    episodio: 1, 
-    partitaId: null, 
-    hero: null, 
-    combatRound: 1, 
-    combatEnemyId: null, 
-    currentNode: null, 
-    shopCatalog: [], 
-    engineState: null 
-  },
-  activeGameSession: null,
-  multiplayerActiveRoom: null,
-
-  config: { gasWebAppUrl: AppConfig.GAS_URL, botUsername: "EstiqatsyBot" }
-};
-
-// ----------------------------------------------------------------------------
-// 3. INTEGRAZIONE TELEGRAM WEBAPP SDK
-// ----------------------------------------------------------------------------
-const tg = (window.Telegram && window.Telegram.WebApp) ? window.Telegram.WebApp : null;
-if (tg) {
-  try {
-    tg.ready();
-    tg.expand();
-    if (typeof tg.requestFullscreen === "function") tg.requestFullscreen();
-    if (typeof tg.disableVerticalSwipes === "function") tg.disableVerticalSwipes();
-    tg.setHeaderColor(AppConfig.THEME.HEADER_COLOR);
-    tg.setBackgroundColor(AppConfig.THEME.BG_COLOR);
-
-    if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
-      const u = tg.initDataUnsafe.user;
-      AppState.user.id = String(u.id);
-      AppState.user.chatId = String(u.id);
-      AppState.user.first_name = u.first_name || "Avventuriero";
-      AppState.user.nome = u.first_name || "Avventuriero";
-      AppState.user.cognome = u.last_name || "";
-      AppState.user.username = u.username ? `@${u.username}` : "@anonimo";
-      if (u.photo_url) AppState.user.photo_url = u.photo_url;
-    }
-
-    const updateSafeArea = () => {
-      const topInset = tg.safeAreaInset?.top || tg.contentSafeAreaInset?.top || 0;
-      const bottomInset = tg.safeAreaInset?.bottom || tg.contentSafeAreaInset?.bottom || 0;
-      document.documentElement.style.setProperty("--tg-safe-area-inset-top", `${topInset}px`);
-      document.documentElement.style.setProperty("--tg-safe-area-inset-bottom", `${bottomInset}px`);
-    };
-    updateSafeArea();
-  } catch (e) {}
-}
-
-let telegramBackButtonHandler = null;
-function setupTelegramBackButton(targetScreenId) {
-  if (!tg || !tg.BackButton) return;
-  try {
-    if (telegramBackButtonHandler) {
-      tg.BackButton.offClick(telegramBackButtonHandler);
-      telegramBackButtonHandler = null;
-    }
-    const isSub = targetScreenId.startsWith("subview-") || 
-                  targetScreenId === "view-gameplay" || 
-                  targetScreenId === "view-wizard" || 
-                  targetScreenId === "view-multiplayer";
-
-    if (isSub) {
-      tg.BackButton.show();
-      telegramBackButtonHandler = () => {
-        safePlayClick();
-        if (targetScreenId === "view-gameplay" && window.Rules2Engine && typeof Rules2Engine.openAbandonModal === "function") {
-          Rules2Engine.openAbandonModal();
-        } else if (targetScreenId === "subview-shop-detail") {
-          AppRouter.navigate("shop");
-        } else if (targetScreenId === "subview-recipe-detail") {
-          AppRouter.navigate("recipes");
-        } else if (targetScreenId === "subview-game-detail" || targetScreenId === "view-multiplayer" || targetScreenId.includes("game")) {
-          AppRouter.navigate("games");
-        } else {
-          AppRouter.navigate("home");
-        }
-      };
-      tg.BackButton.onClick(telegramBackButtonHandler);
-    } else {
-      tg.BackButton.hide();
-    }
-  } catch (e) {}
-}
-
-// ----------------------------------------------------------------------------
-// 4. REGISTRY MOTORI DI GIOCO
-// ----------------------------------------------------------------------------
-const EngineRegistry = {
-  _engines: {},
-  register: function(k, inst) { 
-    this._engines[String(k).trim().toLowerCase().replace(/\s+/g, '')] = inst; 
-  },
-  get: function(k) { 
-    return this._engines[String(k).trim().toLowerCase().replace(/\s+/g, '')] || this._engines["rules2"] || null; 
-  }
-};
-window.EngineRegistry = EngineRegistry;
-
-// ----------------------------------------------------------------------------
-// 5. ROUTER DETERMINISTICO CON MACROSTATO & COLLEGAMENTO AUDIO TAB
-// ----------------------------------------------------------------------------
-const SCREEN_TO_TAB_MAP = {
-  "home": "home",
-  "view-home": "home",
+/* ----------------------------------------------------------------------------
+   1. VARIABILI, RESET & BASE VIEWPORT
+   ---------------------------------------------------------------------------- */
+:root {
+  --bg-base: #070A12;
+  --bg-surface: #0B1222;
+  --bg-card: #0F172A;
+  --border-color: rgba(255, 255, 255, 0.08);
+  --accent-sky: #38BDF8;
+  --accent-amber: #F59E0B;
+  --accent-emerald: #10B981;
+  --accent-rose: #F43F5E;
+  --accent-purple: #A855F7;
   
-  "games": "games",
-  "view-hub": "games",
-  "hub": "games",
-  "subview-game-detail": "games",
-  "multiplayer": "games",
-  "view-multiplayer": "games",
-  
-  "shop": "shop",
-  "view-shop": "shop",
-  "subview-shop-detail": "shop",
-  
-  "recipes": "recipes",
-  "view-recipes": "recipes",
-  "subview-recipe-detail": "recipes",
-  
-  "profile": "profile",
-  "view-profile": "profile",
-
-  "view-wizard": "games",
-  "wizard": "games",
-  "view-gameplay": "games",
-  "gameplay": "games"
-};
-
-const ALL_SCREENS = [
-  "view-home", "view-hub", "subview-game-detail",
-  "view-wizard", "view-gameplay", "view-multiplayer",
-  "view-shop", "subview-shop-detail",
-  "view-recipes", "subview-recipe-detail",
-  "view-profile"
-];
-
-const AppRouter = {
-  navigate: function(screenName, subScreenName = null) {
-    safePlayClick();
-    safeHaptic("selection");
-
-    let targetId = subScreenName || screenName;
-
-    if (targetId === "games" || targetId === "view-games") {
-      targetId = "view-hub";
-      if (window.AppModules && typeof AppModules.renderGamesCatalog === "function") AppModules.renderGamesCatalog();
-    } else if (targetId === "multiplayer" || targetId === "view-multiplayer") {
-      targetId = "view-multiplayer";
-      if (window.AppModules && typeof AppModules.renderMultiplayerRoom === "function") AppModules.renderMultiplayerRoom();
-    } else if (targetId === "gameplay" || targetId === "view-gameplay") {
-      targetId = "view-gameplay";
-      if (window.Rules2Engine && typeof Rules2Engine.syncHUD === "function") Rules2Engine.syncHUD();
-    } else if (targetId === "wizard" || targetId === "view-wizard") {
-      targetId = "view-wizard";
-    } else if (!targetId.startsWith("view-") && !targetId.startsWith("subview-")) {
-      targetId = "view-" + targetId;
-    }
-
-    const scrollContainer = document.getElementById("app-main-scroll");
-    if (scrollContainer) scrollContainer.scrollTop = 0;
-
-    // 1. DETERMINAZIONE DEL MACROSTATO (Fonte Unica per il CSS)
-    let macroContext = "app";
-    if (targetId === "view-gameplay") {
-      macroContext = "gameplay";
-    } else if (targetId === "view-wizard") {
-      macroContext = "wizard";
-    }
-    AppState.currentContext = macroContext;
-
-    document.body.dataset.context = macroContext;
-    document.body.dataset.activeScreen = targetId;
-
-    // 2. CHIUSURA DI SICUREZZA CASSETTI E MODALI AL CAMBIO VISTA
-    if (macroContext === "app") {
-      const drawersToClose = ["drawer-hero-sheet", "drawer-emporio", "modal-cockpit-assetto", "modal-abandon"];
-      drawersToClose.forEach(dId => {
-        const el = document.getElementById(dId);
-        if (el && typeof el.close === "function" && el.open) el.close();
-      });
-    }
-
-    // 3. ATTIVAZIONE DELLA SCHERMATA CORRENTE
-    ALL_SCREENS.forEach(id => {
-      const el = document.getElementById(id);
-      if (el) {
-        el.classList.toggle("hidden", id !== targetId);
-      }
-    });
-
-    // 4. COORDINAMENTO VISIBILITÀ HEADER & FOOTER
-    const appHeader = document.getElementById("main-app-header");
-    const gameHeader = document.getElementById("main-game-header");
-    const appFooter = document.getElementById("main-app-footer");
-    const wizardFooter = document.getElementById("main-wizard-footer");
-    const gameFooter = document.getElementById("main-game-cockpit-footer");
-
-    if (appHeader) appHeader.classList.toggle("hidden", macroContext === "gameplay");
-    if (gameHeader) gameHeader.classList.toggle("hidden", macroContext !== "gameplay");
-
-    if (appFooter) appFooter.classList.toggle("hidden", macroContext !== "app");
-    if (wizardFooter) wizardFooter.classList.toggle("hidden", macroContext !== "wizard");
-    if (gameFooter) gameFooter.classList.toggle("hidden", macroContext !== "gameplay");
-
-    // 5. DETERMINAZIONE DETERMINISTICA DEL TAB ATTIVO
-    const matchedTab = SCREEN_TO_TAB_MAP[targetId] || SCREEN_TO_TAB_MAP[screenName] || "home";
-    AppState.activeTab = matchedTab;
-
-    document.querySelectorAll(".nav-tab").forEach(btn => {
-      btn.classList.toggle("active", btn.dataset.tab === matchedTab);
-    });
-
-    document.querySelectorAll(".desk-nav-btn").forEach(btn => {
-      btn.classList.toggle("active", btn.dataset.tab === matchedTab);
-    });
-
-    // ⭐ 6. ROUTER SONORO: MIXAGGIO ASIMMETRICO (FADE-OUT 180ms / FADE-IN 800ms)
-    if (window.SoundEngine && typeof SoundEngine.playTabBgm === "function") {
-      if (macroContext === "app") {
-        SoundEngine.playTabBgm(matchedTab);
-      } else if (macroContext === "wizard") {
-        SoundEngine.playBgm("bass_walker", 800, 180);
-      }
-    }
-
-    setupTelegramBackButton(targetId);
-    setTimeout(() => { if (window.lucide) lucide.createIcons(); }, 15);
-  }
-};
-
-// ----------------------------------------------------------------------------
-// 6. COMUNICAZIONE API SERVER-AUTHORITATIVE (GOOGLE APPS SCRIPT)
-// ----------------------------------------------------------------------------
-let _isApiInProgress = false;
-async function apiCall(action, extraParams = {}) {
-  const isCritical = ["shop_buy", "currency_exchange", "game_start", "game_action", "game_node"].includes(action);
-  if (isCritical && _isApiInProgress) throw new Error("Operazione in corso...");
-  if (isCritical) _isApiInProgress = true;
-
-  const endpointUrl = AppState.config?.gasWebAppUrl || AppConfig.GAS_URL;
-  const initData = (tg && tg.initData) ? tg.initData : "";
-  const payload = { action: action, initData: initData, params: extraParams, timestamp: Date.now() };
-
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), AppConfig.TIMEOUT_MS);
-
-  try {
-    const response = await fetch(endpointUrl, {
-      method: "POST",
-      headers: { "Content-Type": "text/plain;charset=utf-8" },
-      body: JSON.stringify(payload),
-      signal: controller.signal
-    });
-    clearTimeout(timeoutId);
-    if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
-    const rawText = await response.text();
-    let result = JSON.parse(rawText);
-    if (!result.success && result.error) throw new Error(result.error);
-    return result.data;
-  } finally {
-    clearTimeout(timeoutId);
-    if (isCritical) _isApiInProgress = false;
-  }
+  --tg-safe-area-inset-top: 0px;
+  --tg-safe-area-inset-bottom: 0px;
 }
 
-// ----------------------------------------------------------------------------
-// 7. GESTIONE BORSALE MEGOIN
-// ----------------------------------------------------------------------------
-const Wallet = {
-  getMegoin: function() { 
-    return AppState.user?.saldoMegoin || AppState.user?.megoin || 0; 
-  },
-  setMegoin: function(val) {
-    const num = Math.max(0, parseInt(val, 10) || 0);
-    if (!AppState.user) AppState.user = {};
-    AppState.user.saldoMegoin = num;
-    AppState.user.megoin = num;
-    
-    ["home-megoin-card", "user-megoin-desk", "profile-card-megoin", "cambio-megoin-balance", "arcade-user-balance"].forEach(id => {
-      const el = document.getElementById(id);
-      if (el) el.textContent = (id.includes("balance")) ? num : `${num} 🪙`;
-    });
-  },
-  addMegoin: function(amt) { 
-    this.setMegoin(this.getMegoin() + amt); 
+html, body {
+  background-color: var(--bg-base);
+  color: #F8FAFC;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+  touch-action: manipulation;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Custom Scrollbars Discrete */
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 9999px;
+}
+
+/* ----------------------------------------------------------------------------
+   2. TOP BAR SUPERIORE (44px - CENTRATA TRA I COMANDI TELEGRAM)
+   ---------------------------------------------------------------------------- */
+.universal-top-bar {
+  height: 44px !important;
+  min-height: 44px !important;
+  max-height: 44px !important;
+  /* 🔒 Margini di rispetto per i controlli nativi Telegram (✕ Chiudi a sx e ••• a dx) */
+  padding-left: 72px !important;
+  padding-right: 72px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  position: relative !important;
+  width: 100% !important;
+  background: rgba(7, 10, 18, 0.95) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  border-bottom: 1px solid var(--border-color) !important;
+  z-index: 40 !important;
+  box-sizing: border-box !important;
+}
+
+/* ----------------------------------------------------------------------------
+   3. FOOTER DI NAVIGAZIONE (44px CON CENTRATURA TOTALE & SAFE AREA iOS)
+   ---------------------------------------------------------------------------- */
+.main-app-footer {
+  height: 44px !important;
+  min-height: 44px !important;
+  /* 🔒 Protezione gesture bar orizzontale di iPhone */
+  padding-bottom: env(safe-area-inset-bottom, 0px) !important;
+  box-sizing: content-box !important;
+  background: rgba(7, 10, 18, 0.95) !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
+  border-top: 1px solid var(--border-color) !important;
+  display: grid !important;
+  grid-template-columns: repeat(5, 1fr) !important;
+  align-items: center !important;
+  position: relative !important;
+  z-index: 40 !important;
+  width: 100% !important;
+}
+
+.nav-tab {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  height: 44px !important;
+  width: 100% !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  background: transparent !important;
+  border: none !important;
+  color: #94A3B8;
+  cursor: pointer;
+  user-select: none;
+  transition: color 0.15s ease;
+}
+
+.nav-tab.active {
+  color: var(--accent-sky) !important;
+}
+
+.nav-tab i,
+.nav-tab svg {
+  width: 18px !important;
+  height: 18px !important;
+  display: block;
+}
+
+.nav-tab-label {
+  font-size: 10px !important;
+  line-height: 1 !important;
+  font-weight: 700;
+  margin-top: 2px !important;
+  display: block;
+}
+
+/* ----------------------------------------------------------------------------
+   4. CAROSELLO HOME DINAMICO (BLINDATURA 100% LARGHEZZA)
+   ---------------------------------------------------------------------------- */
+.carousel-outer-wrapper {
+  position: relative;
+  width: 100%;
+  overflow: hidden !important;
+  border-radius: 1rem;
+  border: 1px solid var(--border-color);
+  background: var(--bg-surface);
+}
+
+.carousel-track {
+  display: flex !important;
+  width: 100% !important;
+  transition: transform 0.35s cubic-bezier(0.25, 1, 0.5, 1);
+  will-change: transform;
+}
+
+/* 🔒 Forzatura tassativa a schermo intero per singola slide (Risolve il collasso visivo) */
+.carousel-slide {
+  flex: 0 0 100% !important;
+  min-width: 100% !important;
+  max-width: 100% !important;
+  width: 100% !important;
+  aspect-ratio: 16 / 9;
+  position: relative;
+  overflow: hidden !important;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+
+.carousel-slide-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover !important;
+  display: block;
+}
+
+.carousel-slide-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(7, 10, 18, 0.1) 0%, rgba(7, 10, 18, 0.88) 100%);
+  pointer-events: none;
+}
+
+.carousel-slide-badge {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  padding: 2px 8px;
+  background: rgba(0, 0, 0, 0.75);
+  border: 1px solid rgba(56, 189, 248, 0.4);
+  color: var(--accent-sky);
+  font-family: monospace;
+  font-size: 9px;
+  font-weight: 900;
+  text-transform: uppercase;
+  border-radius: 6px;
+  letter-spacing: 0.05em;
+  z-index: 10;
+}
+
+.carousel-slide-content {
+  position: absolute;
+  bottom: 10px;
+  left: 12px;
+  right: 12px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 8px;
+  z-index: 10;
+}
+
+.carousel-slide-text {
+  min-width: 0;
+  flex: 1;
+}
+
+.carousel-slide-title {
+  font-size: 13px;
+  font-weight: 900;
+  color: #FFFFFF;
+  line-height: 1.25;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.carousel-slide-sub {
+  font-size: 10.5px;
+  color: #CBD5E1;
+  margin-top: 2px;
+  margin-bottom: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.carousel-slide-btn {
+  padding: 4px 10px;
+  background: var(--accent-sky);
+  color: #070A12;
+  font-size: 10px;
+  font-weight: 900;
+  border-radius: 6px;
+  border: none;
+  white-space: nowrap;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(56, 189, 248, 0.3);
+}
+
+.carousel-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.25);
+  transition: all 0.25s ease;
+  cursor: pointer;
+}
+
+.carousel-dot.active {
+  width: 16px;
+  background: var(--accent-sky);
+  box-shadow: 0 0 8px rgba(56, 189, 248, 0.6);
+}
+
+/* ----------------------------------------------------------------------------
+   5. STANDARD MODALI: CHIUSURA UNIFICATA ("X" IN ALTO A DESTRA + BACKDROP)
+   ---------------------------------------------------------------------------- */
+dialog.modal {
+  background: rgba(4, 6, 11, 0.78) !important;
+  backdrop-filter: blur(14px) !important;
+  -webkit-backdrop-filter: blur(14px) !important;
+  border: none !important;
+}
+
+.modal-box {
+  background: #0B1222 !important;
+  border: 1px solid rgba(56, 189, 248, 0.35) !important;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.8) !important;
+  position: relative !important;
+}
+
+/* 🔒 Tasto standard uniforme per tutte le modali */
+.modal-close-btn {
+  position: absolute !important;
+  top: 12px !important;
+  right: 12px !important;
+  width: 28px !important;
+  height: 28px !important;
+  border-radius: 9999px !important;
+  background: rgba(15, 23, 42, 0.85) !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  color: #94A3B8 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 12px !important;
+  font-weight: 900 !important;
+  cursor: pointer !important;
+  z-index: 50 !important;
+  transition: all 0.15s ease !important;
+}
+
+.modal-close-btn:hover {
+  background: #1E293B !important;
+  color: #FFFFFF !important;
+  border-color: rgba(255, 255, 255, 0.35) !important;
+}
+
+/* ----------------------------------------------------------------------------
+   6. RADIO MINIPLAYER & SPOTIFY DECK
+   ---------------------------------------------------------------------------- */
+.jukebox-eq-bars {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 12px;
+}
+
+.jukebox-eq-bars span {
+  width: 2px;
+  height: 4px;
+  background: var(--accent-sky);
+  border-radius: 1px;
+  transition: height 0.2s ease;
+}
+
+.jukebox-eq-bars.animated span:nth-child(1) { animation: eqBar 0.8s infinite ease-in-out alternate; }
+.jukebox-eq-bars.animated span:nth-child(2) { animation: eqBar 0.6s 0.2s infinite ease-in-out alternate; }
+.jukebox-eq-bars.animated span:nth-child(3) { animation: eqBar 0.9s 0.1s infinite ease-in-out alternate; }
+.jukebox-eq-bars.animated span:nth-child(4) { animation: eqBar 0.7s 0.3s infinite ease-in-out alternate; }
+.jukebox-eq-bars.animated span:nth-child(5) { animation: eqBar 0.5s 0.15s infinite ease-in-out alternate; }
+
+@keyframes eqBar {
+  0% { height: 3px; }
+  100% { height: 12px; }
+}
+
+.audio-slider-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 10px;
+  font-family: monospace;
+  color: #CBD5E1;
+}
+
+.audio-slider-label {
+  width: 80px;
+  flex-shrink: 0;
+}
+
+.audio-slider {
+  flex: 1;
+  accent-color: var(--accent-sky);
+  height: 4px;
+}
+
+.audio-track-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.audio-track-item:hover,
+.audio-track-item.active {
+  background: rgba(56, 189, 248, 0.12);
+  border-color: rgba(56, 189, 248, 0.3);
+}
+
+/* ----------------------------------------------------------------------------
+   7. ITEM CARDS 16:9 (SAGHE, MERCATO, RICETTE)
+   ---------------------------------------------------------------------------- */
+.item-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 0.875rem;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  cursor: pointer;
+  transition: border-color 0.2s ease, transform 0.15s ease;
+}
+
+.item-card:hover {
+  border-color: rgba(56, 189, 248, 0.35);
+  transform: translateY(-1px);
+}
+
+.item-card-media {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: #000000;
+  overflow: hidden;
+}
+
+.item-card-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.item-card-badge {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  font-family: monospace;
+  font-size: 8.5px;
+  font-weight: 800;
+  color: var(--accent-sky);
+  text-transform: uppercase;
+}
+
+.item-card-body {
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  flex: 1;
+}
+
+.item-card-title {
+  font-weight: 800;
+  color: #FFFFFF;
+}
+
+.item-card-desc {
+  color: #94A3B8;
+}
+
+.item-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  padding-top: 8px;
+}
+
+/* ----------------------------------------------------------------------------
+   8. FRAME CINEMATOGRAFICO RIGIDO 16:9 & CITAZIONI
+   ---------------------------------------------------------------------------- */
+.cinema-frame-rigid {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: #000000;
+  overflow: hidden;
+}
+
+.cinema-frame-rigid img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.watermark-cover-banner {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 8px 12px;
+  background: linear-gradient(180deg, transparent 0%, rgba(7, 10, 18, 0.88) 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  text-align: right;
+  pointer-events: none;
+}
+
+.watermark-cover-banner .quote-text {
+  font-size: 10.5px;
+  font-style: italic;
+  color: #F1F5F9;
+}
+
+.watermark-cover-banner .quote-author {
+  font-family: monospace;
+  font-size: 9px;
+  font-weight: 900;
+  color: var(--accent-amber);
+  text-transform: uppercase;
+  margin-top: 2px;
+}
+
+/* ----------------------------------------------------------------------------
+   9. MICRO-HUD 36px COCKPIT DI GIOCO
+   ---------------------------------------------------------------------------- */
+.hud-cockpit-36px {
+  height: 36px;
+  min-height: 36px;
+  max-height: 36px;
+  background: rgba(15, 23, 42, 0.92);
+  border: 1px solid var(--border-color);
+  border-radius: 0.75rem;
+  padding: 0 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.hud-avatar-30px {
+  width: 24px;
+  height: 24px;
+  border-radius: 9999px;
+  background: #1E293B;
+  border: 1px solid rgba(56, 189, 248, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.hud-hero-name-36px {
+  font-size: 11px;
+  font-weight: 800;
+  color: #FFFFFF;
+  max-width: 90px;
+}
+
+.hud-vitals-36px {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  max-width: 140px;
+}
+
+.hud-pv-bar-36px {
+  height: 5px;
+  border-radius: 9999px;
+}
+
+/* ----------------------------------------------------------------------------
+   10. SUBHEADERS & CHIP FILTRI RAPIDI
+   ---------------------------------------------------------------------------- */
+.subheader-3col {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 32px;
+  padding: 0 4px;
+  font-family: monospace;
+  font-size: 10px;
+  font-weight: 800;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  margin-bottom: 6px;
+}
+
+.subheader-left {
+  color: var(--accent-sky);
+  text-transform: uppercase;
+}
+
+.subheader-center {
+  color: #FFFFFF;
+}
+
+.subheader-right {
+  color: #94A3B8;
+}
+
+.chips-scroll-bar {
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.chips-scroll-bar::-webkit-scrollbar {
+  display: none;
+}
+
+.rpg-category-chip {
+  padding: 4px 10px;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #94A3B8;
+  font-family: monospace;
+  font-size: 9.5px;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.rpg-category-chip.active {
+  background: rgba(56, 189, 248, 0.15);
+  border-color: var(--accent-sky);
+  color: var(--accent-sky);
+}
+
+/* ----------------------------------------------------------------------------
+   11. WIDGET FLUTTUANTE MULTIPLAYER STICKY
+   ---------------------------------------------------------------------------- */
+.multiplayer-floating-dock {
+  position: sticky;
+  bottom: 8px;
+  margin-top: 10px;
+  padding: 8px 12px;
+  border-radius: 0.875rem;
+  background: linear-gradient(135deg, rgba(24, 15, 38, 0.95), rgba(15, 23, 42, 0.95));
+  border: 1px solid rgba(168, 85, 247, 0.35);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  z-index: 20;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+/* ----------------------------------------------------------------------------
+   12. DESKTOP SIDEBAR (LAYOUT PC & TABLET)
+   ---------------------------------------------------------------------------- */
+@media (min-width: 1024px) {
+  .desktop-sidebar {
+    display: flex !important;
+    width: 260px;
+    background: var(--bg-base);
+    border-right: 1px solid var(--border-color);
   }
-};
-
-// ----------------------------------------------------------------------------
-// 8. APPCORE: TOAST, STORAGE & SINCRONIZZAZIONE UI COMPLETA
-// ----------------------------------------------------------------------------
-const AppCore = {
-  toast: function(message, type = "info") {
-    let container = document.getElementById("app-toast-container");
-    if (!container) {
-      container = document.createElement("div");
-      container.id = "app-toast-container";
-      container.style.cssText = "position:fixed;top:calc(var(--safe-top, 0px) + 52px);left:50%;transform:translateX(-50%);z-index:9999;display:flex;flex-direction:column;gap:8px;pointer-events:none;width:90%;max-width:380px;";
-      document.body.appendChild(container);
-    }
-    const toast = document.createElement("div");
-    const colors = { 
-      success: "border-emerald-500/50 text-emerald-300 bg-emerald-950/90", 
-      error: "border-rose-500/50 text-rose-300 bg-rose-950/90", 
-      info: "border-sky-500/50 text-sky-300 bg-slate-900/95",
-      warning: "border-amber-500/50 text-amber-300 bg-amber-950/90"
-    };
-    toast.className = `p-3 rounded-xl border shadow-2xl backdrop-blur-md text-xs font-mono font-bold flex items-center justify-between pointer-events-auto ${colors[type] || colors.info}`;
-    toast.innerHTML = `<span>${message}</span>`;
-    container.appendChild(toast);
-    setTimeout(() => toast.remove(), 2800);
-  },
-
-  save: function() {
-    try { 
-      localStorage.setItem(AppConfig.CACHE_KEYS.APP_STATE, JSON.stringify({ 
-        user: AppState.user, 
-        digitalVault: AppState.digitalVault 
-      })); 
-    } catch (e) {}
-  },
-
-  load: function() {
-    try {
-      const raw = localStorage.getItem(AppConfig.CACHE_KEYS.APP_STATE);
-      if (raw) {
-        const s = JSON.parse(raw);
-        if (s.user) {
-          AppState.user = { ...AppState.user, ...s.user };
-        }
-        if (s.digitalVault) AppState.digitalVault = s.digitalVault;
-      }
-    } catch (e) {}
-  },
-
-  // 🔒 SINCRONIZZAZIONE VISIVA INTEGRALE (NOME, USERNAME, AVATAR, SALDI, PIANO)
-  syncUI: function() {
-    const u = AppState.user;
-    if (!u) return;
-    const s = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
-    const megoinVal = Wallet.getMegoin();
-    const puntiVal = u.puntiFedelta || u.loyalty_points || 0;
-    const nomeVal = u.nome || u.first_name || "Avventuriero";
-    const usernameVal = u.username ? (u.username.startsWith("@") ? u.username : `@${u.username}`) : "@anonimo";
-    const pianoVal = (u.piano || u.plan || "Free").toUpperCase();
-
-    // 1. Dashboard Home
-    s("home-username", nomeVal);
-    s("home-rank-points", puntiVal);
-    s("home-plan-badge", `PIANO ${pianoVal}`);
-    s("home-megoin-card", `${megoinVal} 🪙`);
-    s("home-punti-card", `${puntiVal} Pt`);
-
-    // 2. Profilo Utente
-    s("profile-card-name", nomeVal);
-    s("profile-card-username", usernameVal);
-    s("profile-card-plan", `PIANO ${pianoVal}`);
-    s("profile-card-id", `ID: ${u.chatId || u.id || "-"}`);
-    s("profile-card-megoin", `${megoinVal} 🪙`);
-    s("profile-card-points", `${puntiVal} Pt`);
-    s("profile-action-plan-name", `Piano: ${pianoVal}`);
-
-    // Conteggio download digitali Caveau
-    const vaultCount = (AppState.digitalVault && AppState.digitalVault.length > 0)
-      ? AppState.digitalVault.length 
-      : (u.prodottiAcquistati || 0);
-    s("profile-action-vault-count", vaultCount);
-    s("home-purchases-count", vaultCount);
-
-    // 3. Avatar Dinamico (Iniziale o Foto Profilo)
-    const avMob = document.getElementById("profile-card-avatar");
-    if (avMob) {
-      if (u.photo_url) {
-        avMob.innerHTML = `<img src="${u.photo_url}" class="w-full h-full object-cover rounded-xl" alt="Avatar">`;
-      } else {
-        avMob.textContent = (nomeVal.trim().charAt(0) || "A").toUpperCase();
-      }
-    }
-
-    // 4. Desktop Sidebar
-    s("user-name-desk", nomeVal);
-    s("user-plan-desk", `PIANO ${pianoVal}`);
-    s("user-megoin-desk", `${megoinVal} 🪙`);
-    s("user-points-desk", `${puntiVal} Pt`);
-    const avDesk = document.getElementById("user-avatar-desk");
-    if (avDesk) {
-      if (u.photo_url) {
-        avDesk.innerHTML = `<img src="${u.photo_url}" class="w-full h-full object-cover rounded-xl" alt="Avatar">`;
-      } else {
-        avDesk.textContent = (nomeVal.trim().charAt(0) || "A").toUpperCase();
-      }
-    }
-  },
-
-  dismissLoader: function() {
-    const loader = document.getElementById("app-loading");
-    if (loader) {
-      loader.style.pointerEvents = "none";
-      loader.style.opacity = "0";
-      setTimeout(() => { if (loader.parentNode) loader.remove(); }, 250);
-    }
+  .main-app-footer {
+    display: none !important;
   }
-};
-
-// Esportazione Globale
-window.AppConfig = AppConfig;
-window.AppState = AppState;
-window.AppRouter = AppRouter;
-window.Wallet = Wallet;
-window.AppCore = AppCore;
-window.apiCall = apiCall;
-
-// ----------------------------------------------------------------------------
-// 9. BOOTSTRAP ALL'AVVIO
-// ----------------------------------------------------------------------------
-window.addEventListener("DOMContentLoaded", async () => {
-  AppCore.load();
-  AppCore.syncUI();
-  if (window.lucide) lucide.createIcons();
-
-  if (!AppState.activeTab || AppState.activeTab === "home") {
-    AppRouter.navigate("home");
-  }
-
-  try {
-    if (window.AppModules && typeof AppModules.init === "function") {
-      await AppModules.init();
-    }
-  } catch (err) {
-    console.warn("[DOMContentLoaded] Inizializzazione parziale:", err);
-  } finally {
-    AppCore.dismissLoader();
-  }
-});
+}
