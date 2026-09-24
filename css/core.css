@@ -722,7 +722,7 @@ dialog.modal {
   align-items: center;
   white-space: nowrap;
   will-change: transform;
-  animation: tickerScroll 48s linear infinite; /* Velocità di lettura rilassata */
+  animation: tickerScroll 180s linear infinite; /* Velocità di lettura rilassata */
 }
 
 /* Pausa dello scorrimento quando l'utente tiene premuto per leggere */
