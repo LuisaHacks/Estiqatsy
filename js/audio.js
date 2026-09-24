@@ -1,6 +1,6 @@
 // ============================================================================
 // PROJECT: ESTIQATSY BOT & RPG PLATFORM
-// FILE: js/audio.js (VERSIONE 55.0 - AUTONOMOUS RADIO, AUTOPLAY & GAMEPLAY SFX)
+// FILE: js/audio.js (VERSIONE 60.0 - SEAMLESS AUTOPLAY & DUAL BACKGROUND ENGINE)
 // ============================================================================
 
 const SoundEngine = (function() {
@@ -69,13 +69,12 @@ const SoundEngine = (function() {
   };
 
   let activeStationKey = "boombap";
-  let playbackSource = "radio"; // "radio" | "game"
+  let playbackSource = "radio"; // "radio" (background continuato) | "game" (si spegne su lock screen)
   let playlist = [];
   let currentTrackIndex = 0;
   let currentTrack = null;
   let currentHowl = null;
   let heartbeatHowl = null;
-  let isPlayingManual = !isMasterMuted;
 
   let progressTimer = null;
   let searchDebounceTimer = null;
@@ -422,7 +421,7 @@ const SoundEngine = (function() {
     currentHowl = new Howl({
       src: [track.src],
       format: ["mp3"],
-      html5: true, // STREAMING DIRETTO SU LOCK SCREEN
+      html5: true,
       volume: getEffectiveBgmVolume(),
       loop: isLoop && !isShuffle,
       onend: function() {
@@ -433,8 +432,6 @@ const SoundEngine = (function() {
         }
       }
     });
-
-    isPlayingManual = true;
 
     if (!isMasterMuted && !isBgmMuted && getEffectiveBgmVolume() > 0) {
       currentHowl.play();
@@ -618,6 +615,9 @@ const SoundEngine = (function() {
     }
   }
 
+  // --------------------------------------------------------------------------
+  // 9. INIZIALIZZAZIONE & SBLOCCO TOUCH GLOBALE AL PRIMO TOCCO NATURALE
+  // --------------------------------------------------------------------------
   function init() {
     playlist = Object.values(EPISODE_SOUNDTRACKS).slice(0, 6);
     currentTrack = playlist[0];
@@ -632,7 +632,7 @@ const SoundEngine = (function() {
         if (heartbeatHowl && heartbeatHowl.playing()) heartbeatHowl.pause();
       } else {
         unlockMobileAudio();
-        if (!isMasterMuted && !isBgmMuted && currentHowl && !currentHowl.playing() && isPlayingManual) {
+        if (!isMasterMuted && !isBgmMuted && currentHowl && !currentHowl.playing()) {
           if (playbackSource === "game" || document.body.dataset.context === "gameplay") {
             currentHowl.play();
           }
@@ -640,28 +640,31 @@ const SoundEngine = (function() {
       }
     });
 
-    // 🔒 SBLOCCO & AVVIO AUTOMATICO: al primo tocco o tap in qualsiasi punto
-    const unlockAndAutoplay = () => {
+    // 🔒 SBLOCCO TOTALE AL PRIMO TOCCO NATURALE DELL'UTENTE (Ovunque tocchi l'app)
+    let hasUnlocked = false;
+    const globalFirstTouchUnlock = () => {
+      if (hasUnlocked) return;
+      hasUnlocked = true;
       unlockMobileAudio();
+
       if (!isMasterMuted && !isBgmMuted && (!currentHowl || !currentHowl.playing())) {
         playTrackByIndex(0, "radio");
       }
-      ["touchstart", "click", "pointerdown"].forEach(evt => window.removeEventListener(evt, unlockAndAutoplay, { capture: true }));
+
+      ["touchstart", "click", "pointerdown"].forEach(evt => 
+        window.removeEventListener(evt, globalFirstTouchUnlock, { capture: true })
+      );
     };
-    ["touchstart", "click", "pointerdown"].forEach(evt => window.addEventListener(evt, unlockAndAutoplay, { capture: true, passive: true }));
+
+    ["touchstart", "click", "pointerdown"].forEach(evt => 
+      window.addEventListener(evt, globalFirstTouchUnlock, { capture: true, passive: true })
+    );
 
     mountMiniWidget();
     setTimeout(mountMiniWidget, 100);
     setTimeout(mountMiniWidget, 450);
 
     loadStationTracks("boombap");
-
-    // Tentativo di autoplay a freddo
-    setTimeout(() => {
-      if (!isMasterMuted && !isBgmMuted && (!currentHowl || !currentHowl.playing())) {
-        playTrackByIndex(0, "radio");
-      }
-    }, 200);
   }
 
   if (document.readyState === "loading") {
@@ -670,6 +673,9 @@ const SoundEngine = (function() {
     init();
   }
 
+  // --------------------------------------------------------------------------
+  // 10. SFX PLAYER BASATO SU BUFFER
+  // --------------------------------------------------------------------------
   function playSfx(name) {
     if (isMasterMuted || isSfxMuted) return;
     unlockMobileAudio();
@@ -695,6 +701,9 @@ const SoundEngine = (function() {
     }
   }
 
+  // --------------------------------------------------------------------------
+  // 11. METODI PUBBLICI ESPORTATI PER IL GIOCO
+  // --------------------------------------------------------------------------
   return {
     playClick: () => playSfx("click"),
     playCoin: () => playSfx("coin"),
@@ -783,7 +792,6 @@ const SoundEngine = (function() {
 
     playBgm,
 
-    // 🔒 RESTORED & POTENZIATO: avvia subito la musica al cambio tab e all'avvio in Home
     playTabBgm: function(tabKey) {
       const clean = String(tabKey || "home").toLowerCase();
       let targetStation = "boombap";
@@ -792,7 +800,7 @@ const SoundEngine = (function() {
       else if (clean.includes("shop")) targetStation = "boombap";
       else if (clean.includes("recipe")) targetStation = "lofi";
       else if (clean.includes("profile")) targetStation = "noir";
-      else targetStation = "boombap"; // Home default
+      else targetStation = "boombap";
 
       switchStation(targetStation);
 
@@ -817,20 +825,23 @@ const SoundEngine = (function() {
       document.getElementById("modal-syndicate-radio")?.showModal();
     },
 
+    // 🔒 TOGGLE DETERMINISTICO A SINGOLO CLIC (Elimina il bug del primo tocco a vuoto)
     togglePlayPause: function() {
+      unlockMobileAudio();
+
       if (!currentHowl) {
         playTrackByIndex(currentTrackIndex, "radio");
         return;
       }
+
       if (currentHowl.playing()) {
         currentHowl.pause();
-        isPlayingManual = false;
       } else {
         currentHowl.play();
-        isPlayingManual = true;
       }
+
       if ('mediaSession' in navigator) {
-        navigator.mediaSession.playbackState = (currentHowl && currentHowl.playing()) ? 'playing' : 'paused';
+        navigator.mediaSession.playbackState = currentHowl.playing() ? 'playing' : 'paused';
       }
       updateUI();
     },
