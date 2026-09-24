@@ -1,12 +1,12 @@
 // ============================================================================
 // PROJECT: ESTIQATSY SYNDICATE & RPG PLATFORM
-// FILE: js/rules2engine.js (VERSIONE 36.0 - DETERMINISTIC RPG ENGINE)
-// LAYER: GAMEPLAY LOOP, D20 COMBAT, MATCHUP TCG, ORGANIGRAMMA & CARD INSPECTOR
-// NOTE: FEDELTÀ 1:1 CON MathGameRules2.gs E UXGameRules2.gs
+// FILE: js/rules2engine.js (VERSIONE 50.0 - CARD SFX, AUDIUS BGM & TCG MATCHUP)
+// LAYER: GAMEPLAY LOOP, D20 COMBAT, ACTION MATRIX, ORGANIGRAMMA & TACTICAL DECK
+// NOTE: FEDELTÀ 1:1 CON MathGameRules2.gs, UXGameRules2.gs & audio.js v50.0
 // ============================================================================
 
 // ----------------------------------------------------------------------------
-// 0. MATRICI STATICHE, FORMULE E HELPER CONDIVISI COL BACKEND
+// 0. MATRICI STATICHE & CONFIGURAZIONI CONDIVISE
 // ----------------------------------------------------------------------------
 const RULES2_CORRUPTION_MATRIX = {
   "mazzu": ["thc", "stimolante", "alcool", "alcol"],
@@ -90,7 +90,7 @@ function rulesFormatMod(val) {
 }
 
 // ----------------------------------------------------------------------------
-// 1. MOTORE MATEMATICO DETERMINISTICO CLIENT-SIDE (Rules2Math)
+// 1. MOTORE MATEMATICO DETERMINISTICO (Rules2Math)
 // ----------------------------------------------------------------------------
 const Rules2Math = {
   getPoliticalDamageBonus: function(heroFaction, enemyFaction) {
@@ -241,7 +241,6 @@ const Rules2Math = {
       }
     });
 
-    // Formula del dado e probabilità canonica da MathGameRules2.gs
     const targetRoll = cdD20 - (netMod + bonusFortuna);
     let prob = 0;
     if (targetRoll <= 2) prob = 95;
@@ -585,6 +584,11 @@ const Rules2Engine = {
 
     this.syncHUD();
 
+    // 🔒 SFX Incontro Carta: suona SOLO durante il gioco (MAI nel wizard)
+    if (window.SoundEngine && typeof SoundEngine.playCardEncounter === "function") {
+      SoundEngine.playCardEncounter(currentNode);
+    }
+
     if (currentHero && currentHero.pvMax) {
       const pvRatio = (currentHero.pv || 0) / currentHero.pvMax;
       if (pvRatio <= 0.25 && currentHero.pv > 0) {
@@ -915,7 +919,7 @@ const Rules2Engine = {
       });
 
       if (res?.nodo) {
-        // Se il backend ha restituito uno stato aggiornato di sintesi, sincronizza quello
+        // Se il backend restituisce lo stato aggiornato delle sintesi, sincronizza quello
         if (res.statoEroe?.sintesiInCorso) {
           AppState.activeSession.hero.sintesiInCorso = res.statoEroe.sintesiInCorso;
         } else {
@@ -1100,15 +1104,23 @@ const Rules2Engine = {
             if (log.isHit) {
               tgHaptic(log.isCrit ? "success" : "light");
               this.showFloatingDamage(`💥 -${log.dmgDealt} PV`, log.isCrit, false);
+              if (window.SoundEngine && typeof SoundEngine.playCombatEffect === "function") {
+                SoundEngine.playCombatEffect(log.isCrit ? "crit" : "hit");
+              }
             } else {
               this.showFloatingDamage("💨 A vuoto", false, false);
+              if (window.SoundEngine && typeof SoundEngine.playCombatEffect === "function") {
+                SoundEngine.playCombatEffect("miss");
+              }
             }
 
             if (log.dmgTaken > 0) {
               setTimeout(() => {
                 tgHaptic("error");
                 this.showFloatingDamage(`💔 -${log.dmgTaken} PV`, false, true);
-                if (window.SoundEngine) SoundEngine.playError();
+                if (window.SoundEngine && typeof SoundEngine.playCombatEffect === "function") {
+                  SoundEngine.playCombatEffect("hurt");
+                }
               }, 250);
             }
           }
@@ -1129,7 +1141,7 @@ const Rules2Engine = {
             const catalog = AppState.activeSession.shopCatalog || [];
             const hasNecroAbl = (hero?.abilita?.includes("Necromanzia") && hero.pv > 1);
 
-            // Regola Voodoo dal backend: possesso di feticcio Voodoo + droga compatibile
+            // Controllo Feticcio Voodoo + Droga compatibile (dal backend)
             const hasVoodoo = (hero?.inventario || []).some(it => {
               const ent = Rules2Math.findEntity(it, catalog);
               return ent && Rules2_ClassifyEntity(ent) === "TALISMANI" && String(ent.sottocategoria || "").toLowerCase().includes("voodoo");
@@ -1222,6 +1234,9 @@ const Rules2Engine = {
 
       if (res?.success) {
         tgHaptic("success");
+        if (window.SoundEngine && typeof SoundEngine.playZombie === "function") {
+          SoundEngine.playZombie();
+        }
         this.showFloatingDamage("🧟 Risorto!", false, false);
         if (AppState.activeSession.engineState?.pendingVictory) {
           this.renderNode(AppState.activeSession.engineState.pendingVictory.nodo, res.statoEroe);
@@ -1255,6 +1270,9 @@ const Rules2Engine = {
       });
       if (res?.success) {
         tgHaptic("success");
+        if (window.SoundEngine && typeof SoundEngine.playBribe === "function") {
+          SoundEngine.playBribe();
+        }
         this.showFloatingDamage("🟡 Corrotto!", false, false);
         this.renderNode(res.nextView.nodo, res.nextView.statoEroe);
       }
@@ -1931,10 +1949,19 @@ const Rules2Engine = {
     if (idx !== -1) {
       h.inventario.splice(idx, 1);
       const humanName = Rules2_ResolveItemName(itemName, catalog);
+      const cat = Rules2_ClassifyEntity(ent);
+
       if (ent && ent.pv) {
         h.pv = Math.min(h.pvMax || 25, (h.pv || 0) + Number(ent.pv));
+        // 🍄 Suono speciale Life-Up stile Super Mario per le cure!
+        if (window.SoundEngine && typeof SoundEngine.playHeal1Up === "function") {
+          SoundEngine.playHeal1Up();
+        }
         rulesNotify(`Hai usato ${humanName} (+${ent.pv} PV)!`, "success");
       } else {
+        if (cat === "DROGHE" && window.SoundEngine && typeof SoundEngine.playDrug === "function") {
+          SoundEngine.playDrug();
+        }
         rulesNotify(`Hai assunto ${humanName}!`, "info");
       }
       tgHaptic("success");
