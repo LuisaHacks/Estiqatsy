@@ -1,11 +1,6 @@
 // ============================================================================
 // PROJECT: ESTIQATSY SYNDICATE & RPG PLATFORM
-// FILE: js/news-meteo.js (VERSIONE 50.0 - MATCHED WITH core.css v50.0)
-// DESCRIZIONE: Componente News & Meteo Viareggio integrato con Modulo_NewsMeteo.gs:
-//              - Nessun CSS inline: 100% allineato alla Sezione 12 di core.css
-//              - Decodifica automatica entità HTML (&#8217; -> ’, &#8211; -> –)
-//              - Capsula Meteo (Viareggio Min/Max) + Ticker News a scorrimento GPU
-//              - Modale espansa: Previsioni a 6 giorni + Rassegna Stampa VT/NoiTV
+// FILE: js/news-meteo.js (VERSIONE 55.0 - SELF-CONTAINED STYLES & ZERO-CACHE FAIL)
 // ============================================================================
 
 const NewsMeteoEngine = (function() {
@@ -52,7 +47,6 @@ const NewsMeteoEngine = (function() {
   let activeModalTab = "meteo";
   let activeNewsFilter = "tutte";
 
-  // Converte entità come &#8217; e &#8211; in caratteri leggibili
   function decodeEntities(str) {
     if (!str) return "";
     const txt = document.createElement("textarea");
@@ -75,9 +69,135 @@ const NewsMeteoEngine = (function() {
     } catch (e) {}
   }
 
-  // --------------------------------------------------------------------------
-  // 1. SINCRONIZZAZIONE DATI BACKEND GAS
-  // --------------------------------------------------------------------------
+  // 🔒 INIEZIONE CSS BLINDATA (Neutralizza i blocchi della cache di core.css)
+  function injectComponentStyles() {
+    if (document.getElementById("news-meteo-injected-styles")) return;
+    const style = document.createElement("style");
+    style.id = "news-meteo-injected-styles";
+    style.textContent = `
+      #news-meteo-mount {
+        width: 100% !important;
+        min-height: 48px !important;
+        display: block !important;
+      }
+      .news-meteo-mini-bar {
+        width: 100% !important;
+        height: 48px !important;
+        min-height: 48px !important;
+        background: #0B1222 !important;
+        border: 1px solid rgba(255, 255, 255, 0.12) !important;
+        border-radius: 0.85rem !important;
+        padding: 4px 8px !important;
+        display: flex !important;
+        align-items: center !important;
+        gap: 8px !important;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6) !important;
+        user-select: none !important;
+        box-sizing: border-box !important;
+        overflow: hidden !important;
+        transition: border-color 0.2s ease !important;
+      }
+      .news-meteo-mini-bar:hover {
+        border-color: rgba(56, 189, 248, 0.45) !important;
+      }
+      .meteo-capsule-anchor {
+        display: flex !important;
+        align-items: center !important;
+        gap: 4px !important;
+        padding: 2px 8px !important;
+        background: rgba(0, 0, 0, 0.65) !important;
+        border: 1px solid rgba(56, 189, 248, 0.35) !important;
+        border-radius: 0.65rem !important;
+        height: 36px !important;
+        flex-shrink: 0 !important;
+        cursor: pointer !important;
+        transition: all 0.15s ease !important;
+      }
+      .meteo-capsule-anchor:hover {
+        background: rgba(56, 189, 248, 0.15) !important;
+        border-color: #38BDF8 !important;
+      }
+      .meteo-capsule-icon { font-size: 16px !important; line-height: 1 !important; }
+      .meteo-capsule-temps {
+        display: flex !important;
+        align-items: center !important;
+        gap: 2px !important;
+        font-family: monospace !important;
+        font-size: 10px !important;
+        font-weight: 900 !important;
+        line-height: 1 !important;
+      }
+      .meteo-temp-max { color: #FBBF24 !important; }
+      .meteo-temp-divider { color: #475569 !important; font-weight: normal !important; }
+      .meteo-temp-min { color: #38BDF8 !important; }
+      .meteo-capsule-city {
+        display: none !important;
+        font-family: monospace !important;
+        font-size: 8px !important;
+        font-weight: 800 !important;
+        color: #94A3B8 !important;
+        letter-spacing: 0.05em !important;
+      }
+      @media (min-width: 380px) {
+        .meteo-capsule-city { display: inline-block !important; }
+      }
+      .news-ticker-window {
+        flex: 1 !important;
+        height: 100% !important;
+        overflow: hidden !important;
+        position: relative !important;
+        display: flex !important;
+        align-items: center !important;
+        cursor: pointer !important;
+        mask-image: linear-gradient(to right, transparent, black 4%, black 96%, transparent) !important;
+        -webkit-mask-image: linear-gradient(to right, transparent, black 4%, black 96%, transparent) !important;
+      }
+      .news-ticker-track {
+        display: inline-flex !important;
+        align-items: center !important;
+        white-space: nowrap !important;
+        will-change: transform !important;
+        animation: newsTickerScroll 38s linear infinite !important;
+      }
+      .news-ticker-window:hover .news-ticker-track,
+      .news-ticker-window:active .news-ticker-track {
+        animation-play-state: paused !important;
+      }
+      @keyframes newsTickerScroll {
+        0% { transform: translateX(0); }
+        100% { transform: translateX(-50%); }
+      }
+      .ticker-item {
+        display: inline-flex !important;
+        align-items: center !important;
+        gap: 6px !important;
+        padding-right: 14px !important;
+        font-size: 11px !important;
+      }
+      .ticker-badge {
+        padding: 1px 4px !important;
+        border-radius: 4px !important;
+        font-family: monospace !important;
+        font-size: 8.5px !important;
+        font-weight: 900 !important;
+        color: #070A12 !important;
+        text-transform: uppercase !important;
+        flex-shrink: 0 !important;
+      }
+      .ticker-text {
+        font-weight: 700 !important;
+        color: #F1F5F9 !important;
+        letter-spacing: 0.01em !important;
+      }
+      .ticker-sep {
+        color: rgba(56, 189, 248, 0.4) !important;
+        font-size: 10px !important;
+        margin-left: 6px !important;
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
   async function fetchRemoteData(forceRefresh = false) {
     try {
       if (typeof apiCall === "function") {
@@ -96,13 +216,10 @@ const NewsMeteoEngine = (function() {
         }
       }
     } catch (err) {
-      console.warn("[NewsMeteo] Fallback su cache o dati locali:", err);
+      console.warn("[NewsMeteo] Fallback su cache locale:", err);
     }
   }
 
-  // --------------------------------------------------------------------------
-  // 2. INIEZIONE MODALE ESPANSA NEL DOM
-  // --------------------------------------------------------------------------
   function injectExpandedModal() {
     let modal = document.getElementById("modal-news-meteo");
     if (!modal) {
@@ -249,10 +366,8 @@ const NewsMeteoEngine = (function() {
     `).join("");
   }
 
-  // --------------------------------------------------------------------------
-  // 3. MONTAGGIO MINI-WIDGET (USANDO ESCLUSIVAMENTE LE CLASSI DI core.css)
-  // --------------------------------------------------------------------------
   function mountMiniWidget() {
+    injectComponentStyles();
     injectExpandedModal();
 
     let mountEl = document.getElementById("news-meteo-mount");
@@ -266,7 +381,6 @@ const NewsMeteoEngine = (function() {
     mountEl.className = "w-full";
     mountEl.innerHTML = `
       <div class="news-meteo-mini-bar">
-        <!-- Capsula Meteo a Sinistra -->
         <div class="meteo-capsule-anchor" onclick="NewsMeteoEngine.openModal('meteo')" title="Meteo Viareggio">
           <span class="meteo-capsule-icon" id="mini-meteo-icon">☁️</span>
           <div class="meteo-capsule-temps">
@@ -277,7 +391,6 @@ const NewsMeteoEngine = (function() {
           <span class="meteo-capsule-city">VIAREGGIO</span>
         </div>
 
-        <!-- Ticker Scorrevole a Destra -->
         <div class="news-ticker-window" onclick="NewsMeteoEngine.openModal('news')" title="Leggi Rassegna Stampa">
           <div class="news-ticker-track" id="mini-news-track"></div>
         </div>
@@ -311,14 +424,10 @@ const NewsMeteoEngine = (function() {
         </span>
       `).join("");
 
-      // Duplicazione per scorrimento infinito continuo
       trackEl.innerHTML = htmlBlock + htmlBlock;
     }
   }
 
-  // --------------------------------------------------------------------------
-  // 4. INIZIALIZZAZIONE & SOTTOSCRIZIONE
-  // --------------------------------------------------------------------------
   function init() {
     const cached = loadLocalCache();
     currentData = cached || FALLBACK_DATA;
