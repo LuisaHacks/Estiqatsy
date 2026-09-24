@@ -627,7 +627,7 @@ dialog.modal {
   display: block;
 }
 
-/* Barra Principale Compatta (48px Identica alla Radio) */
+/* Barra Principale Compatta in Home */
 .news-meteo-mini-bar {
   width: 100%;
   height: 48px;
@@ -650,7 +650,7 @@ dialog.modal {
   border-color: rgba(56, 189, 248, 0.45);
 }
 
-/* Capsula Meteo Fissa a Sinistra */
+/* Capsula Meteo a Sinistra */
 .meteo-capsule-anchor {
   display: flex;
   align-items: center;
@@ -722,10 +722,10 @@ dialog.modal {
   align-items: center;
   white-space: nowrap;
   will-change: transform;
-  animation: tickerScroll 120s linear infinite;
+  animation: tickerScroll 48s linear infinite; /* Velocità di lettura rilassata */
 }
 
-/* Sospensione dello scorrimento quando l'utente tiene premuto per leggere */
+/* Pausa dello scorrimento quando l'utente tiene premuto per leggere */
 .news-ticker-window:hover .news-ticker-track,
 .news-ticker-window:active .news-ticker-track {
   animation-play-state: paused;
@@ -736,7 +736,6 @@ dialog.modal {
   100% { transform: translateX(-50%); }
 }
 
-/* Elementi Notizia nel Ticker */
 .ticker-item {
   display: inline-flex;
   align-items: center;
@@ -766,4 +765,25 @@ dialog.modal {
   color: rgba(56, 189, 248, 0.4);
   font-size: 10px;
   margin-left: 6px;
+}
+
+/* ----------------------------------------------------------------------------
+   MODALE ESPANSA ALTA (86dvh) PER METEO E NOTIZIE CON FOTO
+   ---------------------------------------------------------------------------- */
+.news-meteo-expanded-box {
+  height: 86vh !important;
+  height: 86dvh !important;
+  max-height: 86dvh !important;
+  max-width: 520px !important;
+  width: 94vw !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: space-between !important;
+}
+
+.news-meteo-scroll-body {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  overflow-y: auto !important;
+  padding-right: 2px !important;
 }
