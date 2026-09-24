@@ -215,3 +215,171 @@ const NewsMeteoEngine = (function() {
 
   function renderNewsArticlesList() {
     const nList = document.getElementById("news-articles-list");
+    if (!nList) return;
+
+    const data = currentData || FALLBACK_DATA;
+    let articles = data.news || [];
+
+    if (activeNewsFilter !== "tutte") {
+      articles = articles.filter(a => String(a.fonte || "").toLowerCase() === activeNewsFilter.toLowerCase());
+    }
+
+    if (articles.length === 0) {
+      nList.innerHTML = `<div class="p-3 text-center text-xs text-slate-500 font-mono">Nessuna notizia disponibile.</div>`;
+      return;
+    }
+
+    nList.innerHTML = articles.map(art => `
+      <div class="p-2.5 rounded-xl bg-slate-900 border border-white/5 space-y-1">
+        <div class="flex items-center justify-between text-[9px] font-mono">
+          <span class="px-1.5 py-0.5 rounded font-black text-slate-950" style="background-color: ${art.colore || '#38BDF8'};">${art.sigla || 'NEWS'}</span>
+          <span class="text-slate-500">${art.ora || 'Recente'}</span>
+        </div>
+        <h4 class="text-xs font-bold text-white leading-snug">${art.titolo}</h4>
+        ${art.descrizione ? `<p class="text-[10px] text-slate-400 leading-relaxed">${art.descrizione}</p>` : ''}
+        ${art.link ? `
+          <div class="pt-0.5 text-right">
+            <a href="${art.link}" target="_blank" class="text-[10px] text-sky-400 font-mono hover:underline inline-flex items-center gap-1">
+              Leggi su ${art.fonte} ›
+            </a>
+          </div>
+        ` : ''}
+      </div>
+    `).join("");
+  }
+
+  // --------------------------------------------------------------------------
+  // 3. MONTAGGIO MINI-WIDGET (CON CLASSI DI core.css)
+  // --------------------------------------------------------------------------
+  function mountMiniWidget() {
+    injectExpandedModal();
+
+    let mountEl = document.getElementById("news-meteo-mount");
+    if (!mountEl) return;
+
+    if (mountEl.querySelector(".news-meteo-mini-bar")) {
+      renderMiniWidget();
+      return;
+    }
+
+    mountEl.className = "w-full";
+    mountEl.innerHTML = `
+      <div class="news-meteo-mini-bar">
+        <!-- Capsula Meteo Fissa a Sinistra -->
+        <div class="meteo-capsule-anchor" onclick="NewsMeteoEngine.openModal('meteo')" title="Meteo Viareggio">
+          <span class="meteo-capsule-icon" id="mini-meteo-icon">☁️</span>
+          <div class="meteo-capsule-temps">
+            <span class="meteo-temp-max" id="mini-meteo-max">27°</span>
+            <span class="meteo-temp-divider">/</span>
+            <span class="meteo-temp-min" id="mini-meteo-min">15°</span>
+          </div>
+          <span class="meteo-capsule-city">VIAREGGIO</span>
+        </div>
+
+        <!-- Ticker Scorrevole a Destra -->
+        <div class="news-ticker-window" onclick="NewsMeteoEngine.openModal('news')" title="Leggi Rassegna Stampa">
+          <div class="news-ticker-track" id="mini-news-track"></div>
+        </div>
+      </div>
+    `;
+
+    renderMiniWidget();
+  }
+
+  function renderMiniWidget() {
+    const data = currentData || FALLBACK_DATA;
+    const m = data.meteo || FALLBACK_DATA.meteo;
+    const oggi = m.oggi || FALLBACK_DATA.meteo.oggi;
+
+    const iconEl = document.getElementById("mini-meteo-icon");
+    const maxEl = document.getElementById("mini-meteo-max");
+    const minEl = document.getElementById("mini-meteo-min");
+
+    if (iconEl) iconEl.textContent = oggi.icona || "☁️";
+    if (maxEl) maxEl.textContent = oggi.tempMax ? oggi.tempMax.replace('°C', '°').trim() : "--";
+    if (minEl) minEl.textContent = oggi.tempMin ? oggi.tempMin.replace('°C', '°').trim() : "--";
+
+    const trackEl = document.getElementById("mini-news-track");
+    if (trackEl) {
+      const articles = (data.news && data.news.length > 0) ? data.news : FALLBACK_DATA.news;
+      const htmlBlock = articles.map(art => `
+        <span class="ticker-item">
+          <span class="ticker-badge" style="background-color: ${art.colore || '#38BDF8'};">${art.sigla || 'NEWS'}</span>
+          <span class="ticker-text">${art.titolo}</span>
+          <span class="ticker-sep">⚓</span>
+        </span>
+      `).join("");
+
+      // Duplicazione per scorrimento infinito continuo
+      trackEl.innerHTML = htmlBlock + htmlBlock;
+    }
+  }
+
+  // --------------------------------------------------------------------------
+  // 4. INIZIALIZZAZIONE & SOTTOSCRIZIONE
+  // --------------------------------------------------------------------------
+  function init() {
+    const cached = loadLocalCache();
+    currentData = cached || FALLBACK_DATA;
+
+    mountMiniWidget();
+    setTimeout(mountMiniWidget, 50);
+    setTimeout(mountMiniWidget, 350);
+
+    setTimeout(() => {
+      fetchRemoteData(false);
+    }, 150);
+
+    setInterval(() => {
+      if (!document.hidden) fetchRemoteData(false);
+    }, REFRESH_INTERVAL_MS);
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", init);
+  } else {
+    init();
+  }
+
+  return {
+    openModal: function(tabName = "meteo") {
+      injectExpandedModal();
+      this.switchTab(tabName);
+      renderModalContent();
+      document.getElementById("modal-news-meteo")?.showModal();
+    },
+
+    switchTab: function(tab) {
+      activeModalTab = tab;
+      const btnMeteo = document.getElementById("tab-btn-meteo");
+      const btnNews = document.getElementById("tab-btn-news");
+      const contentMeteo = document.getElementById("tab-content-meteo");
+      const contentNews = document.getElementById("tab-content-news");
+
+      if (btnMeteo) btnMeteo.className = `flex-1 py-1 rounded-lg text-xs font-bold transition ${tab === 'meteo' ? 'bg-sky-500 text-slate-950 shadow-md' : 'text-slate-400 hover:text-white'}`;
+      if (btnNews) btnNews.className = `flex-1 py-1 rounded-lg text-xs font-bold transition ${tab === 'news' ? 'bg-sky-500 text-slate-950 shadow-md' : 'text-slate-400 hover:text-white'}`;
+
+      if (contentMeteo) contentMeteo.classList.toggle("hidden", tab !== "meteo");
+      if (contentNews) contentNews.classList.toggle("hidden", tab !== "news");
+    },
+
+    filterNews: function(source) {
+      activeNewsFilter = source;
+      document.querySelectorAll("#news-source-filter .rpg-category-chip").forEach(c => {
+        const isMatch = (source === "tutte" && c.id === "chip-news-tutte") ||
+                        (source === "VersiliaToday" && c.id === "chip-news-vt") ||
+                        (source === "NoiTV" && c.id === "chip-news-noitv");
+        c.classList.toggle("active", isMatch);
+      });
+      renderNewsArticlesList();
+    },
+
+    refreshData: function() {
+      fetchRemoteData(true);
+    },
+
+    mountWidget: mountMiniWidget
+  };
+})();
+
+window.NewsMeteoEngine = NewsMeteoEngine;
