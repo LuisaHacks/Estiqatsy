@@ -1,8 +1,8 @@
 /* ============================================================================
    PROJECT: ESTIQATSY SYNDICATE & RPG PLATFORM
-   FILE: css/rules2.css (VERSIONE 31.0 - MONUMENTAL TCG & CRISP FOIL)
-   LAYER: ENGINE RULES 2, WIZARD STAGE, SPLIT ACTION SLOT, FULL HUD & COCKPIT
-   NOTE: CRISP SILVER SEPARATOR, ZERO DARK VOID, STABLE CAROUSEL & MONUMENTAL PREVIEW
+   FILE: css/rules2.css (VERSIONE 36.0 - TCG MONUMENTAL, FOIL & TACTICAL SHEETS)
+   LAYER: ENGINE RULES 2, WIZARD STAGE, ACTION MATRIX, FULL HUD & CARD INSPECTOR
+   NOTE: LOCK AFFORDANCE, TACTICAL PILLS, TOAST SAFE-ZONE & ZERO CAROUSEL RESETS
    ============================================================================ */
 
 /* ----------------------------------------------------------------------------
@@ -72,7 +72,7 @@
 }
 
 /* ----------------------------------------------------------------------------
-   4. PALCO CAROSELLO WIZARD
+   4. PALCO CAROSELLO WIZARD (STABILE CON MOMENTUM TOUCH)
    ---------------------------------------------------------------------------- */
 .coverflow-stage-outer {
   position: relative !important;
@@ -103,10 +103,11 @@
   -webkit-overflow-scrolling: touch !important;
   overscroll-behavior-x: contain !important;
   box-sizing: border-box !important;
+  will-change: scroll-position;
 }
 
 /* ----------------------------------------------------------------------------
-   5. CARTA TCG CENTRATA E BILANCIATA (ADDIO AL VUOTO NERO NEL TESTO)
+   5. CARTA TCG CENTRATA E BILANCIATA (GEOMETRIA FISSA ANTI-SCATTO)
    ---------------------------------------------------------------------------- */
 .coverflow-card,
 .tcg-card {
@@ -131,7 +132,8 @@
   transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), 
               box-shadow 0.2s ease, 
               border-color 0.2s ease,
-              opacity 0.2s ease;
+              opacity 0.2s ease,
+              filter 0.2s ease;
   user-select: none;
   opacity: 0.55;
   transform: scale(0.93);
@@ -154,7 +156,7 @@
               0 18px 42px rgba(0, 0, 0, 0.95) !important;
 }
 
-/* CARTA IN GAMEPLAY */
+/* CARTA IN GAMEPLAY (PALCO CENTRALE) */
 #gameplay-moverina-card .tcg-card,
 #view-gameplay .tcg-card,
 .tcg-card.gameplay-focal {
@@ -170,10 +172,10 @@
 }
 
 /* ----------------------------------------------------------------------------
-   6. ANATOMIA INTERNA CARTA
+   6. ANATOMIA INTERNA CARTA TCG
    ---------------------------------------------------------------------------- */
 
-/* Illustrazione / Media */
+/* Illustrazione / Artwork */
 .tcg-card-media {
   position: relative !important;
   width: 100% !important;
@@ -195,7 +197,7 @@
   display: block;
 }
 
-/* 🔒 LINEETTA BIANCO PLATINO PULITA SOTTO IL TITOLO */
+/* Header Carta con Filetto Platino */
 .tcg-card-header {
   position: absolute !important;
   top: 0 !important;
@@ -244,7 +246,7 @@
   border: 1px solid rgba(245, 158, 11, 0.45);
 }
 
-/* Overlay Citazione */
+/* Overlay Citazione d'Atmosfera */
 .tcg-card-quote-overlay {
   position: absolute;
   bottom: 0;
@@ -275,7 +277,7 @@
   text-transform: uppercase;
 }
 
-/* Piastra Statistiche D20 */
+/* Piastra Statistiche Metallizzata D20 */
 .tcg-stats-plate {
   height: 30px;
   min-height: 30px;
@@ -301,7 +303,7 @@
   border-right: 1px solid rgba(255, 255, 255, 0.12);
 }
 
-/* 🔒 TESTO NARRATIVO DISTRIBUITO PERFETTAMENTE SENZA VUOTI */
+/* Testo Narrativo Senza Vuoti */
 .tcg-card-desc {
   flex: 1 1 auto !important;
   min-height: 0 !important;
@@ -359,7 +361,7 @@
 .tcg-gold-badge { color: #FDE047; }
 
 /* ----------------------------------------------------------------------------
-   7. FRECCE DI NAVIGAZIONE
+   7. FRECCE DI NAVIGAZIONE CAROSELLO
    ---------------------------------------------------------------------------- */
 .carousel-arrow-btn {
   width: 30px;
@@ -384,7 +386,7 @@
 }
 
 /* ----------------------------------------------------------------------------
-   8. SLOT AZIONI: ALLINEAMENTO INTELLIGENTE
+   8. SLOT AZIONI TATTICHE (GRIGLIE AD ALTA PRECISIONE)
    ---------------------------------------------------------------------------- */
 .scene-actions-area {
   width: 100% !important;
@@ -611,4 +613,118 @@ dialog.game-modal-sheet:not([open]) {
   flex: 1 1 auto;
   overflow-y: auto;
   padding-right: 4px;
+}
+
+/* ----------------------------------------------------------------------------
+   12. AFFORDANCE PER CARTE TALENTO BLOCCATE (STEP 2 WIZARD)
+   ---------------------------------------------------------------------------- */
+.tcg-card.tcg-card-locked {
+  filter: grayscale(0.85) contrast(0.85) !important;
+  opacity: 0.50 !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+.tcg-card.tcg-card-locked:hover {
+  opacity: 0.65 !important;
+}
+
+.locked-badge {
+  background: rgba(15, 23, 42, 0.85) !important;
+  color: #94A3B8 !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+}
+
+/* ----------------------------------------------------------------------------
+   13. PILLOLE TATTICHE RETROILLUMINATE (STEP 4 WIZARD)
+   ---------------------------------------------------------------------------- */
+.tactical-pill-btn {
+  height: 28px;
+  padding: 0 12px;
+  border-radius: 9999px;
+  background: rgba(15, 23, 42, 0.90);
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  color: #BAE6FD;
+  font-size: 10px;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+  transition: all 0.15s ease;
+  cursor: pointer;
+  user-select: none;
+}
+
+.tactical-pill-btn:active {
+  transform: scale(0.96);
+  background: rgba(56, 189, 248, 0.20);
+  border-color: #38BDF8;
+}
+
+/* ----------------------------------------------------------------------------
+   14. TOAST NOTIFICATION SAFE-ZONE (ANTI-COLLISIONE CON HEADER TELEGRAM)
+   ---------------------------------------------------------------------------- */
+.toast,
+.app-toast-container {
+  top: calc(44px + max(env(safe-area-inset-top, 0px), var(--tg-safe-area-inset-top, 0px)) + 8px) !important;
+  bottom: auto !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  width: min(92vw, 360px) !important;
+  z-index: 1000 !important;
+  pointer-events: none;
+}
+
+.toast > *,
+.app-toast-container > * {
+  pointer-events: auto;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.8) !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+}
+
+/* ----------------------------------------------------------------------------
+   15. CARD INSPECTOR UNIVERSALE (OVERLAY MODALE TRASPARENTE)
+   ---------------------------------------------------------------------------- */
+#modal-universal-detail {
+  background: rgba(4, 6, 11, 0.82) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  padding: 12px !important;
+}
+
+#modal-universal-detail .modal-box {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  overflow: visible !important;
+  max-width: 320px !important;
+  width: 100% !important;
+}
+
+.modal-close-btn {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  width: 28px;
+  height: 28px;
+  border-radius: 9999px;
+  background: #0B1222;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: #FFFFFF;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 900;
+  cursor: pointer;
+  z-index: 60;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.8);
+  transition: all 0.15s ease;
+}
+
+.modal-close-btn:active {
+  transform: scale(0.92);
+  border-color: #38BDF8;
 }
