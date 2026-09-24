@@ -1,6 +1,6 @@
 // ============================================================================
 // PROJECT: ESTIQATSY SYNDICATE & RPG PLATFORM
-// FILE: js/rules2wizard.js (VERSIONE 36.0 - STAT-SAFE, LOCK AFFORDANCE & MONUMENTAL)
+// FILE: js/rules2wizard.js (VERSIONE 50.0 - STAT-SAFE, LOCK AFFORDANCE & MONUMENTAL)
 // LAYER: WIZARD MOUNT ENGINE, IN-PLACE UPDATES & AUTO-EQUIP PROTOCOL
 // NOTE: ZERO STAT INFLATION, VEHICLE CONSTRAINT, LOCK OVERLAYS & CRISP STEP 4
 // ============================================================================
@@ -160,7 +160,21 @@ const Rules2Wizard = {
         String(x.id || "").toLowerCase() === String(cls.equipLoot).toLowerCase() || 
         String(x.nome || "").toLowerCase() === String(cls.equipLoot).toLowerCase()
       );
-      if (startItem) allGear.unshift(startItem);
+      if (startItem) {
+        allGear.unshift(startItem);
+        // Se la dotazione base è un Talismano o Strumento passivo con bonus, applicali
+        const startCat = Rules2_ClassifyEntity(startItem);
+        if (startCat === "TALISMANI") {
+          if (startItem.forza) effFor += Number(startItem.forza);
+          if (startItem.destrezza) effDes += Number(startItem.destrezza);
+          if (startItem.intelligenza) effInt += Number(startItem.intelligenza);
+          if (startItem.pv && Number(startItem.pv) > 0) maxPV += Number(startItem.pv);
+        } else if (startCat === "STRUMENTI") {
+          if (startItem.forza) effFor += Number(startItem.forza);
+          if (startItem.destrezza) effDes += Number(startItem.destrezza);
+          if (startItem.intelligenza) effInt += Number(startItem.intelligenza);
+        }
+      }
     }
 
     const autoWeapon = allGear.find(x => Rules2_ClassifyEntity(x) === "ARMI");
@@ -169,7 +183,7 @@ const Rules2Wizard = {
     if (autoWeapon?.forza) effFor += Number(autoWeapon.forza);
     if (autoVehicle?.destrezza) effDes += Number(autoVehicle.destrezza);
 
-    // 2. Solo i TALISMANI o gli STRUMENTI passivi aumentano permanentemente statistiche e maxPV
+    // 2. Solo i TALISMANI o gli STRUMENTI passivi acquistati aumentano permanentemente statistiche e maxPV
     this.state.boughtItems.forEach(item => {
       const cat = Rules2_ClassifyEntity(item);
       if (cat === "TALISMANI") {
@@ -398,7 +412,9 @@ const Rules2Wizard = {
 
   navigateInfiniteCards: function(step, direction) {
     tgHaptic("selection");
-    if (window.SoundEngine) SoundEngine.playClick();
+    if (window.SoundEngine && typeof SoundEngine.playClick === "function") {
+      SoundEngine.playClick();
+    }
 
     if (step === 1) {
       const list = this.getFilteredClasses();
@@ -704,7 +720,9 @@ const Rules2Wizard = {
       this.state.chosenAbilities.splice(idx, 1);
       this.state.remainingPx += cost;
       tgHaptic("light");
-      if (window.SoundEngine) SoundEngine.playClick();
+      if (window.SoundEngine && typeof SoundEngine.playClick === "function") {
+        SoundEngine.playClick();
+      }
       wizardNotify(`Rimosso ${ab.nome}. +${cost} PX rimborsati.`, "info");
     } else {
       if (this.state.remainingPx < cost) {
@@ -714,7 +732,9 @@ const Rules2Wizard = {
       this.state.chosenAbilities.push(ablId);
       this.state.remainingPx -= cost;
       tgHaptic("success");
-      if (window.SoundEngine) SoundEngine.playCoin();
+      if (window.SoundEngine && typeof SoundEngine.playCoin === "function") {
+        SoundEngine.playCoin();
+      }
       wizardNotify(`Talento ${ab.nome} appreso!`, "success");
     }
 
@@ -922,7 +942,9 @@ const Rules2Wizard = {
     this.state.boughtItems.push(item);
 
     tgHaptic("success");
-    if (window.SoundEngine) SoundEngine.playCoin();
+    if (window.SoundEngine && typeof SoundEngine.playCoin === "function") {
+      SoundEngine.playCoin();
+    }
     wizardNotify(`${item.nome} aggiunto allo zaino!`, "success");
 
     this.syncLiveHUD();
@@ -1062,7 +1084,9 @@ const Rules2Wizard = {
 
   goToStep: function(s) {
     tgHaptic("selection");
-    if (window.SoundEngine) SoundEngine.playClick();
+    if (window.SoundEngine && typeof SoundEngine.playClick === "function") {
+      SoundEngine.playClick();
+    }
     this.showStep(s);
   },
 
@@ -1072,14 +1096,18 @@ const Rules2Wizard = {
     }
     this.showStep(s);
     tgHaptic("selection");
-    if (window.SoundEngine) SoundEngine.playClick();
+    if (window.SoundEngine && typeof SoundEngine.playClick === "function") {
+      SoundEngine.playClick();
+    }
   },
 
   prevStep: function(s) {
     if (s < 1) return;
     this.showStep(s);
     tgHaptic("selection");
-    if (window.SoundEngine) SoundEngine.playClick();
+    if (window.SoundEngine && typeof SoundEngine.playClick === "function") {
+      SoundEngine.playClick();
+    }
   },
 
   _syncStepToServer: function(faseName) {
