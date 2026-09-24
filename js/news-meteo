@@ -1,30 +1,25 @@
 // ============================================================================
-// PROJECT: ESTIQATSY SYNDICATE & RPG PLATFORM
-// FILE: js/news-meteo.js (VERSIONE 1.0 - LOCAL NEWS & WEATHER TICKER COMPONENT)
-// DESCRIZIONE: Componente autonomo integrato con Modulo_NewsMeteo.gs:
-//              - Mini-Widget a 48px con Capsula Meteo e Ticker News scorrevole
-//              - Modale espansa: Previsioni a 6 giorni + Rassegna stampa VT/NoiTV
-//              - Cache locale a 0ms + sincronizzazione automatica ogni 20 min
+// PROJECT: ESTIQATSY BOT & RPG PLATFORM
+// FILE: js/news-meteo.js (VERSIONE 1.1 - FAIL-SAFE MOUNTING & API UNWRAPPER)
 // ============================================================================
 
 const NewsMeteoEngine = (function() {
   'use strict';
 
   const CACHE_KEY = "estiqatsy_news_meteo_cache";
-  const REFRESH_INTERVAL_MS = 20 * 60 * 1000; // Auto-refresh ogni 20 minuti
+  const REFRESH_INTERVAL_MS = 20 * 60 * 1000;
 
-  // Dati di ripiego immediati (zero ritardo al primo avvio)
   const FALLBACK_DATA = {
     meteo: {
       citta: "Viareggio",
       oggi: {
         data: "Oggi a Viareggio",
-        condizione: "Variabile",
-        icona: "⛅",
-        tempMin: "16°C",
-        tempMax: "24°C",
-        pressione: "1020 hPa",
-        umidita: "55%"
+        condizione: "Cielo coperto",
+        icona: "☁️",
+        tempMin: "15 °C",
+        tempMax: "27 °C",
+        pressione: "1022 hPa",
+        umidita: "49%"
       },
       previsioni: []
     },
@@ -49,12 +44,9 @@ const NewsMeteoEngine = (function() {
   };
 
   let currentData = null;
-  let activeModalTab = "meteo"; // "meteo" | "news"
+  let activeModalTab = "meteo";
   let activeNewsFilter = "tutte";
 
-  // --------------------------------------------------------------------------
-  // 1. CARICAMENTO DATI (CACHE LOCALE + API GAS)
-  // --------------------------------------------------------------------------
   function loadLocalCache() {
     try {
       const raw = localStorage.getItem(CACHE_KEY);
@@ -70,10 +62,13 @@ const NewsMeteoEngine = (function() {
     } catch (e) {}
   }
 
+  // 🔒 Estrazione sicura sia di res.data che di res diretto
   async function fetchRemoteData(forceRefresh = false) {
     try {
       if (typeof apiCall === "function") {
-        const res = await apiCall("news_meteo", { refresh: forceRefresh });
+        const rawRes = await apiCall("news_meteo", { refresh: forceRefresh });
+        const res = (rawRes && rawRes.meteo) ? rawRes : (rawRes && rawRes.data ? rawRes.data : null);
+
         if (res && res.meteo && res.news) {
           currentData = res;
           saveLocalCache(res);
@@ -82,13 +77,10 @@ const NewsMeteoEngine = (function() {
         }
       }
     } catch (err) {
-      console.warn("[NewsMeteo] Impossibile aggiornare i dati da GAS:", err);
+      console.warn("[NewsMeteo] Fallback su cache o dati locali:", err);
     }
   }
 
-  // --------------------------------------------------------------------------
-  // 2. INIEZIONE MODALE ESPANSA NEL DOM
-  // --------------------------------------------------------------------------
   function injectExpandedModal() {
     let modal = document.getElementById("modal-news-meteo");
     if (!modal) {
@@ -102,7 +94,6 @@ const NewsMeteoEngine = (function() {
       <div class="modal-box p-4 bg-[#070A12] border border-sky-400/40 rounded-2xl max-w-sm sm:max-w-md space-y-3 relative shadow-2xl">
         <button onclick="document.getElementById('modal-news-meteo').close()" class="modal-close-btn absolute top-3 right-3 w-7 h-7 rounded-full bg-slate-800 border border-white/10 flex items-center justify-center text-slate-300 hover:text-white z-50 text-xs font-black">✕</button>
 
-        <!-- Intestazione con Selettore Schede -->
         <div class="flex items-center justify-between pr-8 border-b border-white/10 pb-2">
           <div class="flex items-center gap-2">
             <span class="text-xl">🌊</span>
@@ -113,7 +104,6 @@ const NewsMeteoEngine = (function() {
           </div>
         </div>
 
-        <!-- Selettore Tab Meteo / News -->
         <div class="flex gap-1.5 p-1 bg-slate-900 rounded-xl border border-white/5">
           <button onclick="NewsMeteoEngine.switchTab('meteo')" id="tab-btn-meteo" class="flex-1 py-1 rounded-lg text-xs font-bold transition ${activeModalTab === 'meteo' ? 'bg-sky-500 text-slate-950 shadow-md' : 'text-slate-400 hover:text-white'}">
             ⛅ Meteo Porto
@@ -123,9 +113,7 @@ const NewsMeteoEngine = (function() {
           </button>
         </div>
 
-        <!-- CONTENUTO TAB 1: METEO VIAREGGIO (6 GIORNI) -->
         <div id="tab-content-meteo" class="${activeModalTab === 'meteo' ? '' : 'hidden'} space-y-2.5">
-          <!-- Scheda Oggi -->
           <div class="p-3 rounded-xl bg-gradient-to-br from-sky-950/40 to-slate-900 border border-sky-400/30 flex items-center justify-between">
             <div class="flex items-center gap-2.5">
               <span class="text-3xl" id="meteo-today-icon">⛅</span>
@@ -141,38 +129,27 @@ const NewsMeteoEngine = (function() {
             </div>
           </div>
 
-          <!-- Previsioni 6 Giorni -->
           <div class="space-y-1">
             <div class="flex items-center justify-between text-[9.5px] font-mono text-slate-400 font-bold uppercase px-1">
               <span>Previsioni Prossimi Giorni</span>
               <span class="text-slate-500">QuiNewsVersilia</span>
             </div>
-            <div class="space-y-1 max-h-44 overflow-y-auto pr-1" id="meteo-forecast-list">
-              <!-- Popolato dinamicamente -->
-            </div>
+            <div class="space-y-1 max-h-44 overflow-y-auto pr-1" id="meteo-forecast-list"></div>
           </div>
         </div>
 
-        <!-- CONTENUTO TAB 2: RASSEGNA STAMPA (VT + NOITV) -->
         <div id="tab-content-news" class="${activeModalTab === 'news' ? '' : 'hidden'} space-y-2">
-          <!-- Filtro per testata -->
           <div class="flex gap-1.5 overflow-x-auto pb-0.5" id="news-source-filter">
             <button onclick="NewsMeteoEngine.filterNews('tutte')" class="rpg-category-chip active" id="chip-news-tutte">Tutte</button>
             <button onclick="NewsMeteoEngine.filterNews('VersiliaToday')" class="rpg-category-chip" id="chip-news-vt">VersiliaToday</button>
             <button onclick="NewsMeteoEngine.filterNews('NoiTV')" class="rpg-category-chip" id="chip-news-noitv">NoiTV</button>
           </div>
-
-          <div class="space-y-1.5 max-h-56 overflow-y-auto pr-1" id="news-articles-list">
-            <!-- Popolato dinamicamente -->
-          </div>
+          <div class="space-y-1.5 max-h-56 overflow-y-auto pr-1" id="news-articles-list"></div>
         </div>
       </div>
     `;
   }
 
-  // --------------------------------------------------------------------------
-  // 3. RENDERING MODALE ESPANSA
-  // --------------------------------------------------------------------------
   function renderModalContent() {
     const data = currentData || FALLBACK_DATA;
     const m = data.meteo || FALLBACK_DATA.meteo;
@@ -180,7 +157,6 @@ const NewsMeteoEngine = (function() {
 
     const s = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
 
-    // Dati Oggi
     s("meteo-today-icon", oggi.icona || "⛅");
     s("meteo-today-city", m.citta ? `${m.citta} (Oggi)` : "Viareggio (Oggi)");
     s("meteo-today-desc", oggi.condizione || "Variabile");
@@ -188,12 +164,11 @@ const NewsMeteoEngine = (function() {
     s("meteo-today-max", `Max: ${oggi.tempMax || '--'}`);
     s("meteo-today-min", `Min: ${oggi.tempMin || '--'}`);
 
-    // Previsioni 6 Giorni
     const fList = document.getElementById("meteo-forecast-list");
     if (fList) {
       const prev = m.previsioni || [];
       if (prev.length === 0) {
-        fList.innerHTML = `<div class="p-2 text-center text-xs text-slate-500 font-mono">Previsioni a medio termine in aggiornamento...</div>`;
+        fList.innerHTML = `<div class="p-2 text-center text-xs text-slate-500 font-mono">Previsioni in aggiornamento...</div>`;
       } else {
         fList.innerHTML = prev.map(p => `
           <div class="p-2 rounded-lg bg-slate-900/60 border border-white/5 flex items-center justify-between text-xs">
@@ -214,7 +189,6 @@ const NewsMeteoEngine = (function() {
       }
     }
 
-    // Lista Notizie
     renderNewsArticlesList();
   }
 
@@ -230,7 +204,7 @@ const NewsMeteoEngine = (function() {
     }
 
     if (articles.length === 0) {
-      nList.innerHTML = `<div class="p-3 text-center text-xs text-slate-500 font-mono">Nessuna notizia disponibile per questo filtro.</div>`;
+      nList.innerHTML = `<div class="p-3 text-center text-xs text-slate-500 font-mono">Nessuna notizia disponibile.</div>`;
       return;
     }
 
@@ -253,16 +227,12 @@ const NewsMeteoEngine = (function() {
     `).join("");
   }
 
-  // --------------------------------------------------------------------------
-  // 4. INIEZIONE & MOUNTING DEL MINI-WIDGET IN HOME (48px FISSI)
-  // --------------------------------------------------------------------------
   function mountMiniWidget() {
     injectExpandedModal();
 
     let mountEl = document.getElementById("news-meteo-mount");
     if (!mountEl) return;
 
-    // Se già montato con successo, aggiorna solo i dati
     if (mountEl.querySelector(".news-meteo-mini-bar")) {
       renderMiniWidget();
       return;
@@ -271,22 +241,18 @@ const NewsMeteoEngine = (function() {
     mountEl.className = "w-full";
     mountEl.innerHTML = `
       <div class="news-meteo-mini-bar">
-        <!-- ZONA A: CAPSULA METEO FISSA A SINISTRA -->
-        <div class="meteo-capsule-anchor" onclick="NewsMeteoEngine.openModal('meteo')" title="Apri Previsioni Meteo">
+        <div class="meteo-capsule-anchor" onclick="NewsMeteoEngine.openModal('meteo')" title="Meteo Viareggio">
           <span class="meteo-capsule-icon" id="mini-meteo-icon">⛅</span>
           <div class="meteo-capsule-temps">
-            <span class="meteo-temp-max" id="mini-meteo-max">24°</span>
+            <span class="meteo-temp-max" id="mini-meteo-max">27°</span>
             <span class="meteo-temp-divider">/</span>
-            <span class="meteo-temp-min" id="mini-meteo-min">16°</span>
+            <span class="meteo-temp-min" id="mini-meteo-min">15°</span>
           </div>
           <span class="meteo-capsule-city">VIAREGGIO</span>
         </div>
 
-        <!-- ZONA B: STRISCIA SCORREVOLE DELLE NOTIZIE (TICKER) -->
-        <div class="news-ticker-window" onclick="NewsMeteoEngine.openModal('news')" title="Apri Rassegna Stampa">
-          <div class="news-ticker-track" id="mini-news-track">
-            <!-- Popolato con testo continuo e separatori -->
-          </div>
+        <div class="news-ticker-window" onclick="NewsMeteoEngine.openModal('news')" title="Leggi News">
+          <div class="news-ticker-track" id="mini-news-track"></div>
         </div>
       </div>
     `;
@@ -299,7 +265,6 @@ const NewsMeteoEngine = (function() {
     const m = data.meteo || FALLBACK_DATA.meteo;
     const oggi = m.oggi || FALLBACK_DATA.meteo.oggi;
 
-    // Aggiornamento Capsula Meteo
     const iconEl = document.getElementById("mini-meteo-icon");
     const maxEl = document.getElementById("mini-meteo-max");
     const minEl = document.getElementById("mini-meteo-min");
@@ -308,7 +273,6 @@ const NewsMeteoEngine = (function() {
     if (maxEl) maxEl.textContent = oggi.tempMax ? oggi.tempMax.replace('°C', '°') : "--";
     if (minEl) minEl.textContent = oggi.tempMin ? oggi.tempMin.replace('°C', '°') : "--";
 
-    // Aggiornamento Ticker Scorrevole (Due passaggi per rotazione continua morbida)
     const trackEl = document.getElementById("mini-news-track");
     if (trackEl) {
       const articles = (data.news && data.news.length > 0) ? data.news : FALLBACK_DATA.news;
@@ -320,34 +284,22 @@ const NewsMeteoEngine = (function() {
         </span>
       `).join("");
 
-      // Duplicazione per scorrimento infinito fluido
       trackEl.innerHTML = htmlBlock + htmlBlock;
     }
   }
 
-  // --------------------------------------------------------------------------
-  // 5. INIZIALIZZAZIONE & SOTTOSCRIZIONE EVENTI
-  // --------------------------------------------------------------------------
   function init() {
-    // 1. Carica subito i dati dalla cache locale a latenza zero
     const cached = loadLocalCache();
-    if (cached) {
-      currentData = cached;
-    } else {
-      currentData = FALLBACK_DATA;
-    }
+    currentData = cached || FALLBACK_DATA;
 
-    // 2. Monta il widget appena il DOM è pronto
     mountMiniWidget();
     setTimeout(mountMiniWidget, 100);
-    setTimeout(mountMiniWidget, 400);
+    setTimeout(mountMiniWidget, 500);
 
-    // 3. Scarica i dati aggiornati in background
     setTimeout(() => {
       fetchRemoteData(false);
-    }, 250);
+    }, 200);
 
-    // 4. Timer periodico di aggiornamento
     setInterval(() => {
       if (!document.hidden) fetchRemoteData(false);
     }, REFRESH_INTERVAL_MS);
@@ -359,9 +311,6 @@ const NewsMeteoEngine = (function() {
     init();
   }
 
-  // --------------------------------------------------------------------------
-  // 6. METODI PUBBLICI ESPORTATI
-  // --------------------------------------------------------------------------
   return {
     openModal: function(tabName = "meteo") {
       injectExpandedModal();
