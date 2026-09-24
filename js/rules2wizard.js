@@ -1,8 +1,8 @@
 // ============================================================================
 // PROJECT: ESTIQATSY SYNDICATE & RPG PLATFORM
-// FILE: js/rules2wizard.js (VERSIONE 34.0 - STABLE CAROUSEL, AUTO-EQUIP & MONUMENTAL STEP 4)
+// FILE: js/rules2wizard.js (VERSIONE 36.0 - STAT-SAFE, LOCK AFFORDANCE & MONUMENTAL)
 // LAYER: WIZARD MOUNT ENGINE, IN-PLACE UPDATES & AUTO-EQUIP PROTOCOL
-// NOTE: ZERO CAROUSEL RESETS, HUMAN ITEM LOOKUP & FLAWLESS STEP 4 GEOMETRY
+// NOTE: ZERO STAT INFLATION, VEHICLE CONSTRAINT, LOCK OVERLAYS & CRISP STEP 4
 // ============================================================================
 
 const RULES2_SHOP_CATEGORIES = {
@@ -50,8 +50,11 @@ function Rules2_FormatHumanEffect(rawEffect, faction = "") {
     else if (tag === "PASSIVO:STAT_FORTUNA_1") out.push("🍀 <b>Buona Sorte:</b> +1 costante a tutti i tiri D20 ed Eventi.");
     else if (tag.startsWith("PASSIVO:INT_VS_")) out.push(`📂 <b>Dossier Mirato:</b> +1 INT contro ${tag.replace("PASSIVO:INT_VS_", "")}.`);
     else if (tag === "PASSIVO:PROVE" || tag === "PASSIVO:DOSSIER") out.push("📁 <b>Organigramma del Potere:</b> +1 INT permanente sull'inchiesta.");
+    else if (tag === "PASSIVO:OGGETTO_EQP_0026_S1_E0") out.push("🛡️ <b>Parata Passiva:</b> Riduce di 2 i danni fisici subiti.");
+    else if (tag === "PASSIVO:OGGETTO_EQP_0017_S1_E0") out.push("🧰 <b>Scasso Meccanico:</b> Sfonda porte e varchi sbarrati al 100%.");
+    else if (tag === "PASSIVO:OGGETTO_EQP_0022_S1_E0") out.push("📡 <b>Schermatura Radio:</b> Blocca al 100% l'arrivo di rinforzi nemici.");
     else if (tag.startsWith("SINTESI:")) out.push(`⚗️ <b>Laboratorio:</b> Sintetizza sostanze (${tag.replace("SINTESI:", "")}).`);
-    else if (tag.startsWith("PASSIVO:INGREDIENTE_")) out.push("🧪 <b>Materia Prima:</b> Reagente per sintesi.");
+    else if (tag.startsWith("PASSIVO:INGREDIENTE_")) out.push("🧪 <b>Materia Prima:</b> Reagente per sintesi chimica.");
     else if (tag.startsWith("PASSIVO:OGGETTO_")) out.push("🧰 <b>Strumento Speciale:</b> Sblocca varchi o controlli correlati.");
     else out.push(`⚡ <b>Proprietà:</b> ${tag.replace(/_/g, " ")}`);
   }
@@ -66,14 +69,14 @@ function Rules2_SafeAttr(str) {
 
 function Rules2_ResolveItemName(idOrName, catalog = []) {
   if (!idOrName || idOrName === "—" || idOrName === "-") return "";
-  const clean = String(idOrName).trim();
+  const clean = String(idOrName).trim().toLowerCase();
   const list = catalog.length > 0 ? catalog : (typeof Rules2Wizard !== "undefined" ? Rules2Wizard.state.shopCatalog : []);
-  const found = list.find(x => x.id === clean || x.nome?.toLowerCase() === clean.toLowerCase());
+  const found = list.find(x => String(x.id || "").toLowerCase() === clean || String(x.nome || "").toLowerCase() === clean);
   if (found) {
     const emoji = (found.emoji && found.emoji !== "—" && found.emoji !== "-") ? found.emoji + " " : "";
     return emoji + found.nome;
   }
-  return clean;
+  return idOrName;
 }
 
 function tgHaptic(type = "light") {
@@ -140,6 +143,61 @@ const Rules2Wizard = {
     currentGold: 40
   },
 
+  // --------------------------------------------------------------------------
+  // CALCOLO STATISTICHE MATEMATICAMENTE RIGOROSO (ZERO PHANTOM STATS & ZERO PV INFLATION)
+  // --------------------------------------------------------------------------
+  calculateEffectiveStats: function() {
+    const cls = this.state.chosenClass;
+    let effFor = cls ? Number(cls.forza || 10) : 10;
+    let effDes = cls ? Number(cls.destrezza || 10) : 10;
+    let effInt = cls ? Number(cls.intelligenza || 10) : 10;
+    let maxPV  = cls ? Number(cls.pv || 25) : 25;
+
+    // 1. Identifica l'arma e il veicolo che verranno auto-equipaggiati dal protocollo di gioco
+    const allGear = [...this.state.boughtItems];
+    if (cls?.equipLoot) {
+      const startItem = (this.state.shopCatalog || []).find(x => 
+        String(x.id || "").toLowerCase() === String(cls.equipLoot).toLowerCase() || 
+        String(x.nome || "").toLowerCase() === String(cls.equipLoot).toLowerCase()
+      );
+      if (startItem) allGear.unshift(startItem);
+    }
+
+    const autoWeapon = allGear.find(x => Rules2_ClassifyEntity(x) === "ARMI");
+    const autoVehicle = allGear.find(x => Rules2_ClassifyEntity(x) === "VEICOLI");
+
+    if (autoWeapon?.forza) effFor += Number(autoWeapon.forza);
+    if (autoVehicle?.destrezza) effDes += Number(autoVehicle.destrezza);
+
+    // 2. Solo i TALISMANI o gli STRUMENTI passivi aumentano permanentemente statistiche e maxPV
+    this.state.boughtItems.forEach(item => {
+      const cat = Rules2_ClassifyEntity(item);
+      if (cat === "TALISMANI") {
+        if (item.forza) effFor += Number(item.forza);
+        if (item.destrezza) effDes += Number(item.destrezza);
+        if (item.intelligenza) effInt += Number(item.intelligenza);
+        if (item.pv && Number(item.pv) > 0) maxPV += Number(item.pv);
+      } else if (cat === "STRUMENTI") {
+        if (item.forza) effFor += Number(item.forza);
+        if (item.destrezza) effDes += Number(item.destrezza);
+        if (item.intelligenza) effInt += Number(item.intelligenza);
+      }
+    });
+
+    // 3. Talenti appresi con bonus permanenti
+    this.state.chosenAbilities.forEach(ablId => {
+      const ab = (this.state.abilities || []).find(x => x.id === ablId || x.nome === ablId);
+      if (ab) {
+        if (ab.forza) effFor += Number(ab.forza);
+        if (ab.destrezza) effDes += Number(ab.destrezza);
+        if (ab.intelligenza) effInt += Number(ab.intelligenza);
+        if (ab.pv && Number(ab.pv) > 0) maxPV += Number(ab.pv);
+      }
+    });
+
+    return { effFor, effDes, effInt, maxPV, autoWeapon, autoVehicle };
+  },
+
   syncGold: function() {
     if (typeof Rules2Engine !== "undefined" && typeof Rules2Engine.getGold === "function") {
       const engineGold = Rules2Engine.getGold();
@@ -174,17 +232,7 @@ const Rules2Wizard = {
     const heroName = this.state.heroName || (cls ? cls.nome : "Avventuriero");
     const avatarEmoji = cls ? (cls.emoji || "👤") : "👤";
     
-    let effFor = cls ? Number(cls.forza || 10) : 10;
-    let effDes = cls ? Number(cls.destrezza || 10) : 10;
-    let effInt = cls ? Number(cls.intelligenza || 10) : 10;
-    let maxPV = cls ? Number(cls.pv || 25) : 25;
-
-    this.state.boughtItems.forEach(item => {
-      if (item.forza) effFor += Number(item.forza);
-      if (item.destrezza) effDes += Number(item.destrezza);
-      if (item.intelligenza) effInt += Number(item.intelligenza);
-      if (item.pv) maxPV += Number(item.pv);
-    });
+    const { effFor, effDes, effInt, maxPV } = this.calculateEffectiveStats();
 
     const forMod = Rules2_FormatMod(effFor);
     const desMod = Rules2_FormatMod(effDes);
@@ -479,7 +527,7 @@ const Rules2Wizard = {
   },
 
   // --------------------------------------------------------------------------
-  // STEP 2: ABILITÀ & TALENTI (AGGIORNAMENTO SUL POSTO SENZA SCATTI)
+  // STEP 2: ABILITÀ CON VISUAL AFFORDANCE DEI TALENTI BLOCCATI
   // --------------------------------------------------------------------------
   setAbilityCategoryFilter: function(cat) {
     this.state.abilityCategoryFilter = cat;
@@ -523,13 +571,22 @@ const Rules2Wizard = {
             const loreText = abl.descrizione || abl.testo || "";
 
             return `
-              <div id="abilities-card-${idx}" onclick="Rules2Wizard.selectAbilityByIndex(${idx}, true)" class="coverflow-card tcg-card ${isSelected ? 'selected' : ''}">
-                <div class="tcg-card-media">
+              <div id="abilities-card-${idx}" onclick="Rules2Wizard.selectAbilityByIndex(${idx}, true)" class="coverflow-card tcg-card ${isSelected ? 'selected' : ''} ${!isCompatible ? 'tcg-card-locked' : ''}">
+                <div class="tcg-card-media relative">
                   <div class="tcg-card-header">
                     <h4 class="tcg-card-title truncate">${abl.emoji ? abl.emoji + ' ' : ''}${abl.nome}</h4>
-                    <span class="tcg-card-faction-badge ${isCompatible ? 'destra' : 'sinistra'}">${(abl.categoria || 'Talento').toUpperCase()}</span>
+                    <span class="tcg-card-faction-badge ${isCompatible ? 'destra' : 'locked-badge'}">
+                      ${isCompatible ? (abl.categoria || 'Talento').toUpperCase() : '🔒 VINCOLATO'}
+                    </span>
                   </div>
                   ${abl.mediaUrl ? `<img src="${abl.mediaUrl}" class="tcg-card-img" alt="${Rules2_SafeAttr(abl.nome)}" loading="lazy">` : `<div class="w-full h-full flex items-center justify-center bg-gradient-to-b from-slate-900 to-black text-6xl text-sky-400">${abl.emoji || '⚡'}</div>`}
+
+                  ${!isCompatible ? `
+                    <div class="absolute inset-0 bg-black/60 backdrop-blur-[1px] flex items-center justify-center pointer-events-none z-10">
+                      <span class="text-3xl opacity-80">🔒</span>
+                    </div>
+                  ` : ''}
+
                   ${(abl.citazione && abl.citazione !== "—" && abl.citazione !== "-") ? `
                     <div class="tcg-card-quote-overlay">
                       <div class="tcg-card-quote-text">“${abl.citazione.replace(/^["'“”]+|["'“”]+$/g, "")}”</div>
@@ -540,7 +597,7 @@ const Rules2Wizard = {
 
                 <div class="tcg-stats-plate">
                   <span>✨ <b>${abl.costoPX || 100} PX</b></span>
-                  <span>🎯 <b>${isCompatible ? 'Compatibile' : 'Vincolato'}</b></span>
+                  <span>🎯 <b>${isCompatible ? 'Compatibile' : 'Fazione Rival'}</b></span>
                   <span>⚡ <b>${isLearned ? 'Appreso ✓' : 'Disponibile'}</b></span>
                 </div>
 
@@ -553,7 +610,7 @@ const Rules2Wizard = {
                   <div class="tcg-card-loot">${abl.sottocategoria || 'Abilità'}</div>
                   <div class="tcg-card-vitals">
                     <span class="badge badge-xs ${isLearned ? 'badge-warning text-black font-black' : 'badge-ghost text-slate-400 font-bold'}">
-                      ${isLearned ? 'IN USO' : 'DISPONIBILE'}
+                      ${isLearned ? 'IN USO' : (isCompatible ? 'DISPONIBILE' : 'BLOCCATO')}
                     </span>
                   </div>
                 </div>
@@ -564,7 +621,7 @@ const Rules2Wizard = {
       </div>
 
       <div id="wizard-action-slot-step-2" class="scene-actions-area w-full max-w-[310px] mx-auto flex justify-center">
-        <!-- Aggiornato sul posto da updateAbilityActionSlot() -->
+        <!-- Aggiornato da updateAbilityActionSlot() -->
       </div>
     `;
 
@@ -599,7 +656,7 @@ const Rules2Wizard = {
     } else if (!isCompatible) {
       btnHtml = `
         <button disabled class="scene-action-btn opacity-40 justify-center text-slate-400 cursor-not-allowed">
-          🔒 REQUISITI NON SODDISFATTI
+          🔒 REQUISITI DI FAZIONE NON SODDISFATTI
         </button>
       `;
     } else if (!canAfford) {
@@ -623,7 +680,6 @@ const Rules2Wizard = {
     this.state.activeAbilityIndex = idx;
     tgHaptic("selection");
     
-    // Aggiorna sul posto la classe selected senza distruggere il carosello
     const stage = document.getElementById("wizard-abilities-stage");
     if (stage) {
       const cards = stage.querySelectorAll(".tcg-card");
@@ -665,7 +721,6 @@ const Rules2Wizard = {
     this.syncLiveHUD();
     this.updateAbilityActionSlot();
 
-    // Aggiorna lo stato visivo della carta attiva senza ricaricare lo step
     const stage = document.getElementById("wizard-abilities-stage");
     if (stage) {
       const activeCard = stage.querySelector(`#abilities-card-${this.state.activeAbilityIndex}`);
@@ -681,7 +736,7 @@ const Rules2Wizard = {
   },
 
   // --------------------------------------------------------------------------
-  // STEP 3: EMPORIO (AGGIORNAMENTI SUL POSTO: ZERO RESET ALLA CARTA 0!)
+  // STEP 3: EMPORIO CON VINCOLO VEICOLI RIGIDO (INCLUSO STARTING LOOT)
   // --------------------------------------------------------------------------
   filterShop: function(cat) {
     this.syncGold();
@@ -753,7 +808,7 @@ const Rules2Wizard = {
       </div>
 
       <div id="wizard-action-slot-step-3" class="scene-actions-area w-full max-w-[310px] mx-auto flex justify-center">
-        <!-- Aggiornato sul posto da updateShopActionSlot() -->
+        <!-- Aggiornato da updateShopActionSlot() -->
       </div>
     `;
 
@@ -774,8 +829,31 @@ const Rules2Wizard = {
     const canAfford = (this.state.currentGold >= price);
     const inBag = (this.state.boughtItems || []).filter(b => b.id === currentItem.id || b.nome === currentItem.nome).length;
 
+    // Controllo veicolo comprensivo della dotazione base della classe
+    const isVehicle = (Rules2_ClassifyEntity(currentItem) === "VEICOLI");
+    let hasVehicleAlready = false;
+
+    if (isVehicle) {
+      if (this.state.chosenClass?.equipLoot) {
+        const startItem = (this.state.shopCatalog || []).find(x => 
+          String(x.id || "").toLowerCase() === String(this.state.chosenClass.equipLoot).toLowerCase() || 
+          String(x.nome || "").toLowerCase() === String(this.state.chosenClass.equipLoot).toLowerCase()
+        );
+        if (startItem && Rules2_ClassifyEntity(startItem) === "VEICOLI") hasVehicleAlready = true;
+      }
+      if (!hasVehicleAlready) {
+        hasVehicleAlready = this.state.boughtItems.some(x => Rules2_ClassifyEntity(x) === "VEICOLI");
+      }
+    }
+
     let btnHtml = "";
-    if (!canAfford) {
+    if (isVehicle && hasVehicleAlready) {
+      btnHtml = `
+        <button disabled class="scene-action-btn opacity-40 justify-center text-slate-400 cursor-not-allowed">
+          🔒 MASSIMO 1 VEICOLO CONSENTITO
+        </button>
+      `;
+    } else if (!canAfford) {
       btnHtml = `
         <button disabled class="scene-action-btn opacity-40 justify-center text-slate-400 cursor-not-allowed">
           🔒 ORO INSUFFICIENTE (Mancano ${price - this.state.currentGold} 🟡)
@@ -796,7 +874,6 @@ const Rules2Wizard = {
     this.state.activeShopIndex = idx;
     tgHaptic("selection");
     
-    // 🔒 Aggiorna la classe selected SENZA distruggere e ricreare il carosello!
     const stage = document.getElementById("wizard-shop-stage");
     if (stage) {
       const cards = stage.querySelectorAll(".tcg-card");
@@ -821,8 +898,18 @@ const Rules2Wizard = {
     if (!item) return;
 
     if (Rules2_ClassifyEntity(item) === "VEICOLI") {
-      const alreadyHasVehicle = this.state.boughtItems.some(x => Rules2_ClassifyEntity(x) === "VEICOLI");
-      if (alreadyHasVehicle) {
+      let alreadyHas = false;
+      if (this.state.chosenClass?.equipLoot) {
+        const startItem = (this.state.shopCatalog || []).find(x => 
+          String(x.id || "").toLowerCase() === String(this.state.chosenClass.equipLoot).toLowerCase() || 
+          String(x.nome || "").toLowerCase() === String(this.state.chosenClass.equipLoot).toLowerCase()
+        );
+        if (startItem && Rules2_ClassifyEntity(startItem) === "VEICOLI") alreadyHas = true;
+      }
+      if (!alreadyHas) {
+        alreadyHas = this.state.boughtItems.some(x => Rules2_ClassifyEntity(x) === "VEICOLI");
+      }
+      if (alreadyHas) {
         tgHaptic("warning");
         return wizardNotify("Massimo 1 Veicolo consentito nello zaino!", "warning");
       }
@@ -838,7 +925,6 @@ const Rules2Wizard = {
     if (window.SoundEngine) SoundEngine.playCoin();
     wizardNotify(`${item.nome} aggiunto allo zaino!`, "success");
 
-    // 🔒 Aggiornamento reattivo senza ricreare la schermata
     this.syncLiveHUD();
     this.updateShopActionSlot();
 
@@ -864,7 +950,7 @@ const Rules2Wizard = {
   },
 
   // --------------------------------------------------------------------------
-  // STEP 4: CONSACRAZIONE MONUMENTALE DELL'EROE & AUTO-EQUIP
+  // STEP 4: CONSACRAZIONE MONUMENTALE SENZA TRONCATURE & PILLOLE TATTICHE
   // --------------------------------------------------------------------------
   renderStep4: function(mount) {
     this.syncGold();
@@ -873,19 +959,9 @@ const Rules2Wizard = {
 
     const subCat = String(cls.sottocategoria || 'Neutrale').trim();
     const heroName = this.state.heroName || AppState.user?.nome || "Avventuriero";
-    const startingGear = Rules2_ResolveItemName(cls.equipLoot, this.state.shopCatalog) || "Dotazione Base";
-
-    let effFor = Number(cls.forza || 10);
-    let effDes = Number(cls.destrezza || 10);
-    let effInt = Number(cls.intelligenza || 10);
-    let totPV = Number(cls.pv || 25);
-
-    this.state.boughtItems.forEach(item => {
-      if (item.forza) effFor += Number(item.forza);
-      if (item.destrezza) effDes += Number(item.destrezza);
-      if (item.intelligenza) effInt += Number(item.intelligenza);
-      if (item.pv) totPV += Number(item.pv);
-    });
+    
+    const { effFor, effDes, effInt, maxPV } = this.calculateEffectiveStats();
+    const totalGearCount = (cls.equipLoot ? 1 : 0) + this.state.boughtItems.length;
 
     mount.innerHTML = `
       <!-- Riquadro Nome Equidistante -->
@@ -924,19 +1000,19 @@ const Rules2Wizard = {
         <p class="tcg-card-desc">${cls.descrizione || cls.testo || ''}</p>
 
         <div class="tcg-card-footer">
-          <div class="tcg-card-loot truncate">🎒 ${startingGear} + ${this.state.boughtItems.length}</div>
+          <div class="tcg-card-loot font-bold">🎒 Dotazione (${totalGearCount} ${totalGearCount === 1 ? 'oggetto' : 'oggetti'})</div>
           <div class="tcg-card-vitals">
-            <span class="tcg-pv-badge">❤️ ${totPV} PV</span>
+            <span class="tcg-pv-badge">❤️ ${maxPV} PV</span>
             <span class="tcg-gold-badge">🟡 ${this.state.currentGold} ORO</span>
           </div>
         </div>
       </div>
 
-      <!-- Scorciatoie Modifica Rapida Equidistanti -->
+      <!-- Scorciatoie Modifica Rapida a Pillole Tattiche -->
       <div class="flex items-center justify-center gap-2 my-1 font-mono text-[9.5px]">
-        <button onclick="Rules2Wizard.goToStep(1)" class="btn btn-xs btn-outline border-white/20 text-slate-300">✎ Classe</button>
-        <button onclick="Rules2Wizard.goToStep(2)" class="btn btn-xs btn-outline border-white/20 text-slate-300">✎ Talenti</button>
-        <button onclick="Rules2Wizard.goToStep(3)" class="btn btn-xs btn-outline border-white/20 text-slate-300">✎ Emporio</button>
+        <button onclick="Rules2Wizard.goToStep(1)" class="tactical-pill-btn">✎ Classe</button>
+        <button onclick="Rules2Wizard.goToStep(2)" class="tactical-pill-btn">✎ Talenti</button>
+        <button onclick="Rules2Wizard.goToStep(3)" class="tactical-pill-btn">✎ Emporio</button>
       </div>
     `;
   },
@@ -1143,22 +1219,16 @@ const Rules2Wizard = {
     }
   },
 
-  // 🔒 PROTOCOLLO AUTO-EQUIP: ASSEGNA SUBITO L'ARMA E IL VEICOLO PER NON PERDERE I BONUS STATISTICI
+  // --------------------------------------------------------------------------
+  // PROTOCOLLO AUTO-EQUIP: ASSEGNAZIONE DETERMINISTICA ARMA E VEICOLO
+  // --------------------------------------------------------------------------
   finalizeHero: function() {
     const input = document.getElementById('wizard-hero-name-input');
     if (input && input.value.trim()) {
       this.state.heroName = input.value.trim();
     }
 
-    // Ricerca automatica della prima arma e del primo veicolo
-    const allItems = [...this.state.boughtItems];
-    if (this.state.chosenClass?.equipLoot) {
-      const startItem = (this.state.shopCatalog || []).find(x => x.id === this.state.chosenClass.equipLoot || x.nome === this.state.chosenClass.equipLoot);
-      if (startItem) allItems.unshift(startItem);
-    }
-
-    const firstWeapon = allItems.find(x => Rules2_ClassifyEntity(x) === "ARMI");
-    const firstVehicle = allItems.find(x => Rules2_ClassifyEntity(x) === "VEICOLI");
+    const { autoWeapon, autoVehicle } = this.calculateEffectiveStats();
 
     const payload = {
       gameKey: this.state.gameKey,
@@ -1166,8 +1236,8 @@ const Rules2Wizard = {
       classId: this.state.chosenClass?.id || "CLS_0001_S1_E0",
       abilityIds: this.state.chosenAbilities.join(","),
       boughtItems: this.state.boughtItems.map(i => i.id || i.nome).join(","),
-      armaAttiva: firstWeapon ? firstWeapon.nome : "",
-      veicoloAttivo: firstVehicle ? firstVehicle.nome : "",
+      armaAttiva: autoWeapon ? autoWeapon.nome : "",
+      veicoloAttivo: autoVehicle ? autoVehicle.nome : "",
       heroName: this.state.heroName,
       avatarUrl: this.state.chosenClass?.mediaUrl || "",
       isVeteran: this.state.isVeteran
