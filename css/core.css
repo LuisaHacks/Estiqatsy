@@ -1,6 +1,6 @@
 /* ============================================================================
    PROJECT: ESTIQATSY SYNDICATE & RPG PLATFORM
-   FILE: css/core.css (VERSIONE 31.0 - APP SHELL, RESPONSIVE GUTTERS & ZERO-SCROLL)
+   FILE: css/core.css (VERSIONE 33.0 - 44px HEADER, 24px SAFE AREA & VERTICAL CENTER)
    LAYER: APP SHELL, UNIVERSAL BARS, 16:9 CAROUSEL & SHARED CATALOG COMPONENTS
    NOTE: 100% DEDICATO ALLA PIATTAFORMA - ELEMENTI RULES2 DELEGATI A RULES2.CSS
    ============================================================================ */
@@ -20,7 +20,7 @@
   --accent-purple: #A855F7;
   
   --tg-safe-area-inset-top: 0px;
-  --tg-safe-area-inset-bottom: 0px;
+  --tg-safe-area-inset-bottom: 24px;
 }
 
 html, body {
@@ -45,7 +45,7 @@ html, body {
   display: none !important;
 }
 
-/* Scrollbar discrete ed eleganti */
+/* Scrollbar discrete */
 ::-webkit-scrollbar {
   width: 3px;
   height: 3px;
@@ -63,7 +63,7 @@ html, body {
   padding-left: 12px !important;
   padding-right: 12px !important;
   padding-top: 6px !important;
-  padding-bottom: 14px !important;
+  padding-bottom: 12px !important;
   box-sizing: border-box !important;
   width: 100%;
 }
@@ -75,7 +75,7 @@ html, body {
   }
 }
 
-/* 🔒 ZERO SCROLL NEI MACROSTATI WIZARD E GAMEPLAY (TUTTO ABOVE-THE-FOLD) */
+/* 🔒 ZERO SCROLL NEI MACROSTATI WIZARD E GAMEPLAY */
 body[data-context="wizard"] .app-scroll-area,
 body[data-context="gameplay"] .app-scroll-area {
   overflow-y: hidden !important;
@@ -97,7 +97,6 @@ body[data-context="gameplay"] .app-content-wrapper {
   gap: 0 !important;
 }
 
-/* Disattiva l'interlinea space-y di Tailwind nei contesti a schermo intero */
 body[data-context="wizard"] .app-content-wrapper > :not([hidden]) ~ :not([hidden]),
 body[data-context="gameplay"] .app-content-wrapper > :not([hidden]) ~ :not([hidden]) {
   margin-top: 0 !important;
@@ -105,14 +104,12 @@ body[data-context="gameplay"] .app-content-wrapper > :not([hidden]) ~ :not([hidd
 }
 
 /* ----------------------------------------------------------------------------
-   2. TOP BAR SUPERIORE INVARIANTE (CON DISCESA SOTTO IL NOTCH iOS)
+   2. TOP BAR SUPERIORE INVARIANTE (44px DI CONTENUTO VISIBILE + NOTCH iOS)
    ---------------------------------------------------------------------------- */
 .universal-top-bar {
-  /* Altezza calcolata: 42px di visuale + Safe Area notch iPhone/Android */
-  height: calc(42px + max(env(safe-area-inset-top, 0px), var(--tg-safe-area-inset-top, 0px))) !important;
-  min-height: calc(42px + max(env(safe-area-inset-top, 0px), var(--tg-safe-area-inset-top, 0px))) !important;
+  height: calc(44px + max(env(safe-area-inset-top, 0px), var(--tg-safe-area-inset-top, 0px))) !important;
+  min-height: calc(44px + max(env(safe-area-inset-top, 0px), var(--tg-safe-area-inset-top, 0px))) !important;
   padding-top: max(env(safe-area-inset-top, 0px), var(--tg-safe-area-inset-top, 0px)) !important;
-  /* Margini laterali di rispetto: isolano il titolo tra i comandi nativi Telegram (✕ e •••) */
   padding-left: 64px !important;
   padding-right: 64px !important;
   display: flex;
@@ -130,26 +127,29 @@ body[data-context="gameplay"] .app-content-wrapper > :not([hidden]) ~ :not([hidd
 }
 
 /* ----------------------------------------------------------------------------
-   3. FOOTER DI NAVIGAZIONE A 5 TAB (CON RESPIRO DALLA HOME BAR iOS)
+   3. FOOTER 5 TAB: BANDA 44px + SAFE AREA A 24px CON CENTRATURA VERTICALE
    ---------------------------------------------------------------------------- */
 .main-app-footer {
-  height: 44px !important;
-  min-height: 44px !important;
-  padding-bottom: max(env(safe-area-inset-bottom, 0px), var(--tg-safe-area-inset-bottom, 0px), 10px) !important;
-  box-sizing: content-box !important;
+  /* 44px esatti di contenuto visibile + 24px minimi di Safe Area notch iOS */
+  height: calc(44px + max(env(safe-area-inset-bottom, 24px), var(--tg-safe-area-inset-bottom, 24px), 24px)) !important;
+  min-height: calc(44px + max(env(safe-area-inset-bottom, 24px), var(--tg-safe-area-inset-bottom, 24px), 24px)) !important;
+  padding-top: 0 !important;
+  padding-bottom: max(env(safe-area-inset-bottom, 24px), var(--tg-safe-area-inset-bottom, 24px), 24px) !important;
+  box-sizing: border-box !important;
   background: rgba(7, 10, 18, 0.95);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border-top: 1px solid var(--border-color);
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  align-items: center;
+  display: grid !important;
+  grid-template-columns: repeat(5, 1fr) !important;
+  align-items: center !important;
   position: relative;
   z-index: 40;
   width: 100%;
   flex-shrink: 0;
 }
 
+/* Singolo Tab: Centrato nei 44px verticali utili */
 .nav-tab {
   display: flex !important;
   flex-direction: column !important;
@@ -173,16 +173,17 @@ body[data-context="gameplay"] .app-content-wrapper > :not([hidden]) ~ :not([hidd
 
 .nav-tab i,
 .nav-tab svg {
-  width: 17px !important;
-  height: 17px !important;
+  width: 18px !important;
+  height: 18px !important;
   display: block;
+  margin: 0 auto !important;
 }
 
 .nav-tab-label {
   font-size: 9.5px !important;
   line-height: 1 !important;
   font-weight: 700;
-  margin-top: 2px !important;
+  margin-top: 3px !important;
   display: block;
 }
 
@@ -202,7 +203,6 @@ body[data-context="gameplay"] .app-content-wrapper > :not([hidden]) ~ :not([hidd
   display: flex !important;
   width: 100% !important;
   transition: transform 0.35s cubic-bezier(0.25, 1, 0.5, 1);
-  will-change: transform;
 }
 
 .carousel-slide {
@@ -217,19 +217,8 @@ body[data-context="gameplay"] .app-content-wrapper > :not([hidden]) ~ :not([hidd
   box-sizing: border-box;
 }
 
-.carousel-slide-img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover !important;
-  display: block;
-}
-
-.carousel-slide-overlay {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(180deg, rgba(7, 10, 18, 0.10) 0%, rgba(7, 10, 18, 0.88) 100%);
-  pointer-events: none;
-}
+.carousel-slide-img { width: 100%; height: 100%; object-fit: cover !important; display: block; }
+.carousel-slide-overlay { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(7, 10, 18, 0.10) 0%, rgba(7, 10, 18, 0.88) 100%); }
 
 .carousel-slide-badge {
   position: absolute;
@@ -260,58 +249,11 @@ body[data-context="gameplay"] .app-content-wrapper > :not([hidden]) ~ :not([hidd
   z-index: 10;
 }
 
-.carousel-slide-text {
-  min-width: 0;
-  flex: 1;
-}
-
-.carousel-slide-title {
-  font-size: 12px;
-  font-weight: 900;
-  color: #FFFFFF;
-  line-height: 1.2;
-  margin: 0;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.carousel-slide-sub {
-  font-size: 9.5px;
-  color: #CBD5E1;
-  margin: 2px 0 0 0;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.carousel-slide-btn {
-  padding: 3px 8px;
-  background: var(--accent-sky);
-  color: #070A12;
-  font-size: 9.5px;
-  font-weight: 900;
-  border-radius: 5px;
-  border: none;
-  white-space: nowrap;
-  cursor: pointer;
-  box-shadow: 0 2px 8px rgba(56, 189, 248, 0.3);
-}
-
-.carousel-dot {
-  width: 5px;
-  height: 5px;
-  border-radius: 9999px;
-  background: rgba(255, 255, 255, 0.25);
-  transition: all 0.25s ease;
-  cursor: pointer;
-}
-
-.carousel-dot.active {
-  width: 14px;
-  background: var(--accent-sky);
-  box-shadow: 0 0 8px rgba(56, 189, 248, 0.6);
-}
+.carousel-slide-title { font-size: 12px; font-weight: 900; color: #FFFFFF; line-height: 1.2; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.carousel-slide-sub { font-size: 9.5px; color: #CBD5E1; margin: 2px 0 0 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.carousel-slide-btn { padding: 3px 8px; background: var(--accent-sky); color: #070A12; font-size: 9.5px; font-weight: 900; border-radius: 5px; border: none; }
+.carousel-dot { width: 5px; height: 5px; border-radius: 9999px; background: rgba(255, 255, 255, 0.25); transition: all 0.25s ease; cursor: pointer; }
+.carousel-dot.active { width: 14px; background: var(--accent-sky); }
 
 /* ----------------------------------------------------------------------------
    5. STANDARD MODALI PIATTAFORMA: CHIUSURA UNIFICATA ("X" IN ALTO + BACKDROP)
@@ -357,75 +299,26 @@ dialog.modal {
 }
 
 /* ----------------------------------------------------------------------------
-   6. RADIO MINIPLAYER & SPOTIFY DECK PIATTAFORMA
+   6. RADIO MINIPLAYER & SPOTIFY DECK
    ---------------------------------------------------------------------------- */
-.jukebox-eq-bars {
-  display: inline-flex;
-  align-items: flex-end;
-  gap: 2px;
-  height: 12px;
-}
-
-.jukebox-eq-bars span {
-  width: 2px;
-  height: 4px;
-  background: var(--accent-sky);
-  border-radius: 1px;
-  transition: height 0.2s ease;
-}
-
+.jukebox-eq-bars { display: inline-flex; align-items: flex-end; gap: 2px; height: 12px; }
+.jukebox-eq-bars span { width: 2px; height: 4px; background: var(--accent-sky); border-radius: 1px; transition: height 0.2s ease; }
 .jukebox-eq-bars.animated span:nth-child(1) { animation: eqBar 0.8s infinite ease-in-out alternate; }
 .jukebox-eq-bars.animated span:nth-child(2) { animation: eqBar 0.6s 0.2s infinite ease-in-out alternate; }
 .jukebox-eq-bars.animated span:nth-child(3) { animation: eqBar 0.9s 0.1s infinite ease-in-out alternate; }
 .jukebox-eq-bars.animated span:nth-child(4) { animation: eqBar 0.7s 0.3s infinite ease-in-out alternate; }
 .jukebox-eq-bars.animated span:nth-child(5) { animation: eqBar 0.5s 0.15s infinite ease-in-out alternate; }
 
-@keyframes eqBar {
-  0% { height: 3px; }
-  100% { height: 12px; }
-}
+@keyframes eqBar { 0% { height: 3px; } 100% { height: 12px; } }
 
-.audio-slider-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  font-size: 10px;
-  font-family: monospace;
-  color: #CBD5E1;
-}
-
-.audio-slider-label {
-  width: 80px;
-  flex-shrink: 0;
-}
-
-.audio-slider {
-  flex: 1;
-  accent-color: var(--accent-sky);
-  height: 4px;
-}
-
-.audio-track-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 6px 10px;
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid transparent;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.audio-track-item:hover,
-.audio-track-item.active {
-  background: rgba(56, 189, 248, 0.12);
-  border-color: rgba(56, 189, 248, 0.30);
-}
+.audio-slider-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 10px; font-family: monospace; color: #CBD5E1; }
+.audio-slider-label { width: 80px; flex-shrink: 0; }
+.audio-slider { flex: 1; accent-color: var(--accent-sky); height: 4px; }
+.audio-track-item { display: flex; align-items: center; justify-content: space-between; padding: 6px 10px; border-radius: 8px; background: rgba(255, 255, 255, 0.03); border: 1px solid transparent; cursor: pointer; transition: all 0.15s ease; }
+.audio-track-item:hover, .audio-track-item.active { background: rgba(56, 189, 248, 0.12); border-color: rgba(56, 189, 248, 0.30); }
 
 /* ----------------------------------------------------------------------------
-   7. ITEM CARDS 16:9 CONDIVISE (SHOP, GIOCHI SAGHE, RICETTE)
+   7. ITEM CARDS 16:9 CONDIVISE
    ---------------------------------------------------------------------------- */
 .item-card {
   background: var(--bg-card);
@@ -445,12 +338,10 @@ dialog.modal {
   transform: translateY(-1px);
 }
 
-/* Gabbia rigida 16:9 per le illustrazioni di catalogo */
 .item-card-media {
   position: relative !important;
   width: 100% !important;
   aspect-ratio: 16 / 9 !important;
-  height: auto !important;
   max-height: 180px !important;
   background: #000000 !important;
   overflow: hidden !important;
@@ -459,60 +350,21 @@ dialog.modal {
   justify-content: center !important;
 }
 
-.item-card-img {
-  width: 100% !important;
-  height: 100% !important;
-  max-height: 100% !important;
-  object-fit: cover !important;
-  object-position: center !important;
-  display: block !important;
-}
-
+.item-card-img { width: 100% !important; height: 100% !important; object-fit: cover !important; display: block !important; }
 .item-card-badge {
-  position: absolute;
-  top: 6px;
-  left: 6px;
-  padding: 2px 5px;
-  border-radius: 4px;
-  background: rgba(0, 0, 0, 0.75);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  font-family: monospace;
-  font-size: 8px;
-  font-weight: 800;
-  color: var(--accent-sky);
-  text-transform: uppercase;
-  z-index: 10;
+  position: absolute; top: 6px; left: 6px; padding: 2px 5px; border-radius: 4px;
+  background: rgba(0, 0, 0, 0.75); border: 1px solid rgba(255, 255, 255, 0.15);
+  font-family: monospace; font-size: 8px; font-weight: 800; color: var(--accent-sky);
+  text-transform: uppercase; z-index: 10;
 }
 
-.item-card-body {
-  padding: 8px 10px;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  flex: 1;
-}
-
-.item-card-title {
-  font-weight: 800;
-  color: #FFFFFF;
-  font-size: 12.5px;
-}
-
-.item-card-desc {
-  color: #94A3B8;
-  font-size: 10.5px;
-}
-
-.item-card-footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  border-top: 1px solid rgba(255, 255, 255, 0.05);
-  padding-top: 6px;
-}
+.item-card-body { padding: 8px 10px; display: flex; flex-direction: column; justify-content: space-between; flex: 1; }
+.item-card-title { font-weight: 800; color: #FFFFFF; font-size: 12.5px; }
+.item-card-desc { color: #94A3B8; font-size: 10.5px; }
+.item-card-footer { display: flex; align-items: center; justify-content: space-between; border-top: 1px solid rgba(255, 255, 255, 0.05); padding-top: 6px; }
 
 /* ----------------------------------------------------------------------------
-   8. FRAME CINEMATOGRAFICO RIGIDO 16:9 CONDIVISO (HUB SAGHE & DETTAGLIO)
+   8. FRAME CINEMATOGRAFICO RIGIDO 16:9 CONDIVISO
    ---------------------------------------------------------------------------- */
 .cinema-frame-rigid {
   position: relative;
@@ -523,44 +375,17 @@ dialog.modal {
   border-radius: 0.85rem;
 }
 
-.cinema-frame-rigid img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-}
-
+.cinema-frame-rigid img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .watermark-cover-banner {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  padding: 6px 10px;
+  position: absolute; bottom: 0; left: 0; right: 0; padding: 6px 10px;
   background: linear-gradient(180deg, transparent 0%, rgba(7, 10, 18, 0.88) 100%);
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  text-align: right;
-  pointer-events: none;
+  display: flex; flex-direction: column; align-items: flex-end; text-align: right; pointer-events: none;
 }
-
-.watermark-cover-banner .quote-text {
-  font-size: 10px;
-  font-style: italic;
-  color: #F1F5F9;
-}
-
-.watermark-cover-banner .quote-author {
-  font-family: monospace;
-  font-size: 8px;
-  font-weight: 900;
-  color: var(--accent-amber);
-  text-transform: uppercase;
-  margin-top: 1px;
-}
+.watermark-cover-banner .quote-text { font-size: 10px; font-style: italic; color: #F1F5F9; }
+.watermark-cover-banner .quote-author { font-family: monospace; font-size: 8px; font-weight: 900; color: var(--accent-amber); text-transform: uppercase; margin-top: 1px; }
 
 /* ----------------------------------------------------------------------------
-   9. SUBHEADERS & CHIP FILTRI RAPIDI (SHOP, RICETTE, GIOCHI)
+   9. SUBHEADERS & CHIP FILTRI RAPIDI (CON JUSTIFY-START ANTI-TAGLIO)
    ---------------------------------------------------------------------------- */
 .subheader-3col {
   display: flex;
@@ -575,20 +400,10 @@ dialog.modal {
   margin-bottom: 4px;
 }
 
-.subheader-left {
-  color: var(--accent-sky);
-  text-transform: uppercase;
-}
+.subheader-left { color: var(--accent-sky); text-transform: uppercase; }
+.subheader-center { color: #FFFFFF; }
+.subheader-right { color: #94A3B8; }
 
-.subheader-center {
-  color: #FFFFFF;
-}
-
-.subheader-right {
-  color: #94A3B8;
-}
-
-/* Nastro scorrevole orizzontale a riga singola */
 .chips-scroll-bar {
   display: flex !important;
   flex-direction: row !important;
@@ -596,9 +411,10 @@ dialog.modal {
   gap: 5px !important;
   overflow-x: auto !important;
   overflow-y: hidden !important;
-  padding: 2px 1px 4px 1px !important;
+  padding: 4px 6px !important;
   width: 100% !important;
   box-sizing: border-box !important;
+  justify-content: flex-start !important; /* 🔒 Allineato a sinistra: impedisce tagli sul primo chip */
   scrollbar-width: none !important;
   -webkit-overflow-scrolling: touch !important;
 }
@@ -612,7 +428,6 @@ dialog.modal {
   align-items: center !important;
   justify-content: center !important;
   flex: 0 0 auto !important;
-  flex-shrink: 0 !important;
   white-space: nowrap !important;
   padding: 4px 10px !important;
   border-radius: 9999px !important;
@@ -621,7 +436,7 @@ dialog.modal {
   color: #94A3B8 !important;
   font-family: monospace !important;
   font-size: 9.5px !important;
-  font-weight: 700 !important;
+  font-weight: 700;
   text-transform: uppercase !important;
   cursor: pointer !important;
   user-select: none !important;
@@ -637,7 +452,7 @@ dialog.modal {
 }
 
 /* ----------------------------------------------------------------------------
-   10. WIDGET FLUTTUANTE MULTIPLAYER STICKY (SALA GIOCHI HUB)
+   10. WIDGET FLUTTUANTE MULTIPLAYER STICKY
    ---------------------------------------------------------------------------- */
 .multiplayer-floating-dock {
   position: sticky;
