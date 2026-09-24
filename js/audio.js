@@ -1,33 +1,31 @@
 // ============================================================================
 // PROJECT: ESTIQATSY BOT & RPG PLATFORM
-// FILE: js/audio.js (VERSIONE 10.0 - ASYMMETRIC CROSS-FADE & 3-CHANNEL MIXER)
-// DESCRIZIONE: Motore sonoro ad alta fedeltà con gestione a 3 canali:
-//              - Canale 1: Volume Generale (Master)
-//              - Canale 2: Musica di Sottofondo (BGM con 5 colonne sonore)
-//              - Canale 3: Effetti Sonori (SFX & Battito Cardiaco)
-//              - Mixaggio Asimmetrico: Fade-Out rapido (180ms) e Fade-In morbido (800ms)
-//              - Silenzioso al primo avvio (Safe Autoplay) con sblocco hardware al tocco
-//              - Controller Jukebox & Deck Spotify con playlist selezionabile
+// FILE: js/audio.js (VERSIONE 20.0 - AUDIUS BGM STREAMING & LOW-LATENCY SFX)
+// DESCRIZIONE: Motore sonoro per Telegram Mini App:
+//              - BGM: Streaming decentralizzato Audius (Boom Bap, Rhodes & Vinyl Noir)
+//              - SFX: Effetti di gioco ad alta fedeltà con fallback nativo
+//              - Sblocco automatico WebKit/Telegram al primo tocco
+//              - Aliasing completo per playClick, playCoin, playDice, playVictory, playError
 // ============================================================================
 
 const SoundEngine = (function() {
   'use strict';
 
   // --------------------------------------------------------------------------
-  // STATO PERSISTENTE & IMPOSTAZIONI PREDEFINITE
+  // 1. STATO PERSISTENTE & IMPOSTAZIONI PREDEFINITE
   // --------------------------------------------------------------------------
-  // Default: Silenzioso al primo avvio se l'utente non ha mai espresso preferenze
+  // Default: Attivo (false) per consentire la riproduzione non appena l'utente tocca lo schermo
   const storedMute = localStorage.getItem("estiqatsy_audio_muted");
-  let isMasterMuted = storedMute !== null ? storedMute === "true" : true;
+  let isMasterMuted = storedMute !== null ? storedMute === "true" : false;
 
   let isBgmMuted = localStorage.getItem("estiqatsy_bgm_muted") === "true";
   let isSfxMuted = localStorage.getItem("estiqatsy_sfx_muted") === "true";
   let isShuffle = localStorage.getItem("estiqatsy_audio_shuffle") === "true";
 
-  // Volumi a 3 Canali Indipendenti
-  const DEFAULT_MASTER_VOLUME = 0.80;
-  const DEFAULT_BGM_VOLUME = 0.35;
-  const DEFAULT_SFX_VOLUME = 0.85;
+  // Volumi a 3 Canali
+  const DEFAULT_MASTER_VOLUME = 0.85;
+  const DEFAULT_BGM_VOLUME = 0.40;
+  const DEFAULT_SFX_VOLUME = 0.90;
 
   let currentMasterVolume = parseFloat(localStorage.getItem("estiqatsy_master_volume")) || DEFAULT_MASTER_VOLUME;
   let currentBgmVolume = parseFloat(localStorage.getItem("estiqatsy_bgm_volume")) || DEFAULT_BGM_VOLUME;
@@ -42,97 +40,97 @@ const SoundEngine = (function() {
   let duckTimer = null;
 
   // --------------------------------------------------------------------------
-  // 1. CATALOGO BGM: 5 COLONNE SONORE TAB + ATMOSFERE DI GIOCO (100% MP3)
+  // 2. CATALOGO BGM AUDIUS (STREAMING VERIFICATO A ZERO ANNUNCI)
   // --------------------------------------------------------------------------
   const playlist = [
-    // --- 5 TRACCE D'AMBIENTE PER LE 5 PAGINE PRINCIPALI ---
+    // --- COLONNE SONORE DELLE PAGINE PRINCIPALI (BOOM BAP & VINYL NOIR) ---
     {
       id: "hard_boiled",
       alias: ["home", "view-home", "intro"],
-      title: "Hard Boiled",
-      artist: "Kevin MacLeod",
-      mood: "Tromba Noir & Pioggia Salmastra",
+      title: "The Shadow Side (Vinyl Noir)",
+      artist: "DJ N47",
+      mood: "Campionamenti Vinile Anni '30, Scratch & Basso Cupo",
       tag: "HOME NOIR",
-      src: "https://commons.wikimedia.org/wiki/Special:FilePath/Hard_Boiled_(ISRC_USUAN1700076).mp3"
+      src: "https://discoveryprovider.audius.co/v1/tracks/mgb9p/stream?app_name=estiqatsy"
     },
     {
       id: "bass_walker",
-      alias: ["games", "view-hub", "hub", "giochi"],
-      title: "Bass Walker",
-      artist: "Kevin MacLeod",
-      mood: "Groove Poliziottesco & Tensione",
+      alias: ["games", "view-hub", "hub", "giochi", "view-wizard", "wizard"],
+      title: "Lil Classic BoomBap",
+      artist: "Ljazz (feat. LordCinic)",
+      mood: "Jazz-Hop 90s, Rullante Secco & Banchina",
       tag: "SALA GIOCHI",
-      src: "https://commons.wikimedia.org/wiki/Special:FilePath/Bass_Walker_(ISRC_USUAN1200071).mp3"
+      src: "https://discoveryprovider.audius.co/v1/tracks/ZrOYoXq/stream?app_name=estiqatsy"
     },
     {
       id: "backbay_lounge",
       alias: ["shop", "view-shop", "mercato", "emporio"],
-      title: "Backbay Lounge",
-      artist: "Kevin MacLeod",
-      mood: "Smoky Jazz da Bisca Clandestina",
+      title: "BOOMBAP 00 (Rhodes Vintage)",
+      artist: "Rafa Halë",
+      mood: "Piano Rhodes Rilassato da Bisca Clandestina",
       tag: "MERCATO",
-      src: "https://commons.wikimedia.org/wiki/Special:FilePath/Backbay_Lounge_(ISRC_USUAN1700068).mp3"
+      src: "https://discoveryprovider.audius.co/v1/tracks/X6M2a/stream?app_name=estiqatsy"
     },
     {
       id: "opportunity_walks",
       alias: ["recipes", "view-recipes", "ricette", "barlady"],
-      title: "Opportunity Walks",
-      artist: "Kevin MacLeod",
-      mood: "Warm Lounge Blues da Bancone",
+      title: "Gemkeepers BoomBap",
+      artist: "Surce",
+      mood: "Old School Hip-Hop Ritmico da Bancone",
       tag: "RICETTARIO",
-      src: "https://commons.wikimedia.org/wiki/Special:FilePath/Opportunity_Walks_(ISRC_USUAN1100123).mp3"
+      src: "https://discoveryprovider.audius.co/v1/tracks/9dk1j1k/stream?app_name=estiqatsy"
     },
     {
       id: "dark_walk",
       alias: ["profile", "view-profile", "profilo", "dossier"],
-      title: "Dark Walk",
-      artist: "Kevin MacLeod",
-      mood: "Tema Investigativo Cupo & Solenne",
+      title: "h8rs (Serious Dark)",
+      artist: "Surce",
+      mood: "Basso Scuro & Organigramma del Potere",
       tag: "HUB AGENTE",
-      src: "https://commons.wikimedia.org/wiki/Special:FilePath/Dark_Walk_(ISRC_USUAN1100468).mp3"
+      src: "https://discoveryprovider.audius.co/v1/tracks/dago7mP/stream?app_name=estiqatsy"
     },
 
     // --- TRACCE DI GAMEPLAY & COMBATTIMENTO RPG ---
     {
       id: "ep1_explore",
       alias: ["exploration", "rules2_explore", "ep1_esplorazione"],
-      title: "Covert Affair",
-      artist: "Kevin MacLeod",
+      title: "The Shadow Side (Inchiesta)",
+      artist: "DJ N47",
       mood: "Infiltrazione Notturna sui Moli",
-      tag: "EPISODIO ESPLORA",
-      src: "https://commons.wikimedia.org/wiki/Special:FilePath/Covert_Affair_(ISRC_USUAN1100795).mp3"
+      tag: "INCHIESTA",
+      src: "https://discoveryprovider.audius.co/v1/tracks/mgb9p/stream?app_name=estiqatsy"
     },
     {
       id: "ep1_combat",
       alias: ["combat", "rules2_combat", "ep1_combattimento"],
-      title: "Aggressor",
-      artist: "Kevin MacLeod",
+      title: "FREE$TYLER (Fast 88 BPM)",
+      artist: "WhoIsSanchez",
       mood: "Rissa da Banchina & Duello D20",
-      tag: "EPISODIO DUELLO",
-      src: "https://commons.wikimedia.org/wiki/Special:FilePath/Aggressor_(ISRC_USUAN1700051).mp3"
+      tag: "DUELLO D20",
+      src: "https://discoveryprovider.audius.co/v1/tracks/A7Nqg/stream?app_name=estiqatsy"
     },
     {
       id: "deadly_roulette",
       alias: ["rules2_boss", "boss", "boss_fight"],
-      title: "Deadly Roulette",
-      artist: "Kevin MacLeod",
+      title: "FREE$TYLER (Boss Fight)",
+      artist: "WhoIsSanchez",
       mood: "Scontro Mortale con il Boss",
       tag: "BOSS FIGHT",
-      src: "https://commons.wikimedia.org/wiki/Special:FilePath/Deadly_Roulette_(ISRC_USUAN1600033).mp3"
+      src: "https://discoveryprovider.audius.co/v1/tracks/A7Nqg/stream?app_name=estiqatsy"
     },
     {
       id: "bittersweet",
       alias: ["defeat", "rules2_defeat", "morte"],
-      title: "Bittersweet",
-      artist: "Kevin MacLeod",
+      title: "BOOMBAP 00 (Game Over)",
+      artist: "Rafa Halë",
       mood: "Disillusione & Sconfitta al Molo",
       tag: "GAME OVER",
-      src: "https://commons.wikimedia.org/wiki/Special:FilePath/Bittersweet_(ISRC_USUAN1700004).mp3"
+      src: "https://discoveryprovider.audius.co/v1/tracks/X6M2a/stream?app_name=estiqatsy"
     }
   ];
 
   // --------------------------------------------------------------------------
-  // 2. EFFETTI SONORI SFX (CANALE INDIPENDENTE 100% MP3)
+  // 3. EFFETTI SONORI SFX DI GIOCO (CANALE AD ALTA REATTIVITÀ)
   // --------------------------------------------------------------------------
   const sfxUrls = {
     click: "https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3",
@@ -153,14 +151,16 @@ const SoundEngine = (function() {
     crit_hit: "https://assets.mixkit.co/active_storage/sfx/2908/2908-preview.mp3",
     drug: "https://assets.mixkit.co/active_storage/sfx/2586/2586-preview.mp3",
     zombie: "https://assets.mixkit.co/active_storage/sfx/2608/2608-preview.mp3",
-    heartbeat: "https://assets.mixkit.co/active_storage/sfx/2908/2908-preview.mp3"
+    heartbeat: "https://assets.mixkit.co/active_storage/sfx/2908/2908-preview.mp3",
+    victory: "https://assets.mixkit.co/active_storage/sfx/2013/2013-preview.mp3",
+    error: "https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3"
   };
 
   const sfxPlayers = {};
   const bgmPlayers = {};
 
   // --------------------------------------------------------------------------
-  // 3. SBLOCCO AUDIO HARDWARE MOBILE & AUTOPLAY POLICY
+  // 4. SBLOCCO AUDIO HARDWARE MOBILE & AUTOPLAY POLICY
   // --------------------------------------------------------------------------
   function wakeUpAudioContext() {
     if (window.Howler && Howler.ctx) {
@@ -182,15 +182,25 @@ const SoundEngine = (function() {
         source.start(0);
       } catch (e) {}
     }
+
+    // Se l'audio non è mutato e non sta suonando nulla, avvia il brano di default
+    if (!isMasterMuted && !isBgmMuted && (!currentBgmHowl || !currentBgmHowl.playing())) {
+      playBgm(currentBgmKey || "hard_boiled");
+    }
   }
 
   function init() {
     const unlockEvents = ["touchstart", "touchend", "pointerdown", "click"];
+    const handleFirstTouch = () => {
+      unlockMobileAudio();
+      unlockEvents.forEach(evt => window.removeEventListener(evt, handleFirstTouch, { capture: true }));
+    };
+
     unlockEvents.forEach(evtName => {
-      window.addEventListener(evtName, unlockMobileAudio, { capture: true, passive: true });
+      window.addEventListener(evtName, handleFirstTouch, { capture: true, passive: true });
     });
 
-    // Gestione cambio visibilità scheda (Pausa quando l'app va in background)
+    // Gestione cambio visibilità scheda (sospende l'audio quando l'app va in background)
     document.addEventListener("visibilitychange", () => {
       if (document.hidden) {
         if (currentBgmHowl && currentBgmHowl.playing()) currentBgmHowl.pause();
@@ -206,8 +216,8 @@ const SoundEngine = (function() {
       }
     });
 
-    // Precarica i suoni di sistema frequenti
-    ["click", "coin", "dice", "hit"].forEach(key => getOrCreateSfx(key));
+    // Precarica i campioni più frequenti
+    ["click", "coin", "dice", "hit", "victory", "error"].forEach(key => getOrCreateSfx(key));
 
     updateMuteUI();
   }
@@ -226,6 +236,7 @@ const SoundEngine = (function() {
       sfxPlayers[name] = new Howl({
         src: [sfxUrls[name]],
         format: ["mp3"],
+        html5: false, // SFX leggeri in memoria
         volume: getEffectiveSfxVolume(),
         preload: true
       });
@@ -245,7 +256,7 @@ const SoundEngine = (function() {
   }
 
   // --------------------------------------------------------------------------
-  // 4. CALCOLO VOLUMI EFFETTIVI
+  // 5. CALCOLO VOLUMI EFFETTIVI
   // --------------------------------------------------------------------------
   function getEffectiveBgmVolume() {
     if (isMasterMuted || isBgmMuted) return 0;
@@ -258,15 +269,12 @@ const SoundEngine = (function() {
   }
 
   // --------------------------------------------------------------------------
-  // 5. RIPRODUZIONE BGM: MIXAGGIO ASIMMETRICO (FADE-OUT 180ms, FADE-IN 800ms)
+  // 6. RIPRODUZIONE BGM AUDIUS (STREAMING HTML5 CON CROSS-FADE ASIMMETRICO)
   // --------------------------------------------------------------------------
   function playTabBgm(tabKey) {
     const cleanTab = String(tabKey || "home").toLowerCase().replace("view-", "");
     const track = findTrack(cleanTab);
     if (!track) return;
-
-    // Fade-out rapido (180ms) per azzerare subito la musica precedente
-    // Fade-in morbido (800ms) per far salire la traccia del nuovo tab
     playBgm(track.id, 800, 180);
   }
 
@@ -289,10 +297,9 @@ const SoundEngine = (function() {
     const track = findTrack(identifier);
     if (!track) return;
 
-    // Se la traccia è già attiva e in riproduzione, non interromperla
     if (currentBgmKey === track.id && currentBgmHowl && currentBgmHowl.playing()) return;
 
-    // 🔒 1. FADE-OUT VELOCE (180ms): Cancella la scena acustica precedente
+    // Fade-out rapido (180ms) per azzerare la traccia precedente
     if (fadeOutTimer) {
       clearTimeout(fadeOutTimer);
       fadeOutTimer = null;
@@ -312,7 +319,7 @@ const SoundEngine = (function() {
       bgmPlayers[track.id] = new Howl({
         src: [track.src],
         format: ["mp3"],
-        html5: false,
+        html5: true, // FONDAMENTALE PER I FLUSSI STREAMING AUDIUS
         loop: !isShuffle,
         volume: 0,
         onend: function() {
@@ -324,7 +331,6 @@ const SoundEngine = (function() {
     currentBgmHowl = bgmPlayers[track.id];
     isPlayingManual = true;
 
-    // 🔒 2. FADE-IN MORBIDO (800ms): Solleva delicatamente la nuova traccia
     const targetVolume = getEffectiveBgmVolume();
 
     if (!isMasterMuted && !isBgmMuted && targetVolume > 0) {
@@ -385,7 +391,7 @@ const SoundEngine = (function() {
   }
 
   // --------------------------------------------------------------------------
-  // 6. RIPRODUZIONE EFFETTI SONORI SFX
+  // 7. EFFETTI SONORI SFX
   // --------------------------------------------------------------------------
   function playSfx(name) {
     if (isMasterMuted || isSfxMuted) return;
@@ -407,6 +413,7 @@ const SoundEngine = (function() {
       heartbeatHowl = new Howl({
         src: [sfxUrls.heartbeat],
         format: ["mp3"],
+        html5: false,
         loop: true,
         volume: getEffectiveSfxVolume() * 0.5
       });
@@ -419,7 +426,7 @@ const SoundEngine = (function() {
   }
 
   // --------------------------------------------------------------------------
-  // 7. CONTROLLI RADIO & PLAYLIST (SPOTIFY DECK)
+  // 8. CONTROLLI RADIO & PLAYLIST SPOTIFY DECK
   // --------------------------------------------------------------------------
   function playNextTrack() {
     const curIdx = playlist.findIndex(t => t.id === currentBgmKey);
@@ -448,13 +455,12 @@ const SoundEngine = (function() {
   }
 
   // --------------------------------------------------------------------------
-  // 8. MIXER A 3 CANALI: MASTER, BGM & SFX
+  // 9. MIXER A 3 CANALI: MASTER, BGM & SFX
   // --------------------------------------------------------------------------
   function setMasterVolume(val) {
     currentMasterVolume = Math.max(0, Math.min(1, parseFloat(val) || 0));
     localStorage.setItem("estiqatsy_master_volume", currentMasterVolume);
     
-    // Aggiorna la musica in esecuzione
     if (currentBgmHowl && currentBgmHowl.playing()) {
       currentBgmHowl.volume(getEffectiveBgmVolume());
     }
@@ -480,19 +486,16 @@ const SoundEngine = (function() {
     }
   }
 
-  // Tasto Unico Muto (Spegne/Accende tutti e 3 i canali)
   function toggleMasterMute() {
     isMasterMuted = !isMasterMuted;
     localStorage.setItem("estiqatsy_audio_muted", isMasterMuted);
 
     if (isMasterMuted) {
-      // Fade-out istantaneo verso il silenzio
       if (currentBgmHowl && currentBgmHowl.playing()) {
         currentBgmHowl.fade(currentBgmHowl.volume(), 0, 150);
       }
       if (heartbeatHowl && heartbeatHowl.playing()) heartbeatHowl.pause();
     } else {
-      // Sblocco e ripresa con dissolvenza morbida
       wakeUpAudioContext();
       if (!isBgmMuted) {
         if (currentBgmHowl && !currentBgmHowl.playing()) {
@@ -549,15 +552,22 @@ const SoundEngine = (function() {
   }
 
   // --------------------------------------------------------------------------
-  // 9. ESPOSIZIONE PUBBLICA SOUNDENGINE
+  // 10. ESPOSIZIONE PUBBLICA CON TUTTE LE SCORCIATOIE DI GIOCO RICHIESTE
   // --------------------------------------------------------------------------
   return {
-    // SFX
+    // Scorciatoie SFX usate direttamente da Rules2Engine & Rules2Wizard
+    playClick: () => playSfx("click"),
+    playCoin: () => playSfx("coin"),
+    playDice: () => playSfx("dice"),
+    playVictory: () => playSfx("victory"),
+    playError: () => playSfx("error"),
+
+    // Canale SFX generico
     playSfx,
     startHeartbeat,
     stopHeartbeat,
 
-    // BGM & Matrice Pagine / Episodi
+    // BGM & Matrice Pagine / Episodi Audius
     playBgm,
     playTabBgm,
     playEpisodeBgm,
@@ -566,7 +576,7 @@ const SoundEngine = (function() {
     togglePlayPause,
     duck,
 
-    // Playlist Jukebox Spotify
+    // Jukebox Audius Deck
     playNextTrack,
     playPrevTrack,
     toggleShuffle,
@@ -581,7 +591,7 @@ const SoundEngine = (function() {
     setBgmVolume,
     setSfxVolume,
 
-    // Getters di Stato Reattivi
+    // Getters Reattivi
     get isPlaying() { return Boolean(currentBgmHowl && currentBgmHowl.playing()); },
     get isMuted() { return isMasterMuted; },
     get isBgmMuted() { return isBgmMuted; },
