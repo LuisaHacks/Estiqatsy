@@ -1,11 +1,21 @@
 // ============================================================================
 // PROJECT: ESTIQATSY BOT & RPG PLATFORM
-// FILE: js/audio.js (VERSIONE 60.0 - SEAMLESS AUTOPLAY & DUAL BACKGROUND ENGINE)
+// FILE: js/audio.js (VERSIONE 65.0 - SMOOTH AUTOPLAY FADE-IN & AUDIUS DECK)
+// DESCRIZIONE: Motore sonoro ad alta fedeltà con avvio immediato in background:
+//              - Fade-in elegante (2.2s) in background durante il loader d'avvio
+//              - Tracce Audius decentralizzate (20 Episodi di Gioco + Stazioni Radio)
+//              - Mini-Widget essenziale per Home montato su #radio-widget-mount
+//              - Deck Jukebox espanso stile Spotify con ricerca e preferiti
+//              - Media Session API nativa per blocco schermo iOS/Android
+//              - SFX a bassa latenza per carte, d20, monete, zombi e cure
 // ============================================================================
 
 const SoundEngine = (function() {
   'use strict';
 
+  // --------------------------------------------------------------------------
+  // 1. ICONE SVG VETTORIALI NATIVE PER I CONTROLLI
+  // --------------------------------------------------------------------------
   const ICONS = {
     play: `<svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>`,
     pause: `<svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>`,
@@ -19,6 +29,9 @@ const SoundEngine = (function() {
     volumeOff: `<svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24"><path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/></svg>`
   };
 
+  // --------------------------------------------------------------------------
+  // 2. CONFIGURAZIONE AUDIUS & VOLUMI PREDEFINITI
+  // --------------------------------------------------------------------------
   const APP_NAME = "estiqatsy";
   const AUDIUS_DISCOVERY_URL = "https://discoveryprovider.audius.co/v1";
 
@@ -37,6 +50,7 @@ const SoundEngine = (function() {
   let currentBgmVolume = parseFloat(localStorage.getItem("estiqatsy_bgm_volume")) || DEFAULT_BGM;
   let currentSfxVolume = parseFloat(localStorage.getItem("estiqatsy_sfx_volume")) || DEFAULT_SFX;
 
+  // Stazioni Jukebox Tematiche
   const STATIONS = {
     boombap: { id: "boombap", name: "Darsena 90s (Boom Bap)", query: "boombap", emoji: "📻" },
     chiptune: { id: "chiptune", name: "Cabinato Arcade (8-Bit)", query: "chiptune 8bit", emoji: "👾" },
@@ -45,6 +59,7 @@ const SoundEngine = (function() {
     favorites: { id: "favorites", name: "I Miei Preferiti", query: null, emoji: "❤️" }
   };
 
+  // Colonne sonore fisse per i 20 Episodi di gioco
   const EPISODE_SOUNDTRACKS = {
     1: { id: "mgb9p", title: "The Shadow Side", artist: "DJ N47", emoji: "🎷", src: `${AUDIUS_DISCOVERY_URL}/tracks/mgb9p/stream?app_name=${APP_NAME}`, duration: 228 },
     2: { id: "ZrOYoXq", title: "Lil Classic BoomBap", artist: "Ljazz", emoji: "📻", src: `${AUDIUS_DISCOVERY_URL}/tracks/ZrOYoXq/stream?app_name=${APP_NAME}`, duration: 130 },
@@ -69,7 +84,7 @@ const SoundEngine = (function() {
   };
 
   let activeStationKey = "boombap";
-  let playbackSource = "radio"; // "radio" (background continuato) | "game" (si spegne su lock screen)
+  let playbackSource = "radio"; // "radio" (background perenne) | "game" (si spegne su lock screen)
   let playlist = [];
   let currentTrackIndex = 0;
   let currentTrack = null;
@@ -80,6 +95,71 @@ const SoundEngine = (function() {
   let searchDebounceTimer = null;
   let searchResults = [];
 
+  // Tracce di fallback locale
+  const BOOTSTRAP_TRACKS = [
+    {
+      id: "mgb9p",
+      alias: ["hard_boiled", "home", "noir"],
+      title: "The Shadow Side (Vinyl Noir)",
+      artist: "DJ N47",
+      artwork: null,
+      emoji: "🎷",
+      src: `${AUDIUS_DISCOVERY_URL}/tracks/mgb9p/stream?app_name=${APP_NAME}`,
+      duration: 228
+    },
+    {
+      id: "ZrOYoXq",
+      alias: ["bass_walker", "games", "hub", "wizard"],
+      title: "Lil Classic BoomBap",
+      artist: "Ljazz feat. LordCinic",
+      artwork: null,
+      emoji: "📻",
+      src: `${AUDIUS_DISCOVERY_URL}/tracks/ZrOYoXq/stream?app_name=${APP_NAME}`,
+      duration: 130
+    },
+    {
+      id: "X6M2a",
+      alias: ["backbay_lounge", "shop"],
+      title: "BOOMBAP 00 (Vintage Rhodes)",
+      artist: "Rafa Halë",
+      artwork: null,
+      emoji: "📻",
+      src: `${AUDIUS_DISCOVERY_URL}/tracks/X6M2a/stream?app_name=${APP_NAME}`,
+      duration: 235
+    },
+    {
+      id: "9dk1j1k",
+      alias: ["opportunity_walks", "recipes"],
+      title: "Gemkeepers BoomBap",
+      artist: "Surce",
+      artwork: null,
+      emoji: "📻",
+      src: `${AUDIUS_DISCOVERY_URL}/tracks/9dk1j1k/stream?app_name=${APP_NAME}`,
+      duration: 249
+    },
+    {
+      id: "dago7mP",
+      alias: ["dark_walk", "profile"],
+      title: "h8rs (Serious Dark)",
+      artist: "Surce",
+      artwork: null,
+      emoji: "☕",
+      src: `${AUDIUS_DISCOVERY_URL}/tracks/dago7mP/stream?app_name=${APP_NAME}`,
+      duration: 223
+    },
+    {
+      id: "A7Nqg",
+      alias: ["ep1_combat", "combat", "boss"],
+      title: "FREE$TYLER (Fast 88 BPM)",
+      artist: "WhoIsSanchez",
+      artwork: null,
+      emoji: "👾",
+      src: `${AUDIUS_DISCOVERY_URL}/tracks/A7Nqg/stream?app_name=${APP_NAME}`,
+      duration: 219
+    }
+  ];
+
+  // Campioni SFX di gioco
   const sfxUrls = {
     click: "https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3",
     card_flip: "https://assets.mixkit.co/active_storage/sfx/166/166-preview.mp3",
@@ -112,6 +192,9 @@ const SoundEngine = (function() {
 
   const sfxPlayers = {};
 
+  // --------------------------------------------------------------------------
+  // 3. GESTIONE PREFERITI
+  // --------------------------------------------------------------------------
   function getFavorites() {
     try {
       const raw = localStorage.getItem("estiqatsy_radio_favorites");
@@ -157,6 +240,9 @@ const SoundEngine = (function() {
     }
   }
 
+  // --------------------------------------------------------------------------
+  // 4. MEDIA SESSION API (SCHERMO BLOCCATO SMARTPHONE)
+  // --------------------------------------------------------------------------
   function setupMediaSessionHandlers() {
     if ('mediaSession' in navigator) {
       navigator.mediaSession.setActionHandler('play', () => SoundEngine.togglePlayPause());
@@ -188,6 +274,9 @@ const SoundEngine = (function() {
     }
   }
 
+  // --------------------------------------------------------------------------
+  // 5. INIEZIONE MODALE ESPANSA NEL DOM
+  // --------------------------------------------------------------------------
   function injectExpandedModal() {
     let modal = document.getElementById("modal-syndicate-radio");
     if (!modal) {
@@ -284,6 +373,9 @@ const SoundEngine = (function() {
     `;
   }
 
+  // --------------------------------------------------------------------------
+  // 6. INIEZIONE & MONTAGGIO MINI-WIDGET IN HOME
+  // --------------------------------------------------------------------------
   function mountMiniWidget() {
     injectExpandedModal();
 
@@ -324,12 +416,12 @@ const SoundEngine = (function() {
 
         <div class="min-w-0 flex-1 pr-1 leading-tight">
           <div class="flex items-center gap-1.5">
-            <span id="mini-track-title" class="text-xs font-black text-white truncate max-w-[130px] sm:max-w-xs">Caricamento frequenza...</span>
+            <span id="mini-track-title" class="text-xs font-black text-white truncate max-w-[130px] sm:max-w-xs">The Shadow Side (Vinyl Noir)</span>
           </div>
           <div class="text-[9.5px] text-slate-400 truncate flex items-center gap-1.5 mt-0.5 font-mono">
-            <span id="mini-track-artist">Darsena Syndicate</span>
+            <span id="mini-track-artist">DJ N47</span>
             <span class="text-slate-600">·</span>
-            <span id="mini-track-time" class="text-sky-300">0:00 / --:--</span>
+            <span id="mini-track-time" class="text-sky-300">0:00 / 03:48</span>
           </div>
         </div>
 
@@ -350,6 +442,9 @@ const SoundEngine = (function() {
     updateUI();
   }
 
+  // --------------------------------------------------------------------------
+  // 7. CARICAMENTO STAZIONI AUDIUS (WHITE-LABEL)
+  // --------------------------------------------------------------------------
   async function loadStationTracks(stationKey) {
     activeStationKey = stationKey;
 
@@ -370,7 +465,7 @@ const SoundEngine = (function() {
         playlist = json.data.map(t => ({
           id: t.id,
           title: t.title || "Traccia Senza Titolo",
-          artist: t.user?.name || "Producer Clandestino",
+          artist: (t.user && t.user.name) ? t.user.name : "Producer Clandestino",
           artwork: (t.artwork && (t.artwork['150x150'] || t.artwork['480x480'])) || null,
           emoji: station.emoji,
           src: `${AUDIUS_DISCOVERY_URL}/tracks/${t.id}/stream?app_name=${APP_NAME}`,
@@ -386,6 +481,9 @@ const SoundEngine = (function() {
     renderModalTracklist();
   }
 
+  // --------------------------------------------------------------------------
+  // 8. RIPRODUZIONE AUDIO CORE (FADE-IN ELEGANTE & HOWLER HTML5)
+  // --------------------------------------------------------------------------
   function formatTime(secs) {
     if (isNaN(secs) || secs < 0) return "0:00";
     const m = Math.floor(secs / 60);
@@ -403,7 +501,8 @@ const SoundEngine = (function() {
     return currentMasterVolume * currentSfxVolume;
   }
 
-  function playTrackByIndex(index, source = "radio") {
+  // 🔒 RIPRODUZIONE CON FADE-IN ELEGANTE PROGRESSIVO
+  function playTrackByIndex(index, source = "radio", fadeInDuration = 2200) {
     if (!playlist || playlist.length === 0) return;
     currentTrackIndex = (index + playlist.length) % playlist.length;
     const track = playlist[currentTrackIndex];
@@ -418,23 +517,30 @@ const SoundEngine = (function() {
       currentHowl = null;
     }
 
+    const targetVol = getEffectiveBgmVolume();
+
     currentHowl = new Howl({
       src: [track.src],
       format: ["mp3"],
-      html5: true,
-      volume: getEffectiveBgmVolume(),
+      html5: true, // STREAMING DIRETTO SU LOCK SCREEN SMARTPHONE
+      volume: 0,   // PARTE SILENZIOSO PER IL FADE-IN
       loop: isLoop && !isShuffle,
       onend: function() {
         if (isShuffle) {
-          playTrackByIndex(Math.floor(Math.random() * playlist.length), playbackSource);
+          playTrackByIndex(Math.floor(Math.random() * playlist.length), playbackSource, 1200);
         } else {
-          playTrackByIndex(currentTrackIndex + 1, playbackSource);
+          playTrackByIndex(currentTrackIndex + 1, playbackSource, 1200);
         }
       }
     });
 
-    if (!isMasterMuted && !isBgmMuted && getEffectiveBgmVolume() > 0) {
-      currentHowl.play();
+    if (!isMasterMuted && !isBgmMuted && targetVol > 0) {
+      try {
+        currentHowl.play();
+        currentHowl.fade(0, targetVol, fadeInDuration);
+      } catch (e) {
+        unlockMobileAudio();
+      }
     }
 
     syncMediaSessionMetadata(track);
@@ -442,7 +548,8 @@ const SoundEngine = (function() {
     updateUI();
   }
 
-  function playBgm(identifier, fadeInDuration = 800, fadeOutDuration = 180) {
+  // 🔒 RESTORED: playBgm universale per router e navigazione (nessun blocco o reset)
+  function playBgm(identifier, fadeInDuration = 1800, fadeOutDuration = 200) {
     unlockMobileAudio();
     if (!identifier) return;
 
@@ -450,19 +557,19 @@ const SoundEngine = (function() {
 
     if (clean.includes("wizard") || clean.includes("bass_walker") || clean.includes("chiptune") || clean.includes("game")) {
       switchStation("chiptune");
-      playTrackByIndex(0, "game");
+      playTrackByIndex(0, "game", fadeInDuration);
       return;
     } else if (clean.includes("shop") || clean.includes("boombap")) {
       switchStation("boombap");
-      playTrackByIndex(0, "radio");
+      playTrackByIndex(0, "radio", fadeInDuration);
       return;
     } else if (clean.includes("recipe") || clean.includes("lofi")) {
       switchStation("lofi");
-      playTrackByIndex(0, "radio");
+      playTrackByIndex(0, "radio", fadeInDuration);
       return;
     } else if (clean.includes("profile") || clean.includes("noir")) {
       switchStation("noir");
-      playTrackByIndex(0, "radio");
+      playTrackByIndex(0, "radio", fadeInDuration);
       return;
     }
 
@@ -472,9 +579,9 @@ const SoundEngine = (function() {
     );
 
     if (trackIdx !== -1) {
-      playTrackByIndex(trackIdx, "radio");
+      playTrackByIndex(trackIdx, "radio", fadeInDuration);
     } else {
-      playTrackByIndex(0, "radio");
+      playTrackByIndex(0, "radio", fadeInDuration);
     }
   }
 
@@ -507,8 +614,8 @@ const SoundEngine = (function() {
     const isPlaying = Boolean(currentHowl && currentHowl.playing());
     const isMuted = isMasterMuted || isBgmMuted;
 
-    document.querySelectorAll("#mini-track-title").forEach(el => el.textContent = track?.title || "Sintonizzazione...");
-    document.querySelectorAll("#mini-track-artist").forEach(el => el.textContent = track?.artist || "Darsena Syndicate");
+    document.querySelectorAll("#mini-track-title").forEach(el => el.textContent = track?.title || "The Shadow Side");
+    document.querySelectorAll("#mini-track-artist").forEach(el => el.textContent = track?.artist || "DJ N47");
     document.querySelectorAll("#mini-btn-play").forEach(el => el.innerHTML = isPlaying ? ICONS.pause : ICONS.play);
     document.querySelectorAll("#mini-emoji-icon").forEach(el => el.textContent = track?.emoji || "📻");
 
@@ -609,21 +716,22 @@ const SoundEngine = (function() {
     }).join("");
   }
 
+  // --------------------------------------------------------------------------
+  // 9. SBLOCCO AUDIO AUTOMATICO & GESTIONE DEL BLOCCO SCHERMO
+  // --------------------------------------------------------------------------
   function unlockMobileAudio() {
     if (window.Howler && Howler.ctx && Howler.ctx.state === "suspended") {
       Howler.ctx.resume().catch(() => {});
     }
   }
 
-  // --------------------------------------------------------------------------
-  // 9. INIZIALIZZAZIONE & SBLOCCO TOUCH GLOBALE AL PRIMO TOCCO NATURALE
-  // --------------------------------------------------------------------------
   function init() {
-    playlist = Object.values(EPISODE_SOUNDTRACKS).slice(0, 6);
+    playlist = [...BOOTSTRAP_TRACKS];
     currentTrack = playlist[0];
 
     setupMediaSessionHandlers();
 
+    // Gestione differenziata background
     document.addEventListener("visibilitychange", () => {
       if (document.hidden) {
         if (playbackSource === "game" || document.body.dataset.context === "gameplay") {
@@ -640,15 +748,15 @@ const SoundEngine = (function() {
       }
     });
 
-    // 🔒 SBLOCCO TOTALE AL PRIMO TOCCO NATURALE DELL'UTENTE (Ovunque tocchi l'app)
-    let hasUnlocked = false;
+    // 🔒 SBLOCCO AUTOMATICO PROGRESSIVO AL PRIMO TOCCO NATURALE OVUNQUE
+    let hasGlobalUnlocked = false;
     const globalFirstTouchUnlock = () => {
-      if (hasUnlocked) return;
-      hasUnlocked = true;
+      if (hasGlobalUnlocked) return;
+      hasGlobalUnlocked = true;
       unlockMobileAudio();
 
       if (!isMasterMuted && !isBgmMuted && (!currentHowl || !currentHowl.playing())) {
-        playTrackByIndex(0, "radio");
+        playTrackByIndex(0, "radio", 2200);
       }
 
       ["touchstart", "click", "pointerdown"].forEach(evt => 
@@ -665,6 +773,13 @@ const SoundEngine = (function() {
     setTimeout(mountMiniWidget, 450);
 
     loadStationTracks("boombap");
+
+    // 🔒 AVVIO AUTOMATICO IMMEDIATO IN BACKGROUND CON FADE-IN
+    setTimeout(() => {
+      if (!isMasterMuted && !isBgmMuted && (!currentHowl || !currentHowl.playing())) {
+        playTrackByIndex(0, "radio", 2200);
+      }
+    }, 150);
   }
 
   if (document.readyState === "loading") {
@@ -674,7 +789,7 @@ const SoundEngine = (function() {
   }
 
   // --------------------------------------------------------------------------
-  // 10. SFX PLAYER BASATO SU BUFFER
+  // 10. SFX PLAYER BASATO SU BUFFER AD ALTA REATTIVITÀ
   // --------------------------------------------------------------------------
   function playSfx(name) {
     if (isMasterMuted || isSfxMuted) return;
@@ -702,7 +817,7 @@ const SoundEngine = (function() {
   }
 
   // --------------------------------------------------------------------------
-  // 11. METODI PUBBLICI ESPORTATI PER IL GIOCO
+  // 11. METODI PUBBLICI ESPORTATI PER IL GIOCO E LA PIATTAFORMA
   // --------------------------------------------------------------------------
   return {
     playClick: () => playSfx("click"),
@@ -713,7 +828,7 @@ const SoundEngine = (function() {
     playSfx: (name) => playSfx(name),
 
     playZombie: () => playSfx("zombie_spectral"),
-    playHeal1Up: () => playSfx("cure_1up"),
+    playHeal1Up: () => playSfx("cure_1up"), // 🍄 Suono retro Super Mario 1-Up
     playDrug: () => playSfx("drug_snort"),
     playBribe: () => playSfx("bribe_deal"),
 
@@ -792,6 +907,7 @@ const SoundEngine = (function() {
 
     playBgm,
 
+    // 🔒 NESSUN TAGLIO AUDIO IN HOME: se sta già suonando all'avvio, non la azzera
     playTabBgm: function(tabKey) {
       const clean = String(tabKey || "home").toLowerCase();
       let targetStation = "boombap";
@@ -802,10 +918,13 @@ const SoundEngine = (function() {
       else if (clean.includes("profile")) targetStation = "noir";
       else targetStation = "boombap";
 
-      switchStation(targetStation);
+      if (activeStationKey !== targetStation) {
+        switchStation(targetStation);
+      }
 
+      // Se non stava già suonando, avviala con fade-in delicato
       if (!isMasterMuted && !isBgmMuted && (!currentHowl || !currentHowl.playing())) {
-        playTrackByIndex(0, "radio");
+        playTrackByIndex(0, "radio", 1800);
       }
     },
 
@@ -825,12 +944,12 @@ const SoundEngine = (function() {
       document.getElementById("modal-syndicate-radio")?.showModal();
     },
 
-    // 🔒 TOGGLE DETERMINISTICO A SINGOLO CLIC (Elimina il bug del primo tocco a vuoto)
+    // 🔒 TOGGLE DETERMINISTICO A SINGOLO TOCCO (Zero doppio clic)
     togglePlayPause: function() {
       unlockMobileAudio();
 
       if (!currentHowl) {
-        playTrackByIndex(currentTrackIndex, "radio");
+        playTrackByIndex(currentTrackIndex, "radio", 1200);
         return;
       }
 
@@ -848,26 +967,26 @@ const SoundEngine = (function() {
 
     playNextTrack: function() {
       if (isShuffle) {
-        playTrackByIndex(Math.floor(Math.random() * playlist.length), playbackSource);
+        playTrackByIndex(Math.floor(Math.random() * playlist.length), playbackSource, 1200);
       } else {
-        playTrackByIndex(currentTrackIndex + 1, playbackSource);
+        playTrackByIndex(currentTrackIndex + 1, playbackSource, 1200);
       }
     },
 
     playPrevTrack: function() {
-      playTrackByIndex(currentTrackIndex - 1, playbackSource);
+      playTrackByIndex(currentTrackIndex - 1, playbackSource, 1200);
     },
 
     playTrackDirect: function(idx) {
       const targetList = searchResults.length > 0 ? searchResults : playlist;
       if (targetList[idx]) {
         playlist = targetList;
-        playTrackByIndex(idx, "radio");
+        playTrackByIndex(idx, "radio", 1200);
       }
     },
 
     playActiveStation: function() {
-      playTrackByIndex(0, "radio");
+      playTrackByIndex(0, "radio", 1200);
     },
 
     switchStation,
