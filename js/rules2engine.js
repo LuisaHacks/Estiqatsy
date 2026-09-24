@@ -1,9 +1,21 @@
 // ============================================================================
 // PROJECT: ESTIQATSY SYNDICATE & RPG PLATFORM
-// FILE: js/rules2engine.js (VERSIONE 34.0 - RESOLVE ITEM LOOKUP & CLEAN MODALS)
-// LAYER: GAMEPLAY LOOP, D20 COMBAT, 1-2-3-4 ACTION MATRIX & TACTICAL SHEETS
-// NOTE: HUMAN ITEM NAMES, CONTEXTUAL EMOJIS, ZERO STAT LOSS ON START
+// FILE: js/rules2engine.js (VERSIONE 36.0 - DETERMINISTIC RPG ENGINE)
+// LAYER: GAMEPLAY LOOP, D20 COMBAT, MATCHUP TCG, ORGANIGRAMMA & CARD INSPECTOR
+// NOTE: FEDELTÀ 1:1 CON MathGameRules2.gs E UXGameRules2.gs
 // ============================================================================
+
+// ----------------------------------------------------------------------------
+// 0. MATRICI STATICHE, FORMULE E HELPER CONDIVISI COL BACKEND
+// ----------------------------------------------------------------------------
+const RULES2_CORRUPTION_MATRIX = {
+  "mazzu": ["thc", "stimolante", "alcool", "alcol"],
+  "camorristi": ["stimolante", "alcool", "alcol", "tranquillante"],
+  "burocrati": ["stimolante", "alcool", "alcol", "thc"],
+  "ideologi": ["allucinogeno", "thc", "tranquillante"],
+  "cazzari": ["alcool", "alcol", "allucinogeno", "tranquillante"],
+  "bestie": ["tranquillante", "thc", "allucinogeno"]
+};
 
 const RULES2_SYNTHESIS_RECIPES = {
   "spore duna": { toolName: "Capsulatrice Inox", toolId: "EQP_0031_S1_E0", prodName: "Psilocybe Duna", prodId: "EQP_0039_S1_E0", turns: 2, icon: "🍄" },
@@ -38,14 +50,14 @@ if (typeof Rules2_SafeAttr === "undefined") {
 if (typeof Rules2_ResolveItemName === "undefined") {
   window.Rules2_ResolveItemName = function(idOrName, catalog = []) {
     if (!idOrName || idOrName === "—" || idOrName === "-") return "";
-    const clean = String(idOrName).trim();
+    const clean = String(idOrName).trim().toLowerCase();
     const list = catalog.length > 0 ? catalog : (AppState.activeSession?.shopCatalog || []);
-    const found = list.find(x => x.id === clean || x.nome?.toLowerCase() === clean.toLowerCase());
+    const found = list.find(x => String(x.id || "").toLowerCase() === clean || String(x.nome || "").toLowerCase() === clean);
     if (found) {
       const emoji = (found.emoji && found.emoji !== "—" && found.emoji !== "-") ? found.emoji + " " : "";
       return emoji + found.nome;
     }
-    return clean;
+    return idOrName;
   };
 }
 
@@ -77,6 +89,213 @@ function rulesFormatMod(val) {
   return (mod >= 0 ? "+" : "") + mod;
 }
 
+// ----------------------------------------------------------------------------
+// 1. MOTORE MATEMATICO DETERMINISTICO CLIENT-SIDE (Rules2Math)
+// ----------------------------------------------------------------------------
+const Rules2Math = {
+  getPoliticalDamageBonus: function(heroFaction, enemyFaction) {
+    const pol = String(heroFaction || "").trim().toLowerCase();
+    const fac = String(enemyFaction || "").trim().toLowerCase();
+    if (pol === "destra" && (fac === "mazzu" || fac === "ideologi")) return 1;
+    if (pol === "sinistra" && (fac === "camorristi" || fac === "burocrati")) return 1;
+    return 0;
+  },
+
+  getOrganigrammaIntelBonus: function(inventory, catalog, enemyFaction = "") {
+    let permBonus = 0;
+    let sitBonus = 0;
+    const seen = {};
+    const facClean = String(enemyFaction || "").toLowerCase().trim();
+
+    (inventory || []).forEach(itName => {
+      const ent = this.findEntity(itName, catalog);
+      if (ent && !seen[ent.id]) {
+        seen[ent.id] = true;
+        const cat = String(ent.categoria || "").toLowerCase().trim();
+        const sub = String(ent.sottocategoria || "").toLowerCase().trim();
+        const byp = String(ent.requisitiCodificati || ent.effettoCodificato || "").toUpperCase();
+
+        if (byp.includes("PASSIVO:DOSSIER") || (cat === "informazione" && sub === "dossier") || (byp.includes("PASSIVO:PROVE") && sub.includes("prov") && !ent.pv && !ent.danno)) {
+          permBonus += 1;
+        }
+
+        if (facClean && byp.includes("PASSIVO:INT_VS_" + facClean.toUpperCase())) {
+          sitBonus += 1;
+        }
+      }
+    });
+
+    return { permanent: permBonus, situational: sitBonus, total: permBonus + sitBonus };
+  },
+
+  getGlobalFortunaBonus: function(inventory, catalog) {
+    let bonus = 0;
+    const seen = {};
+    (inventory || []).forEach(itName => {
+      const ent = this.findEntity(itName, catalog);
+      if (ent && !seen[ent.id]) {
+        seen[ent.id] = true;
+        const reqRaw = String(ent.requisitiCodificati || ent.effettoCodificato || "");
+        if (reqRaw.includes("PASSIVO:STAT_FORTUNA_")) {
+          const m = reqRaw.match(/PASSIVO:STAT_FORTUNA_(\d+)/);
+          bonus += m ? parseInt(m[1], 10) : 1;
+        }
+      }
+    });
+    return bonus;
+  },
+
+  getEffectiveHeroStats: function(hero, catalog, enemyFaction = "") {
+    if (!hero) return { FORZA: 10, DESTREZZA: 10, INTELLIGENZA: 10 };
+    const baseStats = hero.stats || {};
+    let bFor = 0, bDes = 0, bInt = 0;
+
+    const baseFor = Number(baseStats.FORZA || hero.forza || 10);
+    const baseDes = Number(baseStats.DESTREZZA || hero.destrezza || 10);
+    const baseInt = Number(baseStats.INTELLIGENZA || hero.intelligenza || 10);
+
+    if (hero.armaAttiva) {
+      const wEnt = this.findEntity(hero.armaAttiva, catalog);
+      if (wEnt?.forza) bFor += Number(wEnt.forza);
+    }
+    if (hero.veicoloAttivo) {
+      const vEnt = this.findEntity(hero.veicoloAttivo, catalog);
+      if (vEnt?.destrezza) bDes += Number(vEnt.destrezza);
+    }
+
+    (hero.inventario || []).forEach(itName => {
+      const itEnt = this.findEntity(itName, catalog);
+      if (itEnt) {
+        const cat = Rules2_ClassifyEntity(itEnt);
+        if (cat === "TALISMANI" || cat === "STRUMENTI") {
+          if (itEnt.forza) bFor += Number(itEnt.forza);
+          if (itEnt.destrezza) bDes += Number(itEnt.destrezza);
+          if (itEnt.intelligenza) bInt += Number(itEnt.intelligenza);
+        }
+      }
+    });
+
+    const intel = this.getOrganigrammaIntelBonus(hero.inventario || [], catalog, enemyFaction);
+    bInt += intel.total;
+
+    (hero.abilita || []).forEach(abName => {
+      const abEnt = this.findEntity(abName, catalog);
+      if (abEnt) {
+        if (abEnt.forza) bFor += Number(abEnt.forza);
+        if (abEnt.destrezza) bDes += Number(abEnt.destrezza);
+        if (abEnt.intelligenza) bInt += Number(abEnt.intelligenza);
+      }
+    });
+
+    return {
+      FORZA: Math.max(1, baseFor + bFor),
+      DESTREZZA: Math.max(1, baseDes + bDes),
+      INTELLIGENZA: Math.max(1, baseInt + bInt)
+    };
+  },
+
+  calculateDerivedMaxHp: function(hero, catalog) {
+    const baseHp = hero?.pvMaxBase ? Number(hero.pvMaxBase) : Number(hero?.pvMax || 25);
+    let deltaMaxHp = 0;
+
+    (hero?.inventario || []).forEach(itName => {
+      const itEnt = this.findEntity(itName, catalog);
+      if (itEnt && Rules2_ClassifyEntity(itEnt) === "TALISMANI" && itEnt.pv > 0) {
+        deltaMaxHp += Number(itEnt.pv);
+      }
+    });
+
+    (hero?.abilita || []).forEach(abName => {
+      const abEnt = this.findEntity(abName, catalog);
+      if (abEnt?.pv > 0) deltaMaxHp += Number(abEnt.pv);
+    });
+
+    return Math.max(1, baseHp + deltaMaxHp);
+  },
+
+  analyzeMatchup: function(hero, enemy, catalog) {
+    if (!enemy) return null;
+    let statReq = String(enemy.statRichiesta || "FORZA").toUpperCase().trim();
+    if (!["FORZA", "DESTREZZA", "INTELLIGENZA"].includes(statReq)) statReq = "FORZA";
+
+    const cdD20 = Number(enemy.difficolta || enemy.cd || 12);
+    const enemyFaction = String(enemy.categoria || "").toLowerCase().trim();
+
+    const effStats = this.getEffectiveHeroStats(hero, catalog, enemyFaction);
+    const netMod = Math.floor((effStats[statReq] - 10) / 2);
+    const bonusFortuna = this.getGlobalFortunaBonus(hero.inventario || [], catalog);
+
+    let weaponDamage = 0;
+    if (hero.armaAttiva) {
+      const wEnt = this.findEntity(hero.armaAttiva, catalog);
+      if (wEnt?.danno) weaponDamage = Number(wEnt.danno);
+    }
+
+    const politicalBonus = this.getPoliticalDamageBonus(hero.schieramentoPolitico, enemyFaction);
+
+    let talismanDamage = 0;
+    (hero.inventario || []).forEach(itName => {
+      const itEnt = this.findEntity(itName, catalog);
+      if (itEnt && Rules2_ClassifyEntity(itEnt) === "TALISMANI" && itEnt.danno) {
+        talismanDamage += Number(itEnt.danno);
+      }
+    });
+
+    // Formula del dado e probabilità canonica da MathGameRules2.gs
+    const targetRoll = cdD20 - (netMod + bonusFortuna);
+    let prob = 0;
+    if (targetRoll <= 2) prob = 95;
+    else if (targetRoll >= 20) prob = 5;
+    else prob = Math.min(95, Math.max(5, (20 - targetRoll + 1) * 5));
+
+    return {
+      statReq,
+      cdD20,
+      netMod,
+      bonusFortuna,
+      prob,
+      expectedHeroDamage: Math.max(1, weaponDamage + Math.max(0, netMod) + politicalBonus + talismanDamage)
+    };
+  },
+
+  checkEventBypass: function(hero, evtNode, catalog) {
+    const rawReq = String(evtNode.requisitiCodificati || evtNode.effettoCodificato || evtNode.requisitoBypass || "");
+    if (!rawReq || rawReq === "—" || rawReq === "-") return { bypassed: false };
+
+    const inv = hero.inventario || [];
+    const tokens = rawReq.split(/[,|]/).map(t => t.trim().toUpperCase());
+
+    for (let tk of tokens) {
+      if (tk.startsWith("PASSIVO:OGGETTO_")) {
+        const reqId = tk.replace("PASSIVO:OGGETTO_", "").trim();
+        const hasIt = inv.some(i => {
+          const ent = this.findEntity(i, catalog);
+          return ent && (ent.id.toUpperCase() === reqId || ent.nome.toUpperCase() === reqId);
+        });
+        if (hasIt) return { bypassed: true, method: "STRUMENTO_100", toolId: reqId };
+      }
+      if (tk.startsWith("ALLEATO:")) {
+        const allyReq = tk.replace("ALLEATO:", "").trim();
+        const comp = hero.compagni || [];
+        const hasAlly = comp.some(a => a.toUpperCase().includes(allyReq));
+        if (hasAlly) return { bypassed: true, method: "ALLEATO_100", allyName: allyReq };
+      }
+    }
+    return { bypassed: false };
+  },
+
+  findEntity: function(idOrName, catalog = []) {
+    if (!idOrName) return null;
+    const clean = String(idOrName).trim().toLowerCase();
+    return catalog.find(x => String(x.id || "").toLowerCase() === clean || String(x.nome || "").toLowerCase() === clean) || null;
+  }
+};
+
+window.Rules2Math = Rules2Math;
+
+// ----------------------------------------------------------------------------
+// 2. MOTORE DI GIOCO RULES2 (GAMEPLAY LOOP, AZIONI, HUD, CARD INSPECTOR)
+// ----------------------------------------------------------------------------
 const Rules2Engine = {
   _isBusy: false,
   _activeHeroTab: "scheda",
@@ -85,8 +304,7 @@ const Rules2Engine = {
     this._isBusy = flag;
     const actBox = document.getElementById("scene-actions-container");
     if (!actBox) return;
-    const btns = actBox.querySelectorAll("button");
-    btns.forEach(b => {
+    actBox.querySelectorAll("button").forEach(b => {
       if (flag) {
         b.setAttribute("disabled", "true");
         b.classList.add("opacity-50", "pointer-events-none");
@@ -98,8 +316,7 @@ const Rules2Engine = {
   },
 
   getGold: function() {
-    const h = AppState.activeSession?.hero;
-    return h ? (parseInt(h.oro, 10) || 0) : 0;
+    return AppState.activeSession?.hero?.oro || 0;
   },
 
   setGold: function(val) {
@@ -251,6 +468,7 @@ const Rules2Engine = {
 
         AppState.activeSession.hero = {
           ...res.statoEroe,
+          pvMaxBase: res.statoEroe?.pvMax || 25,
           mediaUrl: avatarUrl || res.statoEroe?.mediaUrl || "",
           armaAttiva: payloadParams.armaAttiva || res.statoEroe?.armaAttiva || "",
           veicoloAttivo: payloadParams.veicoloAttivo || res.statoEroe?.veicoloAttivo || "",
@@ -300,34 +518,27 @@ const Rules2Engine = {
     const hudBox = document.getElementById("gameplay-live-hud") || document.querySelector("#view-gameplay .hud-cockpit-48px");
     if (!hudBox) return;
 
-    const heroName = hero.nomeEroe || "Avventuriero";
-    const avatar = (hero.mediaUrl && hero.mediaUrl.startsWith("http"))
-      ? `<img src="${hero.mediaUrl}" class="w-full h-full object-cover rounded-full" alt="Avatar">`
-      : `<span class="text-xs">👤</span>`;
+    const catalog = AppState.activeSession?.shopCatalog || [];
+    const currentEnemy = AppState.activeSession?.currentNode;
+    const enemyFaction = (currentEnemy && (currentEnemy.tipo === "NEMICO" || currentEnemy.id?.includes("NEM_"))) ? currentEnemy.categoria : "";
 
-    const pv = parseInt(hero.pv, 10) || 0;
-    const pvMax = parseInt(hero.pvMax, 10) || 25;
+    const effStats = Rules2Math.getEffectiveHeroStats(hero, catalog, enemyFaction);
+    const pvMax = Rules2Math.calculateDerivedMaxHp(hero, catalog);
+    hero.pvMax = pvMax;
+
+    const pv = Math.max(0, parseInt(hero.pv, 10) || 0);
     const pvPct = Math.max(0, Math.min(100, Math.round((pv / pvMax) * 100)));
     const oro = parseInt(hero.oro, 10) || 0;
     const px = parseInt(hero.px, 10) || 0;
 
-    // Calcolo statistiche comprensive dei bonus arma attiva ed equipaggiamenti
-    let effFor = Number(hero.stats?.FORZA || 10);
-    let effDes = Number(hero.stats?.DESTREZZA || 10);
-    let effInt = Number(hero.stats?.INTELLIGENZA || 10);
+    const forMod = Rules2Math.formatMod(effStats.FORZA);
+    const desMod = Rules2Math.formatMod(effStats.DESTREZZA);
+    const intMod = Rules2Math.formatMod(effStats.INTELLIGENZA);
 
-    if (hero.armaAttiva) {
-      const armEnt = this._findEntityData(hero.armaAttiva);
-      if (armEnt?.forza) effFor += Number(armEnt.forza);
-    }
-    if (hero.veicoloAttivo) {
-      const vecEnt = this._findEntityData(hero.veicoloAttivo);
-      if (vecEnt?.destrezza) effDes += Number(vecEnt.destrezza);
-    }
-
-    const forMod = rulesFormatMod(effFor);
-    const desMod = rulesFormatMod(effDes);
-    const intMod = rulesFormatMod(effInt);
+    const heroName = hero.nomeEroe || "Avventuriero";
+    const avatar = (hero.mediaUrl && hero.mediaUrl.startsWith("http"))
+      ? `<img src="${hero.mediaUrl}" class="w-full h-full object-cover rounded-full" alt="Avatar">`
+      : `<span class="text-xs">👤</span>`;
 
     hudBox.className = "hud-cockpit-48px";
     hudBox.innerHTML = `
@@ -353,7 +564,7 @@ const Rules2Engine = {
           <span class="text-rose-300 font-bold">${pv}/${pvMax}</span>
         </div>
         <div class="text-slate-300 tracking-tight text-right shrink-0">
-          🥊 ${effFor} (${forMod}) · 🤸 ${effDes} (${desMod}) · 🧠 ${effInt} (${intMod})
+          🥊 ${effStats.FORZA} (${forMod}) · 🤸 ${effStats.DESTREZZA} (${desMod}) · 🧠 ${effStats.INTELLIGENZA} (${intMod})
         </div>
       </div>
     `;
@@ -434,22 +645,55 @@ const Rules2Engine = {
 
     const isCombat = (currentNode.tipo === "NEMICO" || (currentNode.id && currentNode.id.includes("NEM_")));
     const isEvento = (currentNode.tipo === "EVENTO" || (currentNode.id && currentNode.id.includes("EVT_")));
+    const catalog = AppState.activeSession?.shopCatalog || [];
 
     let statPlateHtml = "";
+    let partyStripHtml = "";
+
     if (isCombat) {
+      const matchup = Rules2Math.analyzeMatchup(currentHero, currentNode, catalog);
       statPlateHtml = `
-        <span>🥊 FOR <b>${currentNode.forza || 12}</b></span>
-        <span>🤸 DES <b>${currentNode.destrezza || 12}</b></span>
-        <span>🎯 CD <b>${currentNode.difficolta || 12}</b></span>
+        <span>🎯 CD <b>${matchup.cdD20}</b></span>
+        <span>🎲 Vittoria: <b class="text-emerald-400">${matchup.prob}%</b></span>
+        <span>💥 Stima: <b>~${matchup.expectedHeroDamage} DAN</b></span>
       `;
+
+      // Barra Compatta Party & Zombi (da UXGameRules2.gs)
+      const comp = Object.keys(currentHero.compagniData || {});
+      const zombies = currentHero.zombieSquad || [];
+      const totalTargets = 1 + comp.length + zombies.length;
+
+      if (totalTargets > 1) {
+        partyStripHtml = `
+          <div class="flex items-center gap-1.5 overflow-x-auto py-1 px-2 mb-1 bg-black/40 rounded-lg text-[9.5px] font-mono text-slate-300 w-full max-w-[330px] mx-auto">
+            <span class="text-sky-300 shrink-0">🛡️ Danno ÷ ${totalTargets}:</span>
+            ${comp.map(cName => {
+              const al = currentHero.compagniData[cName];
+              return `<span class="badge badge-xs badge-info font-bold shrink-0">🤝 ${cName} (${al.pv}PV)</span>`;
+            }).join("")}
+            ${zombies.map(z => `<span class="badge badge-xs badge-secondary font-bold shrink-0">🧟 ${z.nome} (${z.pv}PV)</span>`).join("")}
+          </div>
+        `;
+      }
     } else if (isEvento) {
-      statPlateHtml = `
-        <span>🎲 CD <b>${currentNode.difficolta || 11}</b></span>
-        <span>🧠 Stat: <b>${(currentNode.statRichiesta || 'DES').substring(0, 3).toUpperCase()}</b></span>
-        <span>💔 Rischio <b>${currentNode.danno || 4} PV</b></span>
-      `;
+      const bypass = Rules2Math.checkEventBypass(currentHero, currentNode, catalog);
+      if (bypass.bypassed) {
+        statPlateHtml = `
+          <span>⚡ <b>BYPASS TATTICO</b></span>
+          <span class="text-emerald-400">100% SUCCESSO</span>
+          <span>🛡️ Sicuro</span>
+        `;
+      } else {
+        const eff = Rules2Math.getEffectiveHeroStats(currentHero, catalog, "");
+        const statName = (currentNode.statRichiesta || "DESTREZZA").toUpperCase();
+        const mod = Rules2Math.getEffectiveHeroStats(currentHero, catalog, "")[statName] || 10;
+        statPlateHtml = `
+          <span>🎲 CD <b>${currentNode.difficolta || 11}</b></span>
+          <span>🧠 Stat: <b>${statName.substring(0, 3)} (${rulesFormatMod(mod)})</b></span>
+          <span>💔 Rischio <b>${currentNode.danno || 4} PV</b></span>
+        `;
+      }
     } else {
-      // 🔒 SNODO NARRATIVO: Niente zeri ridondanti, solo dettagli d'atmosfera puliti
       const hasOro = Number(currentNode.oro) > 0;
       const hasPx = Number(currentNode.px) > 0;
       if (hasOro || hasPx) {
@@ -468,14 +712,13 @@ const Rules2Engine = {
     }
 
     let cleanText = (currentNode.testo || "").replace(/\s*\([A-Z]{3,4}_\d{4}_S\d+_E\d+\)/gi, "");
-
-    // 🔒 Risoluzione nome umano del reperto/loot (mai più OBJ_0001_S1_E1!)
     const rawLoot = currentNode.equipLoot || currentNode.lootId;
-    const humanLoot = Rules2_ResolveItemName(rawLoot, AppState.activeSession.shopCatalog);
+    const humanLoot = Rules2_ResolveItemName(rawLoot, catalog);
 
     const cardWrapper = document.getElementById("gameplay-card-stage");
     if (cardWrapper) {
       cardWrapper.innerHTML = `
+        ${partyStripHtml}
         <div class="tcg-card gameplay-focal selected relative my-1">
           <div class="tcg-card-media">
             <div class="tcg-card-header">
@@ -519,32 +762,38 @@ const Rules2Engine = {
         if (window.SoundEngine) SoundEngine.playDice();
       }
 
-      const hasBribe = (currentNode.corruption?.canCorrupt && currentNode.corruption.validDrugs?.length > 0);
-      const bribeDrug = hasBribe ? currentNode.corruption.validDrugs[0] : null;
+      const enemyFaction = String(currentNode.categoria || "").toLowerCase().trim();
+      const allowedDrugs = RULES2_CORRUPTION_MATRIX[enemyFaction] || [];
+      const validDrugsInBag = (currentHero.inventario || []).filter(it => {
+        const ent = Rules2Math.findEntity(it, catalog);
+        return ent && Rules2_ClassifyEntity(ent) === "DROGHE" && allowedDrugs.includes(String(ent.sottocategoria || "").toLowerCase());
+      });
 
-      if (hasBribe && bribeDrug) {
+      const isBossOrCap = currentNode.sottocategoria === "boss" || currentNode.sottocategoria === "capitano";
+
+      let bribeHtml = "";
+      if (validDrugsInBag.length > 0 && !isBossOrCap) {
+        const primaryDrug = validDrugsInBag[0];
+        bribeHtml = `
+          <button onclick="Rules2Engine.combatBribe('${Rules2_SafeAttr(primaryDrug)}')" class="scene-action-btn border-amber-400/50 text-amber-300 font-bold truncate" title="${Rules2_SafeAttr(primaryDrug)}">
+            💊 Cedi ${primaryDrug.split(" ")[0]}
+          </button>
+        `;
+      }
+
+      if (bribeHtml) {
         actBox.innerHTML = `
           <div class="actions-grid-3">
-            <button onclick="Rules2Engine.combatAction('attack_round')" class="scene-action-btn action-danger font-black">
-              ⚔️ Attacca
-            </button>
-            <button onclick="Rules2Engine.combatAction('flee')" class="scene-action-btn font-bold">
-              🏃 Fuggi
-            </button>
-            <button onclick="Rules2Engine.combatBribe('${Rules2_SafeAttr(bribeDrug.nome)}')" class="scene-action-btn border-amber-400/50 text-amber-300 font-bold" title="${Rules2_SafeAttr(bribeDrug.nome)}">
-              💊 Corrompi
-            </button>
+            <button onclick="Rules2Engine.combatAction('attack_round')" class="scene-action-btn action-danger font-black">⚔️ Attacca</button>
+            <button onclick="Rules2Engine.combatAction('flee')" class="scene-action-btn font-bold">🏃 Fuggi</button>
+            ${bribeHtml}
           </div>
         `;
       } else {
         actBox.innerHTML = `
           <div class="actions-grid-2">
-            <button onclick="Rules2Engine.combatAction('attack_round')" class="scene-action-btn action-danger font-black">
-              ⚔️ Attacca
-            </button>
-            <button onclick="Rules2Engine.combatAction('flee')" class="scene-action-btn font-bold">
-              🏃 Fuggi
-            </button>
+            <button onclick="Rules2Engine.combatAction('attack_round')" class="scene-action-btn action-danger font-black">⚔️ Attacca</button>
+            <button onclick="Rules2Engine.combatAction('flee')" class="scene-action-btn font-bold">🏃 Fuggi</button>
           </div>
         `;
       }
@@ -552,14 +801,13 @@ const Rules2Engine = {
     }
 
     if (isEvento) {
+      const bypass = Rules2Math.checkEventBypass(currentHero, currentNode, catalog);
       const statReq = currentNode.statRichiesta || "DESTREZZA";
       const shortStat = statReq.substring(0, 3).toUpperCase();
       const cdVal = currentNode.difficolta || 11;
-      const bypassTool = currentNode.equipLoot || currentNode.requisitoBypass;
-      const hasTool = bypassTool && (currentHero?.inventario || []).some(it => it.toLowerCase().includes(bypassTool.toLowerCase()));
 
-      if (hasTool) {
-        const humanTool = Rules2_ResolveItemName(bypassTool, AppState.activeSession.shopCatalog);
+      if (bypass.bypassed) {
+        const humanTool = Rules2_ResolveItemName(bypass.toolId || bypass.allyName, catalog);
         actBox.innerHTML = `
           <div class="actions-grid-1">
             <button onclick="Rules2Engine.executeEventRoll('${currentNode.id}', '${statReq}', ${cdVal})" class="scene-action-btn border-emerald-500 text-emerald-300 font-black justify-between">
@@ -658,22 +906,6 @@ const Rules2Engine = {
     tgHaptic("selection");
     if (window.SoundEngine) SoundEngine.playClick();
 
-    const h = AppState.activeSession.hero;
-    if (h && h.sintesiInCorso && h.sintesiInCorso.length > 0) {
-      const stillCrafting = [];
-      for (let sc of h.sintesiInCorso) {
-        sc.turniMancanti -= 1;
-        if (sc.turniMancanti <= 0) {
-          h.inventario = h.inventario || [];
-          h.inventario.push(sc.prodotto);
-          rulesNotify(`⚗️ Sintesi completata: 1 dose di ${sc.icon || '💊'} ${sc.prodotto} pronta nello zaino!`, "success");
-        } else {
-          stillCrafting.push(sc);
-        }
-      }
-      h.sintesiInCorso = stillCrafting;
-    }
-
     try {
       const res = await apiCall("game_node", {
         gameKey: AppState.activeSession.gameKey,
@@ -681,7 +913,29 @@ const Rules2Engine = {
         nodeId: targetId,
         partitaId: AppState.activeSession.partitaId
       });
+
       if (res?.nodo) {
+        // Se il backend ha restituito uno stato aggiornato di sintesi, sincronizza quello
+        if (res.statoEroe?.sintesiInCorso) {
+          AppState.activeSession.hero.sintesiInCorso = res.statoEroe.sintesiInCorso;
+        } else {
+          // Fallback locale a scatto singolo
+          const h = AppState.activeSession.hero;
+          if (h && h.sintesiInCorso && h.sintesiInCorso.length > 0) {
+            const stillCrafting = [];
+            for (let sc of h.sintesiInCorso) {
+              sc.turniMancanti -= 1;
+              if (sc.turniMancanti <= 0) {
+                h.inventario = h.inventario || [];
+                h.inventario.push(sc.prodotto);
+                rulesNotify(`⚗️ Sintesi completata: 1 dose di ${sc.icon || '💊'} ${sc.prodotto} pronta nello zaino!`, "success");
+              } else {
+                stillCrafting.push(sc);
+              }
+            }
+            h.sintesiInCorso = stillCrafting;
+          }
+        }
         this.renderNode(res.nodo, res.statoEroe);
       } else {
         this._setBusy(false);
@@ -872,11 +1126,28 @@ const Rules2Engine = {
             }
 
             const hero = AppState.activeSession.hero;
+            const catalog = AppState.activeSession.shopCatalog || [];
             const hasNecroAbl = (hero?.abilita?.includes("Necromanzia") && hero.pv > 1);
+
+            // Regola Voodoo dal backend: possesso di feticcio Voodoo + droga compatibile
+            const hasVoodoo = (hero?.inventario || []).some(it => {
+              const ent = Rules2Math.findEntity(it, catalog);
+              return ent && Rules2_ClassifyEntity(ent) === "TALISMANI" && String(ent.sottocategoria || "").toLowerCase().includes("voodoo");
+            });
+
+            const deadEnemy = res.victoryData?.enemy || AppState.activeSession.currentNode;
+            const enemyFaction = String(deadEnemy?.categoria || "").toLowerCase().trim();
+            const allowedDrugs = RULES2_CORRUPTION_MATRIX[enemyFaction] || [];
+            const matchingDrug = (hero?.inventario || []).find(it => {
+              const ent = Rules2Math.findEntity(it, catalog);
+              return ent && Rules2_ClassifyEntity(ent) === "DROGHE" && allowedDrugs.includes(String(ent.sottocategoria || "").toLowerCase());
+            });
+
+            const canResurrect = (hasNecroAbl || (hasVoodoo && matchingDrug)) && !res.victoryData?.chainInfected;
             AppState.activeSession.engineState.pendingVictory = res.nextView;
 
-            if (hasNecroAbl && !res.victoryData?.chainInfected) {
-              this.renderNecromancyPrompt(res.victoryData.enemy);
+            if (canResurrect) {
+              this.renderNecromancyPrompt(deadEnemy, hasNecroAbl, matchingDrug);
             } else {
               this.renderNode(res.nextView.nodo, res.nextView.statoEroe);
             }
@@ -903,17 +1174,31 @@ const Rules2Engine = {
     }
   },
 
-  renderNecromancyPrompt: function(deadEnemy) {
+  renderNecromancyPrompt: function(deadEnemy, hasNecroAbl = true, matchingDrug = null) {
     this._setBusy(false);
     const actBox = document.getElementById("scene-actions-container");
     if (!actBox) return;
 
+    let resurrectButtons = "";
+    if (hasNecroAbl) {
+      resurrectButtons += `
+        <button onclick="Rules2Engine.executeResurrectZombie('${deadEnemy ? deadEnemy.id : ''}', 'ABILITA')" class="scene-action-btn border-purple-400 text-purple-300 font-black">
+          Rianima Zombi (-1 PV) 🧟
+        </button>
+      `;
+    }
+    if (matchingDrug) {
+      resurrectButtons += `
+        <button onclick="Rules2Engine.executeResurrectZombie('${deadEnemy ? deadEnemy.id : ''}', 'DROGA', '${Rules2_SafeAttr(matchingDrug)}')" class="scene-action-btn border-emerald-400 text-emerald-300 font-black">
+          Rianima con ${matchingDrug.split(" ")[0]} 💊
+        </button>
+      `;
+    }
+
     actBox.className = "scene-actions-area";
     actBox.innerHTML = `
       <div class="actions-grid-2">
-        <button onclick="Rules2Engine.executeResurrectZombie('${deadEnemy ? deadEnemy.id : ''}')" class="scene-action-btn border-purple-400 text-purple-300 font-black">
-          Rianima Zombi (-1 PV) 🧟
-        </button>
+        ${resurrectButtons}
         <button onclick="Rules2Engine.skipNecromancy()" class="scene-action-btn text-slate-300 font-bold">
           Lascia Cadavere ›
         </button>
@@ -921,7 +1206,7 @@ const Rules2Engine = {
     `;
   },
 
-  executeResurrectZombie: async function(enemyId) {
+  executeResurrectZombie: async function(enemyId, method = "ABILITA", drugName = "") {
     if (this._isBusy) return;
     this._setBusy(true);
 
@@ -929,10 +1214,12 @@ const Rules2Engine = {
       const res = await apiCall("game_action", {
         subAction: "resurrect_zombie",
         targetId: enemyId,
-        method: "ABILITA",
+        method: method,
+        drugId: drugName,
         gameKey: AppState.activeSession.gameKey,
         episodio: AppState.activeSession.episodio
       });
+
       if (res?.success) {
         tgHaptic("success");
         this.showFloatingDamage("🧟 Risorto!", false, false);
@@ -1019,14 +1306,13 @@ const Rules2Engine = {
     });
   },
 
-  // 🔒 MODALE FASCICOLO RIFINITA: EMOJI DEDICATE, PREZZO CONTESTUALE E ZERO TASTI DOPPI
+  // --------------------------------------------------------------------------
+  // CARD INSPECTOR TCG UNIVERSALE (ADDIO ALLE MODALI SAAS PIATTE)
+  // --------------------------------------------------------------------------
   inspectEntityDetail: function(it) {
     if (!it) return;
     const modal = document.getElementById("modal-universal-detail");
     if (!modal) return;
-
-    const s = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
-    const h = (id, val) => { const el = document.getElementById(id); if (el) el.innerHTML = val; };
 
     const cat = Rules2_ClassifyEntity(it);
     const categoryEmojis = {
@@ -1039,56 +1325,87 @@ const Rules2Engine = {
       "CURE": "🍱"
     };
 
-    const icon = it.tipo === "NEMICO" ? "👾" : (it.emoji || categoryEmojis[cat] || "📦");
-    s("uni-detail-icon", icon);
-    s("uni-detail-title", it.nome);
-    s("uni-detail-badge", `${(it.tipo || 'EQUIPAGGIAMENTO').toUpperCase()} • ${(it.sottocategoria || it.categoria || 'GENERALE').toUpperCase()}`);
+    const isEnemy = (it.tipo === "NEMICO" || it.isEnemyInspection);
+    const emoji = isEnemy ? "👾" : (it.emoji || categoryEmojis[cat] || "📦");
+    const subCat = (it.sottocategoria || it.categoria || (isEnemy ? "Nemico" : "Reperto")).toUpperCase();
+    const cleanLore = (it.descrizione || it.testo || "Nessun fascicolo d'inchiesta registrato.").replace(/\s*\([A-Z]{3,4}_\d{4}_S\d+_E\d+\)/gi, "");
+    const mediaImg = it.mediaUrl || "https://image.pollinations.ai/prompt/dark-noir-rpg-investigation-item-on-wooden-dock?width=600&height=400&nologo=true";
 
-    const bonuses = [];
-    if (it.pv) bonuses.push(`❤️ PV: <b>${it.pv}</b>`);
-    if (it.danno) bonuses.push(`💥 Danno: <b>${it.danno}</b>`);
-    if (it.forza) bonuses.push(`🥊 FOR: <b>${it.forza}</b>`);
-    if (it.destrezza) bonuses.push(`🤸 DES: <b>${it.destrezza}</b>`);
-    if (it.intelligenza) bonuses.push(`🧠 INT: <b>${it.intelligenza}</b>`);
+    const h = AppState.activeSession?.hero || {};
+    const isEquippedWeapon = h.armaAttiva && (h.armaAttiva.toLowerCase() === String(it.nome || "").toLowerCase());
+    const isEquippedVehicle = h.veicoloAttivo && (h.veicoloAttivo.toLowerCase() === String(it.nome || "").toLowerCase());
 
-    // Mostra il listino se sei all'Emporio, altrimenti lo stato di possesso
-    if (it.isFromBackpack) {
-      bonuses.push(`<span class="text-emerald-400">🎒 In Dotazione</span>`);
-    } else if (it.costoOro) {
-      bonuses.push(`💰 Prezzo: <b class="text-amber-300">${it.costoOro} 🟡</b>`);
+    let statsPlateHtml = "";
+    if (isEnemy) {
+      statsPlateHtml = `<span>🥊 FOR <b>${it.forza || 12}</b></span><span>🤸 DES <b>${it.destrezza || 12}</b></span><span>🎯 CD <b>${it.difficolta || 12}</b></span>`;
+    } else {
+      const p1 = it.forza ? `🥊 +${it.forza} FOR` : (it.danno ? `💥 +${it.danno} DAN` : (it.costoOro ? `💰 ${it.costoOro} 🟡` : `📦 ${cat}`));
+      const p2 = it.destrezza ? `🤸 +${it.destrezza} DES` : (it.pv ? `❤️ +${it.pv} PV` : `📁 Inchiesta`);
+      const p3 = it.intelligenza ? `🧠 +${it.intelligenza} INT` : (it.isFromBackpack ? `🎒 Zaino` : `⚡ Reperto`);
+      statsPlateHtml = `<span>${p1}</span><span>${p2}</span><span>${p3}</span>`;
     }
 
-    h("uni-detail-metrics-value", bonuses.join(" • ") || "Nessun parametro");
-    s("uni-detail-lore", (it.descrizione || it.testo || "").replace(/\s*\([A-Z]{3,4}_\d{4}_S\d+_E\d+\)/gi, ""));
-
-    const btn = document.getElementById("uni-detail-action-btn");
-    if (btn) {
-      if (it.isEnemyInspection) {
-        btn.textContent = "Attacca ⚔️";
-        btn.className = "btn btn-error btn-sm flex-1 font-black uppercase";
-        btn.style.display = "block";
-        btn.onclick = () => { modal.close(); this.combatAction("attack_round"); };
-      } else if (cat === "ARMI") {
-        btn.textContent = "Impugna 🗡️";
-        btn.className = "btn btn-primary btn-sm flex-1 font-black uppercase";
-        btn.style.display = "block";
-        btn.onclick = () => { this.equipItem(it.nome, "weapon"); modal.close(); };
-      } else if (cat === "VEICOLI") {
-        btn.textContent = "Attiva Guida 🛴";
-        btn.className = "btn btn-primary btn-sm flex-1 font-black uppercase";
-        btn.style.display = "block";
-        btn.onclick = () => { this.equipItem(it.nome, "vehicle"); modal.close(); };
-      } else if (cat === "DROGHE" || cat === "CURE") {
-        btn.textContent = (cat === "DROGHE") ? "Assumi 💊" : "Usa ❤️";
-        btn.className = "btn btn-success btn-sm flex-1 font-black uppercase";
-        btn.style.display = "block";
-        btn.onclick = () => { this.useBackpackItem(it.nome); modal.close(); };
-      } else {
-        // 🔒 Se l'oggetto non ha azioni dirette, nascondi il tasto inferiore ridondante (c'è già la ✕ in alto)
-        btn.style.display = "none";
-      }
+    let actionBtnHtml = "";
+    if (isEnemy) {
+      actionBtnHtml = `<button onclick="document.getElementById('modal-universal-detail').close(); Rules2Engine.combatAction('attack_round');" class="btn btn-error btn-sm w-full font-black uppercase text-xs shadow-md">Attacca ⚔️</button>`;
+    } else if (cat === "ARMI") {
+      actionBtnHtml = `
+        <button onclick="Rules2Engine.equipItem('${Rules2_SafeAttr(it.nome)}', 'weapon'); document.getElementById('modal-universal-detail').close();" class="btn ${isEquippedWeapon ? 'btn-warning' : 'btn-primary'} btn-sm w-full font-black uppercase text-xs shadow-md">
+          ${isEquippedWeapon ? 'Riponi Arma 🗡️' : 'Impugna Arma 🗡️'}
+        </button>
+      `;
+    } else if (cat === "VEICOLI") {
+      actionBtnHtml = `
+        <button onclick="Rules2Engine.equipItem('${Rules2_SafeAttr(it.nome)}', 'vehicle'); document.getElementById('modal-universal-detail').close();" class="btn ${isEquippedVehicle ? 'btn-warning' : 'btn-primary'} btn-sm w-full font-black uppercase text-xs shadow-md">
+          ${isEquippedVehicle ? 'Scendi dal Veicolo 🛴' : 'Attiva Guida 🛴'}
+        </button>
+      `;
+    } else if (cat === "DROGHE" || cat === "CURE") {
+      actionBtnHtml = `
+        <button onclick="Rules2Engine.useBackpackItem('${Rules2_SafeAttr(it.nome)}'); document.getElementById('modal-universal-detail').close();" class="btn btn-success btn-sm w-full font-black uppercase text-xs text-slate-950 shadow-md">
+          ${cat === 'DROGHE' ? 'Assumi Sostanza 💊' : 'Cura Ferite ❤️'}
+        </button>
+      `;
     }
 
+    modal.innerHTML = `
+      <div class="modal-box p-0 bg-transparent border-none shadow-none max-w-[315px] mx-auto relative overflow-visible">
+        <button onclick="document.getElementById('modal-universal-detail').close()" class="modal-close-btn -top-2 -right-2 z-50 bg-[#0B1222] border border-white/20" title="Chiudi">✕</button>
+
+        <div class="coverflow-card tcg-card selected monumental max-w-[310px] mx-auto shadow-2xl">
+          <div class="tcg-card-media">
+            <div class="tcg-card-header">
+              <h4 class="tcg-card-title truncate">${emoji} ${it.nome}</h4>
+              <span class="tcg-card-faction-badge ${isEnemy ? 'sinistra' : 'destra'}">${subCat}</span>
+            </div>
+            <img src="${mediaImg}" class="tcg-card-img" alt="${Rules2_SafeAttr(it.nome)}">
+            ${(it.citazione && it.citazione !== "—" && it.citazione !== "-") ? `
+              <div class="tcg-card-quote-overlay">
+                <div class="tcg-card-quote-text">“${it.citazione.replace(/^["'“”]+|["'“”]+$/g, "")}”</div>
+                ${it.autoreCitazione ? `<div class="tcg-card-quote-author">${it.autoreCitazione}</div>` : ''}
+              </div>
+            ` : ''}
+          </div>
+
+          <div class="tcg-stats-plate">
+            ${statsPlateHtml}
+          </div>
+
+          <p class="tcg-card-desc">${cleanLore}</p>
+
+          <div class="tcg-card-footer">
+            <div class="tcg-card-loot truncate">${it.isFromBackpack ? '🎒 Nello Zaino' : (it.costoOro ? it.costoOro + ' 🟡 ORO' : 'Fascicolo')}</div>
+            <div class="tcg-card-vitals">
+              ${isEnemy ? `<span class="tcg-pv-badge">❤️ ${it.pv || 20} PV</span>` : `<span class="tcg-gold-badge">${cat}</span>`}
+            </div>
+          </div>
+        </div>
+
+        ${actionBtnHtml ? `<div class="mt-2 w-full">${actionBtnHtml}</div>` : ''}
+      </div>
+    `;
+
+    tgHaptic("selection");
     if (window.SoundEngine) SoundEngine.playClick();
     modal.showModal();
   },
@@ -1129,29 +1446,19 @@ const Rules2Engine = {
     s("sheet-hero-class", `${h.classe || "Avventuriero"} (${h.schieramentoPolitico || "Neutrale"})`);
     s("sheet-hero-gold", `${h.oro || 0} 🟡`);
 
-    let effFor = Number(h.stats?.FORZA || 10);
-    let effDes = Number(h.stats?.DESTREZZA || 10);
-    let effInt = Number(h.stats?.INTELLIGENZA || 10);
+    const catalog = AppState.activeSession?.shopCatalog || [];
+    const effStats = Rules2Math.getEffectiveHeroStats(h, catalog, "");
 
-    if (h.armaAttiva) {
-      const armEnt = this._findEntityData(h.armaAttiva);
-      if (armEnt?.forza) effFor += Number(armEnt.forza);
-    }
-    if (h.veicoloAttivo) {
-      const vecEnt = this._findEntityData(h.veicoloAttivo);
-      if (vecEnt?.destrezza) effDes += Number(vecEnt.destrezza);
-    }
+    s("sheet-pure-for", effStats.FORZA);
+    s("sheet-pure-des", effStats.DESTREZZA);
+    s("sheet-pure-int", effStats.INTELLIGENZA);
 
-    s("sheet-pure-for", effFor);
-    s("sheet-pure-des", effDes);
-    s("sheet-pure-int", effInt);
+    s("sheet-mod-for", rulesFormatMod(effStats.FORZA));
+    s("sheet-mod-des", rulesFormatMod(effStats.DESTREZZA));
+    s("sheet-mod-int", rulesFormatMod(effStats.INTELLIGENZA));
 
-    s("sheet-mod-for", rulesFormatMod(effFor));
-    s("sheet-mod-des", rulesFormatMod(effDes));
-    s("sheet-mod-int", rulesFormatMod(effInt));
-
-    s("sheet-active-weapon", h.armaAttiva ? Rules2_ResolveItemName(h.armaAttiva, AppState.activeSession?.shopCatalog) : "Pugni nudi");
-    s("sheet-active-vehicle", h.veicoloAttivo ? Rules2_ResolveItemName(h.veicoloAttivo, AppState.activeSession?.shopCatalog) : "A piedi");
+    s("sheet-active-weapon", h.armaAttiva ? Rules2_ResolveItemName(h.armaAttiva, catalog) : "Pugni nudi");
+    s("sheet-active-vehicle", h.veicoloAttivo ? Rules2_ResolveItemName(h.veicoloAttivo, catalog) : "A piedi");
 
     const ablsBox = document.getElementById("sheet-abilities-list");
     if (ablsBox) {
@@ -1172,14 +1479,34 @@ const Rules2Engine = {
     if (!c || !h) return;
 
     let html = "";
-    const comp = h.compagni || [];
+    const comp = Object.keys(h.compagniData || {});
     const zombies = h.zombieSquad || [];
 
     if (comp.length === 0 && zombies.length === 0) {
       html = `<div class="p-3 text-center text-xs text-slate-500 font-mono">In solitaria. Nessun alleato al seguito.</div>`;
     } else {
-      html += comp.map(a => `<div class="p-2.5 rounded-xl bg-slate-900 border border-white/5 flex items-center justify-between text-xs"><span>🤝 ${a}</span> <span class="badge badge-xs badge-info">Alleato</span></div>`).join("");
-      html += zombies.map(z => `<div class="p-2.5 rounded-xl bg-purple-950/40 border border-purple-500/40 flex items-center justify-between text-xs text-purple-300"><span>🧟 ${z.nome}</span> <span class="badge badge-xs badge-secondary">Danno x2</span></div>`).join("");
+      html += comp.map(aName => {
+        const al = h.compagniData[aName];
+        return `
+          <div class="p-2.5 rounded-xl bg-slate-900 border border-white/5 flex items-center justify-between text-xs">
+            <div>
+              <span class="font-bold text-white">🤝 ${aName}</span>
+              <div class="text-[9.5px] text-slate-400 font-mono">${al.sottocategoria || 'Compagno'} • 💥 Danno ${al.danno || 3}</div>
+            </div>
+            <span class="badge badge-xs badge-info font-mono">${al.pv}/${al.pvMax} PV</span>
+          </div>
+        `;
+      }).join("");
+
+      html += zombies.map(z => `
+        <div class="p-2.5 rounded-xl bg-purple-950/40 border border-purple-500/40 flex items-center justify-between text-xs text-purple-300">
+          <div>
+            <span class="font-bold">🧟 ${z.nome}</span>
+            <div class="text-[9.5px] font-mono text-purple-400">Danno x2: ${Number(z.dannoBase || 3) * 2}</div>
+          </div>
+          <span class="badge badge-xs badge-secondary font-mono">${z.pv}/${z.pvMax} PV</span>
+        </div>
+      `).join("");
     }
     c.innerHTML = html;
   },
@@ -1189,23 +1516,31 @@ const Rules2Engine = {
     const h = AppState.activeSession?.hero;
     if (!c || !h) return;
 
+    const catalog = AppState.activeSession?.shopCatalog || [];
     const inv = h.inventario || [];
-    const infoItems = inv.filter(it => Rules2_ClassifyEntity(this._findEntityData(it)) === "INFORMAZIONI");
+    const infoItems = inv.filter(it => Rules2_ClassifyEntity(Rules2Math.findEntity(it, catalog)) === "INFORMAZIONI");
 
     if (infoItems.length === 0) {
       c.innerHTML = `<div class="p-3 text-center text-xs text-slate-500 font-mono">Nessun reperto d'inchiesta raccolto finora.</div>`;
     } else {
       c.innerHTML = infoItems.map(p => {
-        const ent = this._findEntityData(p);
-        const isPermanent = String(ent?.sottocategoria || "").toLowerCase().includes("prov");
-        const humanName = Rules2_ResolveItemName(p, AppState.activeSession?.shopCatalog);
+        const ent = Rules2Math.findEntity(p, catalog);
+        const sub = String(ent?.sottocategoria || "").toLowerCase();
+        const byp = String(ent?.requisitiCodificati || ent?.effettoCodificato || "").toUpperCase();
+        const isPermanent = sub.includes("prov") || byp.includes("PASSIVO:DOSSIER");
+        const humanName = Rules2_ResolveItemName(p, catalog);
+
+        let factionTag = "";
+        const m = byp.match(/PASSIVO:INT_VS_([A-Z]+)/);
+        if (m) factionTag = `vs ${m[1]}`;
+
         return `
-          <div onclick="Rules2Engine.inspectEntityDetail({ ...Rules2Engine._findEntityData('${Rules2_SafeAttr(p)}'), isFromBackpack: true })" class="p-2.5 rounded-xl bg-slate-900 border border-white/10 flex items-center justify-between cursor-pointer">
+          <div onclick="Rules2Engine.inspectEntityDetail({ ...Rules2Math.findEntity('${Rules2_SafeAttr(p)}', AppState.activeSession.shopCatalog), isFromBackpack: true })" class="p-2.5 rounded-xl bg-slate-900 border border-white/10 flex items-center justify-between cursor-pointer">
             <div>
               <div class="font-bold text-xs text-white">${humanName}</div>
-              <div class="text-[10px] text-slate-400">${isPermanent ? '+1 INT permanente sull\'organigramma' : '+1 INT situazionale'}</div>
+              <div class="text-[10px] text-slate-400">${isPermanent ? '+1 INT permanente sull\'organigramma' : `+1 INT situazionale ${factionTag}`}</div>
             </div>
-            <span class="badge badge-xs badge-info font-mono">${ent?.sottocategoria || ent?.categoria || 'Reperto'}</span>
+            <span class="badge badge-xs badge-info font-mono">${ent?.sottocategoria || 'Reperto'}</span>
           </div>
         `;
       }).join("");
@@ -1256,13 +1591,13 @@ const Rules2Engine = {
         </div>
 
         <div class="p-3 rounded-xl bg-purple-950/20 border border-purple-500/30 space-y-2 mt-2">
-          <div class="text-[10px] font-mono font-bold text-purple-300 uppercase">⚗️ Banco di Sintesi</div>
+          <div class="text-[10px] font-mono font-bold text-purple-300 uppercase">⚗️ Banco di Sintesi Chimica</div>
           ${availableRecipes.length > 0 ? availableRecipes.map(r => `
             <div class="flex items-center justify-between p-2 rounded-lg bg-black/40 text-xs">
-              <span>${r.icon} <b>${r.prodName}</b> (${r.turns} turni)</span>
-              <button onclick="Rules2Engine.startSynthesis('${r.prodName}', '${r.toolName}')" class="btn btn-xs btn-secondary font-black">Distilla</button>
+              <span>${r.icon} <b>${r.prodName}</b> (${r.turns} snodi)</span>
+              <button onclick="Rules2Engine.startSynthesis('${r.prodName}')" class="btn btn-xs btn-secondary font-black">Distilla</button>
             </div>
-          `).join("") : '<div class="text-[11px] text-slate-400 italic">Nessun reagente combinabile nello zaino.</div>'}
+          `).join("") : '<div class="text-[11px] text-slate-400 italic">Nessun reagente combinabile con gli attrezzi nello zaino.</div>'}
         </div>
       </div>
     `;
@@ -1271,7 +1606,7 @@ const Rules2Engine = {
     modal.showModal();
   },
 
-  startSynthesis: function(prodName, toolName) {
+  startSynthesis: function(prodName) {
     const h = AppState.activeSession?.hero;
     if (!h) return;
 
@@ -1284,7 +1619,7 @@ const Rules2Engine = {
           h.sintesiInCorso = h.sintesiInCorso || [];
           h.sintesiInCorso.push({ prodotto: rec.prodName, turniMancanti: rec.turns, icon: rec.icon });
           tgHaptic("success");
-          rulesNotify(`⚗️ Avviata lavorazione di ${rec.prodName} (pronta tra ${rec.turns} turni).`, "success");
+          rulesNotify(`⚗️ Distillazione di ${rec.prodName} avviata (${rec.turns} snodi).`, "success");
           this.openAssettoModal();
           return;
         }
@@ -1321,7 +1656,7 @@ const Rules2Engine = {
         return;
       }
       container.innerHTML = inv.map(it => {
-        const ent = this._findEntityData(it);
+        const ent = Rules2Math.findEntity(it, AppState.activeSession?.shopCatalog);
         const buyPrice = Math.abs(Number(ent?.costoOro || ent?.costo || 10));
         const sellPrice = Math.max(1, Math.ceil(buyPrice * 0.25));
         const humanName = Rules2_ResolveItemName(it, AppState.activeSession?.shopCatalog);
@@ -1519,15 +1854,6 @@ const Rules2Engine = {
     AppRouter.navigate("games");
   },
 
-  _findEntityData: function(itemName) {
-    if (!itemName) return null;
-    const catalog = AppState.activeSession.shopCatalog || [];
-    const clean = String(itemName).trim().toLowerCase();
-    const found = catalog.find(x => String(x.nome || "").trim().toLowerCase() === clean || String(x.id || "").trim().toLowerCase() === clean);
-    if (found) return found;
-    return { nome: itemName, categoria: Rules2_ClassifyEntity({ nome: itemName }) };
-  },
-
   filterBackpack: function(cat) {
     if (!AppState.activeSession.engineState) AppState.activeSession.engineState = {};
     AppState.activeSession.engineState.backpackFilter = cat || "ALL";
@@ -1542,8 +1868,10 @@ const Rules2Engine = {
       return;
     }
 
+    const catalog = AppState.activeSession.shopCatalog || [];
+
     if (cat && cat !== "ALL") {
-      inv = inv.filter(itemName => Rules2_ClassifyEntity(this._findEntityData(itemName)) === cat);
+      inv = inv.filter(itemName => Rules2_ClassifyEntity(Rules2Math.findEntity(itemName, catalog)) === cat);
       if (inv.length === 0) {
         c.innerHTML = `<div class="p-3 text-center text-xs text-slate-500 font-mono">Nessun articolo per <b>${cat}</b>.</div>`;
         return;
@@ -1553,19 +1881,19 @@ const Rules2Engine = {
     c.innerHTML = inv.map(it => {
       const isArma = (h.armaAttiva && it.toLowerCase() === h.armaAttiva.toLowerCase());
       const isVeicolo = (h.veicoloAttivo && it.toLowerCase() === h.veicoloAttivo.toLowerCase());
-      const ent = this._findEntityData(it);
+      const ent = Rules2Math.findEntity(it, catalog);
       const category = Rules2_ClassifyEntity(ent);
-      const humanName = Rules2_ResolveItemName(it, AppState.activeSession?.shopCatalog);
+      const humanName = Rules2_ResolveItemName(it, catalog);
 
       return `
         <div class="p-2.5 rounded-xl bg-slate-900 border border-white/10 flex items-center justify-between text-xs">
-          <div onclick="Rules2Engine.inspectEntityDetail({ ...Rules2Engine._findEntityData('${Rules2_SafeAttr(it)}'), isFromBackpack: true })" class="cursor-pointer pr-2 truncate">
+          <div onclick="Rules2Engine.inspectEntityDetail({ ...Rules2Math.findEntity('${Rules2_SafeAttr(it)}', AppState.activeSession.shopCatalog), isFromBackpack: true })" class="cursor-pointer pr-2 truncate">
             <div class="font-bold text-white truncate">${humanName}</div>
             <div class="text-[10px] ${isArma || isVeicolo ? 'text-amber-300 font-bold' : 'text-slate-400'}">
               ${isArma ? '🗡️ [IN PUGNO]' : (isVeicolo ? '🛴 [IN GUIDA]' : category)}
             </div>
           </div>
-          <button onclick="Rules2Engine.inspectEntityDetail({ ...Rules2Engine._findEntityData('${Rules2_SafeAttr(it)}'), isFromBackpack: true })" class="btn btn-xs btn-outline border-white/20 text-slate-300 font-bold shrink-0">
+          <button onclick="Rules2Engine.inspectEntityDetail({ ...Rules2Math.findEntity('${Rules2_SafeAttr(it)}', AppState.activeSession.shopCatalog), isFromBackpack: true })" class="btn btn-xs btn-outline border-white/20 text-slate-300 font-bold shrink-0">
             Fascicolo
           </button>
         </div>
@@ -1597,13 +1925,14 @@ const Rules2Engine = {
     const h = AppState.activeSession?.hero;
     if (!h) return;
 
-    const ent = this._findEntityData(itemName);
+    const catalog = AppState.activeSession?.shopCatalog || [];
+    const ent = Rules2Math.findEntity(itemName, catalog);
     const idx = (h.inventario || []).indexOf(itemName);
     if (idx !== -1) {
       h.inventario.splice(idx, 1);
-      const humanName = Rules2_ResolveItemName(itemName, AppState.activeSession?.shopCatalog);
+      const humanName = Rules2_ResolveItemName(itemName, catalog);
       if (ent && ent.pv) {
-        h.pv = Math.min(h.pvMax || 25, (h.pv || 0) + ent.pv);
+        h.pv = Math.min(h.pvMax || 25, (h.pv || 0) + Number(ent.pv));
         rulesNotify(`Hai usato ${humanName} (+${ent.pv} PV)!`, "success");
       } else {
         rulesNotify(`Hai assunto ${humanName}!`, "info");
@@ -1654,7 +1983,7 @@ Object.assign(window.GameEngine, {
 
   combatAction: (act) => Rules2Engine.combatAction(act),
   combatBribe: (d) => Rules2Engine.combatBribe(d),
-  executeResurrectZombie: (id) => Rules2Engine.executeResurrectZombie(id),
+  executeResurrectZombie: (id, m, d) => Rules2Engine.executeResurrectZombie(id, m, d),
   skipNecromancy: () => Rules2Engine.skipNecromancy(),
   submitQuizAnswer: (a) => Rules2Engine.submitQuizAnswer(a),
   advanceToNode: (t) => Rules2Engine.advanceToNode(t)
