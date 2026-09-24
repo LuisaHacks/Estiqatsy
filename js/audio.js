@@ -1,20 +1,11 @@
 // ============================================================================
 // PROJECT: ESTIQATSY BOT & RPG PLATFORM
-// FILE: js/audio.js (VERSIONE 40.0 - NATIVE SVG ICONS, MEDIA SESSION & DUAL-LIFECYCLE)
-// DESCRIZIONE: Componente Audio Integrato per Telegram Mini App:
-//              - Icone SVG vettoriali native (Play, Pause, Skip, Shuffle, Heart, Repeat)
-//              - Emoji riservate SOLO per fallback copertine e chip stazioni
-//              - Autoplay al caricamento con sblocco istantaneo al primo tocco
-//              - Media Session API per controllo nativo da Blocco Schermo / Lock Screen
-//              - Gestione differenziata: la Radio continua a schermo bloccato, il Gioco si sospende
+// FILE: js/audio.js (VERSIONE 55.0 - AUTONOMOUS RADIO, AUTOPLAY & GAMEPLAY SFX)
 // ============================================================================
 
 const SoundEngine = (function() {
   'use strict';
 
-  // --------------------------------------------------------------------------
-  // 1. ICONE SVG VETTORIALI AD ALTA DEFINIZIONE (ZERO EMOJI SUI CONTROLLI)
-  // --------------------------------------------------------------------------
   const ICONS = {
     play: `<svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>`,
     pause: `<svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>`,
@@ -28,14 +19,11 @@ const SoundEngine = (function() {
     volumeOff: `<svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24"><path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/></svg>`
   };
 
-  // --------------------------------------------------------------------------
-  // 2. CONFIGURAZIONI AUDIO & AUDIUS ENDPOINT
-  // --------------------------------------------------------------------------
   const APP_NAME = "estiqatsy";
   const AUDIUS_DISCOVERY_URL = "https://discoveryprovider.audius.co/v1";
 
   const DEFAULT_MASTER = 0.85;
-  const DEFAULT_BGM = 0.40;
+  const DEFAULT_BGM = 0.45;
   const DEFAULT_SFX = 0.90;
 
   const storedMute = localStorage.getItem("estiqatsy_audio_muted");
@@ -49,7 +37,6 @@ const SoundEngine = (function() {
   let currentBgmVolume = parseFloat(localStorage.getItem("estiqatsy_bgm_volume")) || DEFAULT_BGM;
   let currentSfxVolume = parseFloat(localStorage.getItem("estiqatsy_sfx_volume")) || DEFAULT_SFX;
 
-  // Stazioni e Query Audius (White-Label)
   const STATIONS = {
     boombap: { id: "boombap", name: "Darsena 90s (Boom Bap)", query: "boombap", emoji: "📻" },
     chiptune: { id: "chiptune", name: "Cabinato Arcade (8-Bit)", query: "chiptune 8bit", emoji: "👾" },
@@ -58,8 +45,31 @@ const SoundEngine = (function() {
     favorites: { id: "favorites", name: "I Miei Preferiti", query: null, emoji: "❤️" }
   };
 
+  const EPISODE_SOUNDTRACKS = {
+    1: { id: "mgb9p", title: "The Shadow Side", artist: "DJ N47", emoji: "🎷", src: `${AUDIUS_DISCOVERY_URL}/tracks/mgb9p/stream?app_name=${APP_NAME}`, duration: 228 },
+    2: { id: "ZrOYoXq", title: "Lil Classic BoomBap", artist: "Ljazz", emoji: "📻", src: `${AUDIUS_DISCOVERY_URL}/tracks/ZrOYoXq/stream?app_name=${APP_NAME}`, duration: 130 },
+    3: { id: "X6M2a", title: "BOOMBAP 00", artist: "Rafa Halë", emoji: "📻", src: `${AUDIUS_DISCOVERY_URL}/tracks/X6M2a/stream?app_name=${APP_NAME}`, duration: 235 },
+    4: { id: "9dk1j1k", title: "Gemkeepers Beat", artist: "Surce", emoji: "📻", src: `${AUDIUS_DISCOVERY_URL}/tracks/9dk1j1k/stream?app_name=${APP_NAME}`, duration: 249 },
+    5: { id: "dago7mP", title: "h8rs Serious", artist: "Surce", emoji: "☕", src: `${AUDIUS_DISCOVERY_URL}/tracks/dago7mP/stream?app_name=${APP_NAME}`, duration: 223 },
+    6: { id: "A7Nqg", title: "FREE$TYLER (Fast)", artist: "WhoIsSanchez", emoji: "👾", src: `${AUDIUS_DISCOVERY_URL}/tracks/A7Nqg/stream?app_name=${APP_NAME}`, duration: 219 },
+    7: { id: "Y5wybJ7", title: "AMEN BoomBap", artist: "GMLX", emoji: "🎤", src: `${AUDIUS_DISCOVERY_URL}/tracks/Y5wybJ7/stream?app_name=${APP_NAME}`, duration: 128 },
+    8: { id: "mgb9p", title: "Darsena Noir Vinyl", artist: "DJ N47", emoji: "🎷", src: `${AUDIUS_DISCOVERY_URL}/tracks/mgb9p/stream?app_name=${APP_NAME}`, duration: 228 },
+    9: { id: "ZrOYoXq", title: "Clandestino 90s", artist: "Ljazz", emoji: "📻", src: `${AUDIUS_DISCOVERY_URL}/tracks/ZrOYoXq/stream?app_name=${APP_NAME}`, duration: 130 },
+    10: { id: "X6M2a", title: "Rhodes del Fosso", artist: "Rafa Halë", emoji: "📻", src: `${AUDIUS_DISCOVERY_URL}/tracks/X6M2a/stream?app_name=${APP_NAME}`, duration: 235 },
+    11: { id: "9dk1j1k", title: "Inchiesta Demaniale", artist: "Surce", emoji: "📻", src: `${AUDIUS_DISCOVERY_URL}/tracks/9dk1j1k/stream?app_name=${APP_NAME}`, duration: 249 },
+    12: { id: "dago7mP", title: "Molo Sbarrato", artist: "Surce", emoji: "☕", src: `${AUDIUS_DISCOVERY_URL}/tracks/dago7mP/stream?app_name=${APP_NAME}`, duration: 223 },
+    13: { id: "A7Nqg", title: "Frequenze VHF Beat", artist: "WhoIsSanchez", emoji: "👾", src: `${AUDIUS_DISCOVERY_URL}/tracks/A7Nqg/stream?app_name=${APP_NAME}`, duration: 219 },
+    14: { id: "Y5wybJ7", title: "Tariq Duello Beat", artist: "GMLX", emoji: "🎤", src: `${AUDIUS_DISCOVERY_URL}/tracks/Y5wybJ7/stream?app_name=${APP_NAME}`, duration: 128 },
+    15: { id: "mgb9p", title: "Assalto alle Banchine", artist: "DJ N47", emoji: "🎷", src: `${AUDIUS_DISCOVERY_URL}/tracks/mgb9p/stream?app_name=${APP_NAME}`, duration: 228 },
+    16: { id: "ZrOYoXq", title: "Fuga tra i Cantieri", artist: "Ljazz", emoji: "📻", src: `${AUDIUS_DISCOVERY_URL}/tracks/ZrOYoXq/stream?app_name=${APP_NAME}`, duration: 130 },
+    17: { id: "X6M2a", title: "Notte a Burlamacca", artist: "Rafa Halë", emoji: "📻", src: `${AUDIUS_DISCOVERY_URL}/tracks/X6M2a/stream?app_name=${APP_NAME}`, duration: 235 },
+    18: { id: "9dk1j1k", title: "Resa con i Mazzu", artist: "Surce", emoji: "📻", src: `${AUDIUS_DISCOVERY_URL}/tracks/9dk1j1k/stream?app_name=${APP_NAME}`, duration: 249 },
+    19: { id: "dago7mP", title: "Climax al Tramonto", artist: "Surce", emoji: "☕", src: `${AUDIUS_DISCOVERY_URL}/tracks/dago7mP/stream?app_name=${APP_NAME}`, duration: 223 },
+    20: { id: "A7Nqg", title: "Epilogo del Sindaco", artist: "WhoIsSanchez", emoji: "👾", src: `${AUDIUS_DISCOVERY_URL}/tracks/A7Nqg/stream?app_name=${APP_NAME}`, duration: 219 }
+  };
+
   let activeStationKey = "boombap";
-  let playbackSource = "radio"; // "radio" (background illimitato) | "game" (si spegne su lock screen)
+  let playbackSource = "radio"; // "radio" | "game"
   let playlist = [];
   let currentTrackIndex = 0;
   let currentTrack = null;
@@ -71,89 +81,38 @@ const SoundEngine = (function() {
   let searchDebounceTimer = null;
   let searchResults = [];
 
-  // Tracce di sicurezza offline (pronte al montaggio)
-  const BOOTSTRAP_TRACKS = [
-    {
-      id: "mgb9p",
-      title: "The Shadow Side (Vinyl Noir)",
-      artist: "DJ N47",
-      artwork: null,
-      emoji: "🎷",
-      src: "https://discoveryprovider.audius.co/v1/tracks/mgb9p/stream?app_name=estiqatsy",
-      duration: 228
-    },
-    {
-      id: "ZrOYoXq",
-      title: "Lil Classic BoomBap",
-      artist: "Ljazz feat. LordCinic",
-      artwork: null,
-      emoji: "📻",
-      src: "https://discoveryprovider.audius.co/v1/tracks/ZrOYoXq/stream?app_name=estiqatsy",
-      duration: 130
-    },
-    {
-      id: "X6M2a",
-      title: "BOOMBAP 00 (Vintage Rhodes)",
-      artist: "Rafa Halë",
-      artwork: null,
-      emoji: "📻",
-      src: "https://discoveryprovider.audius.co/v1/tracks/X6M2a/stream?app_name=estiqatsy",
-      duration: 235
-    },
-    {
-      id: "9dk1j1k",
-      title: "Gemkeepers BoomBap",
-      artist: "Surce",
-      artwork: null,
-      emoji: "📻",
-      src: "https://discoveryprovider.audius.co/v1/tracks/9dk1j1k/stream?app_name=estiqatsy",
-      duration: 249
-    },
-    {
-      id: "dago7mP",
-      title: "h8rs (Serious Dark)",
-      artist: "Surce",
-      artwork: null,
-      emoji: "☕",
-      src: "https://discoveryprovider.audius.co/v1/tracks/dago7mP/stream?app_name=estiqatsy",
-      duration: 223
-    },
-    {
-      id: "A7Nqg",
-      title: "FREE$TYLER (Fast 88 BPM)",
-      artist: "WhoIsSanchez",
-      artwork: null,
-      emoji: "👾",
-      src: "https://discoveryprovider.audius.co/v1/tracks/A7Nqg/stream?app_name=estiqatsy",
-      duration: 219
-    }
-  ];
-
-  // Effetti sonori di gioco
   const sfxUrls = {
     click: "https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3",
     card_flip: "https://assets.mixkit.co/active_storage/sfx/166/166-preview.mp3",
     coin: "https://assets.mixkit.co/active_storage/sfx/2019/2019-preview.mp3",
     insert_coin: "https://assets.mixkit.co/active_storage/sfx/2602/2602-preview.mp3",
     cash_register: "https://assets.mixkit.co/active_storage/sfx/2870/2870-preview.mp3",
-    bribe: "https://assets.mixkit.co/active_storage/sfx/2005/2005-preview.mp3",
     dice: "https://assets.mixkit.co/active_storage/sfx/1070/1070-preview.mp3",
-    shock: "https://assets.mixkit.co/active_storage/sfx/2908/2908-preview.mp3",
-    d20_crit: "https://assets.mixkit.co/active_storage/sfx/2013/2013-preview.mp3",
-    d20_fail: "https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3",
-    hit: "https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3",
-    drug: "https://assets.mixkit.co/active_storage/sfx/2586/2586-preview.mp3",
-    zombie: "https://assets.mixkit.co/active_storage/sfx/2608/2608-preview.mp3",
-    heartbeat: "https://assets.mixkit.co/active_storage/sfx/2908/2908-preview.mp3",
     victory: "https://assets.mixkit.co/active_storage/sfx/2013/2013-preview.mp3",
-    error: "https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3"
+    error: "https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3",
+    heartbeat: "https://assets.mixkit.co/active_storage/sfx/2908/2908-preview.mp3",
+
+    card_enemy: "https://assets.mixkit.co/active_storage/sfx/2908/2908-preview.mp3",
+    card_event: "https://assets.mixkit.co/active_storage/sfx/2570/2570-preview.mp3",
+    card_enigma: "https://assets.mixkit.co/active_storage/sfx/1070/1070-preview.mp3",
+    card_helper: "https://assets.mixkit.co/active_storage/sfx/2019/2019-preview.mp3",
+    card_shop: "https://assets.mixkit.co/active_storage/sfx/2870/2870-preview.mp3",
+    card_story: "https://assets.mixkit.co/active_storage/sfx/166/166-preview.mp3",
+
+    combat_hit: "https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3",
+    combat_miss: "https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3",
+    combat_crit: "https://assets.mixkit.co/active_storage/sfx/2013/2013-preview.mp3",
+    combat_fumble: "https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3",
+    combat_hurt: "https://assets.mixkit.co/active_storage/sfx/2908/2908-preview.mp3",
+
+    zombie_spectral: "https://assets.mixkit.co/active_storage/sfx/2608/2608-preview.mp3",
+    cure_1up: "https://assets.mixkit.co/active_storage/sfx/2018/2018-preview.mp3",
+    drug_snort: "https://assets.mixkit.co/active_storage/sfx/2586/2586-preview.mp3",
+    bribe_deal: "https://assets.mixkit.co/active_storage/sfx/2005/2005-preview.mp3"
   };
 
   const sfxPlayers = {};
 
-  // --------------------------------------------------------------------------
-  // 3. SISTEMA PREFERITI IN LOCALSTORAGE
-  // --------------------------------------------------------------------------
   function getFavorites() {
     try {
       const raw = localStorage.getItem("estiqatsy_radio_favorites");
@@ -199,9 +158,6 @@ const SoundEngine = (function() {
     }
   }
 
-  // --------------------------------------------------------------------------
-  // 4. MEDIA SESSION API NATIVA (LOCK SCREEN & BLOCCO SCHERMO SMARTPHONE)
-  // --------------------------------------------------------------------------
   function setupMediaSessionHandlers() {
     if ('mediaSession' in navigator) {
       navigator.mediaSession.setActionHandler('play', () => SoundEngine.togglePlayPause());
@@ -233,9 +189,6 @@ const SoundEngine = (function() {
     }
   }
 
-  // --------------------------------------------------------------------------
-  // 5. INIEZIONE MODALE ESPANSA (SPOTIFY DECK CON ICONE SVG)
-  // --------------------------------------------------------------------------
   function injectExpandedModal() {
     let modal = document.getElementById("modal-syndicate-radio");
     if (!modal) {
@@ -332,9 +285,6 @@ const SoundEngine = (function() {
     `;
   }
 
-  // --------------------------------------------------------------------------
-  // 6. INIEZIONE & RENDERING DEL MINI-WIDGET IN HOME (ICONE SVG & STOP PROPAGATION)
-  // --------------------------------------------------------------------------
   function mountMiniWidget() {
     injectExpandedModal();
 
@@ -362,7 +312,6 @@ const SoundEngine = (function() {
 
     mountEl.innerHTML = `
       <div class="syndicate-mini-player">
-        <!-- A Sinistra: Emoji Generica o Copertina con Equalizzatore a 4 Barre -->
         <div class="mini-player-art-box">
           <span id="mini-emoji-icon" class="text-base">📻</span>
           <img id="mini-art-img" src="" class="mini-player-art-img hidden" alt="Artwork">
@@ -374,7 +323,6 @@ const SoundEngine = (function() {
           </div>
         </div>
 
-        <!-- Al Centro: Titolo & Info Essenziali -->
         <div class="min-w-0 flex-1 pr-1 leading-tight">
           <div class="flex items-center gap-1.5">
             <span id="mini-track-title" class="text-xs font-black text-white truncate max-w-[130px] sm:max-w-xs">Caricamento frequenza...</span>
@@ -386,7 +334,6 @@ const SoundEngine = (function() {
           </div>
         </div>
 
-        <!-- A Destra: Pulsanti con Icone Vettoriali SVG -->
         <div class="mini-controls-cluster">
           <button onclick="event.stopPropagation(); SoundEngine.playPrevTrack()" class="mini-ctrl-btn" title="Precedente">
             ${ICONS.prev}
@@ -404,15 +351,12 @@ const SoundEngine = (function() {
     updateUI();
   }
 
-  // --------------------------------------------------------------------------
-  // 7. CARICAMENTO STAZIONI AUDIUS (WHITE-LABEL)
-  // --------------------------------------------------------------------------
   async function loadStationTracks(stationKey) {
     activeStationKey = stationKey;
 
     if (stationKey === "favorites") {
       playlist = getFavorites();
-      if (playlist.length === 0) playlist = [...BOOTSTRAP_TRACKS];
+      if (playlist.length === 0) playlist = Object.values(EPISODE_SOUNDTRACKS).slice(0, 6);
       renderModalTracklist();
       return;
     }
@@ -423,29 +367,26 @@ const SoundEngine = (function() {
       const resp = await fetch(`${AUDIUS_DISCOVERY_URL}/tracks/search?query=${encodeURIComponent(station.query)}&app_name=${APP_NAME}`);
       const json = await resp.json();
 
-      if (json && json.data && json.data.length > 0) {
+      if (json?.data?.length > 0) {
         playlist = json.data.map(t => ({
           id: t.id,
           title: t.title || "Traccia Senza Titolo",
-          artist: (t.user && t.user.name) ? t.user.name : "Producer Clandestino",
+          artist: t.user?.name || "Producer Clandestino",
           artwork: (t.artwork && (t.artwork['150x150'] || t.artwork['480x480'])) || null,
           emoji: station.emoji,
           src: `${AUDIUS_DISCOVERY_URL}/tracks/${t.id}/stream?app_name=${APP_NAME}`,
           duration: t.duration || 180
         }));
       } else {
-        playlist = [...BOOTSTRAP_TRACKS];
+        playlist = Object.values(EPISODE_SOUNDTRACKS).slice(0, 6);
       }
     } catch (e) {
-      playlist = [...BOOTSTRAP_TRACKS];
+      playlist = Object.values(EPISODE_SOUNDTRACKS).slice(0, 6);
     }
 
     renderModalTracklist();
   }
 
-  // --------------------------------------------------------------------------
-  // 8. RIPRODUZIONE AUDIO CORE (HOWLER HTML5 STREAMING)
-  // --------------------------------------------------------------------------
   function formatTime(secs) {
     if (isNaN(secs) || secs < 0) return "0:00";
     const m = Math.floor(secs / 60);
@@ -481,7 +422,7 @@ const SoundEngine = (function() {
     currentHowl = new Howl({
       src: [track.src],
       format: ["mp3"],
-      html5: true, // STREAMING DIRETTO: PERMETTE RIPRODUZIONE CONTINUA SU LOCK SCREEN
+      html5: true, // STREAMING DIRETTO SU LOCK SCREEN
       volume: getEffectiveBgmVolume(),
       loop: isLoop && !isShuffle,
       onend: function() {
@@ -502,6 +443,42 @@ const SoundEngine = (function() {
     syncMediaSessionMetadata(track);
     startProgressTimer();
     updateUI();
+  }
+
+  function playBgm(identifier, fadeInDuration = 800, fadeOutDuration = 180) {
+    unlockMobileAudio();
+    if (!identifier) return;
+
+    const clean = String(identifier).toLowerCase().trim();
+
+    if (clean.includes("wizard") || clean.includes("bass_walker") || clean.includes("chiptune") || clean.includes("game")) {
+      switchStation("chiptune");
+      playTrackByIndex(0, "game");
+      return;
+    } else if (clean.includes("shop") || clean.includes("boombap")) {
+      switchStation("boombap");
+      playTrackByIndex(0, "radio");
+      return;
+    } else if (clean.includes("recipe") || clean.includes("lofi")) {
+      switchStation("lofi");
+      playTrackByIndex(0, "radio");
+      return;
+    } else if (clean.includes("profile") || clean.includes("noir")) {
+      switchStation("noir");
+      playTrackByIndex(0, "radio");
+      return;
+    }
+
+    const trackIdx = playlist.findIndex(t => 
+      t.id.toLowerCase() === clean || 
+      (t.alias && t.alias.includes(clean))
+    );
+
+    if (trackIdx !== -1) {
+      playTrackByIndex(trackIdx, "radio");
+    } else {
+      playTrackByIndex(0, "radio");
+    }
   }
 
   function startProgressTimer() {
@@ -529,11 +506,10 @@ const SoundEngine = (function() {
   }
 
   function updateUI() {
-    const track = currentTrack || playlist[0] || BOOTSTRAP_TRACKS[0];
+    const track = currentTrack || playlist[0] || EPISODE_SOUNDTRACKS[1];
     const isPlaying = Boolean(currentHowl && currentHowl.playing());
     const isMuted = isMasterMuted || isBgmMuted;
 
-    // Mini-Player Home & Profilo
     document.querySelectorAll("#mini-track-title").forEach(el => el.textContent = track?.title || "Sintonizzazione...");
     document.querySelectorAll("#mini-track-artist").forEach(el => el.textContent = track?.artist || "Darsena Syndicate");
     document.querySelectorAll("#mini-btn-play").forEach(el => el.innerHTML = isPlaying ? ICONS.pause : ICONS.play);
@@ -560,7 +536,7 @@ const SoundEngine = (function() {
   }
 
   function renderModalDeck() {
-    const track = currentTrack || playlist[0] || BOOTSTRAP_TRACKS[0];
+    const track = currentTrack || playlist[0] || EPISODE_SOUNDTRACKS[1];
     const isPlaying = Boolean(currentHowl && currentHowl.playing());
     const isLoved = isFavorite(track?.id);
 
@@ -627,7 +603,7 @@ const SoundEngine = (function() {
           </div>
           <div class="flex items-center gap-2 shrink-0">
             <button onclick="event.stopPropagation(); SoundEngine.toggleFavoriteByObj('${t.id}')" class="text-xs hover:scale-110 transition">
-              ${loved ? '💚' : '🤍'}
+              ${loved ? ICONS.heartFilled : ICONS.heartOutline}
             </button>
             <span class="text-[9px] font-mono text-slate-500">${formatTime(t.duration)}</span>
           </div>
@@ -636,9 +612,6 @@ const SoundEngine = (function() {
     }).join("");
   }
 
-  // --------------------------------------------------------------------------
-  // 9. SBLOCCO AUDIO AUTOMATICO & GESTIONE DEL BLOCCO SCHERMO / SALVASCHERMO
-  // --------------------------------------------------------------------------
   function unlockMobileAudio() {
     if (window.Howler && Howler.ctx && Howler.ctx.state === "suspended") {
       Howler.ctx.resume().catch(() => {});
@@ -646,23 +619,19 @@ const SoundEngine = (function() {
   }
 
   function init() {
-    playlist = [...BOOTSTRAP_TRACKS];
+    playlist = Object.values(EPISODE_SOUNDTRACKS).slice(0, 6);
     currentTrack = playlist[0];
 
     setupMediaSessionHandlers();
 
-    // 🔒 GESTIONE DIFFERENZIATA DEL BLOCCO SCHERMO / BACKGROUND
     document.addEventListener("visibilitychange", () => {
       if (document.hidden) {
-        // Se siamo in combattimento o l'audio in esecuzione è la BGM di gioco, METTI IN PAUSA
         if (playbackSource === "game" || document.body.dataset.context === "gameplay") {
           if (currentHowl && currentHowl.playing()) currentHowl.pause();
         }
-        // SE STIAMO ASCOLTANDO LA RADIO DELLA HOME: NON SI FERMA! Continua su Lock Screen.
         if (heartbeatHowl && heartbeatHowl.playing()) heartbeatHowl.pause();
       } else {
         unlockMobileAudio();
-        // Alla riattivazione dello schermo riprendiamo solo se era il gioco a essere stato interrotto
         if (!isMasterMuted && !isBgmMuted && currentHowl && !currentHowl.playing() && isPlayingManual) {
           if (playbackSource === "game" || document.body.dataset.context === "gameplay") {
             currentHowl.play();
@@ -671,8 +640,7 @@ const SoundEngine = (function() {
       }
     });
 
-    // 🔒 AUTOPLAY AL PRIMO TOCCO GLOBALE: Se WebKit blocca l'avvio a freddo,
-    // qualsiasi tocco dell'utente su qualsiasi punto dell'app avvia la musica all'istante
+    // 🔒 SBLOCCO & AVVIO AUTOMATICO: al primo tocco o tap in qualsiasi punto
     const unlockAndAutoplay = () => {
       unlockMobileAudio();
       if (!isMasterMuted && !isBgmMuted && (!currentHowl || !currentHowl.playing())) {
@@ -682,17 +650,15 @@ const SoundEngine = (function() {
     };
     ["touchstart", "click", "pointerdown"].forEach(evt => window.addEventListener(evt, unlockAndAutoplay, { capture: true, passive: true }));
 
-    // Montaggio Mini-Widget immediato e resiliente
     mountMiniWidget();
     setTimeout(mountMiniWidget, 100);
     setTimeout(mountMiniWidget, 450);
 
-    // Carica la frequenza predefinita Boom Bap
     loadStationTracks("boombap");
 
     // Tentativo di autoplay a freddo
     setTimeout(() => {
-      if (!isMasterMuted && !isBgmMuted) {
+      if (!isMasterMuted && !isBgmMuted && (!currentHowl || !currentHowl.playing())) {
         playTrackByIndex(0, "radio");
       }
     }, 200);
@@ -704,9 +670,6 @@ const SoundEngine = (function() {
     init();
   }
 
-  // --------------------------------------------------------------------------
-  // 10. SFX PLAYER (EFFETTI DI GIOCO AD ALTA REATTIVITÀ)
-  // --------------------------------------------------------------------------
   function playSfx(name) {
     if (isMasterMuted || isSfxMuted) return;
     unlockMobileAudio();
@@ -732,17 +695,48 @@ const SoundEngine = (function() {
     }
   }
 
-  // --------------------------------------------------------------------------
-  // 11. ESPOSIZIONE PUBBLICA METODI SOUNDENGINE
-  // --------------------------------------------------------------------------
   return {
-    // Scorciatoie di Gioco (Rules2Engine & Rules2Wizard)
     playClick: () => playSfx("click"),
     playCoin: () => playSfx("coin"),
     playDice: () => playSfx("dice"),
     playVictory: () => playSfx("victory"),
     playError: () => playSfx("error"),
     playSfx: (name) => playSfx(name),
+
+    playZombie: () => playSfx("zombie_spectral"),
+    playHeal1Up: () => playSfx("cure_1up"),
+    playDrug: () => playSfx("drug_snort"),
+    playBribe: () => playSfx("bribe_deal"),
+
+    playCardEncounter: function(nodeOrType) {
+      if (document.body.dataset.context !== "gameplay") return;
+      if (!nodeOrType) return;
+
+      const t = typeof nodeOrType === "string" ? nodeOrType.toUpperCase() : String(nodeOrType.tipo || nodeOrType.id || "").toUpperCase();
+
+      if (t.includes("NEMICO") || t.startsWith("NEM_")) {
+        playSfx("card_enemy");
+      } else if (t.includes("EVENTO") || t.startsWith("EVT_")) {
+        playSfx("card_event");
+      } else if (t.includes("ENIGMA") || t.startsWith("ENG_")) {
+        playSfx("card_enigma");
+      } else if (t.includes("AIUTANTE") || t.startsWith("AIU_")) {
+        playSfx("card_helper");
+      } else if (t.includes("SND_0000") || t.includes("EMPORIO")) {
+        playSfx("card_shop");
+      } else {
+        playSfx("card_story");
+      }
+    },
+
+    playCombatEffect: function(effectType) {
+      const e = String(effectType || "").toLowerCase();
+      if (e === "hit") playSfx("combat_hit");
+      else if (e === "miss") playSfx("combat_miss");
+      else if (e === "crit") playSfx("combat_crit");
+      else if (e === "fumble" || e === "fail") playSfx("combat_fumble");
+      else if (e === "hurt") playSfx("combat_hurt");
+    },
 
     startHeartbeat: function() {
       if (isMasterMuted || isSfxMuted) return;
@@ -761,19 +755,50 @@ const SoundEngine = (function() {
       if (heartbeatHowl && heartbeatHowl.playing()) heartbeatHowl.stop();
     },
 
-    // Navigazione Schermate BGM
-    playTabBgm: function(tabKey) {
-      const clean = String(tabKey || "home").toLowerCase();
-      if (clean.includes("game") || clean.includes("hub")) this.switchStation("chiptune");
-      else if (clean.includes("shop")) this.switchStation("boombap");
-      else if (clean.includes("recipe")) this.switchStation("lofi");
-      else if (clean.includes("profile")) this.switchStation("noir");
+    playEpisodeBgm: function(gameKey, epNum, mood = "explore") {
+      const ep = parseInt(epNum, 10) || 1;
+      const soundtrack = EPISODE_SOUNDTRACKS[ep] || EPISODE_SOUNDTRACKS[1];
+      playbackSource = "game";
+
+      if (currentHowl) {
+        currentHowl.stop();
+        currentHowl.unload();
+      }
+
+      currentTrack = soundtrack;
+      currentHowl = new Howl({
+        src: [soundtrack.src],
+        format: ["mp3"],
+        html5: true,
+        volume: getEffectiveBgmVolume(),
+        loop: true
+      });
+
+      if (!isMasterMuted && !isBgmMuted) {
+        currentHowl.play();
+      }
+      syncMediaSessionMetadata(soundtrack);
+      updateUI();
     },
 
-    // BGM di Gioco: contrassegnata come "game" così si spegne a schermo bloccato
-    playEpisodeBgm: function(gameKey, epNum, mood = "explore") {
-      playbackSource = "game";
-      this.switchStation(mood === "combat" ? "chiptune" : "noir");
+    playBgm,
+
+    // 🔒 RESTORED & POTENZIATO: avvia subito la musica al cambio tab e all'avvio in Home
+    playTabBgm: function(tabKey) {
+      const clean = String(tabKey || "home").toLowerCase();
+      let targetStation = "boombap";
+
+      if (clean.includes("game") || clean.includes("hub")) targetStation = "chiptune";
+      else if (clean.includes("shop")) targetStation = "boombap";
+      else if (clean.includes("recipe")) targetStation = "lofi";
+      else if (clean.includes("profile")) targetStation = "noir";
+      else targetStation = "boombap"; // Home default
+
+      switchStation(targetStation);
+
+      if (!isMasterMuted && !isBgmMuted && (!currentHowl || !currentHowl.playing())) {
+        playTrackByIndex(0, "radio");
+      }
     },
 
     duck: function(volFactor = 0.25, duration = 1200) {
@@ -785,7 +810,6 @@ const SoundEngine = (function() {
       }, duration);
     },
 
-    // Controlli Jukebox & Deck Espanso
     openModal: function() {
       injectExpandedModal();
       renderModalDeck();
@@ -835,16 +859,7 @@ const SoundEngine = (function() {
       playTrackByIndex(0, "radio");
     },
 
-    switchStation: function(stKey) {
-      if (stKey === activeStationKey) return;
-      searchResults = [];
-      const input = document.getElementById("deck-search-input");
-      if (input) input.value = "";
-      loadStationTracks(stKey);
-      document.querySelectorAll(".rpg-category-chip").forEach(c => {
-        c.classList.toggle("active", c.id === `chip-station-${stKey}`);
-      });
-    },
+    switchStation,
 
     handleSearchInput: function(val) {
       clearTimeout(searchDebounceTimer);
@@ -880,7 +895,7 @@ const SoundEngine = (function() {
     },
 
     toggleFavoriteByObj: function(trackId) {
-      const all = [...searchResults, ...playlist, ...BOOTSTRAP_TRACKS];
+      const all = [...searchResults, ...playlist, ...Object.values(EPISODE_SOUNDTRACKS)];
       const found = all.find(t => String(t.id) === String(trackId));
       if (found) toggleFavorite(found);
     },
@@ -908,7 +923,9 @@ const SoundEngine = (function() {
     toggleMute: function() {
       isMasterMuted = !isMasterMuted;
       localStorage.setItem("estiqatsy_audio_muted", isMasterMuted);
-      if (currentHowl) currentHowl.volume(getEffectiveBgmVolume());
+      if (currentHowl) {
+        currentHowl.volume(getEffectiveBgmVolume());
+      }
       updateUI();
     },
 
@@ -922,9 +939,20 @@ const SoundEngine = (function() {
     get isPlaying() { return Boolean(currentHowl && currentHowl.playing()); },
     get isMuted() { return isMasterMuted; },
     get bgmVolume() { return currentBgmVolume; },
-    getCurrentTrack: () => currentTrack || playlist[0] || BOOTSTRAP_TRACKS[0],
+    getCurrentTrack: () => currentTrack || playlist[0] || EPISODE_SOUNDTRACKS[1],
     mountWidget: mountMiniWidget
   };
+
+  function switchStation(stKey) {
+    if (stKey === activeStationKey) return;
+    searchResults = [];
+    const input = document.getElementById("deck-search-input");
+    if (input) input.value = "";
+    loadStationTracks(stKey);
+    document.querySelectorAll(".rpg-category-chip").forEach(c => {
+      c.classList.toggle("active", c.id === `chip-station-${stKey}`);
+    });
+  }
 })();
 
 window.SoundEngine = SoundEngine;
