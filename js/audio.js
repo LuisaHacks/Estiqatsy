@@ -1,20 +1,35 @@
 // ============================================================================
 // PROJECT: ESTIQATSY BOT & RPG PLATFORM
-// FILE: js/audio.js (VERSIONE 36.0 - AUDIUS RADIO & ZERO-INLINE CSS)
-// DESCRIZIONE: Componente Audio Autonomo per Telegram Mini App:
-//              - Grafica e classi delegate al 100% a css/core.css
-//              - Auto-mounting reattivo su #radio-widget-mount
-//              - Modale espansa Jukebox Deck (stile Spotify) iniettata nel DOM
-//              - Stazioni Audius decentralizzate a zero pubblicità (White-Label)
-//              - Gestione Preferiti salvata in localStorage
-//              - Scorciatoie SFX complete per il motore RPG di gioco
+// FILE: js/audio.js (VERSIONE 40.0 - NATIVE SVG ICONS, MEDIA SESSION & DUAL-LIFECYCLE)
+// DESCRIZIONE: Componente Audio Integrato per Telegram Mini App:
+//              - Icone SVG vettoriali native (Play, Pause, Skip, Shuffle, Heart, Repeat)
+//              - Emoji riservate SOLO per fallback copertine e chip stazioni
+//              - Autoplay al caricamento con sblocco istantaneo al primo tocco
+//              - Media Session API per controllo nativo da Blocco Schermo / Lock Screen
+//              - Gestione differenziata: la Radio continua a schermo bloccato, il Gioco si sospende
 // ============================================================================
 
 const SoundEngine = (function() {
   'use strict';
 
   // --------------------------------------------------------------------------
-  // 1. CONFIGURAZIONI AUDIO & AUDIUS ENDPOINT
+  // 1. ICONE SVG VETTORIALI AD ALTA DEFINIZIONE (ZERO EMOJI SUI CONTROLLI)
+  // --------------------------------------------------------------------------
+  const ICONS = {
+    play: `<svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>`,
+    pause: `<svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>`,
+    prev: `<svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg>`,
+    next: `<svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>`,
+    shuffle: `<svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24"><path d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z"/></svg>`,
+    loop: `<svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24"><path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z"/></svg>`,
+    heartOutline: `<svg class="w-4 h-4 fill-none stroke-current stroke-2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>`,
+    heartFilled: `<svg class="w-4 h-4 fill-[#10B981] stroke-[#10B981] stroke-2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>`,
+    volumeOn: `<svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>`,
+    volumeOff: `<svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24"><path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/></svg>`
+  };
+
+  // --------------------------------------------------------------------------
+  // 2. CONFIGURAZIONI AUDIO & AUDIUS ENDPOINT
   // --------------------------------------------------------------------------
   const APP_NAME = "estiqatsy";
   const AUDIUS_DISCOVERY_URL = "https://discoveryprovider.audius.co/v1";
@@ -34,6 +49,7 @@ const SoundEngine = (function() {
   let currentBgmVolume = parseFloat(localStorage.getItem("estiqatsy_bgm_volume")) || DEFAULT_BGM;
   let currentSfxVolume = parseFloat(localStorage.getItem("estiqatsy_sfx_volume")) || DEFAULT_SFX;
 
+  // Stazioni e Query Audius (White-Label)
   const STATIONS = {
     boombap: { id: "boombap", name: "Darsena 90s (Boom Bap)", query: "boombap", emoji: "📻" },
     chiptune: { id: "chiptune", name: "Cabinato Arcade (8-Bit)", query: "chiptune 8bit", emoji: "👾" },
@@ -43,6 +59,7 @@ const SoundEngine = (function() {
   };
 
   let activeStationKey = "boombap";
+  let playbackSource = "radio"; // "radio" (background illimitato) | "game" (si spegne su lock screen)
   let playlist = [];
   let currentTrackIndex = 0;
   let currentTrack = null;
@@ -54,7 +71,7 @@ const SoundEngine = (function() {
   let searchDebounceTimer = null;
   let searchResults = [];
 
-  // Tracce di sicurezza offline (subito pronte)
+  // Tracce di sicurezza offline (pronte al montaggio)
   const BOOTSTRAP_TRACKS = [
     {
       id: "mgb9p",
@@ -135,7 +152,7 @@ const SoundEngine = (function() {
   const sfxPlayers = {};
 
   // --------------------------------------------------------------------------
-  // 2. SISTEMA PREFERITI IN LOCALSTORAGE
+  // 3. SISTEMA PREFERITI IN LOCALSTORAGE
   // --------------------------------------------------------------------------
   function getFavorites() {
     try {
@@ -183,7 +200,41 @@ const SoundEngine = (function() {
   }
 
   // --------------------------------------------------------------------------
-  // 3. INIEZIONE MODALE ESPANSA (SPOTIFY DECK) NEL DOM
+  // 4. MEDIA SESSION API NATIVA (LOCK SCREEN & BLOCCO SCHERMO SMARTPHONE)
+  // --------------------------------------------------------------------------
+  function setupMediaSessionHandlers() {
+    if ('mediaSession' in navigator) {
+      navigator.mediaSession.setActionHandler('play', () => SoundEngine.togglePlayPause());
+      navigator.mediaSession.setActionHandler('pause', () => SoundEngine.togglePlayPause());
+      navigator.mediaSession.setActionHandler('previoustrack', () => SoundEngine.playPrevTrack());
+      navigator.mediaSession.setActionHandler('nexttrack', () => SoundEngine.playNextTrack());
+      try {
+        navigator.mediaSession.setActionHandler('seekto', (details) => {
+          if (details.seekTime && currentHowl) currentHowl.seek(details.seekTime);
+        });
+      } catch (e) {}
+    }
+  }
+
+  function syncMediaSessionMetadata(track) {
+    if ('mediaSession' in navigator && track) {
+      const artSrc = track.artwork || "https://image.pollinations.ai/prompt/dark-noir-vintage-record-cover?width=512&height=512&nologo=true";
+      navigator.mediaSession.metadata = new MediaMetadata({
+        title: track.title || "Frequenza Clandestina",
+        artist: track.artist || "Darsena Syndicate",
+        album: "Estiqatsy Noir Radio",
+        artwork: [
+          { src: artSrc, sizes: '150x150', type: 'image/jpeg' },
+          { src: artSrc, sizes: '480x480', type: 'image/jpeg' },
+          { src: artSrc, sizes: '512x512', type: 'image/png' }
+        ]
+      });
+      navigator.mediaSession.playbackState = (currentHowl && currentHowl.playing()) ? 'playing' : 'paused';
+    }
+  }
+
+  // --------------------------------------------------------------------------
+  // 5. INIEZIONE MODALE ESPANSA (SPOTIFY DECK CON ICONE SVG)
   // --------------------------------------------------------------------------
   function injectExpandedModal() {
     let modal = document.getElementById("modal-syndicate-radio");
@@ -217,8 +268,8 @@ const SoundEngine = (function() {
                 <div class="text-[10px] text-slate-400 truncate mt-0.5" id="deck-track-artist">Emittente Darsena</div>
               </div>
             </div>
-            <button onclick="SoundEngine.toggleCurrentFavorite()" id="deck-btn-heart" class="text-xl hover:scale-110 transition shrink-0" title="Aggiungi ai Preferiti">
-              🤍
+            <button onclick="SoundEngine.toggleCurrentFavorite()" id="deck-btn-heart" class="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-emerald-400 transition shrink-0" title="Preferiti">
+              ${ICONS.heartOutline}
             </button>
           </div>
 
@@ -230,16 +281,28 @@ const SoundEngine = (function() {
             </div>
           </div>
 
-          <div class="flex items-center justify-center gap-3 pt-1">
-            <button onclick="SoundEngine.toggleShuffle()" id="deck-btn-shuffle" class="text-xs text-slate-400 hover:text-white" title="Casuale">🔀</button>
-            <button onclick="SoundEngine.playPrevTrack()" class="text-base text-slate-300 hover:text-white">⏮</button>
-            <button onclick="SoundEngine.togglePlayPause()" id="deck-btn-play" class="w-9 h-9 rounded-full bg-white text-slate-950 flex items-center justify-center font-black text-xs shadow-lg hover:scale-105 transition">▶️</button>
-            <button onclick="SoundEngine.playNextTrack()" class="text-base text-slate-300 hover:text-white">⏭</button>
-            <button onclick="SoundEngine.toggleLoop()" id="deck-btn-loop" class="text-xs text-slate-400 hover:text-white" title="Ripeti">🔁</button>
+          <div class="flex items-center justify-center gap-4 pt-1">
+            <button onclick="SoundEngine.toggleShuffle()" id="deck-btn-shuffle" class="text-slate-400 hover:text-white" title="Casuale">
+              ${ICONS.shuffle}
+            </button>
+            <button onclick="SoundEngine.playPrevTrack()" class="text-slate-300 hover:text-white" title="Precedente">
+              ${ICONS.prev}
+            </button>
+            <button onclick="SoundEngine.togglePlayPause()" id="deck-btn-play" class="w-9 h-9 rounded-full bg-white text-slate-950 flex items-center justify-center font-black shadow-lg hover:scale-105 transition" title="Play/Pausa">
+              ${ICONS.play}
+            </button>
+            <button onclick="SoundEngine.playNextTrack()" class="text-slate-300 hover:text-white" title="Successivo">
+              ${ICONS.next}
+            </button>
+            <button onclick="SoundEngine.toggleLoop()" id="deck-btn-loop" class="text-slate-400 hover:text-white" title="Ripeti">
+              ${ICONS.loop}
+            </button>
           </div>
 
           <div class="flex items-center gap-2 pt-1 border-t border-white/5">
-            <button onclick="SoundEngine.toggleMute()" id="deck-btn-mute" class="text-xs text-slate-400 hover:text-white shrink-0">🔊</button>
+            <button onclick="SoundEngine.toggleMute()" id="deck-btn-mute" class="text-slate-400 hover:text-white shrink-0">
+              ${ICONS.volumeOn}
+            </button>
             <input type="range" id="deck-volume-slider" min="0" max="1" step="0.01" class="spotify-scrubber flex-1" oninput="SoundEngine.setBgmVolume(this.value)">
           </div>
         </div>
@@ -263,40 +326,32 @@ const SoundEngine = (function() {
             <input type="text" id="deck-search-input" placeholder="Cerca frequenza o brano..." oninput="SoundEngine.handleSearchInput(this.value)" class="input input-xs w-full bg-slate-900 border border-white/10 text-white rounded-lg text-xs pl-7">
             <span class="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-slate-500">🔍</span>
           </div>
-
-          <div class="space-y-1 max-h-36 overflow-y-auto pr-1" id="deck-tracklist-container">
-          </div>
+          <div class="space-y-1 max-h-36 overflow-y-auto pr-1" id="deck-tracklist-container"></div>
         </div>
       </div>
     `;
   }
 
   // --------------------------------------------------------------------------
-  // 4. INIEZIONE & RENDERING AUTO-RIPARANTE DEL MINI-WIDGET IN HOME
+  // 6. INIEZIONE & RENDERING DEL MINI-WIDGET IN HOME (ICONE SVG & STOP PROPAGATION)
   // --------------------------------------------------------------------------
   function mountMiniWidget() {
     injectExpandedModal();
 
     let mountEl = document.getElementById("radio-widget-mount");
-
-    // Fallback: se per qualsiasi motivo il punto non esiste, lo inietta sotto il banner di #view-home
     if (!mountEl) {
       const homeScreen = document.getElementById("view-home");
       if (homeScreen) {
         mountEl = document.createElement("div");
         mountEl.id = "radio-widget-mount";
         const banner = homeScreen.querySelector(".home-hero-banner");
-        if (banner && banner.nextSibling) {
-          homeScreen.insertBefore(mountEl, banner.nextSibling);
-        } else {
-          homeScreen.prepend(mountEl);
-        }
+        if (banner && banner.nextSibling) homeScreen.insertBefore(mountEl, banner.nextSibling);
+        else homeScreen.prepend(mountEl);
       }
     }
 
     if (!mountEl) return;
 
-    // Se è già stato montato con successo, aggiorna solo la grafica
     if (mountEl.querySelector(".syndicate-mini-player")) {
       updateUI();
       return;
@@ -307,6 +362,7 @@ const SoundEngine = (function() {
 
     mountEl.innerHTML = `
       <div class="syndicate-mini-player">
+        <!-- A Sinistra: Emoji Generica o Copertina con Equalizzatore a 4 Barre -->
         <div class="mini-player-art-box">
           <span id="mini-emoji-icon" class="text-base">📻</span>
           <img id="mini-art-img" src="" class="mini-player-art-img hidden" alt="Artwork">
@@ -318,6 +374,7 @@ const SoundEngine = (function() {
           </div>
         </div>
 
+        <!-- Al Centro: Titolo & Info Essenziali -->
         <div class="min-w-0 flex-1 pr-1 leading-tight">
           <div class="flex items-center gap-1.5">
             <span id="mini-track-title" class="text-xs font-black text-white truncate max-w-[130px] sm:max-w-xs">Caricamento frequenza...</span>
@@ -329,15 +386,16 @@ const SoundEngine = (function() {
           </div>
         </div>
 
+        <!-- A Destra: Pulsanti con Icone Vettoriali SVG -->
         <div class="mini-controls-cluster">
           <button onclick="event.stopPropagation(); SoundEngine.playPrevTrack()" class="mini-ctrl-btn" title="Precedente">
-            |‹‹
+            ${ICONS.prev}
           </button>
           <button onclick="event.stopPropagation(); SoundEngine.togglePlayPause()" id="mini-btn-play" class="mini-ctrl-btn btn-play-highlight" title="Play/Pausa">
-            ▶
+            ${ICONS.play}
           </button>
           <button onclick="event.stopPropagation(); SoundEngine.playNextTrack()" class="mini-ctrl-btn" title="Successivo">
-            ››|
+            ${ICONS.next}
           </button>
         </div>
       </div>
@@ -347,7 +405,7 @@ const SoundEngine = (function() {
   }
 
   // --------------------------------------------------------------------------
-  // 5. CARICAMENTO STAZIONI AUDIUS
+  // 7. CARICAMENTO STAZIONI AUDIUS (WHITE-LABEL)
   // --------------------------------------------------------------------------
   async function loadStationTracks(stationKey) {
     activeStationKey = stationKey;
@@ -386,7 +444,7 @@ const SoundEngine = (function() {
   }
 
   // --------------------------------------------------------------------------
-  // 6. RIPRODUZIONE AUDIO CORE (HOWLER HTML5 STREAMING)
+  // 8. RIPRODUZIONE AUDIO CORE (HOWLER HTML5 STREAMING)
   // --------------------------------------------------------------------------
   function formatTime(secs) {
     if (isNaN(secs) || secs < 0) return "0:00";
@@ -405,12 +463,13 @@ const SoundEngine = (function() {
     return currentMasterVolume * currentSfxVolume;
   }
 
-  function playTrackByIndex(index) {
+  function playTrackByIndex(index, source = "radio") {
     if (!playlist || playlist.length === 0) return;
     currentTrackIndex = (index + playlist.length) % playlist.length;
     const track = playlist[currentTrackIndex];
     if (!track) return;
 
+    playbackSource = source;
     currentTrack = track;
 
     if (currentHowl) {
@@ -422,14 +481,14 @@ const SoundEngine = (function() {
     currentHowl = new Howl({
       src: [track.src],
       format: ["mp3"],
-      html5: true, // FONDAMENTALE PER I REINDIRIZZAMENTI 302 AUDIUS
+      html5: true, // STREAMING DIRETTO: PERMETTE RIPRODUZIONE CONTINUA SU LOCK SCREEN
       volume: getEffectiveBgmVolume(),
       loop: isLoop && !isShuffle,
       onend: function() {
         if (isShuffle) {
-          playTrackByIndex(Math.floor(Math.random() * playlist.length));
+          playTrackByIndex(Math.floor(Math.random() * playlist.length), playbackSource);
         } else {
-          playTrackByIndex(currentTrackIndex + 1);
+          playTrackByIndex(currentTrackIndex + 1, playbackSource);
         }
       }
     });
@@ -440,6 +499,7 @@ const SoundEngine = (function() {
       currentHowl.play();
     }
 
+    syncMediaSessionMetadata(track);
     startProgressTimer();
     updateUI();
   }
@@ -476,10 +536,22 @@ const SoundEngine = (function() {
     // Mini-Player Home & Profilo
     document.querySelectorAll("#mini-track-title").forEach(el => el.textContent = track?.title || "Sintonizzazione...");
     document.querySelectorAll("#mini-track-artist").forEach(el => el.textContent = track?.artist || "Darsena Syndicate");
-    document.querySelectorAll("#mini-btn-play").forEach(el => el.textContent = isPlaying ? "||" : "▶");
+    document.querySelectorAll("#mini-btn-play").forEach(el => el.innerHTML = isPlaying ? ICONS.pause : ICONS.play);
     document.querySelectorAll("#mini-emoji-icon").forEach(el => el.textContent = track?.emoji || "📻");
 
-    // Equalizzatore animato a 4 barre
+    const artImg = document.getElementById("mini-art-img");
+    const emojiIcon = document.getElementById("mini-emoji-icon");
+    if (artImg && emojiIcon) {
+      if (track?.artwork) {
+        artImg.src = track.artwork;
+        artImg.classList.remove("hidden");
+        emojiIcon.classList.add("hidden");
+      } else {
+        artImg.classList.add("hidden");
+        emojiIcon.classList.remove("hidden");
+      }
+    }
+
     document.querySelectorAll("#mini-eq-bars").forEach(eq => {
       eq.classList.toggle("animating", isPlaying && !isMuted);
     });
@@ -508,11 +580,11 @@ const SoundEngine = (function() {
     }
 
     const btnPlay = document.getElementById("deck-btn-play");
-    if (btnPlay) btnPlay.textContent = isPlaying ? "⏸" : "▶️";
+    if (btnPlay) btnPlay.innerHTML = isPlaying ? ICONS.pause : ICONS.play;
 
     const btnHeart = document.getElementById("deck-btn-heart");
     if (btnHeart) {
-      btnHeart.textContent = isLoved ? "💚" : "🤍";
+      btnHeart.innerHTML = isLoved ? ICONS.heartFilled : ICONS.heartOutline;
       btnHeart.title = isLoved ? "Rimuovi dai Preferiti" : "Aggiungi ai Preferiti";
     }
 
@@ -523,7 +595,7 @@ const SoundEngine = (function() {
     if (btnLoop) btnLoop.style.color = isLoop ? "#38BDF8" : "";
 
     const btnMute = document.getElementById("deck-btn-mute");
-    if (btnMute) btnMute.textContent = (isMasterMuted || isBgmMuted) ? "🔇" : "🔊";
+    if (btnMute) btnMute.innerHTML = (isMasterMuted || isBgmMuted) ? ICONS.volumeOff : ICONS.volumeOn;
 
     const slider = document.getElementById("deck-volume-slider");
     if (slider) slider.value = currentBgmVolume;
@@ -565,7 +637,7 @@ const SoundEngine = (function() {
   }
 
   // --------------------------------------------------------------------------
-  // 7. SBLOCCO AUDIO AUTOMATICO AL PRIMO TOCCO
+  // 9. SBLOCCO AUDIO AUTOMATICO & GESTIONE DEL BLOCCO SCHERMO / SALVASCHERMO
   // --------------------------------------------------------------------------
   function unlockMobileAudio() {
     if (window.Howler && Howler.ctx && Howler.ctx.state === "suspended") {
@@ -577,31 +649,53 @@ const SoundEngine = (function() {
     playlist = [...BOOTSTRAP_TRACKS];
     currentTrack = playlist[0];
 
-    const unlockEvents = ["touchstart", "touchend", "pointerdown", "click"];
-    const handleFirstTouch = () => {
-      unlockMobileAudio();
-      unlockEvents.forEach(evt => window.removeEventListener(evt, handleFirstTouch, { capture: true }));
-    };
-    unlockEvents.forEach(evt => window.addEventListener(evt, handleFirstTouch, { capture: true, passive: true }));
+    setupMediaSessionHandlers();
 
+    // 🔒 GESTIONE DIFFERENZIATA DEL BLOCCO SCHERMO / BACKGROUND
     document.addEventListener("visibilitychange", () => {
       if (document.hidden) {
-        if (currentHowl && currentHowl.playing()) currentHowl.pause();
+        // Se siamo in combattimento o l'audio in esecuzione è la BGM di gioco, METTI IN PAUSA
+        if (playbackSource === "game" || document.body.dataset.context === "gameplay") {
+          if (currentHowl && currentHowl.playing()) currentHowl.pause();
+        }
+        // SE STIAMO ASCOLTANDO LA RADIO DELLA HOME: NON SI FERMA! Continua su Lock Screen.
         if (heartbeatHowl && heartbeatHowl.playing()) heartbeatHowl.pause();
       } else {
         unlockMobileAudio();
+        // Alla riattivazione dello schermo riprendiamo solo se era il gioco a essere stato interrotto
         if (!isMasterMuted && !isBgmMuted && currentHowl && !currentHowl.playing() && isPlayingManual) {
-          currentHowl.play();
+          if (playbackSource === "game" || document.body.dataset.context === "gameplay") {
+            currentHowl.play();
+          }
         }
       }
     });
 
-    // 🔒 TRIPLA SICUREZZA DI MONTAGGIO (Subito + DOMContentLoaded + Polling di sicurezza)
+    // 🔒 AUTOPLAY AL PRIMO TOCCO GLOBALE: Se WebKit blocca l'avvio a freddo,
+    // qualsiasi tocco dell'utente su qualsiasi punto dell'app avvia la musica all'istante
+    const unlockAndAutoplay = () => {
+      unlockMobileAudio();
+      if (!isMasterMuted && !isBgmMuted && (!currentHowl || !currentHowl.playing())) {
+        playTrackByIndex(0, "radio");
+      }
+      ["touchstart", "click", "pointerdown"].forEach(evt => window.removeEventListener(evt, unlockAndAutoplay, { capture: true }));
+    };
+    ["touchstart", "click", "pointerdown"].forEach(evt => window.addEventListener(evt, unlockAndAutoplay, { capture: true, passive: true }));
+
+    // Montaggio Mini-Widget immediato e resiliente
     mountMiniWidget();
     setTimeout(mountMiniWidget, 100);
     setTimeout(mountMiniWidget, 450);
 
+    // Carica la frequenza predefinita Boom Bap
     loadStationTracks("boombap");
+
+    // Tentativo di autoplay a freddo
+    setTimeout(() => {
+      if (!isMasterMuted && !isBgmMuted) {
+        playTrackByIndex(0, "radio");
+      }
+    }, 200);
   }
 
   if (document.readyState === "loading") {
@@ -611,7 +705,7 @@ const SoundEngine = (function() {
   }
 
   // --------------------------------------------------------------------------
-  // 8. SFX PLAYER (EFFETTI DI GIOCO AD ALTA REATTIVITÀ)
+  // 10. SFX PLAYER (EFFETTI DI GIOCO AD ALTA REATTIVITÀ)
   // --------------------------------------------------------------------------
   function playSfx(name) {
     if (isMasterMuted || isSfxMuted) return;
@@ -639,7 +733,7 @@ const SoundEngine = (function() {
   }
 
   // --------------------------------------------------------------------------
-  // 9. ESPOSIZIONE PUBBLICA METODI SOUNDENGINE
+  // 11. ESPOSIZIONE PUBBLICA METODI SOUNDENGINE
   // --------------------------------------------------------------------------
   return {
     // Scorciatoie di Gioco (Rules2Engine & Rules2Wizard)
@@ -667,7 +761,7 @@ const SoundEngine = (function() {
       if (heartbeatHowl && heartbeatHowl.playing()) heartbeatHowl.stop();
     },
 
-    // Cambio pagina BGM
+    // Navigazione Schermate BGM
     playTabBgm: function(tabKey) {
       const clean = String(tabKey || "home").toLowerCase();
       if (clean.includes("game") || clean.includes("hub")) this.switchStation("chiptune");
@@ -676,7 +770,9 @@ const SoundEngine = (function() {
       else if (clean.includes("profile")) this.switchStation("noir");
     },
 
+    // BGM di Gioco: contrassegnata come "game" così si spegne a schermo bloccato
     playEpisodeBgm: function(gameKey, epNum, mood = "explore") {
+      playbackSource = "game";
       this.switchStation(mood === "combat" ? "chiptune" : "noir");
     },
 
@@ -699,7 +795,7 @@ const SoundEngine = (function() {
 
     togglePlayPause: function() {
       if (!currentHowl) {
-        playTrackByIndex(currentTrackIndex);
+        playTrackByIndex(currentTrackIndex, "radio");
         return;
       }
       if (currentHowl.playing()) {
@@ -709,31 +805,34 @@ const SoundEngine = (function() {
         currentHowl.play();
         isPlayingManual = true;
       }
+      if ('mediaSession' in navigator) {
+        navigator.mediaSession.playbackState = (currentHowl && currentHowl.playing()) ? 'playing' : 'paused';
+      }
       updateUI();
     },
 
     playNextTrack: function() {
       if (isShuffle) {
-        playTrackByIndex(Math.floor(Math.random() * playlist.length));
+        playTrackByIndex(Math.floor(Math.random() * playlist.length), playbackSource);
       } else {
-        playTrackByIndex(currentTrackIndex + 1);
+        playTrackByIndex(currentTrackIndex + 1, playbackSource);
       }
     },
 
     playPrevTrack: function() {
-      playTrackByIndex(currentTrackIndex - 1);
+      playTrackByIndex(currentTrackIndex - 1, playbackSource);
     },
 
     playTrackDirect: function(idx) {
       const targetList = searchResults.length > 0 ? searchResults : playlist;
       if (targetList[idx]) {
         playlist = targetList;
-        playTrackByIndex(idx);
+        playTrackByIndex(idx, "radio");
       }
     },
 
     playActiveStation: function() {
-      playTrackByIndex(0);
+      playTrackByIndex(0, "radio");
     },
 
     switchStation: function(stKey) {
@@ -809,9 +908,7 @@ const SoundEngine = (function() {
     toggleMute: function() {
       isMasterMuted = !isMasterMuted;
       localStorage.setItem("estiqatsy_audio_muted", isMasterMuted);
-      if (currentHowl) {
-        currentHowl.volume(getEffectiveBgmVolume());
-      }
+      if (currentHowl) currentHowl.volume(getEffectiveBgmVolume());
       updateUI();
     },
 
@@ -822,7 +919,6 @@ const SoundEngine = (function() {
       updateUI();
     },
 
-    // Getters
     get isPlaying() { return Boolean(currentHowl && currentHowl.playing()); },
     get isMuted() { return isMasterMuted; },
     get bgmVolume() { return currentBgmVolume; },
