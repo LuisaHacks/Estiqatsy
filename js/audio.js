@@ -1,24 +1,24 @@
 // ============================================================================
 // PROJECT: ESTIQATSY BOT & RPG PLATFORM
-// FILE: js/audio.js (VERSIONE 30.0 - AUTONOMOUS RADIO COMPONENT & AUDIUS DECK)
-// DESCRIZIONE: Motore sonoro ad alta fedeltà con UI Injection autonoma:
-//              - Mini-Widget essenziale per Home (EQ animato, Prev, Play/Pause, Next)
-//              - Modale Jukebox Espansa stile Spotify (Artwork/Emoji, Scrubber, Stazioni)
-//              - Stazioni Radio dinamiche via query decentralizzate Audius (Zero Ads)
-//              - Sistema Preferiti (❤️) salvato in localStorage
-//              - Motore SFX a bassa latenza per tiri D20, gettoni Megoin, acquisti e duelli
+// FILE: js/audio.js (VERSIONE 36.0 - AUDIUS RADIO & ZERO-INLINE CSS)
+// DESCRIZIONE: Componente Audio Autonomo per Telegram Mini App:
+//              - Grafica e classi delegate al 100% a css/core.css
+//              - Auto-mounting reattivo su #radio-widget-mount
+//              - Modale espansa Jukebox Deck (stile Spotify) iniettata nel DOM
+//              - Stazioni Audius decentralizzate a zero pubblicità (White-Label)
+//              - Gestione Preferiti salvata in localStorage
+//              - Scorciatoie SFX complete per il motore RPG di gioco
 // ============================================================================
 
 const SoundEngine = (function() {
   'use strict';
 
   // --------------------------------------------------------------------------
-  // 1. STATO PERSISTENTE & CONFIGURAZIONI AUDIO
+  // 1. CONFIGURAZIONI AUDIO & AUDIUS ENDPOINT
   // --------------------------------------------------------------------------
   const APP_NAME = "estiqatsy";
   const AUDIUS_DISCOVERY_URL = "https://discoveryprovider.audius.co/v1";
 
-  // Volumi predefiniti
   const DEFAULT_MASTER = 0.85;
   const DEFAULT_BGM = 0.40;
   const DEFAULT_SFX = 0.90;
@@ -34,43 +34,12 @@ const SoundEngine = (function() {
   let currentBgmVolume = parseFloat(localStorage.getItem("estiqatsy_bgm_volume")) || DEFAULT_BGM;
   let currentSfxVolume = parseFloat(localStorage.getItem("estiqatsy_sfx_volume")) || DEFAULT_SFX;
 
-  // Stazioni e Query Audius (White-Label)
   const STATIONS = {
-    boombap: {
-      id: "boombap",
-      name: "Darsena 90s (Boom Bap)",
-      query: "boombap",
-      emoji: "📻",
-      mood: "Rullanti 90s, Vinile & Contrabbasso"
-    },
-    chiptune: {
-      id: "chiptune",
-      name: "Cabinato Arcade (8-Bit)",
-      query: "chiptune 8bit",
-      emoji: "👾",
-      mood: "Arpeggi Chiptune & Sintesi Game Boy"
-    },
-    noir: {
-      id: "noir",
-      name: "Bisca & Molo (Dark Jazz)",
-      query: "dark jazz noir",
-      emoji: "🎷",
-      mood: "Tromba Noir, Pioggia & Fumo"
-    },
-    lofi: {
-      id: "lofi",
-      name: "Fosso Burlamacca (Lo-Fi)",
-      query: "lofi hiphop instrumental",
-      emoji: "☕",
-      mood: "Piano Rhodes Caldo & Basso Disteso"
-    },
-    favorites: {
-      id: "favorites",
-      name: "I Miei Preferiti",
-      query: null,
-      emoji: "❤️",
-      mood: "La tua collezione privata salvata"
-    }
+    boombap: { id: "boombap", name: "Darsena 90s (Boom Bap)", query: "boombap", emoji: "📻" },
+    chiptune: { id: "chiptune", name: "Cabinato Arcade (8-Bit)", query: "chiptune 8bit", emoji: "👾" },
+    noir: { id: "noir", name: "Bisca & Molo (Dark Jazz)", query: "dark jazz noir", emoji: "🎷" },
+    lofi: { id: "lofi", name: "Fosso Burlamacca (Lo-Fi)", query: "lofi hiphop instrumental", emoji: "☕" },
+    favorites: { id: "favorites", name: "I Miei Preferiti", query: null, emoji: "❤️" }
   };
 
   let activeStationKey = "boombap";
@@ -85,9 +54,7 @@ const SoundEngine = (function() {
   let searchDebounceTimer = null;
   let searchResults = [];
 
-  // --------------------------------------------------------------------------
-  // 2. PLAYLIST STATICA DI BOOTSTRAP (SUBITO ATTIVA SENZA ATTENDERE RETE)
-  // --------------------------------------------------------------------------
+  // Tracce di sicurezza offline (subito pronte)
   const BOOTSTRAP_TRACKS = [
     {
       id: "mgb9p",
@@ -145,9 +112,7 @@ const SoundEngine = (function() {
     }
   ];
 
-  // --------------------------------------------------------------------------
-  // 3. EFFETTI SONORI SFX DI GIOCO (WEB AUDIO AD ALTA VELOCITÀ)
-  // --------------------------------------------------------------------------
+  // Effetti sonori di gioco
   const sfxUrls = {
     click: "https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3",
     card_flip: "https://assets.mixkit.co/active_storage/sfx/166/166-preview.mp3",
@@ -170,7 +135,7 @@ const SoundEngine = (function() {
   const sfxPlayers = {};
 
   // --------------------------------------------------------------------------
-  // 4. STORAGE PREFERITI
+  // 2. SISTEMA PREFERITI IN LOCALSTORAGE
   // --------------------------------------------------------------------------
   function getFavorites() {
     try {
@@ -218,151 +183,7 @@ const SoundEngine = (function() {
   }
 
   // --------------------------------------------------------------------------
-  // 5. INIEZIONE CSS AUTONOMA (EQUALIZZATORE A 4 BARRETTE & STILI SPOTIFY)
-  // --------------------------------------------------------------------------
-  function injectComponentStyles() {
-    if (document.getElementById("soundengine-styles")) return;
-    const style = document.createElement("style");
-    style.id = "soundengine-styles";
-    style.textContent = `
-      /* Mini-Widget Bar in Home & Profilo */
-      .syndicate-mini-player {
-        width: 100%;
-        height: 48px;
-        min-height: 48px;
-        background: #0B1222;
-        border: 1px solid rgba(255, 255, 255, 0.12);
-        border-radius: 0.85rem;
-        padding: 4px 10px;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 8px;
-        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6);
-        cursor: pointer;
-        transition: border-color 0.2s ease, transform 0.1s ease;
-        user-select: none;
-        box-sizing: border-box;
-      }
-      .syndicate-mini-player:hover {
-        border-color: rgba(56, 189, 248, 0.45);
-      }
-      .syndicate-mini-player:active {
-        transform: scale(0.995);
-      }
-
-      /* Riquadro Icona + Equalizzatore Live */
-      .mini-player-art-box {
-        position: relative;
-        width: 36px;
-        height: 36px;
-        border-radius: 0.6rem;
-        background: #000000;
-        border: 1px solid rgba(255, 255, 255, 0.12);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        overflow: hidden;
-        flex-shrink: 0;
-      }
-      .mini-player-art-img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-      }
-
-      /* 4 Barrette Equalizzatore CSS */
-      .mini-eq-bars {
-        position: absolute;
-        bottom: 3px;
-        right: 3px;
-        display: flex;
-        align-items: flex-end;
-        gap: 1.5px;
-        height: 14px;
-        padding: 1px;
-        background: rgba(0, 0, 0, 0.75);
-        border-radius: 3px;
-        pointer-events: none;
-      }
-      .mini-eq-bar {
-        width: 2.5px;
-        height: 3px;
-        background: #38BDF8;
-        border-radius: 1px;
-        transition: height 0.15s ease;
-      }
-      .mini-eq-bars.animating .mini-eq-bar:nth-child(1) { animation: eqJump 0.65s infinite ease-in-out; }
-      .mini-eq-bars.animating .mini-eq-bar:nth-child(2) { animation: eqJump 0.85s infinite ease-in-out 0.15s; }
-      .mini-eq-bars.animating .mini-eq-bar:nth-child(3) { animation: eqJump 0.55s infinite ease-in-out 0.3s; }
-      .mini-eq-bars.animating .mini-eq-bar:nth-child(4) { animation: eqJump 0.75s infinite ease-in-out 0.1s; }
-
-      @keyframes eqJump {
-        0%, 100% { height: 3px; }
-        50% { height: 13px; }
-      }
-
-      /* Pulsanti di Controllo Rapido */
-      .mini-controls-cluster {
-        display: flex;
-        align-items: center;
-        gap: 4px;
-        flex-shrink: 0;
-      }
-      .mini-ctrl-btn {
-        width: 30px;
-        height: 30px;
-        border-radius: 9999px;
-        background: rgba(255, 255, 255, 0.05);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        color: #E2E8F0;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 11px;
-        font-weight: 900;
-        cursor: pointer;
-        transition: all 0.15s ease;
-      }
-      .mini-ctrl-btn:hover {
-        background: rgba(255, 255, 255, 0.15);
-        color: #FFFFFF;
-      }
-      .mini-ctrl-btn.btn-play-highlight {
-        background: #38BDF8;
-        border-color: #38BDF8;
-        color: #070A12;
-        width: 32px;
-        height: 32px;
-      }
-      .mini-ctrl-btn:active {
-        transform: scale(0.92);
-      }
-
-      /* Scrubber Timeline Modale */
-      .spotify-scrubber {
-        -webkit-appearance: none;
-        width: 100%;
-        height: 4px;
-        background: #1E293B;
-        border-radius: 9999px;
-        outline: none;
-        cursor: pointer;
-      }
-      .spotify-scrubber::-webkit-slider-thumb {
-        -webkit-appearance: none;
-        width: 12px;
-        height: 12px;
-        border-radius: 9999px;
-        background: #38BDF8;
-        cursor: pointer;
-      }
-    `;
-    document.head.appendChild(style);
-  }
-
-  // --------------------------------------------------------------------------
-  // 6. INIEZIONE MODALE ESPANSA ("Frequenze Syndicate" - SPOTIFY DECK)
+  // 3. INIEZIONE MODALE ESPANSA (SPOTIFY DECK) NEL DOM
   // --------------------------------------------------------------------------
   function injectExpandedModal() {
     let modal = document.getElementById("modal-syndicate-radio");
@@ -377,7 +198,6 @@ const SoundEngine = (function() {
       <div class="modal-box p-4 bg-[#070A12] border border-sky-400/40 rounded-2xl max-w-sm space-y-3 relative shadow-2xl">
         <button onclick="document.getElementById('modal-syndicate-radio').close()" class="modal-close-btn absolute top-3 right-3 w-7 h-7 rounded-full bg-slate-800 border border-white/10 flex items-center justify-center text-slate-300 hover:text-white z-50 text-xs font-black">✕</button>
 
-        <!-- Titolo Intestazione -->
         <div class="flex items-center gap-2 pr-8 border-b border-white/10 pb-2">
           <span class="text-xl">🎛️</span>
           <div>
@@ -386,9 +206,7 @@ const SoundEngine = (function() {
           </div>
         </div>
 
-        <!-- DECK SPRAY SPOTIFY PLAYER -->
         <div class="p-3.5 rounded-2xl bg-gradient-to-br from-slate-900 to-slate-950 border border-white/10 space-y-2.5">
-          <!-- Riga Info Traccia e Cuoricino Like -->
           <div class="flex items-center justify-between gap-2.5">
             <div class="flex items-center gap-2.5 min-w-0 flex-1">
               <div class="w-12 h-12 rounded-xl bg-black border border-white/10 flex items-center justify-center text-2xl overflow-hidden shrink-0" id="deck-artwork-box">
@@ -404,7 +222,6 @@ const SoundEngine = (function() {
             </button>
           </div>
 
-          <!-- Timeline Scrubber -->
           <div class="space-y-1">
             <input type="range" id="deck-progress-bar" min="0" max="100" value="0" class="spotify-scrubber" oninput="SoundEngine.seekProgress(this.value)">
             <div class="flex justify-between text-[9px] font-mono text-slate-400">
@@ -413,7 +230,6 @@ const SoundEngine = (function() {
             </div>
           </div>
 
-          <!-- Controlli Principali Deck -->
           <div class="flex items-center justify-center gap-3 pt-1">
             <button onclick="SoundEngine.toggleShuffle()" id="deck-btn-shuffle" class="text-xs text-slate-400 hover:text-white" title="Casuale">🔀</button>
             <button onclick="SoundEngine.playPrevTrack()" class="text-base text-slate-300 hover:text-white">⏮</button>
@@ -422,14 +238,12 @@ const SoundEngine = (function() {
             <button onclick="SoundEngine.toggleLoop()" id="deck-btn-loop" class="text-xs text-slate-400 hover:text-white" title="Ripeti">🔁</button>
           </div>
 
-          <!-- Slider Volume Integrato -->
           <div class="flex items-center gap-2 pt-1 border-t border-white/5">
             <button onclick="SoundEngine.toggleMute()" id="deck-btn-mute" class="text-xs text-slate-400 hover:text-white shrink-0">🔊</button>
             <input type="range" id="deck-volume-slider" min="0" max="1" step="0.01" class="spotify-scrubber flex-1" oninput="SoundEngine.setBgmVolume(this.value)">
           </div>
         </div>
 
-        <!-- SELETTORE STAZIONI TEMATICHE (CHIP RAPIDI) -->
         <div class="space-y-1.5 pt-0.5">
           <div class="flex items-center justify-between text-[10px] font-mono text-slate-400 uppercase font-bold">
             <span>Stazioni Clandestine</span>
@@ -444,16 +258,13 @@ const SoundEngine = (function() {
           </div>
         </div>
 
-        <!-- RICERCA DIRETTA BRANI (WHITE-LABEL DISCOVERY) -->
         <div class="space-y-1.5 pt-0.5">
           <div class="relative">
             <input type="text" id="deck-search-input" placeholder="Cerca frequenza o brano..." oninput="SoundEngine.handleSearchInput(this.value)" class="input input-xs w-full bg-slate-900 border border-white/10 text-white rounded-lg text-xs pl-7">
             <span class="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-slate-500">🔍</span>
           </div>
 
-          <!-- Risultati Ricerca o Coda Tracce -->
           <div class="space-y-1 max-h-36 overflow-y-auto pr-1" id="deck-tracklist-container">
-            <!-- Popolato da renderModalTracklist() -->
           </div>
         </div>
       </div>
@@ -461,80 +272,89 @@ const SoundEngine = (function() {
   }
 
   // --------------------------------------------------------------------------
-  // 7. INIEZIONE & RENDERING DEL MINI-WIDGET IN HOME PAGE
+  // 4. INIEZIONE & RENDERING AUTO-RIPARANTE DEL MINI-WIDGET IN HOME
   // --------------------------------------------------------------------------
   function mountMiniWidget() {
-    injectComponentStyles();
     injectExpandedModal();
 
-    // Cerca il punto di montaggio ideale (nuovo o vecchi contenitori)
-    const targets = [
-      document.getElementById("radio-widget-mount"),
-      document.getElementById("home-radio-miniplayer"),
-      document.getElementById("profile-radio-miniplayer")
-    ].filter(Boolean);
+    let mountEl = document.getElementById("radio-widget-mount");
 
-    targets.forEach(container => {
-      // Svuota e trasforma nel nuovo mini-player compatto
-      container.className = "w-full cursor-pointer";
-      container.onclick = () => SoundEngine.openModal();
+    // Fallback: se per qualsiasi motivo il punto non esiste, lo inietta sotto il banner di #view-home
+    if (!mountEl) {
+      const homeScreen = document.getElementById("view-home");
+      if (homeScreen) {
+        mountEl = document.createElement("div");
+        mountEl.id = "radio-widget-mount";
+        const banner = homeScreen.querySelector(".home-hero-banner");
+        if (banner && banner.nextSibling) {
+          homeScreen.insertBefore(mountEl, banner.nextSibling);
+        } else {
+          homeScreen.prepend(mountEl);
+        }
+      }
+    }
 
-      container.innerHTML = `
-        <div class="syndicate-mini-player">
-          <!-- A Sinistra: Emoji / Copertina con Equalizzatore Sovrapposto -->
-          <div class="mini-player-art-box">
-            <span id="mini-emoji-icon" class="text-base">📻</span>
-            <img id="mini-art-img" src="" class="mini-player-art-img hidden" alt="Artwork">
-            <div class="mini-eq-bars" id="mini-eq-bars">
-              <span class="mini-eq-bar"></span>
-              <span class="mini-eq-bar"></span>
-              <span class="mini-eq-bar"></span>
-              <span class="mini-eq-bar"></span>
-            </div>
-          </div>
+    if (!mountEl) return;
 
-          <!-- Al Centro: Titolo & Info Essenziali -->
-          <div class="min-w-0 flex-1 pr-1 leading-tight">
-            <div class="flex items-center gap-1.5">
-              <span id="mini-track-title" class="text-xs font-black text-white truncate max-w-[130px] sm:max-w-xs">Caricamento frequenza...</span>
-            </div>
-            <div class="text-[9.5px] text-slate-400 truncate flex items-center gap-1.5 mt-0.5 font-mono">
-              <span id="mini-track-artist">Darsena Syndicate</span>
-              <span class="text-slate-600">·</span>
-              <span id="mini-track-time" class="text-sky-300">0:00 / --:--</span>
-            </div>
-          </div>
+    // Se è già stato montato con successo, aggiorna solo la grafica
+    if (mountEl.querySelector(".syndicate-mini-player")) {
+      updateUI();
+      return;
+    }
 
-          <!-- A Destra: Tre Tasti Ergonomici Con Stop Propagation -->
-          <div class="mini-controls-cluster">
-            <button onclick="event.stopPropagation(); SoundEngine.playPrevTrack()" class="mini-ctrl-btn" title="Precedente">
-              |‹‹
-            </button>
-            <button onclick="event.stopPropagation(); SoundEngine.togglePlayPause()" id="mini-btn-play" class="mini-ctrl-btn btn-play-highlight" title="Play/Pausa">
-              ▶
-            </button>
-            <button onclick="event.stopPropagation(); SoundEngine.playNextTrack()" class="mini-ctrl-btn" title="Successivo">
-              ››|
-            </button>
+    mountEl.className = "w-full cursor-pointer";
+    mountEl.onclick = () => SoundEngine.openModal();
+
+    mountEl.innerHTML = `
+      <div class="syndicate-mini-player">
+        <div class="mini-player-art-box">
+          <span id="mini-emoji-icon" class="text-base">📻</span>
+          <img id="mini-art-img" src="" class="mini-player-art-img hidden" alt="Artwork">
+          <div class="mini-eq-bars" id="mini-eq-bars">
+            <span class="mini-eq-bar"></span>
+            <span class="mini-eq-bar"></span>
+            <span class="mini-eq-bar"></span>
+            <span class="mini-eq-bar"></span>
           </div>
         </div>
-      `;
-    });
+
+        <div class="min-w-0 flex-1 pr-1 leading-tight">
+          <div class="flex items-center gap-1.5">
+            <span id="mini-track-title" class="text-xs font-black text-white truncate max-w-[130px] sm:max-w-xs">Caricamento frequenza...</span>
+          </div>
+          <div class="text-[9.5px] text-slate-400 truncate flex items-center gap-1.5 mt-0.5 font-mono">
+            <span id="mini-track-artist">Darsena Syndicate</span>
+            <span class="text-slate-600">·</span>
+            <span id="mini-track-time" class="text-sky-300">0:00 / --:--</span>
+          </div>
+        </div>
+
+        <div class="mini-controls-cluster">
+          <button onclick="event.stopPropagation(); SoundEngine.playPrevTrack()" class="mini-ctrl-btn" title="Precedente">
+            |‹‹
+          </button>
+          <button onclick="event.stopPropagation(); SoundEngine.togglePlayPause()" id="mini-btn-play" class="mini-ctrl-btn btn-play-highlight" title="Play/Pausa">
+            ▶
+          </button>
+          <button onclick="event.stopPropagation(); SoundEngine.playNextTrack()" class="mini-ctrl-btn" title="Successivo">
+            ››|
+          </button>
+        </div>
+      </div>
+    `;
 
     updateUI();
   }
 
   // --------------------------------------------------------------------------
-  // 8. COMUNICAZIONE & GESTIONE STAZIONI AUDIUS
+  // 5. CARICAMENTO STAZIONI AUDIUS
   // --------------------------------------------------------------------------
   async function loadStationTracks(stationKey) {
     activeStationKey = stationKey;
 
     if (stationKey === "favorites") {
       playlist = getFavorites();
-      if (playlist.length === 0) {
-        playlist = [...BOOTSTRAP_TRACKS];
-      }
+      if (playlist.length === 0) playlist = [...BOOTSTRAP_TRACKS];
       renderModalTracklist();
       return;
     }
@@ -559,7 +379,6 @@ const SoundEngine = (function() {
         playlist = [...BOOTSTRAP_TRACKS];
       }
     } catch (e) {
-      console.warn("[SoundEngine] Audius Discovery non raggiungibile, fallback su tracce locali:", e);
       playlist = [...BOOTSTRAP_TRACKS];
     }
 
@@ -567,7 +386,7 @@ const SoundEngine = (function() {
   }
 
   // --------------------------------------------------------------------------
-  // 9. RIPRODUZIONE AUDIO CORE (HOWLER HTML5 STREAMING)
+  // 6. RIPRODUZIONE AUDIO CORE (HOWLER HTML5 STREAMING)
   // --------------------------------------------------------------------------
   function formatTime(secs) {
     if (isNaN(secs) || secs < 0) return "0:00";
@@ -653,20 +472,18 @@ const SoundEngine = (function() {
     const track = currentTrack || playlist[0] || BOOTSTRAP_TRACKS[0];
     const isPlaying = Boolean(currentHowl && currentHowl.playing());
     const isMuted = isMasterMuted || isBgmMuted;
-    const isLoved = isFavorite(track?.id);
 
-    // 1. Aggiornamento Mini-Widget in Home / Profilo
+    // Mini-Player Home & Profilo
     document.querySelectorAll("#mini-track-title").forEach(el => el.textContent = track?.title || "Sintonizzazione...");
     document.querySelectorAll("#mini-track-artist").forEach(el => el.textContent = track?.artist || "Darsena Syndicate");
     document.querySelectorAll("#mini-btn-play").forEach(el => el.textContent = isPlaying ? "||" : "▶");
     document.querySelectorAll("#mini-emoji-icon").forEach(el => el.textContent = track?.emoji || "📻");
 
-    // Equalizzatore animato
+    // Equalizzatore animato a 4 barre
     document.querySelectorAll("#mini-eq-bars").forEach(eq => {
       eq.classList.toggle("animating", isPlaying && !isMuted);
     });
 
-    // 2. Aggiornamento Deck Modale Espansa
     renderModalDeck();
   }
 
@@ -748,7 +565,7 @@ const SoundEngine = (function() {
   }
 
   // --------------------------------------------------------------------------
-  // 10. GESTIONE EVENTI & SBLOCCO TOUCH MOBILE
+  // 7. SBLOCCO AUDIO AUTOMATICO AL PRIMO TOCCO
   // --------------------------------------------------------------------------
   function unlockMobileAudio() {
     if (window.Howler && Howler.ctx && Howler.ctx.state === "suspended") {
@@ -767,7 +584,6 @@ const SoundEngine = (function() {
     };
     unlockEvents.forEach(evt => window.addEventListener(evt, handleFirstTouch, { capture: true, passive: true }));
 
-    // Sospensione intelligente in background
     document.addEventListener("visibilitychange", () => {
       if (document.hidden) {
         if (currentHowl && currentHowl.playing()) currentHowl.pause();
@@ -780,11 +596,12 @@ const SoundEngine = (function() {
       }
     });
 
-    // Avvio asincrono: carica la prima stazione Boom Bap da Audius
-    setTimeout(() => {
-      loadStationTracks("boombap");
-      mountMiniWidget();
-    }, 150);
+    // 🔒 TRIPLA SICUREZZA DI MONTAGGIO (Subito + DOMContentLoaded + Polling di sicurezza)
+    mountMiniWidget();
+    setTimeout(mountMiniWidget, 100);
+    setTimeout(mountMiniWidget, 450);
+
+    loadStationTracks("boombap");
   }
 
   if (document.readyState === "loading") {
@@ -794,7 +611,7 @@ const SoundEngine = (function() {
   }
 
   // --------------------------------------------------------------------------
-  // 11. SFX PLAYER (WEB AUDIO AD ALTA VELOCITÀ)
+  // 8. SFX PLAYER (EFFETTI DI GIOCO AD ALTA REATTIVITÀ)
   // --------------------------------------------------------------------------
   function playSfx(name) {
     if (isMasterMuted || isSfxMuted) return;
@@ -822,10 +639,10 @@ const SoundEngine = (function() {
   }
 
   // --------------------------------------------------------------------------
-  // 12. API PUBBLICA ESPORTATA PER GAME ENGINE & WIDGET
+  // 9. ESPOSIZIONE PUBBLICA METODI SOUNDENGINE
   // --------------------------------------------------------------------------
   return {
-    // --- Scorciatoie Audio per il Gioco (Rules2Engine & Rules2Wizard) ---
+    // Scorciatoie di Gioco (Rules2Engine & Rules2Wizard)
     playClick: () => playSfx("click"),
     playCoin: () => playSfx("coin"),
     playDice: () => playSfx("dice"),
@@ -850,9 +667,8 @@ const SoundEngine = (function() {
       if (heartbeatHowl && heartbeatHowl.playing()) heartbeatHowl.stop();
     },
 
-    // --- Integrazione Navigazione Schermate ---
+    // Cambio pagina BGM
     playTabBgm: function(tabKey) {
-      // Quando navighi tra le pagine, adatta la frequenza tematica
       const clean = String(tabKey || "home").toLowerCase();
       if (clean.includes("game") || clean.includes("hub")) this.switchStation("chiptune");
       else if (clean.includes("shop")) this.switchStation("boombap");
@@ -873,7 +689,7 @@ const SoundEngine = (function() {
       }, duration);
     },
 
-    // --- Controlli Widget & Jukebox Deck ---
+    // Controlli Jukebox & Deck Espanso
     openModal: function() {
       injectExpandedModal();
       renderModalDeck();
@@ -1006,7 +822,7 @@ const SoundEngine = (function() {
       updateUI();
     },
 
-    // --- Getters Reattivi per AppModules & Core ---
+    // Getters
     get isPlaying() { return Boolean(currentHowl && currentHowl.playing()); },
     get isMuted() { return isMasterMuted; },
     get bgmVolume() { return currentBgmVolume; },
