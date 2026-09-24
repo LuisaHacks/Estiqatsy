@@ -1,7 +1,7 @@
 /* ============================================================================
    PROJECT: ESTIQATSY SYNDICATE & RPG PLATFORM
-   FILE: css/core.css (VERSIONE 33.0 - 44px HEADER, 24px SAFE AREA & VERTICAL CENTER)
-   LAYER: APP SHELL, UNIVERSAL BARS, 16:9 CAROUSEL & SHARED CATALOG COMPONENTS
+   FILE: css/core.css (VERSIONE 36.0 - 44px HEADER, 24px SAFE AREA & RADIO DECK)
+   LAYER: APP SHELL, UNIVERSAL BARS, 16:9 CAROUSEL & SYNDICATE RADIO COMPONENT
    NOTE: 100% DEDICATO ALLA PIATTAFORMA - ELEMENTI RULES2 DELEGATI A RULES2.CSS
    ============================================================================ */
 
@@ -130,7 +130,6 @@ body[data-context="gameplay"] .app-content-wrapper > :not([hidden]) ~ :not([hidd
    3. FOOTER 5 TAB: BANDA 44px + SAFE AREA A 24px CON CENTRATURA VERTICALE
    ---------------------------------------------------------------------------- */
 .main-app-footer {
-  /* 44px esatti di contenuto visibile + 24px minimi di Safe Area notch iOS */
   height: calc(44px + max(env(safe-area-inset-bottom, 24px), var(--tg-safe-area-inset-bottom, 24px), 24px)) !important;
   min-height: calc(44px + max(env(safe-area-inset-bottom, 24px), var(--tg-safe-area-inset-bottom, 24px), 24px)) !important;
   padding-top: 0 !important;
@@ -149,7 +148,6 @@ body[data-context="gameplay"] .app-content-wrapper > :not([hidden]) ~ :not([hidd
   flex-shrink: 0;
 }
 
-/* Singolo Tab: Centrato nei 44px verticali utili */
 .nav-tab {
   display: flex !important;
   flex-direction: column !important;
@@ -299,23 +297,157 @@ dialog.modal {
 }
 
 /* ----------------------------------------------------------------------------
-   6. RADIO MINIPLAYER & SPOTIFY DECK
+   6. RADIO SYNDICATE: MINI-WIDGET COMPATTO & SPOTIFY DECK ESPANSO
    ---------------------------------------------------------------------------- */
-.jukebox-eq-bars { display: inline-flex; align-items: flex-end; gap: 2px; height: 12px; }
-.jukebox-eq-bars span { width: 2px; height: 4px; background: var(--accent-sky); border-radius: 1px; transition: height 0.2s ease; }
-.jukebox-eq-bars.animated span:nth-child(1) { animation: eqBar 0.8s infinite ease-in-out alternate; }
-.jukebox-eq-bars.animated span:nth-child(2) { animation: eqBar 0.6s 0.2s infinite ease-in-out alternate; }
-.jukebox-eq-bars.animated span:nth-child(3) { animation: eqBar 0.9s 0.1s infinite ease-in-out alternate; }
-.jukebox-eq-bars.animated span:nth-child(4) { animation: eqBar 0.7s 0.3s infinite ease-in-out alternate; }
-.jukebox-eq-bars.animated span:nth-child(5) { animation: eqBar 0.5s 0.15s infinite ease-in-out alternate; }
+#radio-widget-mount {
+  width: 100% !important;
+  min-height: 48px !important;
+  display: block;
+}
 
-@keyframes eqBar { 0% { height: 3px; } 100% { height: 12px; } }
+/* Mini-Player Card in Home e Profilo */
+.syndicate-mini-player {
+  width: 100%;
+  height: 48px;
+  min-height: 48px;
+  background: #0B1222;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 0.85rem;
+  padding: 4px 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6);
+  cursor: pointer;
+  transition: border-color 0.2s ease, transform 0.1s ease;
+  user-select: none;
+  box-sizing: border-box;
+}
 
-.audio-slider-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 10px; font-family: monospace; color: #CBD5E1; }
-.audio-slider-label { width: 80px; flex-shrink: 0; }
-.audio-slider { flex: 1; accent-color: var(--accent-sky); height: 4px; }
-.audio-track-item { display: flex; align-items: center; justify-content: space-between; padding: 6px 10px; border-radius: 8px; background: rgba(255, 255, 255, 0.03); border: 1px solid transparent; cursor: pointer; transition: all 0.15s ease; }
-.audio-track-item:hover, .audio-track-item.active { background: rgba(56, 189, 248, 0.12); border-color: rgba(56, 189, 248, 0.30); }
+.syndicate-mini-player:hover {
+  border-color: rgba(56, 189, 248, 0.45);
+}
+
+.syndicate-mini-player:active {
+  transform: scale(0.995);
+}
+
+/* Box Artwork con Equalizzatore Sovrapposto */
+.mini-player-art-box {
+  position: relative;
+  width: 36px;
+  height: 36px;
+  border-radius: 0.6rem;
+  background: #000000;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.mini-player-art-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* 4 Barrette Equalizzatore animate via GPU a 60fps */
+.mini-eq-bars {
+  position: absolute;
+  bottom: 2px;
+  right: 2px;
+  display: flex;
+  align-items: flex-end;
+  gap: 1.5px;
+  height: 14px;
+  padding: 1px 2px;
+  background: rgba(0, 0, 0, 0.80);
+  border-radius: 3px;
+  pointer-events: none;
+}
+
+.mini-eq-bar {
+  width: 2.5px;
+  height: 3px;
+  background: var(--accent-sky);
+  border-radius: 1px;
+  transition: height 0.15s ease;
+}
+
+.mini-eq-bars.animating .mini-eq-bar:nth-child(1) { animation: eqBounce 0.65s infinite ease-in-out; }
+.mini-eq-bars.animating .mini-eq-bar:nth-child(2) { animation: eqBounce 0.85s infinite ease-in-out 0.15s; }
+.mini-eq-bars.animating .mini-eq-bar:nth-child(3) { animation: eqBounce 0.55s infinite ease-in-out 0.3s; }
+.mini-eq-bars.animating .mini-eq-bar:nth-child(4) { animation: eqBounce 0.75s infinite ease-in-out 0.1s; }
+
+@keyframes eqBounce {
+  0%, 100% { height: 3px; }
+  50% { height: 13px; }
+}
+
+/* Controlli Rapidi a Destra (|<<, >/||, >>|) */
+.mini-controls-cluster {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.mini-ctrl-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  color: #E2E8F0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 900;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.mini-ctrl-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: #FFFFFF;
+}
+
+.mini-ctrl-btn.btn-play-highlight {
+  background: var(--accent-sky);
+  border-color: var(--accent-sky);
+  color: #070A12;
+  width: 32px;
+  height: 32px;
+  font-size: 12px;
+}
+
+.mini-ctrl-btn:active {
+  transform: scale(0.92);
+}
+
+/* Scrubber Timeline Modale Spotify */
+.spotify-scrubber {
+  -webkit-appearance: none;
+  width: 100%;
+  height: 4px;
+  background: #1E293B;
+  border-radius: 9999px;
+  outline: none;
+  cursor: pointer;
+}
+
+.spotify-scrubber::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 9999px;
+  background: var(--accent-sky);
+  cursor: pointer;
+}
 
 /* ----------------------------------------------------------------------------
    7. ITEM CARDS 16:9 CONDIVISE
@@ -385,7 +517,7 @@ dialog.modal {
 .watermark-cover-banner .quote-author { font-family: monospace; font-size: 8px; font-weight: 900; color: var(--accent-amber); text-transform: uppercase; margin-top: 1px; }
 
 /* ----------------------------------------------------------------------------
-   9. SUBHEADERS & CHIP FILTRI RAPIDI (CON JUSTIFY-START ANTI-TAGLIO)
+   9. SUBHEADERS & CHIP FILTRI RAPIDI
    ---------------------------------------------------------------------------- */
 .subheader-3col {
   display: flex;
@@ -414,7 +546,7 @@ dialog.modal {
   padding: 4px 6px !important;
   width: 100% !important;
   box-sizing: border-box !important;
-  justify-content: flex-start !important; /* 🔒 Allineato a sinistra: impedisce tagli sul primo chip */
+  justify-content: flex-start !important;
   scrollbar-width: none !important;
   -webkit-overflow-scrolling: touch !important;
 }
